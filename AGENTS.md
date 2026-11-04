@@ -55,6 +55,7 @@
 
 - Follow `docs/development/design.md`. Reuse controls only when semantics, spacing, accessibility, and state match. Declare shared controls and tokens in `Shared/UI`; keep feature-only components in their feature.
 - Get colors from `LauncherTheme` roles, read through `\.launcherTheme`. Never write a fixed cyan. `LauncherVisuals.cyan` is the fallback accent only, for when no artwork accent exists.
+- Take spacing, radius, layout, control sizes, and typography from `LauncherTokens`. `LauncherVisuals` holds colors and opacities only.
 - Keep dynamic artwork or theme accents on the primary operation, progress, selection, and interaction highlights. Do not replace them with hardcoded neutrals.
 - `LauncherMotion` is the only motion source: no raw `.easeInOut`, `.spring`, or durations in views.
 - Use `AdaptiveGlass` fallbacks for macOS 26 APIs. The primary action shows at most one ambient effect: a static halo with one arrival pulse.

@@ -66,7 +66,7 @@ struct StatusHUDPill: View {
 	}
 
 	private func installedRegionRows(now: Date) -> some View {
-		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 			ForEach(installation.installedRegions) { region in
 				let countdown = countdown(for: region, now: now)
 				Button {
@@ -79,7 +79,7 @@ struct StatusHUDPill: View {
 				}
 				.buttonStyle(ActionPressStyle())
 				.keyboardFocusIndicator(
-					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
+					in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.control)
 				)
 				.disabled(!canSwitchRegion)
 				.accessibilityElement(children: .ignore)
@@ -91,14 +91,14 @@ struct StatusHUDPill: View {
 				.accessibilityHint(Text("Switch between installed regions"))
 			}
 		}
-		.padding(.horizontal, LauncherVisuals.Spacing.control)
-		.padding(.vertical, LauncherVisuals.Spacing.control)
+		.padding(.horizontal, LauncherTokens.Spacing.control)
+		.padding(.vertical, LauncherTokens.Spacing.control)
 		.frame(maxWidth: .infinity, alignment: .leading)
 	}
 
 	private func regionRowLabel(region: GameRegion, countdown: String) -> some View {
-		HStack(spacing: LauncherVisuals.Spacing.control) {
-			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 				Text(region.displayName)
 					.font(.caption.weight(.medium))
 					.adaptiveControlForeground(
@@ -126,13 +126,13 @@ struct StatusHUDPill: View {
 				.frame(width: 16, alignment: .center)
 				.accessibilityHidden(true)
 		}
-		.padding(.horizontal, LauncherVisuals.Spacing.control)
-		.padding(.vertical, LauncherVisuals.Spacing.control)
+		.padding(.horizontal, LauncherTokens.Spacing.control)
+		.padding(.vertical, LauncherTokens.Spacing.control)
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.background(
-			rowFill(for: region), in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
+			rowFill(for: region), in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.control)
 		)
-		.contentShape(RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control))
+		.contentShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.control))
 	}
 
 	private func rowFill(for region: GameRegion) -> Color {

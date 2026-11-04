@@ -341,7 +341,9 @@ package struct ContentView: View {
 			.environment(\.colorScheme, homeColorScheme)
 			.launcherAnimation(.state, value: homeColorScheme)
 		}
-		.padding(.top, 8).padding(.horizontal, 16).ignoresSafeArea(.container, edges: .top)
+		.padding(.top, LauncherTokens.Spacing.control)
+		.padding(.horizontal, LauncherTokens.Spacing.panel)
+		.ignoresSafeArea(.container, edges: .top)
 	}
 
 	/// Closes every sheet and dialog so AppKit accepts the quit, without advancing popup queues.

@@ -63,12 +63,12 @@ The launcher must feel like a current macOS app. It must feel like an Arknights 
 
 ### Shape, spacing, and type
 
-- Use radius tokens only from `LauncherVisuals.Radius` and `LauncherTokens.Radius`.
+- Use radius tokens only from `LauncherTokens.Radius`.
 - A nested radius equals the outer radius minus the padding. The minimum is 4 pt. Collapsed HUD surfaces and the primary action may use capsules.
 - Put every margin, padding, gap, and fixed size on a 4 pt grid. Use a 2 pt step only inside small controls.
-- Use one value for each role. Use `LauncherVisuals.Spacing.page` (24 pt) for page margins. Use `LauncherVisuals.Spacing.section` (20 pt) for section gaps. Use `LauncherVisuals.Layout.railWidth` (192 pt) for the Settings and Onboarding rails.
+- Use one value for each role. Use `LauncherTokens.Spacing.page` (24 pt) for page margins. Use `LauncherTokens.Spacing.section` (20 pt) for section gaps. Use `LauncherTokens.Layout.railWidth` (192 pt) for the Settings and Onboarding rails.
 - Use size and color for hierarchy. Use regular and medium weights. Use semibold only for rare emphasis. Do not use bold or heavier. Do not change weight to show selection.
-- Use fonts from `LauncherVisuals.Typography` or `LauncherTokens.Typography`. Or use a semantic text style with an allowed weight. Do not write `.system(size:` in a view.
+- Use fonts from `LauncherTokens.Typography`. Or use a semantic text style with an allowed weight. Do not write `.system(size:` in a view.
 
 ### Selection controls
 

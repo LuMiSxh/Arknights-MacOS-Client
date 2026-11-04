@@ -13,11 +13,11 @@ struct LauncherActivityStatusView: View {
 	var body: some View {
 		Group {
 			if let completionFeedback, showsCompletionFeedback {
-				HStack(spacing: 8) {
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					LauncherCompletionFeedbackView(feedbackID: completionFeedback.id)
 					Text("Installation complete")
 				}
-				.font(LauncherVisuals.Typography.statusTitle)
+				.font(LauncherTokens.Typography.statusTitle)
 				.accessibilityElement(children: .combine)
 				.accessibilityLabel(Text("Installation complete"))
 			} else if showsDownloadLayout {
@@ -106,9 +106,9 @@ private struct PlainStatusText: View {
 	let title: String
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 			Text(title)
-				.font(LauncherVisuals.Typography.statusTitle)
+				.font(LauncherTokens.Typography.statusTitle)
 				.contentTransition(.opacity)
 		}
 	}
@@ -123,16 +123,20 @@ private struct DownloadStatusLabel: View {
 
 	var body: some View {
 		if showsDownloadSnapshot {
-			VStack(alignment: .leading, spacing: 4) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 				ViewThatFits(in: .horizontal) {
-					HStack(alignment: .firstTextBaseline, spacing: 12) {
+					HStack(
+						alignment: .firstTextBaseline, spacing: LauncherTokens.Spacing.content
+					) {
 						percentageLabel
 						downloadProgressDetail
 						transferDetails
 					}
-					VStack(alignment: .leading, spacing: 4) {
+					VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 						percentageLabel
-						HStack(alignment: .firstTextBaseline, spacing: 8) {
+						HStack(
+							alignment: .firstTextBaseline, spacing: LauncherTokens.Spacing.control
+						) {
 							downloadProgressDetail
 							transferDetails
 						}
@@ -208,12 +212,12 @@ private struct DownloadStatusLabel: View {
 					isPaused: isPausedDownload
 				)
 			)
-			.font(LauncherVisuals.Typography.statusPercent)
+			.font(LauncherTokens.Typography.statusPercent)
 			.monospacedDigit()
 			.hidden()
 			.accessibilityHidden(true)
 			Text(statusTitle)
-				.font(LauncherVisuals.Typography.statusPercent)
+				.font(LauncherTokens.Typography.statusPercent)
 				.monospacedDigit()
 				.contentTransition(reduceMotion ? .identity : .numericText())
 				.animation(

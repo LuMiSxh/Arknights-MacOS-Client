@@ -47,7 +47,7 @@ package struct PresetGalleryView: View {
 					showsIconStylePreview: $showsIconStylePreview
 				)
 				Divider().overlay(theme.hairline)
-				HStack(spacing: 8) {
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					PresetGallerySearchBar(
 						destination: destination,
 						searchText: $searchText,
@@ -65,8 +65,8 @@ package struct PresetGalleryView: View {
 						)
 					}
 				}
-				.padding(.horizontal, 24)
-				.padding(.vertical, 16)
+				.padding(.horizontal, LauncherTokens.Spacing.page)
+				.padding(.vertical, LauncherTokens.Spacing.panel)
 				PresetGallerySuggestions(
 					destination: destination,
 					avatars: hasSearchQuery ? searchResults.filteredAvatars : [],
@@ -77,7 +77,7 @@ package struct PresetGalleryView: View {
 						? PresetSearch.applyingSuggestion(selection, to: searchText)
 						: selection
 				}
-				.padding(.horizontal, 24)
+				.padding(.horizontal, LauncherTokens.Spacing.page)
 				ScrollView {
 					Group {
 						if isLoading {
@@ -109,7 +109,7 @@ package struct PresetGalleryView: View {
 							}
 						}
 					}
-					.padding(.horizontal, 24)
+					.padding(.horizontal, LauncherTokens.Spacing.page)
 					.padding(.bottom, 64)
 				}
 				.contentMargins(.top, 8, for: .scrollIndicators)
@@ -121,8 +121,8 @@ package struct PresetGalleryView: View {
 					dismiss()
 				}
 			}
-			.padding(.trailing, 24)
-			.padding(.bottom, 16)
+			.padding(.trailing, LauncherTokens.Spacing.page)
+			.padding(.bottom, LauncherTokens.Spacing.panel)
 		}
 		.frame(width: 760, height: 572)
 		// The sheet is key while it is open, so the presenting window's theme reads as inactive.

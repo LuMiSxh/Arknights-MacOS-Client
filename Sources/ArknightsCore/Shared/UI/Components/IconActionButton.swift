@@ -25,7 +25,7 @@ package struct IconActionButton: View {
 		foreground: Color? = nil,
 		surface: ControlSurfacePresentation = .neutral,
 		surfaceTint: Color? = nil,
-		size: CGFloat = LauncherVisuals.Control.iconButtonSize,
+		size: CGFloat = LauncherTokens.Control.iconButtonSize,
 		hitTargetSize: CGFloat? = nil,
 		action: @escaping () -> Void
 	) {
@@ -48,8 +48,8 @@ package struct IconActionButton: View {
 					.system(
 						size: min(
 							max(
-								size / LauncherVisuals.Control.iconButtonSize
-									* LauncherVisuals.Control.iconButtonGlyphSize,
+								size / LauncherTokens.Control.iconButtonSize
+									* LauncherTokens.Control.iconButtonGlyphSize,
 								15
 							),
 							20

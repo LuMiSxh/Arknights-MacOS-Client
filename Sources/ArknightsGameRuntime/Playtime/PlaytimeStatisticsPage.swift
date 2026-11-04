@@ -119,7 +119,7 @@ package struct PlaytimeStatisticsPage: View {
 		Rectangle()
 			.fill(theme.hairline)
 			.frame(width: 1, height: 42)
-			.padding(.horizontal, 18)
+			.padding(.horizontal, LauncherTokens.Spacing.panel)
 	}
 
 	private var latestSession: some View {
@@ -145,7 +145,7 @@ package struct PlaytimeStatisticsPage: View {
 	}
 
 	private func metric(_ title: String, duration: TimeInterval) -> some View {
-		VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 			Text(durationText(duration))
 				.font(.title3.monospacedDigit().weight(.semibold))
 			Text(title)
@@ -157,7 +157,7 @@ package struct PlaytimeStatisticsPage: View {
 	}
 
 	private func explanation(title: String, detail: String, systemImage: String) -> some View {
-		HStack(alignment: .top, spacing: 12) {
+		HStack(alignment: .top, spacing: LauncherTokens.Spacing.content) {
 			Image(systemName: systemImage)
 				.frame(width: 24)
 				.foregroundStyle(theme.textSecondary)

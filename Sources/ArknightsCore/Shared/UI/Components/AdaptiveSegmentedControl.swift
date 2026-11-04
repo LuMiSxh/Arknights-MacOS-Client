@@ -30,7 +30,7 @@ package struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 
 	@ViewBuilder
 	package var body: some View {
-		HStack(spacing: 4) {
+		HStack(spacing: LauncherTokens.Spacing.compact) {
 			ForEach(options.indices, id: \.self) { index in
 				let option = options[index]
 				let isSelected = selection == option
@@ -84,7 +84,7 @@ package struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 	/// Icons appear only when every option has one; otherwise the label stands alone.
 	@ViewBuilder
 	private func segmentContent(_ option: Option, index: Int) -> some View {
-		HStack(spacing: 4) {
+		HStack(spacing: LauncherTokens.Spacing.compact) {
 			if systemImages.count == options.count {
 				SwiftUI.Label {
 					label(option)

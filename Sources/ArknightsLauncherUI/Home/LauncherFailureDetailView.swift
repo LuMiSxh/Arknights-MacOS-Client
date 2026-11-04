@@ -46,9 +46,9 @@ struct LauncherFailureDetailView: View {
 			height: failure.code == nil ? 432 : 600,
 			minimumHeight: 432
 		) {
-			VStack(alignment: .leading, spacing: 20) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.section) {
 				if let code = failure.code {
-					HStack(alignment: .center, spacing: 12) {
+					HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
 						LauncherSupportCodeLabel(code: code)
 						IconActionButton(
 							title: "Copy Support Code",
@@ -90,21 +90,21 @@ struct LauncherFailureDetailView: View {
 	@ViewBuilder
 	private var footerActions: some View {
 		ViewThatFits(in: .horizontal) {
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				recoveryActions
 				if hasSupportActions {
 					supportActions
 					Divider()
 						.frame(height: 24)
-						.padding(.horizontal, 4)
+						.padding(.horizontal, LauncherTokens.Spacing.compact)
 				}
 				dismissButton
 			}
 			VStack(alignment: .trailing, spacing: LauncherTokens.Spacing.control) {
-				HStack(spacing: 8) {
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					recoveryActions
 				}
-				HStack(spacing: 8) {
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					if hasSupportActions {
 						supportActions
 					}
@@ -176,8 +176,8 @@ struct LauncherFailureDetailView: View {
 	// Three buttons do not fit the narrow modal on one line, so the footer stacks instead.
 	private var supportActions: some View {
 		ViewThatFits(in: .horizontal) {
-			HStack(spacing: 8) { supportButtons }
-			VStack(alignment: .trailing, spacing: 8) { supportButtons }
+			HStack(spacing: LauncherTokens.Spacing.control) { supportButtons }
+			VStack(alignment: .trailing, spacing: LauncherTokens.Spacing.control) { supportButtons }
 		}
 	}
 

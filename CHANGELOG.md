@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Aligned a few spacing values to the 4 pt grid.
 - The first and last setup pages now use the same panels and rows as the other setup steps. The last page shows where to find help in the **Help** menu and in **Settings → Help**.
 - Gryphline Taiwan is now a stable server. It no longer needs **Canary Features**.
 - Rebuilt the launcher design on one color theme for dark and light. Glow effects, hover zoom, and bouncy motion are gone. Text uses lighter weights, and spacing follows one grid in every window.

@@ -175,7 +175,7 @@ struct MarkdownDocument: View {
 	var body: some View {
 		Group {
 			if let document = initialDocument ?? loadedDocument {
-				LazyVStack(alignment: .leading, spacing: 12) {
+				LazyVStack(alignment: .leading, spacing: LauncherTokens.Spacing.content) {
 					ForEach(document.blocks.indices, id: \.self) { index in
 						MarkdownBlockView(
 							block: document.blocks[index],
@@ -220,33 +220,33 @@ private struct MarkdownBlockView: View {
 				.font(.body)
 				.lineSpacing(4)
 		case .bullet(let source):
-			HStack(alignment: .firstTextBaseline, spacing: 8) {
+			HStack(alignment: .firstTextBaseline, spacing: LauncherTokens.Spacing.control) {
 				Circle()
 					.fill(theme.accentFill)
 					.frame(width: 4, height: 4)
 				Text(markdownInline(source))
 			}
-			.padding(.leading, 8)
+			.padding(.leading, LauncherTokens.Spacing.control)
 		case .numbered(let number, let source):
-			HStack(alignment: .firstTextBaseline, spacing: 8) {
+			HStack(alignment: .firstTextBaseline, spacing: LauncherTokens.Spacing.control) {
 				Text("\(number).")
 					.foregroundStyle(theme.accentInk)
 					.monospacedDigit()
 				Text(markdownInline(source))
 			}
-			.padding(.leading, 8)
+			.padding(.leading, LauncherTokens.Spacing.control)
 		case .table(let rows):
 			MarkdownTable(rows: rows, columnWidths: columnWidths)
-				.padding(.vertical, 4)
+				.padding(.vertical, LauncherTokens.Spacing.compact)
 		case .code(let source):
 			Text(source)
 				.font(.system(.callout, design: .monospaced))
-				.padding(12)
+				.padding(LauncherTokens.Spacing.content)
 				.frame(maxWidth: .infinity, alignment: .leading)
 				.background(
-					theme.controlFill, in: .rect(cornerRadius: LauncherVisuals.Radius.control))
+					theme.controlFill, in: .rect(cornerRadius: LauncherTokens.Radius.control))
 		case .divider:
-			Divider().padding(.vertical, 4)
+			Divider().padding(.vertical, LauncherTokens.Spacing.compact)
 		}
 	}
 
@@ -281,10 +281,10 @@ private struct MarkdownTable: View {
 				}
 			}
 			.overlay {
-				RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
+				RoundedRectangle(cornerRadius: LauncherTokens.Radius.control)
 					.stroke(theme.hairline, lineWidth: 1)
 			}
-			.clipShape(.rect(cornerRadius: LauncherVisuals.Radius.control))
+			.clipShape(.rect(cornerRadius: LauncherTokens.Radius.control))
 		}
 		.scrollIndicators(.visible)
 	}
@@ -310,7 +310,7 @@ private struct MarkdownTableCell: View {
 		Text(markdownInline(source))
 			.font(font)
 			.frame(width: width, alignment: .leading)
-			.padding(8)
+			.padding(LauncherTokens.Spacing.control)
 			.background(fill)
 			.overlay(alignment: .trailing) { Divider() }
 	}

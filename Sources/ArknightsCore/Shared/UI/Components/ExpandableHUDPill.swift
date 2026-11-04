@@ -120,7 +120,7 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 	}
 
 	private var headerLabel: some View {
-		HStack(spacing: 4) {
+		HStack(spacing: LauncherTokens.Spacing.compact) {
 			Image(systemName: systemImage)
 				.font(iconFont)
 				.adaptiveControlForeground(theme.accentInk)

@@ -114,7 +114,7 @@ package struct StorageOverviewPage: View {
 					usageRow(usage)
 				}
 				SettingsHairline()
-				HStack(spacing: 8) {
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					CapsuleActionButton(
 						title: copy.clearCaches,
 						systemImage: "trash",
@@ -183,7 +183,7 @@ package struct StorageOverviewPage: View {
 			title: copy.categoryTitle(usage.location.category),
 			detail: copy.categoryDetail(usage.location.category)
 		) {
-			HStack(spacing: 12) {
+			HStack(spacing: LauncherTokens.Spacing.content) {
 				sizeView(for: usage)
 
 				if let action {

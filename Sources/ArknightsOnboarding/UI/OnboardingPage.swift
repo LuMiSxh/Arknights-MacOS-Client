@@ -11,7 +11,7 @@ struct OnboardingPage<Content: View>: View {
 	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.section) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.section) {
 			SectionPageHeader(
 				title: title,
 				subtitle: subtitle,
@@ -19,9 +19,9 @@ struct OnboardingPage<Content: View>: View {
 			)
 			content
 		}
-		.padding(LauncherVisuals.Spacing.panel)
+		.padding(LauncherTokens.Spacing.panel)
 		.background {
-			RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+			RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
 				// Same opacity as the Settings sheet, so panel text stays readable over the artwork.
 				.fill(theme.sheetTint)
 		}

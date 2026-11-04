@@ -106,12 +106,12 @@ package struct OnboardingView: View {
 					.transition(
 						reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity)
 					)
-					.padding(.horizontal, LauncherVisuals.Spacing.page)
-					.padding(.top, LauncherVisuals.Spacing.page)
+					.padding(.horizontal, LauncherTokens.Spacing.page)
+					.padding(.top, LauncherTokens.Spacing.page)
 					.padding(.bottom, 96)
 				}
-				.contentMargins(.top, LauncherVisuals.Spacing.page, for: .scrollIndicators)
-				.contentMargins(.bottom, LauncherVisuals.Spacing.page, for: .scrollIndicators)
+				.contentMargins(.top, LauncherTokens.Spacing.page, for: .scrollIndicators)
+				.contentMargins(.bottom, LauncherTokens.Spacing.page, for: .scrollIndicators)
 				.scrollIndicators(.automatic)
 				.scrollPosition($scrollPosition)
 				.onChange(of: coordinator.step) {
@@ -167,8 +167,8 @@ package struct OnboardingView: View {
 					.disabled(!canPerformPrimaryAction)
 					.keyboardShortcut(.defaultAction)
 				}
-				.padding(.horizontal, LauncherVisuals.Spacing.page)
-				.padding(.bottom, LauncherVisuals.Spacing.panel)
+				.padding(.horizontal, LauncherTokens.Spacing.page)
+				.padding(.bottom, LauncherTokens.Spacing.panel)
 			}
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)

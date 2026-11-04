@@ -45,7 +45,7 @@ struct PresetGallerySuggestions: View {
 
 	var body: some View {
 		ScrollView(.horizontal, showsIndicators: false) {
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				ForEach(suggestions) { suggestion in
 					PresetGallerySuggestionChip(
 						destination: destination,
@@ -75,7 +75,7 @@ private struct PresetGallerySuggestionChip: View {
 		Button {
 			onSelect(suggestion.title)
 		} label: {
-			HStack(spacing: 4) {
+			HStack(spacing: LauncherTokens.Spacing.compact) {
 				Image(
 					systemName: destination == .artwork ? "tag" : "person.crop.square"
 				)
@@ -84,8 +84,8 @@ private struct PresetGallerySuggestionChip: View {
 					.lineLimit(1)
 					.truncationMode(.tail)
 			}
-			.padding(.horizontal, 12)
-			.padding(.vertical, 8)
+			.padding(.horizontal, LauncherTokens.Spacing.content)
+			.padding(.vertical, LauncherTokens.Spacing.control)
 			.frame(maxWidth: 220, alignment: .leading)
 			.contentShape(Capsule())
 			.adaptiveControlForeground(

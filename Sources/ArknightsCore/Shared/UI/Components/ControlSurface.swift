@@ -91,7 +91,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 					shape
 						.stroke(
 							activeBorder,
-							lineWidth: LauncherVisuals.Control.borderWidth
+							lineWidth: LauncherTokens.Control.borderWidth
 						)
 						.allowsHitTesting(false)
 				}
@@ -103,7 +103,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 					shape
 						.stroke(
 							disabledBorder,
-							lineWidth: LauncherVisuals.Control.borderWidth
+							lineWidth: LauncherTokens.Control.borderWidth
 						)
 						.allowsHitTesting(false)
 				}
@@ -261,7 +261,7 @@ private struct ThemedActionSurfaceModifier<ShapeType: Shape>: ViewModifier {
 			}
 			.overlay {
 				shape
-					.stroke(stroke, lineWidth: LauncherVisuals.Control.borderWidth)
+					.stroke(stroke, lineWidth: LauncherTokens.Control.borderWidth)
 					.allowsHitTesting(false)
 			}
 			.opacity(isEnabled ? 1 : ActionSurfaceMetrics.disabledOpacity)

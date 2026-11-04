@@ -56,7 +56,7 @@ struct LauncherArtworkView: View {
 		ZStack {
 			theme.sheetSolid
 			Text("A")
-				.font(LauncherVisuals.Typography.fallbackWordmark)
+				.font(LauncherTokens.Typography.fallbackWordmark)
 				.foregroundStyle(.white.opacity(0.07))
 			Rectangle()
 				.fill(accentColor.opacity(0.4))

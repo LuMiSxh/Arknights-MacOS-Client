@@ -11,11 +11,11 @@ struct OnboardingProgressRail: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
 			NavigationRailCaption(text: "Setup assistant")
-				.padding(.horizontal, LauncherVisuals.Spacing.panel)
-				.padding(.top, LauncherVisuals.Spacing.page)
-				.padding(.bottom, LauncherVisuals.Spacing.content)
+				.padding(.horizontal, LauncherTokens.Spacing.panel)
+				.padding(.top, LauncherTokens.Spacing.page)
+				.padding(.bottom, LauncherTokens.Spacing.content)
 
-			VStack(spacing: LauncherVisuals.Spacing.compact) {
+			VStack(spacing: LauncherTokens.Spacing.compact) {
 				ForEach(OnboardingStep.allCases) { step in
 					NavigationRailRow(
 						title: step.title,
@@ -24,11 +24,11 @@ struct OnboardingProgressRail: View {
 					)
 				}
 			}
-			.padding(.horizontal, LauncherVisuals.Spacing.control)
+			.padding(.horizontal, LauncherTokens.Spacing.control)
 
 			Spacer()
 
-			HStack(spacing: LauncherVisuals.Spacing.control) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				Rectangle()
 					.fill(theme.accentFill)
 					.frame(width: 28, height: 2)
@@ -36,9 +36,9 @@ struct OnboardingProgressRail: View {
 					.font(.caption)
 					.foregroundStyle(theme.textTertiary)
 			}
-			.padding(LauncherVisuals.Spacing.panel)
+			.padding(LauncherTokens.Spacing.panel)
 		}
-		.frame(width: LauncherVisuals.Layout.railWidth)
+		.frame(width: LauncherTokens.Layout.railWidth)
 		.background(theme.footerFill)
 	}
 

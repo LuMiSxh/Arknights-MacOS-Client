@@ -16,11 +16,11 @@ struct MusicVolumeControl: View {
 	@State private var isHovering = false
 
 	var body: some View {
-		HStack(spacing: 7) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			Button(action: toggleMute) {
 				Label(muteButtonTitle, systemImage: speakerSymbol)
 					.labelStyle(.iconOnly)
-					.font(LauncherVisuals.Typography.hudControlGlyph)
+					.font(LauncherTokens.Typography.hudControlGlyph)
 					.adaptiveControlForeground(
 						theme.textPrimary,
 						disabledTint: theme.textTertiary,

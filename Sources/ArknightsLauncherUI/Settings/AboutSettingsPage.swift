@@ -47,7 +47,7 @@ struct AboutSettingsPage: View {
 						documentLinks(isInline: false)
 					}
 				}
-				HStack(spacing: 16) {
+				HStack(spacing: LauncherTokens.Spacing.panel) {
 					QuietLink(title: "View online", destination: SupportLinks.thirdPartyNotices)
 					QuietLink(title: "Privacy Notice", destination: SupportLinks.privacyNotice)
 				}
@@ -59,12 +59,12 @@ struct AboutSettingsPage: View {
 			}
 
 			SettingsPanel(title: "Arknights") {
-				VStack(alignment: .leading, spacing: 8) {
+				VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 					ViewThatFits(in: .horizontal) {
-						HStack(spacing: 16) {
+						HStack(spacing: LauncherTokens.Spacing.panel) {
 							publisherLinks
 						}
-						VStack(alignment: .leading, spacing: 8) {
+						VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 							publisherLinks
 						}
 					}
@@ -73,7 +73,7 @@ struct AboutSettingsPage: View {
 					)
 					.font(.caption)
 					.foregroundStyle(theme.textSecondary)
-					HStack(spacing: 4) {
+					HStack(spacing: LauncherTokens.Spacing.compact) {
 						Text("Built with AI assistance.")
 							.foregroundStyle(theme.textSecondary)
 						QuietLink(

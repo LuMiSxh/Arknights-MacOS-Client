@@ -13,9 +13,9 @@ struct OnboardingGameFilesPanel: View {
 
 	var body: some View {
 		SettingsPanel(title: "Game files") {
-			VStack(alignment: .leading, spacing: 12) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.content) {
 				HStack {
-					VStack(alignment: .leading, spacing: 4) {
+					VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 						if isLoadingInstallationMetadata {
 							SkeletonValue(width: 160, height: 16, pulses: true)
 							SkeletonValue(width: 216, height: 16, pulses: true)

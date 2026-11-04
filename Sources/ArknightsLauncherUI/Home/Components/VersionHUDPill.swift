@@ -39,7 +39,7 @@ struct VersionHUDPill: View {
 					alignment: .leading
 				)
 		} detail: {
-			HStack(spacing: 12) {
+			HStack(spacing: LauncherTokens.Spacing.content) {
 				Label(updateStatus, systemImage: updateStatusIcon)
 					.font(.caption)
 					.foregroundStyle(
@@ -55,7 +55,7 @@ struct VersionHUDPill: View {
 				)
 				.disabled(cannotCheck)
 			}
-			.padding(.horizontal, 16)
+			.padding(.horizontal, LauncherTokens.Spacing.panel)
 		}
 	}
 

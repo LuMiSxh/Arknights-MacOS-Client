@@ -13,18 +13,18 @@ struct PresetAvatarGrid: View {
 	let onSelect: (PresetAvatar) -> Void
 
 	private let columns = [
-		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 16)
+		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: LauncherTokens.Spacing.panel)
 	]
 
 	var body: some View {
-		LazyVGrid(columns: columns, spacing: 16) {
+		LazyVGrid(columns: columns, spacing: LauncherTokens.Spacing.panel) {
 			ForEach(avatars) { avatar in
 				let isApplying = applyingItemID == avatar.id
 				let isBlocked = applyingItemID != nil && !isApplying
 				Button {
 					onSelect(avatar)
 				} label: {
-					VStack(spacing: 8) {
+					VStack(spacing: LauncherTokens.Spacing.control) {
 						ZStack {
 							CachedPresetImage(
 								catalog: catalog,
@@ -35,7 +35,7 @@ struct PresetAvatarGrid: View {
 							)
 							.frame(width: 104, height: 104)
 							.background(theme.groupFill)
-							.clipShape(RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel))
+							.clipShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel))
 							if isApplying {
 								ZStack {
 									Color.black.opacity(0.65)
@@ -44,15 +44,15 @@ struct PresetAvatarGrid: View {
 										.tint(theme.accentFill)
 								}
 								.clipShape(
-									RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel))
+									RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel))
 							}
 						}
 						.frame(width: 104, height: 104)
 						.overlay {
-							RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+							RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
 								.strokeBorder(
 									isApplying ? theme.accentFill : theme.hairline,
-									lineWidth: LauncherVisuals.Control.borderWidth
+									lineWidth: LauncherTokens.Control.borderWidth
 								)
 						}
 						.shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
@@ -63,14 +63,14 @@ struct PresetAvatarGrid: View {
 							.foregroundStyle(isApplying ? theme.accentInk : theme.textPrimary)
 							.frame(maxWidth: 128)
 					}
-					.padding(.vertical, 4)
+					.padding(.vertical, LauncherTokens.Spacing.compact)
 					.frame(maxWidth: .infinity)
 					.contentShape(Rectangle())
 					.opacity(isBlocked ? 0.46 : 1)
 				}
 				.buttonStyle(ActionPressStyle(intensity: .subtle))
 				.keyboardFocusIndicator(
-					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+					in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
 				)
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(avatar.name)
@@ -97,23 +97,23 @@ struct PresetWallpaperGrid: View {
 	let onSelect: (PresetWallpaper) -> Void
 
 	private let columns = [
-		GridItem(.flexible(), spacing: 16),
-		GridItem(.flexible(), spacing: 16),
-		GridItem(.flexible(), spacing: 16),
+		GridItem(.flexible(), spacing: LauncherTokens.Spacing.panel),
+		GridItem(.flexible(), spacing: LauncherTokens.Spacing.panel),
+		GridItem(.flexible(), spacing: LauncherTokens.Spacing.panel),
 	]
 	// Nested radius: the card radius minus the card's padding.
 	private let thumbnailRadius: CGFloat =
-		LauncherVisuals.Radius.panel - LauncherTokens.Spacing.control
+		LauncherTokens.Radius.panel - LauncherTokens.Spacing.control
 
 	var body: some View {
-		LazyVGrid(columns: columns, spacing: 16) {
+		LazyVGrid(columns: columns, spacing: LauncherTokens.Spacing.panel) {
 			ForEach(wallpapers) { wp in
 				let isApplying = applyingItemID == wp.id
 				let isBlocked = applyingItemID != nil && !isApplying
 				Button {
 					onSelect(wp)
 				} label: {
-					VStack(alignment: .leading, spacing: 8) {
+					VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 						ZStack {
 							CachedPresetImage(
 								catalog: catalog,
@@ -129,7 +129,7 @@ struct PresetWallpaperGrid: View {
 							if isApplying {
 								ZStack {
 									Color.black.opacity(0.65)
-									VStack(spacing: 8) {
+									VStack(spacing: LauncherTokens.Spacing.control) {
 										ProgressView()
 											.controlSize(.regular)
 											.tint(theme.accentFill)
@@ -154,20 +154,20 @@ struct PresetWallpaperGrid: View {
 					.frame(maxWidth: .infinity)
 					.background(
 						theme.groupFill,
-						in: .rect(cornerRadius: LauncherVisuals.Radius.panel)
+						in: .rect(cornerRadius: LauncherTokens.Radius.panel)
 					)
 					.overlay {
-						RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+						RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
 							.strokeBorder(
 								isApplying ? theme.accentFill : theme.hairline,
-								lineWidth: LauncherVisuals.Control.borderWidth
+								lineWidth: LauncherTokens.Control.borderWidth
 							)
 					}
 					.opacity(isBlocked ? 0.46 : 1)
 				}
 				.buttonStyle(ActionPressStyle(intensity: .subtle))
 				.keyboardFocusIndicator(
-					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+					in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
 				)
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(wp.displayTitle)

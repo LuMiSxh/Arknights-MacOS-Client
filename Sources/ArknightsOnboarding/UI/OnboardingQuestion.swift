@@ -64,7 +64,7 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	var body: some View {
 		SettingsPanel(title: question) {
 			accessory
-			VStack(spacing: LauncherVisuals.Spacing.control) {
+			VStack(spacing: LauncherTokens.Spacing.control) {
 				ForEach(answers) { answer in
 					answerButton(answer)
 				}
@@ -114,22 +114,22 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	private func answerButton(_ answer: OnboardingAnswer<Value>) -> some View {
 		let isSelected = isSelected(answer)
 		let shape = RoundedRectangle(
-			cornerRadius: LauncherVisuals.Radius.control, style: .continuous)
+			cornerRadius: LauncherTokens.Radius.control, style: .continuous)
 		return Button {
 			// Answers can reveal follow-up panels or change the summary, so move those too.
 			withAnimation(LauncherMotion.animation(.state, reduceMotion: reduceMotion)) {
 				choose(answer)
 			}
 		} label: {
-			HStack(alignment: .center, spacing: LauncherVisuals.Spacing.content) {
+			HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
 				Image(systemName: answer.systemImage)
 					.font(.title3)
 					.symbolRenderingMode(.hierarchical)
 					.foregroundStyle(isSelected ? theme.accentInk : theme.textSecondary)
 					.frame(width: 28)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 4) {
-					HStack(spacing: LauncherVisuals.Spacing.control) {
+				VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
+					HStack(spacing: LauncherTokens.Spacing.control) {
 						Text(answer.title)
 							.font(.body.weight(.medium))
 							.foregroundStyle(theme.textPrimary)
@@ -137,7 +137,7 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 							Text("Recommended")
 								.font(.caption2.weight(.medium))
 								.foregroundStyle(theme.textSecondary)
-								.padding(.horizontal, LauncherVisuals.Spacing.control)
+								.padding(.horizontal, LauncherTokens.Spacing.control)
 								.padding(.vertical, 2)
 								.overlay(Capsule().stroke(theme.hairline))
 						}
@@ -150,13 +150,13 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 							.fixedSize(horizontal: false, vertical: true)
 					}
 				}
-				Spacer(minLength: LauncherVisuals.Spacing.content)
+				Spacer(minLength: LauncherTokens.Spacing.content)
 				Image(systemName: trailingGlyph(isSelected: isSelected))
 					.font(.title3)
 					.foregroundStyle(isSelected ? theme.accentInk : theme.textSecondary)
 					.accessibilityHidden(true)
 			}
-			.padding(LauncherVisuals.Spacing.content)
+			.padding(LauncherTokens.Spacing.content)
 			.frame(maxWidth: .infinity, alignment: .leading)
 			.contentShape(shape)
 		}
@@ -221,7 +221,7 @@ private struct OnboardingAnswerBody<S: InsettableShape>: View {
 				shape.fill(isSelected ? theme.accentGlassTint : theme.controlFill)
 					.overlay(shape.fill(isHovered ? theme.hoverTint : .clear))
 			}
-			.overlay(shape.strokeBorder(border, lineWidth: LauncherVisuals.Control.borderWidth))
+			.overlay(shape.strokeBorder(border, lineWidth: LauncherTokens.Control.borderWidth))
 			.opacity(isEnabled ? 1 : LauncherVisuals.Control.disabledForegroundOpacity)
 			.scaleEffect(scale)
 			.onHover { isHovered = isEnabled && $0 }

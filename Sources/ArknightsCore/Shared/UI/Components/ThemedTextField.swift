@@ -28,7 +28,7 @@ package struct ThemedTextField: View {
 	}
 
 	package var body: some View {
-		HStack(spacing: 8) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			if let leadingText {
 				Text(leadingText)
 					.font(.callout.weight(.medium))

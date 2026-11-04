@@ -111,7 +111,7 @@ struct IntegrationSettingsPage: View {
 					SettingsActionRow(
 						title: "Volume"
 					) {
-						HStack(spacing: 8) {
+						HStack(spacing: LauncherTokens.Spacing.control) {
 							Image(systemName: "speaker.fill")
 								.font(.caption)
 								.foregroundStyle(theme.textSecondary)

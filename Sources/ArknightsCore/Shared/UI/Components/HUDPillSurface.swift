@@ -44,7 +44,7 @@ struct HUDPillSurface<Content: View>: View {
 	private var surfaceShape: HUDPillShape {
 		HUDPillShape(
 			expansion: isExpanded ? 1 : 0,
-			expandedCornerRadius: LauncherVisuals.Radius.hudPill
+			expandedCornerRadius: LauncherTokens.Radius.hudPill
 		)
 	}
 
@@ -120,7 +120,7 @@ package struct HUDPillProgressOutline: View {
 				theme.controlStroke.opacity(
 					progress == nil ? LauncherVisuals.Control.hudBorderOpacity : 0.5
 				),
-				lineWidth: LauncherVisuals.Control.borderWidth
+				lineWidth: LauncherTokens.Control.borderWidth
 			)
 			.overlay {
 				CapsuleProgressOutline(

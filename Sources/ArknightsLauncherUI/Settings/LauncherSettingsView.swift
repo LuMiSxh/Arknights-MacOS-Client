@@ -172,9 +172,9 @@ struct LauncherSettingsView: View {
 						}
 					}
 				}
-				.padding(.trailing, 24)
+				.padding(.trailing, LauncherTokens.Spacing.page)
 				.padding(.top, LauncherTokens.Spacing.control)
-				.padding(.bottom, 16)
+				.padding(.bottom, LauncherTokens.Spacing.panel)
 				.background {
 					FloatingActionFooterFade(height: 94)
 				}
@@ -226,14 +226,14 @@ private struct SettingsNavigationRail: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
 			// Group captions title the rail, so it has no caption of its own.
-			VStack(spacing: 16) {
+			VStack(spacing: LauncherTokens.Spacing.panel) {
 				ForEach(SettingsGroup.allCases, id: \.self) { group in
 					let sections = visibleSections.filter { $0.group == group }
 					if !sections.isEmpty {
 						VStack(alignment: .leading, spacing: 2) {
 							if let caption = group.caption {
 								NavigationRailCaption(text: caption)
-									.padding(.horizontal, 8)
+									.padding(.horizontal, LauncherTokens.Spacing.control)
 							}
 							ForEach(sections) { section in
 								NavigationRailRow(
@@ -249,16 +249,16 @@ private struct SettingsNavigationRail: View {
 					}
 				}
 			}
-			.padding(.horizontal, 12)
-			.padding(.top, 24)
+			.padding(.horizontal, LauncherTokens.Spacing.content)
+			.padding(.top, LauncherTokens.Spacing.page)
 
 			Spacer()
 
 			SettingsOperationStrip(lifecycle: lifecycle, installation: installation)
-				.padding(.horizontal, 16)
-				.padding(.bottom, 16)
+				.padding(.horizontal, LauncherTokens.Spacing.panel)
+				.padding(.bottom, LauncherTokens.Spacing.panel)
 		}
-		.frame(width: LauncherVisuals.Layout.railWidth)
+		.frame(width: LauncherTokens.Layout.railWidth)
 		.background(theme.footerFill)
 	}
 

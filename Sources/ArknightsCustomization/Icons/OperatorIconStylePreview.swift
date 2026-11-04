@@ -11,8 +11,8 @@ struct OperatorIconStylePreview: View {
 	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 16) {
-			VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.panel) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 				Text("Generated Icon Styles")
 					.font(.headline)
 				Text("Your operator is applied to both icons.")
@@ -27,7 +27,7 @@ struct OperatorIconStylePreview: View {
 					cacheKey: avatar.id,
 					accentHue: accentHue
 				)
-				HStack(spacing: 16) {
+				HStack(spacing: LauncherTokens.Spacing.panel) {
 					styleLabel(
 						"Launcher",
 						detail: "Launcher style"
@@ -42,7 +42,7 @@ struct OperatorIconStylePreview: View {
 					.frame(maxWidth: .infinity, minHeight: 82)
 			}
 		}
-		.padding(16)
+		.padding(LauncherTokens.Spacing.panel)
 		.frame(minWidth: 284, maxWidth: 360)
 	}
 
@@ -51,7 +51,7 @@ struct OperatorIconStylePreview: View {
 	)
 		-> some View
 	{
-		VStack(spacing: 4) {
+		VStack(spacing: LauncherTokens.Spacing.compact) {
 			Text(title)
 				.font(.caption.weight(.medium))
 			Text(detail)

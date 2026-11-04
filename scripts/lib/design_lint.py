@@ -53,6 +53,14 @@ RULES: dict[str, re.Pattern[str]] = {
 # Concurrency rules apply to every Swift file under the source root, including the files the
 # design-literal rules skip.
 SOURCE_WIDE_RULES = frozenset({"detached-task"})
+# Spacing and padding literals sit on the 4 pt grid. 0, 1 and 2 stay allowed for hairlines and
+# the 2 pt step inside small controls. The rule is separate from RULES because it compares values.
+OFF_GRID_RULE = "off-grid-spacing"
+OFF_GRID_SPACING = re.compile(
+    r"\bspacing:\s*(\d+(?:\.\d+)?)\b|\.padding\(\s*(?:\.\w+\s*,\s*)?(\d+(?:\.\d+)?)\s*\)"
+)
+ALLOWED_SMALL_SPACING = frozenset({1.0, 2.0})
+KNOWN_RULES = frozenset({*RULES, OFF_GRID_RULE})
 # Allowlist entries look like `path:rule:count`; the count is at least 1.
 ENTRY = re.compile(r"([^:]+):([a-z-]+):([1-9][0-9]*)")
 # Masking strings before cutting comments keeps a `//` inside a string from hiding the line.
@@ -72,6 +80,15 @@ class Violation:
 
 def _code_of(line: str) -> str:
     return _LINE_COMMENT.sub("", _STRING_LITERAL.sub('""', line))
+
+
+def _has_off_grid_spacing(code: str) -> bool:
+    """Return True when a spacing or padding literal in `code` is off the 4 pt grid."""
+    for match in OFF_GRID_SPACING.finditer(code):
+        value = float(match.group(1) or match.group(2))
+        if value % 4 != 0 and value not in ALLOWED_SMALL_SPACING:
+            return True
+    return False
 
 
 def scan(root: Path) -> list[Violation]:
@@ -95,6 +112,10 @@ def scan(root: Path) -> list[Violation]:
             for rule, pattern in rules:
                 if pattern.search(code):
                     violations.append(Violation(relative, number, rule, line.strip()))
+            if not skipped and _has_off_grid_spacing(code):
+                violations.append(
+                    Violation(relative, number, OFF_GRID_RULE, line.strip())
+                )
     return violations
 
 
@@ -111,7 +132,7 @@ def _load_allowlist(path: Path) -> tuple[dict[tuple[str, str], int], list[str]]:
         if not entry or entry.startswith("#"):
             continue
         parsed = ENTRY.fullmatch(entry)
-        if parsed is None or parsed[2] not in RULES:
+        if parsed is None or parsed[2] not in KNOWN_RULES:
             problems.append(
                 f"{path.name}:{number}: expected path:rule:count with a known rule "
                 f"and a count of at least 1, got {entry!r}"

@@ -96,7 +96,7 @@ package struct CapsuleActionButton: View {
 
 	package var body: some View {
 		Button(role: role, action: action) {
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				if let systemImage {
 					let icon = Image(systemName: systemImage)
 						.contentTransition(labelContentTransition)
@@ -184,8 +184,8 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 			content
 				.font(.caption.weight(.medium))
 				.adaptiveControlForeground(foreground, disabledTint: disabledForeground)
-				.padding(.horizontal, LauncherVisuals.Control.hudHorizontalPadding)
-				.padding(.vertical, LauncherVisuals.Control.hudVerticalPadding)
+				.padding(.horizontal, LauncherTokens.Control.hudHorizontalPadding)
+				.padding(.vertical, LauncherTokens.Control.hudVerticalPadding)
 				.contentShape(Capsule())
 				.adaptiveControlSurface(tint: surfaceTint, in: Capsule())
 		}
@@ -206,7 +206,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 		case .mini: 8
 		case .small: 8
 		case .large, .extraLarge: 16
-		default: LauncherVisuals.Control.standardHorizontalPadding
+		default: LauncherTokens.Control.standardHorizontalPadding
 		}
 	}
 
@@ -215,7 +215,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 		case .mini: 4
 		case .small: 4
 		case .large, .extraLarge: 8
-		default: LauncherVisuals.Control.standardVerticalPadding
+		default: LauncherTokens.Control.standardVerticalPadding
 		}
 	}
 }

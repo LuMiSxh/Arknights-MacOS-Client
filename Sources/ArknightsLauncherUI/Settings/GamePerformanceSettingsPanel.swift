@@ -24,7 +24,7 @@ struct GamePerformanceSettingsPanel: View {
 				title: "Frame rate limit",
 				help: "Lower limits save battery. Applies on next launch."
 			) {
-				HStack(spacing: 8) {
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					SettingsSlider(
 						value: frameRateStep,
 						range: 0...Double(GameFrameRateLimit.allCases.count - 1),

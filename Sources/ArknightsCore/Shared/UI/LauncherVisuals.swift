@@ -12,50 +12,8 @@ package enum LauncherVisuals {
 		accent.opacity(0.13)
 	}
 
-	static let modalCornerRadius = Radius.modal
-
-	package enum Typography {
-		package static let statusTitle = Font.system(size: 14, weight: .medium)
-		package static let statusPercent = Font.system(size: 16, weight: .medium)
-		package static let completionLabel = Font.system(size: 15, weight: .medium)
-		package static let hudControlGlyph = Font.system(size: 13, weight: .medium)
-		package static let hudProminentGlyph = Font.system(size: 16, weight: .medium)
-		static let menuChevron = Font.system(size: 9, weight: .semibold)
-		package static let tagGlyph = Font.system(size: 10, weight: .medium)
-		package static let fallbackWordmark = Font.system(size: 440, weight: .regular)
-		package static let wordmark = Font.system(.title, design: .serif)
-	}
-
-	package enum Layout {
-		/// Shared by the Settings and Onboarding navigation rails.
-		package static let railWidth: CGFloat = 192
-	}
-
-	package enum Spacing {
-		package static let hairline: CGFloat = 1
-		package static let compact: CGFloat = 4
-		package static let control: CGFloat = 8
-		package static let content: CGFloat = 12
-		package static let panel: CGFloat = 16
-		package static let section: CGFloat = 20
-		package static let page: CGFloat = 24
-	}
-
-	package enum Radius {
-		package static let control: CGFloat = 10
-		package static let panel: CGFloat = 16
-		static let hudPill: CGFloat = 22
-		package static let modal: CGFloat = 24
-	}
-
+	/// Opacities for control surfaces, borders, and disabled foregrounds.
 	package enum Control {
-		package static let borderWidth: CGFloat = 1
-		static let focusWidth: CGFloat = 2
-		static let standardHorizontalPadding: CGFloat = 12
-		static let standardVerticalPadding: CGFloat = 6
-
-		package static let hudHorizontalPadding: CGFloat = 12
-		package static let hudVerticalPadding: CGFloat = 6
 		package static let enabledNeutralSurfaceOpacity = 0.07
 		package static let enabledNeutralBorderOpacity = 0.24
 		package static let enabledChromaticSurfaceOpacity = 0.14
@@ -65,10 +23,6 @@ package enum LauncherVisuals {
 		static let disabledForegroundHighContrastOpacity = 0.52
 		static let hudBorderOpacity = 0.16
 		static let hudDisabledSurfaceOpacity = 0.68
-		static let iconButtonSize: CGFloat = 36
-		static let iconButtonGlyphSize: CGFloat = 17
-		/// Matches GlassCapsuleMenu: a 16 pt chevron chip plus 2 x 6 pt padding.
-		static let fieldHeight: CGFloat = 28
 
 		package static func disabledForegroundOpacity(for contrast: ColorSchemeContrast) -> Double {
 			contrast == .increased

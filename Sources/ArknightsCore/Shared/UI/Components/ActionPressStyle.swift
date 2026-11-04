@@ -70,7 +70,7 @@ struct KeyboardFocusIndicator<S: Shape>: ViewModifier {
 					isEnabled && appearsActive && isFocused
 						? theme.accentFill.opacity(0.9)
 						: .clear,
-					lineWidth: LauncherVisuals.Control.focusWidth
+					lineWidth: LauncherTokens.Control.focusWidth
 				)
 				.padding(-3)
 				.allowsHitTesting(false)
@@ -105,7 +105,7 @@ private struct ExplicitKeyboardFocusIndicator<S: Shape>: ViewModifier {
 					isEnabled && appearsActive && isFocused
 						? theme.accentInk.opacity(0.9)
 						: .clear,
-					lineWidth: LauncherVisuals.Control.focusWidth
+					lineWidth: LauncherTokens.Control.focusWidth
 				)
 				.padding(-3)
 				.allowsHitTesting(false)

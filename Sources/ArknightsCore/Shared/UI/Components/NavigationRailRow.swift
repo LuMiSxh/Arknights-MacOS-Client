@@ -72,7 +72,7 @@ package struct NavigationRailRow: View {
 				.foregroundStyle(theme.textPrimary)
 			Spacer(minLength: 0)
 		}
-		.padding(.horizontal, 12)
+		.padding(.horizontal, LauncherTokens.Spacing.content)
 		.frame(height: 32)
 		.background {
 			RoundedRectangle(cornerRadius: LauncherTokens.Radius.railRow)

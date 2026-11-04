@@ -21,7 +21,7 @@ struct LauncherUpdateView: View {
 			width: modalWidth,
 			height: modalHeight
 		) {
-			VStack(alignment: .leading, spacing: 16) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.panel) {
 				statusHeader
 				content
 			}
@@ -46,7 +46,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var statusHeader: some View {
-		VStack(alignment: .leading, spacing: 8) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			if let version = driver.version {
 				Text("Version \(version)")
 					.font(.headline)
@@ -98,7 +98,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var availableContent: some View {
-		VStack(alignment: .leading, spacing: 12) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.content) {
 			if let releaseNotes = driver.releaseNotes, !releaseNotes.isEmpty {
 				if driver.releaseNotesFormat == "markdown" {
 					MarkdownDocument(source: releaseNotes)
@@ -118,7 +118,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var downloadContent: some View {
-		VStack(alignment: .leading, spacing: 8) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			ProgressView(value: downloadProgress)
 				.tint(theme.accentFill)
 				.accessibilityLabel(Text("Downloading update…"))
@@ -130,7 +130,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var extractionContent: some View {
-		VStack(alignment: .leading, spacing: 8) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			ProgressView(value: driver.extractionProgress)
 				.tint(theme.accentFill)
 				.accessibilityLabel(Text("Preparing update…"))
@@ -142,7 +142,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var installingContent: some View {
-		VStack(alignment: .leading, spacing: 8) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			ProgressView()
 				.accessibilityLabel(Text(Self.installingTitle))
 			Text(

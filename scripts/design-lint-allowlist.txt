@@ -4,7 +4,7 @@
 # A count that differs from the scan fails the scripts tests: a higher count means a new violation,
 # a lower count means the migration cleared one. An entry that matches no violation is removed.
 # Rules: raw-color, raw-hue, raw-black, raw-white-foreground, numeric-radius, raw-animation,
-# raw-glass, system-font, font-weight, detached-task.
+# raw-glass, system-font, font-weight, detached-task, off-grid-spacing.
 
 # Preset gallery: scrims and shadows that sit on artwork stay dark in both appearances.
 Sources/ArknightsCustomization/Presets/UI/PresetGalleryGrids.swift:raw-color:3
@@ -26,5 +26,15 @@ Sources/ArknightsCustomization/Presets/UI/PresetGalleryGrids.swift:raw-white-for
 Sources/ArknightsCore/Shared/UI/LauncherMotion.swift:raw-animation:10
 # Artwork accent: an HSB color computed from wallpaper pixels, not a design literal.
 Sources/ArknightsCustomization/Artwork/WallpaperColorExtractor.swift:raw-hue:1
+
+# Off-grid spacing: each value stays on purpose. Each reason says why the value is not on the 4 pt grid.
+# Segment label: a 6 pt icon gap in a small segmented control, which may use the 2 pt step.
+Sources/ArknightsCore/Shared/UI/Components/AdaptiveSegmentedControl.swift:off-grid-spacing:1
+# Settings panel: a 10 pt row inset sets every settings row height; change it only with a design review.
+Sources/ArknightsCore/Shared/UI/Components/Settings/SettingsComponents.swift:off-grid-spacing:1
+# Glass capsule menu: a 6 pt vertical inset centers the 16 pt chevron chip in the 28 pt field (LauncherTokens.Control.fieldHeight).
+Sources/ArknightsCore/Shared/UI/Components/Settings/SettingsMenuComponents.swift:off-grid-spacing:1
+# Playtime metrics: a 10 pt vertical inset on each metric; not in the audit's fix list, so it waits for a design review.
+Sources/ArknightsGameRuntime/Playtime/PlaytimeStatisticsPage.swift:off-grid-spacing:1
 
 

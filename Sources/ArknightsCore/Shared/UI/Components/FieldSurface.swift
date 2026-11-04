@@ -16,13 +16,13 @@ private struct LauncherFieldSurfaceModifier: ViewModifier {
 
 	func body(content: Content) -> some View {
 		content
-			.padding(.horizontal, LauncherVisuals.Control.standardHorizontalPadding)
-			.frame(height: LauncherVisuals.Control.fieldHeight)
+			.padding(.horizontal, LauncherTokens.Control.standardHorizontalPadding)
+			.frame(height: LauncherTokens.Control.fieldHeight)
 			.background { Capsule().fill(theme.controlFill) }
 			.overlay {
 				Capsule().strokeBorder(
 					isFocused ? theme.accentFill : theme.controlStroke,
-					lineWidth: LauncherVisuals.Control.borderWidth)
+					lineWidth: LauncherTokens.Control.borderWidth)
 			}
 			.contentShape(Capsule())
 	}

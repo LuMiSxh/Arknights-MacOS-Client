@@ -14,7 +14,7 @@ struct OnboardingDockIconPreview: View {
 	@State private var gameIcon: NSImage?
 
 	var body: some View {
-		HStack(spacing: LauncherVisuals.Spacing.panel) {
+		HStack(spacing: LauncherTokens.Spacing.panel) {
 			iconTile(
 				Image(nsImage: customization.launcherIconManager.currentIcon),
 				title: "Launcher")
@@ -31,7 +31,7 @@ struct OnboardingDockIconPreview: View {
 	}
 
 	private func iconTile(_ image: Image, title: String) -> some View {
-		VStack(spacing: LauncherVisuals.Spacing.control) {
+		VStack(spacing: LauncherTokens.Spacing.control) {
 			image
 				.resizable()
 				.scaledToFit()

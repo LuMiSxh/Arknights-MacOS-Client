@@ -54,7 +54,7 @@ struct OnboardingDisplayView: View {
 				.font(.callout)
 				.foregroundStyle(theme.textSecondary)
 				.fixedSize(horizontal: false, vertical: true)
-				.padding(.horizontal, LauncherVisuals.Spacing.panel)
+				.padding(.horizontal, LauncherTokens.Spacing.panel)
 				.onAppear(perform: applyRecommendedAnswers)
 		}
 	}

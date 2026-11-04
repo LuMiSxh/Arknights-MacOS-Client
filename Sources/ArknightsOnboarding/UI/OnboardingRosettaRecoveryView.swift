@@ -16,7 +16,7 @@ struct OnboardingRosettaRecoveryView: View {
 	@State private var confirmsInstallation = false
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			switch installationState {
 			case .idle:
 				recoveryIntroduction
@@ -28,7 +28,7 @@ struct OnboardingRosettaRecoveryView: View {
 					confirmsInstallation = true
 				}
 			case .installing:
-				HStack(spacing: 12) {
+				HStack(spacing: LauncherTokens.Spacing.content) {
 					ProgressView()
 					Text("Installing Rosetta 2 with Apple’s software update tool…")
 						.foregroundStyle(theme.textSecondary)
@@ -48,7 +48,7 @@ struct OnboardingRosettaRecoveryView: View {
 				Text("softwareupdate --install-rosetta --agree-to-license")
 					.font(.callout.monospaced())
 					.textSelection(.enabled)
-				HStack(spacing: LauncherVisuals.Spacing.control) {
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					CapsuleActionButton(
 						title: "Try Installation Again…",
 						systemImage: "arrow.clockwise",

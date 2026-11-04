@@ -78,7 +78,7 @@ struct OnboardingExtrasView: View {
 				if preferences.playsLauncherMusic {
 					SettingsHairline()
 					LabeledContent("Volume") {
-						HStack(spacing: LauncherVisuals.Spacing.control) {
+						HStack(spacing: LauncherTokens.Spacing.control) {
 							Image(systemName: "speaker.fill")
 								.foregroundStyle(theme.textSecondary)
 								.accessibilityHidden(true)

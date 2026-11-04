@@ -28,11 +28,11 @@ struct LauncherHUDView: View {
 				.contentShape(Rectangle())
 				.onTapGesture(perform: collapseExpandedPill)
 
-			VStack(spacing: 12) {
+			VStack(spacing: LauncherTokens.Spacing.content) {
 				hudPillRow
 				controlBar
 			}
-			.padding(20)
+			.padding(LauncherTokens.Spacing.section)
 		}
 		.onChange(of: hasMusicPill) { _, _ in collapseUnavailablePill() }
 		.onChange(of: hasVersionPill) { _, _ in collapseUnavailablePill() }
@@ -57,7 +57,7 @@ struct LauncherHUDView: View {
 	}
 
 	private var controlBarContent: some View {
-		HStack(spacing: 16) {
+		HStack(spacing: LauncherTokens.Spacing.panel) {
 			LauncherActivityStatusView(
 				lifecycle: lifecycle,
 				installation: installation
@@ -66,7 +66,7 @@ struct LauncherHUDView: View {
 			.transition(.opacity)
 			.frame(maxWidth: .infinity, alignment: .leading)
 
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				if communication.shouldShowLauncherUpdateButton {
 					CapsuleActionButton(
 						title: "Install Update",
@@ -102,7 +102,7 @@ struct LauncherHUDView: View {
 				.disabled(lifecycle.state.presentation.failure?.blocksGameLaunch == true)
 			}
 		}
-		.padding(16)
+		.padding(LauncherTokens.Spacing.panel)
 	}
 
 	// Takes the 12pt VStack spacing above `controlBar` only when a pill has content, mirroring the
@@ -112,8 +112,8 @@ struct LauncherHUDView: View {
 		if hasMusicPill || hasVersionPill || hasStatusPill {
 			HStack {
 				Spacer(minLength: 16)
-				AdaptiveGlassGroup(spacing: 8) {
-					HStack(alignment: .bottom, spacing: 8) {
+				AdaptiveGlassGroup(spacing: LauncherTokens.Spacing.control) {
+					HStack(alignment: .bottom, spacing: LauncherTokens.Spacing.control) {
 						if hasMusicPill {
 							MusicHUDPill(
 								settings: settings,

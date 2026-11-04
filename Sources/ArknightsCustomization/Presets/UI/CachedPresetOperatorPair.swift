@@ -18,7 +18,7 @@ struct CachedPresetOperatorPair: View {
 	var body: some View {
 		Group {
 			if let icons {
-				HStack(spacing: 16) {
+				HStack(spacing: LauncherTokens.Spacing.panel) {
 					preview(icons.launcher)
 					preview(icons.game)
 				}

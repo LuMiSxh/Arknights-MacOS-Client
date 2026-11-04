@@ -37,7 +37,7 @@ package struct SectionPageHeader: View {
 	}
 
 	package var body: some View {
-		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			Text(title)
 				.font(LauncherTokens.Typography.pageTitle)
 				.foregroundStyle(theme.textPrimary)
@@ -45,13 +45,13 @@ package struct SectionPageHeader: View {
 				.font(.body)
 				.foregroundStyle(theme.textSecondary)
 				.fixedSize(horizontal: false, vertical: fixesSubtitleHeight)
-			HStack(spacing: LauncherVisuals.Spacing.control) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				Rectangle().fill(theme.accentFill).frame(width: 72, height: 3)
 				Rectangle().fill(theme.hairline)
 					.frame(height: 1)
 					.frame(maxWidth: .infinity)
 			}
-			.padding(.top, LauncherVisuals.Spacing.control)
+			.padding(.top, LauncherTokens.Spacing.control)
 		}
 	}
 }
@@ -77,12 +77,12 @@ package struct SettingsPage<Content: View>: View {
 	package var body: some View {
 		ScrollViewReader { proxy in
 			ScrollView {
-				VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.section) {
+				VStack(alignment: .leading, spacing: LauncherTokens.Spacing.section) {
 					SectionPageHeader(title: title, subtitle: subtitle)
 					content
 				}
-				.padding(.horizontal, LauncherVisuals.Spacing.page)
-				.padding(.top, LauncherVisuals.Spacing.page)
+				.padding(.horizontal, LauncherTokens.Spacing.page)
+				.padding(.top, LauncherTokens.Spacing.page)
 				.environment(\.settingsFocusCoordinator, focusCoordinator)
 			}
 			// The single scroll margin for settings: the indicator stops short of the rounded edge.
@@ -135,7 +135,7 @@ package struct SettingsHairline: View {
 	package var body: some View {
 		Rectangle()
 			.fill(theme.rowDivider)
-			.frame(height: LauncherVisuals.Spacing.hairline)
+			.frame(height: LauncherTokens.Spacing.hairline)
 			.containerValue(\.settingsRule, true)
 	}
 }
@@ -164,7 +164,7 @@ package struct SettingsPanel<Content: View>: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	package var body: some View {
-		VStack(alignment: .leading, spacing: 8) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			header
 			if isExpanded?.wrappedValue ?? true {
 				VStack(spacing: 0) {
@@ -175,11 +175,11 @@ package struct SettingsPanel<Content: View>: View {
 							if index > 0 {
 								Rectangle().fill(theme.rowDivider)
 									.frame(height: 1)
-									.padding(.horizontal, 12)
+									.padding(.horizontal, LauncherTokens.Spacing.content)
 							}
 							rows[index]
 								.frame(maxWidth: .infinity, alignment: .leading)
-								.padding(.horizontal, 12)
+								.padding(.horizontal, LauncherTokens.Spacing.content)
 								.padding(.vertical, 10)
 						}
 					}
@@ -196,7 +196,7 @@ package struct SettingsPanel<Content: View>: View {
 		let label = Text(title)
 			.font(LauncherTokens.Typography.sectionLabel)
 			.foregroundStyle(tone == .neutral ? theme.textSecondary : tone.color(in: theme))
-			.padding(.leading, 12)
+			.padding(.leading, LauncherTokens.Spacing.content)
 		if let isExpanded {
 			Button {
 				withAnimation(LauncherMotion.animation(.state, reduceMotion: reduceMotion)) {
@@ -212,17 +212,17 @@ package struct SettingsPanel<Content: View>: View {
 						.rotationEffect(.degrees(isExpanded.wrappedValue ? 90 : 0))
 						.accessibilityHidden(true)
 				}
-				.padding(.trailing, 12)
-				.padding(.top, 20)
+				.padding(.trailing, LauncherTokens.Spacing.content)
+				.padding(.top, LauncherTokens.Spacing.section)
 				.contentShape(.rect)
 			}
 			.buttonStyle(.plain)
 			.keyboardFocusIndicator(
-				in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
+				in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.control)
 			)
 			.accessibilityValue(isExpanded.wrappedValue ? "Expanded" : "Collapsed")
 		} else {
-			label.padding(.top, 20)
+			label.padding(.top, LauncherTokens.Spacing.section)
 		}
 	}
 }
@@ -285,7 +285,7 @@ package struct UpdateSettingsRow: View {
 
 	package var body: some View {
 		SettingsActionRow(title: title, detail: status) {
-			HStack(spacing: LauncherVisuals.Spacing.control) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				SettingsToggle(title, isOn: $isEnabled)
 					.disabled(isDisabled)
 				CapsuleActionButton(
@@ -322,14 +322,14 @@ package struct SettingsActionRow<Actions: View>: View {
 
 	package var body: some View {
 		ViewThatFits(in: .horizontal) {
-			HStack(spacing: LauncherVisuals.Spacing.section) {
+			HStack(spacing: LauncherTokens.Spacing.section) {
 				// A small ideal width lets a long detail wrap beside the action instead of dropping below.
 				label
 					.frame(minWidth: 0, idealWidth: 240, maxWidth: .infinity, alignment: .leading)
 					.layoutPriority(1)
 				actionGroup
 			}
-			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 				label
 				HStack {
 					Spacer(minLength: 0)
@@ -344,14 +344,14 @@ package struct SettingsActionRow<Actions: View>: View {
 
 	@ViewBuilder
 	private var actionGroup: some View {
-		HStack(spacing: LauncherVisuals.Spacing.control) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			actions.fixedSize(horizontal: true, vertical: false)
 		}
 	}
 
 	@ViewBuilder
 	private var label: some View {
-		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 			Text(title)
 				.foregroundStyle(theme.textPrimary)
 			if let detail {

@@ -39,10 +39,10 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 
 	package var body: some View {
 		VStack(spacing: 0) {
-			VStack(alignment: .leading, spacing: 8) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 				Text(title)
 					.font(.title2.weight(.medium))
-				HStack(spacing: 8) {
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					Rectangle()
 						.fill(theme.accentFill)
 						.frame(width: hasEntered || reduceMotion ? 48 : 0, height: 2)
@@ -53,16 +53,16 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 				}
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
-			.padding(.horizontal, 24)
-			.padding(.top, 24)
-			.padding(.bottom, 16)
+			.padding(.horizontal, LauncherTokens.Spacing.page)
+			.padding(.top, LauncherTokens.Spacing.page)
+			.padding(.bottom, LauncherTokens.Spacing.panel)
 
 			ScrollView {
 				content
 					.frame(maxWidth: .infinity, alignment: .leading)
-					.padding(.horizontal, 24)
-					.padding(.top, 4)
-					.padding(.bottom, 20)
+					.padding(.horizontal, LauncherTokens.Spacing.page)
+					.padding(.top, LauncherTokens.Spacing.compact)
+					.padding(.bottom, LauncherTokens.Spacing.section)
 			}
 			.scrollIndicators(.automatic)
 		}
@@ -71,9 +71,9 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 				actions
 			}
 			.textSelection(.disabled)
-			.padding(.top, 16)
-			.padding(.trailing, 24)
-			.padding(.bottom, 16)
+			.padding(.top, LauncherTokens.Spacing.panel)
+			.padding(.trailing, LauncherTokens.Spacing.page)
+			.padding(.bottom, LauncherTokens.Spacing.panel)
 			.frame(maxWidth: .infinity, alignment: .trailing)
 			.background {
 				FloatingActionFooterFade()
@@ -106,7 +106,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 		guard let launcherWindowSize else {
 			return CGSize(width: width, height: height)
 		}
-		let margin: CGFloat = 30
+		let margin: CGFloat = 28
 		return CGSize(
 			width: clamped(
 				width,

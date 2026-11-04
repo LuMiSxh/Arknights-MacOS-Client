@@ -69,7 +69,7 @@ package struct MusicHUDPill: View {
 					}
 				}
 			} detail: {
-				HStack(spacing: 6) {
+				HStack(spacing: LauncherTokens.Spacing.compact) {
 					if controller.canNavigatePlaylist {
 						MusicPlayerControlButton(
 							title: "Previous Track",
@@ -117,7 +117,7 @@ package struct MusicHUDPill: View {
 						action: openCurrentMusicURL
 					)
 				}
-				.padding(.horizontal, 14)
+				.padding(.horizontal, LauncherTokens.Spacing.content)
 				.frame(maxWidth: .infinity, alignment: .leading)
 			}
 		}

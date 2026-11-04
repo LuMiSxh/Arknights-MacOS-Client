@@ -22,7 +22,7 @@ struct PresetGallerySearchBar: View {
 	private static let contentHeight: CGFloat = 20
 
 	var body: some View {
-		HStack(spacing: 8) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			Image(systemName: "magnifyingglass")
 				.font(.caption)
 				.adaptiveControlForeground(theme.accentInk, disabledTint: theme.textSecondary)
@@ -74,12 +74,12 @@ struct PresetGallerySearchBar: View {
 		Button {
 			committedTags.removeAll { $0 == tag }
 		} label: {
-			HStack(spacing: 4) {
+			HStack(spacing: LauncherTokens.Spacing.compact) {
 				Text(tag)
 					.font(.caption.weight(.medium))
 					.lineLimit(1)
 				Image(systemName: "xmark")
-					.font(LauncherVisuals.Typography.tagGlyph)
+					.font(LauncherTokens.Typography.tagGlyph)
 					.frame(width: Self.contentHeight, height: Self.contentHeight)
 			}
 			.adaptiveControlForeground(
@@ -87,9 +87,9 @@ struct PresetGallerySearchBar: View {
 				disabledTint: theme.textSecondary.opacity(
 					LauncherVisuals.Control.disabledForegroundOpacity)
 			)
-			.padding(.leading, 8)
-			.padding(.trailing, 4)
-			.padding(.vertical, 4)
+			.padding(.leading, LauncherTokens.Spacing.control)
+			.padding(.trailing, LauncherTokens.Spacing.compact)
+			.padding(.vertical, LauncherTokens.Spacing.compact)
 			.contentShape(Capsule())
 			.adaptiveControlSurface(tint: theme.controlStroke, in: Capsule())
 		}

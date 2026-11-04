@@ -19,8 +19,8 @@ struct MusicPlayerControlButton: View {
 					.labelStyle(.iconOnly)
 					.font(
 						isProminent
-							? LauncherVisuals.Typography.hudProminentGlyph
-							: LauncherVisuals.Typography.hudControlGlyph
+							? LauncherTokens.Typography.hudProminentGlyph
+							: LauncherTokens.Typography.hudControlGlyph
 					)
 					.adaptiveControlForeground(
 						isProminent ? theme.accentInk : theme.textPrimary,

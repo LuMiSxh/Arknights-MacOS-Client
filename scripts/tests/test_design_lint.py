@@ -49,6 +49,8 @@ def test_violation_reports_file_line_and_rule(tmp_path: Path) -> None:
         ("font-weight", "let font = Font.system(weight: .heavy)"),
         ("font-weight", "Text(title).bold()"),
         ("detached-task", "let task = Task.detached { await work() }"),
+        ("off-grid-spacing", "HStack(spacing: 6) {"),
+        ("off-grid-spacing", ".padding(.horizontal, 14)"),
     ],
 )
 def test_each_rule_reports_its_literal(tmp_path: Path, rule: str, line: str) -> None:
@@ -168,6 +170,23 @@ def test_detached_task_is_reported_in_design_lab(tmp_path: Path) -> None:
     ],
 )
 def test_comments_strings_and_linear_are_not_flagged(tmp_path: Path, line: str) -> None:
+    write(tmp_path / FEATURE, f"{line}\n")
+    write_allowlist(tmp_path)
+
+    assert check(tmp_path) == []
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "HStack(spacing: 8) {",
+        "VStack(alignment: .leading, spacing: 0) {",
+        ".padding(.horizontal, 12)",
+        ".padding(2)",
+        ".padding(.leading, 1)",
+    ],
+)
+def test_on_grid_and_small_spacing_is_not_flagged(tmp_path: Path, line: str) -> None:
     write(tmp_path / FEATURE, f"{line}\n")
     write_allowlist(tmp_path)
 

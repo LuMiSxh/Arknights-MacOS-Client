@@ -21,7 +21,7 @@ struct LauncherCompletionFeedbackView: View {
 					.opacity(isVisible ? 1 : 0)
 			}
 		}
-		.font(LauncherVisuals.Typography.completionLabel)
+		.font(LauncherTokens.Typography.completionLabel)
 		.foregroundStyle(theme.successInk)
 		.background {
 			if !reduceMotion {

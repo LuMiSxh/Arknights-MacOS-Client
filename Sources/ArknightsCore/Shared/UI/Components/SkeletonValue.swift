@@ -61,7 +61,7 @@ package struct SkeletonValue: View {
 }
 
 #Preview("Skeleton") {
-	VStack(alignment: .leading, spacing: 12) {
+	VStack(alignment: .leading, spacing: LauncherTokens.Spacing.content) {
 		SkeletonValue(width: 64, height: 14)
 		SkeletonValue(width: 96, height: 14, pulses: true)
 	}

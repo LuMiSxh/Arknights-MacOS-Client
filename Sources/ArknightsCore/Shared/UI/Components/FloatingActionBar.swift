@@ -52,7 +52,7 @@ package struct FloatingActionBar<Content: View>: View {
 		HStack(spacing: spacing) {
 			content
 		}
-		.padding(8)
+		.padding(LauncherTokens.Spacing.control)
 		.background {
 			GeometryReader { proxy in
 				Color.clear.preference(
@@ -74,7 +74,7 @@ package struct FloatingActionBar<Content: View>: View {
 
 	private var barShape: RoundedRectangle {
 		RoundedRectangle(
-			cornerRadius: isExpanded ? LauncherVisuals.Radius.panel : 999,
+			cornerRadius: isExpanded ? LauncherTokens.Radius.panel : 999,
 			style: .continuous
 		)
 	}

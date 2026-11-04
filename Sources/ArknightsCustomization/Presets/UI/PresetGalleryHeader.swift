@@ -13,7 +13,7 @@ struct PresetGalleryHeader: View {
 
 	var body: some View {
 		HStack {
-			VStack(alignment: .leading, spacing: 4) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 				Text(destination.title)
 					.font(.title3.weight(.medium))
 				Text(destination.subtitle)
@@ -39,7 +39,7 @@ struct PresetGalleryHeader: View {
 				}
 			}
 		}
-		.padding(.horizontal, 24)
-		.padding(.vertical, 16)
+		.padding(.horizontal, LauncherTokens.Spacing.page)
+		.padding(.vertical, LauncherTokens.Spacing.panel)
 	}
 }

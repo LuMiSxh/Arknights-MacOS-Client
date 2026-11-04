@@ -14,11 +14,11 @@ struct OnboardingStatusRow<Content: View>: View {
 	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
-		HStack(alignment: .top, spacing: LauncherVisuals.Spacing.control) {
+		HStack(alignment: .top, spacing: LauncherTokens.Spacing.control) {
 			icon
 				.frame(width: 20, height: 20)
-			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
-				VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
+				VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 					Text(title)
 						.fontWeight(.medium)
 					if let detail {

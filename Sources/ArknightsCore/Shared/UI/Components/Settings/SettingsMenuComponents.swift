@@ -104,12 +104,12 @@ private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 		Menu {
 			items
 		} label: {
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				label
 					.monospacedDigit()
 					.foregroundStyle(theme.textPrimary)
 				Image(systemName: "chevron.up.chevron.down")
-					.font(LauncherVisuals.Typography.menuChevron)
+					.font(LauncherTokens.Typography.menuChevron)
 					.foregroundStyle(theme.accentInk)
 					.frame(width: 16, height: 16)
 					.background {
@@ -122,8 +122,8 @@ private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 					}
 					.accessibilityHidden(true)
 			}
-			.padding(.leading, 12)
-			.padding(.trailing, 5)
+			.padding(.leading, LauncherTokens.Spacing.content)
+			.padding(.trailing, LauncherTokens.Spacing.compact)
 			// 16 pt chip plus 2 x 6 pt matches the button: 12 pt line plus 2 x 6 pt.
 			.padding(.vertical, 6)
 			.background {
@@ -195,18 +195,18 @@ package struct DocumentLinkRow: View {
 					.accessibilityHidden(true)
 			}
 			.foregroundStyle(isHovering ? theme.accentFill : .primary)
-			.padding(.vertical, LauncherVisuals.Spacing.content)
-			.padding(.horizontal, LauncherVisuals.Spacing.control)
+			.padding(.vertical, LauncherTokens.Spacing.content)
+			.padding(.horizontal, LauncherTokens.Spacing.control)
 			.background(
 				isHovering ? theme.accentFill.opacity(0.08) : .clear,
-				in: .rect(cornerRadius: LauncherVisuals.Radius.control)
+				in: .rect(cornerRadius: LauncherTokens.Radius.control)
 			)
 			.contentShape(.rect)
 			.animation(
 				LauncherMotion.animation(.hover, reduceMotion: reduceMotion), value: isHovering)
 		}
 		.buttonStyle(ActionPressStyle(intensity: .pressOnly))
-		.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control))
+		.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.control))
 		.onHover { isHovering = $0 }
 	}
 }

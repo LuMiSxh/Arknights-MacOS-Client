@@ -145,9 +145,9 @@ struct OnboardingLookView: View {
 		.frame(maxWidth: .infinity)
 		.frame(height: 132)
 		.clipped()
-		.clipShape(.rect(cornerRadius: LauncherVisuals.Radius.panel))
+		.clipShape(.rect(cornerRadius: LauncherTokens.Radius.panel))
 		.overlay {
-			RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+			RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
 				.strokeBorder(theme.hairline, lineWidth: 1)
 		}
 	}

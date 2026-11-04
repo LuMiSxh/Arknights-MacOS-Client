@@ -8,7 +8,7 @@ struct PresetGalleryLoadingView: View {
 	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
-		VStack(spacing: 12) {
+		VStack(spacing: LauncherTokens.Spacing.content) {
 			ProgressView()
 				.controlSize(.regular)
 			Text(text)

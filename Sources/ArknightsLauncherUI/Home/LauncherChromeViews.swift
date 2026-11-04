@@ -18,7 +18,7 @@ struct ArknightsWordmark: View {
 					.transition(wordmarkTransition)
 			} else {
 				Text(wordmarkFallback)
-					.font(LauncherVisuals.Typography.wordmark)
+					.font(LauncherTokens.Typography.wordmark)
 					.minimumScaleFactor(0.7)
 					.lineLimit(1)
 					.id(wordmarkIdentity)
@@ -27,7 +27,7 @@ struct ArknightsWordmark: View {
 		}
 		.frame(width: 244, height: 68, alignment: .leading)
 		.shadow(color: .black.opacity(0.46), radius: 9, y: 3)
-		.padding(.trailing, 24)
+		.padding(.trailing, LauncherTokens.Spacing.page)
 		.animation(wordmarkAnimation, value: wordmarkIdentity)
 		.accessibilityElement(children: .ignore)
 		.accessibilityLabel(

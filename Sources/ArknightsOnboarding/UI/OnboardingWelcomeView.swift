@@ -152,7 +152,7 @@ struct OnboardingWelcomeView: View {
 				checkAgain: retryIntelTranslation
 			)
 		case .gameTestModeEnabled:
-			VStack(alignment: .leading, spacing: 8) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 				Text("sudo game-test-tool disable")
 					.font(.callout.monospaced())
 					.textSelection(.enabled)
