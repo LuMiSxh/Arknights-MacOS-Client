@@ -208,8 +208,9 @@ package enum AppConstants {
 		/// In-memory rendered Launcher and Game icon pairs (about 8 MiB each).
 		package static let iconPairCacheMaximumBytes = 48 * 1_024 * 1_024
 		package static let imageDownloadAttempts = 2
-		package static let imageMaximumDimension = 16_384
-		package static let imageMaximumPixels = 120_000_000
+		// Shares the artwork limits so the gallery never offers an image that cannot be applied.
+		package static let imageMaximumDimension = AppConstants.Artwork.maximumDimension
+		package static let imageMaximumPixels = AppConstants.Artwork.maximumPixels
 		// Matches the exact percentage the live Fankit gallery page itself requests, since
 		// the CDN only ever serves a resized response for a URL something has already
 		// requested with this precise query value — see syntheticThumbnailURL(for:).
@@ -250,8 +251,10 @@ package enum AppConstants {
 	package enum Artwork {
 		package static let launcherMaximumBytes = 25 * 1_024 * 1_024
 		package static let officialLogoMaximumBytes = 2 * 1_024 * 1_024
-		package static let maximumDimension = 8_192
-		package static let maximumPixels = 36_000_000
+		// Measured 2026-11-04: the largest official wallpaper, "The Masses' Travels", is
+		// 13,280 x 7,470 px (99.2 MP, 16.4 MiB). Limits add about 10% and round to gallery limits.
+		package static let maximumDimension = 16_384
+		package static let maximumPixels = 120_000_000
 	}
 
 	package enum Timeouts {

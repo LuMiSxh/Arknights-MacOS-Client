@@ -60,6 +60,7 @@ body:
         - GM-WIN
         - UP-ERR
         - UI-ICN
+        - UI-IMG
   # support-codes:end code
 
   - type: input

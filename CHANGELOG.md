@@ -71,6 +71,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Warning, success, and danger text is now readable in the light appearance.
 - With **Reduce transparency** on, buttons and menus use the theme colors instead of a black fill.
 - Retrying the launcher update check during setup no longer lets an older result win.
+- Wallpapers larger than 8,192 pixels, such as "The Masses' Travels", now apply. An image that cannot be used shows support code **UI-IMG**.
+- **Done**, **Esc**, and **Report a Problem** now respond in the **Needs attention** dialog after an error appears while Settings is open.
 
 ## [0.7.1] - 2026-10-19
 

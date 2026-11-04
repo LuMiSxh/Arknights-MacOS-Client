@@ -90,5 +90,9 @@
   {
     "code": "UI-ICN",
     "domain": "customization"
+  },
+  {
+    "code": "UI-IMG",
+    "domain": "customization"
   }
 ]

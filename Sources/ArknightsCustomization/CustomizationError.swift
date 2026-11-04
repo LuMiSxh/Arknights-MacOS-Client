@@ -17,9 +17,9 @@ package enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendab
 		case .invalidRemoteAsset:
 			"The requested content uses an unsupported download address. Check for a launcher update and try again."
 		case .invalidPresetImage:
-			"The gallery image could not be used. Choose another image."
+			"This gallery image cannot be used as launcher artwork. Choose another image."
 		case .invalidCustomImage:
-			"The selected file is not a supported image. Choose another image."
+			"This image cannot be used as launcher artwork. \(Self.artworkRequirements)"
 		case .cannotEncodeAppIcon:
 			"The selected image could not be converted into an app icon."
 		case .cannotSetAppIcon:
@@ -46,6 +46,16 @@ package enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendab
 			errorDescription ?? "The operation could not be completed."
 		}
 	}
+
+	/// The limits in `invalidCustomImage`, read from the values that the validator enforces.
+	private static var artworkRequirements: String {
+		let side = AppConstants.Artwork.maximumDimension.formatted(
+			.number.locale(Locale(identifier: "en_US")))
+		let megabytes = AppConstants.Artwork.launcherMaximumBytes / (1_024 * 1_024)
+		let megapixels = AppConstants.Artwork.maximumPixels / 1_000_000
+		return
+			"Use a single still image, such as a PNG or JPEG, \(megabytes) MB or smaller, up to \(side) pixels on each side and \(megapixels) million pixels in total."
+	}
 }
 
 extension CustomizationError: SupportCodeProviding {
@@ -60,7 +70,7 @@ extension CustomizationError: SupportCodeProviding {
 		case .invalidRemoteAsset:
 			.remoteContentInvalid
 		case .invalidPresetImage, .invalidCustomImage:
-			nil
+			.artworkImageInvalid
 		}
 	}
 }

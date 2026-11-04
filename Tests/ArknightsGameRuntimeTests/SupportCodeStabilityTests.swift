@@ -42,9 +42,9 @@ private let supportCodeStabilityCases: [(any LauncherDiagnosticError & Sendable,
 	),
 	(
 		CustomizationError.invalidPresetImage(URL(string: "https://cdn.example/p.png")!),
-		nil
+		.artworkImageInvalid
 	),
-	(CustomizationError.invalidCustomImage(URL(filePath: "/tmp/c.txt")), nil),
+	(CustomizationError.invalidCustomImage(URL(filePath: "/tmp/c.txt")), .artworkImageInvalid),
 	(CustomizationError.cannotEncodeAppIcon, .appIconFailed),
 	(CustomizationError.cannotSetAppIcon, .appIconFailed),
 	(

@@ -20,12 +20,6 @@ struct CustomizationImageIOTests {
 				source: source
 			)
 		}
-		#expect(CustomizationImageIO.dimensionsAreSafe(width: 6_000, height: 6_000))
-		#expect(!CustomizationImageIO.dimensionsAreSafe(width: 6_001, height: 6_001))
-		#expect(
-			!CustomizationImageIO.dimensionsAreSafe(
-				width: AppConstants.Artwork.maximumDimension + 1, height: 1))
-		#expect(!CustomizationImageIO.dimensionsAreSafe(width: Int.max, height: Int.max))
 		let image = NSImage(size: NSSize(width: 16, height: 16))
 		image.lockFocus()
 		NSColor.systemPurple.setFill()
@@ -33,5 +27,16 @@ struct CustomizationImageIOTests {
 		image.unlockFocus()
 		let data = try #require(image.tiffRepresentation)
 		try CustomizationImageIO.validate(data, source: URL(filePath: "/tmp/valid.tiff"))
+	}
+
+	@Test(arguments: [
+		(13_280, 7_470, true),
+		(AppConstants.Artwork.maximumDimension, 1, true),
+		(AppConstants.Artwork.maximumDimension + 1, 1, false),
+		(11_000, 11_000, false),
+		(Int.max, Int.max, false),
+	])
+	func dimensionsAreCheckedAgainstTheArtworkLimits(width: Int, height: Int, isSafe: Bool) {
+		#expect(CustomizationImageIO.dimensionsAreSafe(width: width, height: height) == isSafe)
 	}
 }

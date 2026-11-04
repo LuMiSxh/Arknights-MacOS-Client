@@ -511,6 +511,29 @@
       ],
       "report": "In the report, say whether macOS kept the old icon. Do not attach the image unless a maintainer asks for it.",
       "legacy": []
+    },
+    {
+      "code": "UI-IMG",
+      "swiftName": "artworkImageInvalid",
+      "domain": "customization",
+      "title": "Artwork image not usable",
+      "status": "active",
+      "summary": "The image cannot be used as launcher artwork.",
+      "action": "Choose an image that meets the size limits, then select it again.",
+      "allowsRetry": false,
+      "allowsRepair": false,
+      "causes": [
+        "The file is not a single still image, such as a PNG or JPEG.",
+        "The image is larger than 25 MB, or larger than 16,384 pixels on each side or 120 million pixels in total.",
+        "A gallery image is larger than the launcher allows."
+      ],
+      "steps": [
+        "Choose another image. Use a single still image, such as a PNG or JPEG.",
+        "Use an image that is 25 MB or smaller, with at most 16,384 pixels on each side and 120 million pixels in total.",
+        "If a gallery image still fails, check for a launcher update, then try again."
+      ],
+      "report": "In the report, say whether the image came from the gallery or from a file you chose. Do not attach the image unless a maintainer asks for it.",
+      "legacy": []
     }
   ]
 }

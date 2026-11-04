@@ -40,6 +40,7 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 	case gameWindowTimeout = "GM-WIN"
 	case updateFailed = "UP-ERR"
 	case appIconFailed = "UI-ICN"
+	case artworkImageInvalid = "UI-IMG"
 
 	/// The recovery owner of the code.
 	package var domain: SupportDomain {
@@ -89,6 +90,8 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 		case .updateFailed:
 			.update
 		case .appIconFailed:
+			.customization
+		case .artworkImageInvalid:
 			.customization
 		}
 	}
@@ -142,6 +145,8 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 			"The launcher could not check for or install an update."
 		case .appIconFailed:
 			"The app icon could not be set or restored."
+		case .artworkImageInvalid:
+			"The image cannot be used as launcher artwork."
 		}
 	}
 
@@ -194,6 +199,8 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 			true
 		case .appIconFailed:
 			true
+		case .artworkImageInvalid:
+			false
 		}
 	}
 
@@ -245,6 +252,8 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 		case .updateFailed:
 			false
 		case .appIconFailed:
+			false
+		case .artworkImageInvalid:
 			false
 		}
 	}
