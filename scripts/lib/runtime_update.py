@@ -45,7 +45,11 @@ RELEASES_API = f"https://api.github.com/repos/{REPOSITORY}/releases?per_page=100
 RUNTIME_CONFIG = Path("runtime.json")
 NOTICES_DOCUMENT = Path("docs/legal/third-party-notices.md")
 BLOCK_NAMESPACE = "runtime"
-TAG_PATTERN = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.]+)?$")
+TAG_PATTERN = re.compile(
+    r"^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.]+)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
+)
+RUNTIME_ARCHITECTURE = "x86"
+BUILD_METADATA = "+"
 MAXIMUM_ASSET_BYTES = 8 * 1_024 * 1_024
 PRETTIER_WIDTH = 80
 COMPONENT_ROWS = (
@@ -81,8 +85,21 @@ def normalize_tag(value: str) -> str:
     return tag
 
 
-def latest_tag(fetch: Fetch, include_prerelease: bool) -> str:
-    """Return the newest published release; skip drafts and, by default, prereleases."""
+def tag_architecture(tag: str) -> str:
+    """Return the architecture of a release tag; older tags have no metadata."""
+    return (
+        tag.split(BUILD_METADATA, 1)[1]
+        if BUILD_METADATA in tag
+        else RUNTIME_ARCHITECTURE
+    )
+
+
+def latest_tag(
+    fetch: Fetch,
+    include_prerelease: bool,
+    architecture: str = RUNTIME_ARCHITECTURE,
+) -> str:
+    """Return the newest published release for one architecture; skip drafts."""
     releases = json.loads(fetch(RELEASES_API))
     if not isinstance(releases, list):
         fail("GitHub returned an invalid release list")
@@ -94,6 +111,7 @@ def latest_tag(fetch: Fetch, include_prerelease: bool) -> str:
         and (include_prerelease or not release.get("prerelease"))
         and isinstance(release.get("tag_name"), str)
         and TAG_PATTERN.fullmatch(release["tag_name"])
+        and tag_architecture(release["tag_name"]) == architecture
         and isinstance(release.get("published_at"), str)
     ]
     if not published:

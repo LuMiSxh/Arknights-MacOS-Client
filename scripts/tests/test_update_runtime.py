@@ -325,6 +325,22 @@ def test_latest_skips_drafts_and_prereleases_by_default() -> None:
     assert runtime_update.latest_tag(fetch, include_prerelease=True) == "v0.7.0-rc2"
 
 
+def test_latest_selects_only_the_requested_architecture() -> None:
+    fetch = releases_fetch(
+        [
+            release_entry("v0.8.0+arm", "2026-05-01T00:00:00Z"),
+            release_entry("v0.8.0+x86", "2026-04-01T00:00:00Z"),
+            release_entry("v0.7.0", "2026-03-01T00:00:00Z"),
+        ]
+    )
+
+    assert runtime_update.latest_tag(fetch, include_prerelease=False) == "v0.8.0+x86"
+    assert (
+        runtime_update.latest_tag(fetch, include_prerelease=False, architecture="arm")
+        == "v0.8.0+arm"
+    )
+
+
 def test_latest_without_a_candidate_names_the_flag() -> None:
     fetch = releases_fetch(
         [release_entry("v0.7.0-rc1", "2026-04-01T00:00:00Z", prerelease=True)]
@@ -335,7 +351,13 @@ def test_latest_without_a_candidate_names_the_flag() -> None:
 
 
 @pytest.mark.parametrize(
-    ("value", "tag"), [("0.7.0-rc2", "v0.7.0-rc2"), ("v0.7.0", "v0.7.0")]
+    ("value", "tag"),
+    [
+        ("0.7.0-rc2", "v0.7.0-rc2"),
+        ("v0.7.0", "v0.7.0"),
+        ("0.8.0+x86", "v0.8.0+x86"),
+        ("v0.8.0+arm", "v0.8.0+arm"),
+    ],
 )
 def test_normalize_tag(value: str, tag: str) -> None:
     assert runtime_update.normalize_tag(value) == tag
