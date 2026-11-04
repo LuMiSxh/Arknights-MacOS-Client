@@ -202,20 +202,10 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 	}
 
 	private var standardHorizontalPadding: CGFloat {
-		switch controlSize {
-		case .mini: 8
-		case .small: 8
-		case .large, .extraLarge: 16
-		default: LauncherTokens.Control.standardHorizontalPadding
-		}
+		LauncherTokens.Control.horizontalPadding(for: controlSize)
 	}
 
 	private var standardVerticalPadding: CGFloat {
-		switch controlSize {
-		case .mini: 4
-		case .small: 4
-		case .large, .extraLarge: 8
-		default: LauncherTokens.Control.standardVerticalPadding
-		}
+		LauncherTokens.Control.verticalPadding(for: controlSize)
 	}
 }

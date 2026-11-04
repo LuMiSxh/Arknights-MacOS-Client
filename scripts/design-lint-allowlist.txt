@@ -32,9 +32,5 @@ Sources/ArknightsCustomization/Artwork/WallpaperColorExtractor.swift:raw-hue:1
 Sources/ArknightsCore/Shared/UI/Components/AdaptiveSegmentedControl.swift:off-grid-spacing:1
 # Settings panel: a 10 pt row inset sets every settings row height; change it only with a design review.
 Sources/ArknightsCore/Shared/UI/Components/Settings/SettingsComponents.swift:off-grid-spacing:1
-# Glass capsule menu: a 6 pt vertical inset centers the 16 pt chevron chip in the 28 pt field (LauncherTokens.Control.fieldHeight).
-Sources/ArknightsCore/Shared/UI/Components/Settings/SettingsMenuComponents.swift:off-grid-spacing:1
 # Playtime metrics: a 10 pt vertical inset on each metric; not in the audit's fix list, so it waits for a design review.
 Sources/ArknightsGameRuntime/Playtime/PlaytimeStatisticsPage.swift:off-grid-spacing:1
-
-

@@ -43,6 +43,23 @@ package enum LauncherTokens {
 		static let focusWidth: CGFloat = 2
 		static let standardHorizontalPadding: CGFloat = 12
 		static let standardVerticalPadding: CGFloat = 6
+		/// Capsule buttons and menu fields grow together, so both read one table.
+		static func horizontalPadding(for controlSize: ControlSize) -> CGFloat {
+			switch controlSize {
+			case .mini, .small: 8
+			case .large, .extraLarge: 16
+			default: standardHorizontalPadding
+			}
+		}
+
+		static func verticalPadding(for controlSize: ControlSize) -> CGFloat {
+			switch controlSize {
+			case .mini, .small: 4
+			case .large, .extraLarge: 8
+			default: standardVerticalPadding
+			}
+		}
+
 		package static let hudHorizontalPadding: CGFloat = 12
 		package static let hudVerticalPadding: CGFloat = 6
 		static let iconButtonSize: CGFloat = 36

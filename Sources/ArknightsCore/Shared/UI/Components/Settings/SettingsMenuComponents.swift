@@ -66,13 +66,13 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 
 package struct GlassActionMenu<Content: View>: View {
 	let title: String
-	let systemImage: String
+	var systemImage: String?
 	var isDisabled = false
 	@ViewBuilder package let content: Content
 
 	package init(
 		title: String,
-		systemImage: String,
+		systemImage: String? = nil,
 		isDisabled: Bool = false,
 		@ViewBuilder content: () -> Content
 	) {
@@ -86,8 +86,10 @@ package struct GlassActionMenu<Content: View>: View {
 		GlassCapsuleMenu(isDisabled: isDisabled) {
 			content
 		} label: {
-			Image(systemName: systemImage)
-				.accessibilityHidden(true)
+			if let systemImage, !systemImage.isEmpty {
+				Image(systemName: systemImage)
+					.accessibilityHidden(true)
+			}
 			Text(title)
 		}
 	}
@@ -95,6 +97,7 @@ package struct GlassActionMenu<Content: View>: View {
 
 private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 	@Environment(\.launcherTheme) private var theme
+	@Environment(\.controlSize) private var controlSize
 	@State private var isHovering = false
 	let isDisabled: Bool
 	@ViewBuilder let items: Items
@@ -124,8 +127,8 @@ private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 			}
 			.padding(.leading, LauncherTokens.Spacing.content)
 			.padding(.trailing, LauncherTokens.Spacing.compact)
-			// 16 pt chip plus 2 x 6 pt matches the button: 12 pt line plus 2 x 6 pt.
-			.padding(.vertical, 6)
+			// The 16 pt chevron chip fixes the label height, so the chip only adds the insets.
+			.padding(.vertical, LauncherTokens.Control.verticalPadding(for: controlSize))
 			.background {
 				Capsule().fill(theme.controlFill)
 				Capsule().fill(theme.hoverTint)

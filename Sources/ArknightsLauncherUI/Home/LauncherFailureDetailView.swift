@@ -191,7 +191,7 @@ struct LauncherFailureDetailView: View {
 	}
 
 	private var helpMenu: some View {
-		GlassActionMenu(title: "Get Help", systemImage: "questionmark.circle") {
+		GlassActionMenu(title: "Get Help") {
 			if failure.actions.contains(.openTroubleshooting) {
 				Button {
 					perform(.openTroubleshooting, failure)
