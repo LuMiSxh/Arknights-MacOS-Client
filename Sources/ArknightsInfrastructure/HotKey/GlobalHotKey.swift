@@ -5,8 +5,8 @@ import Foundation
 import Synchronization
 
 /// A key and its modifiers, in the terms Carbon's hot key API uses.
-package struct HotKeyCombination: Equatable, Sendable {
-	package struct Modifiers: OptionSet, Sendable {
+package struct HotKeyCombination: Hashable, Sendable {
+	package struct Modifiers: OptionSet, Hashable, Sendable {
 		package let rawValue: UInt32
 		package init(rawValue: UInt32) { self.rawValue = rawValue }
 

@@ -5,9 +5,11 @@ import ArknightsCore
 import ArknightsGameRuntime
 import SwiftUI
 
-struct GameScreenshotsSettingsPanel: View {
+struct ScreenshotsSettingsPanel: View {
 	@Bindable var settings: LauncherPreferencesController
 	let screenshots: GameScreenshotController
+	let openNotificationSettings: () -> Void
+	@State private var isRecordingShortcut = false
 
 	var body: some View {
 		SettingsPanel(title: "Screenshots") {
@@ -17,10 +19,26 @@ struct GameScreenshotsSettingsPanel: View {
 				help:
 					"The launcher needs Screen Recording access. macOS may ask you to confirm it again from time to time. After you allow it, you may need to restart the launcher."
 			) {
-				GlassMenuPicker(
-					selection: $settings.screenshotShortcut,
-					options: ScreenshotShortcut.allCases.map { ($0, Self.title(for: $0)) }
-				)
+				if isRecordingShortcut {
+					ScreenshotShortcutRecorder(
+						onRecord: { shortcut in
+							settings.screenshotShortcut = shortcut
+							isRecordingShortcut = false
+						},
+						onCancel: { isRecordingShortcut = false })
+				} else {
+					GlassMenuPicker(
+						selection: $settings.screenshotShortcut,
+						options: shortcutOptions,
+						listTitle: { $0 == .standard ? "⌃⌥S (Default)" : nil },
+						trailingMenuItems: {
+							AnyView(
+								Group {
+									Divider()
+									Button("Record Shortcut…") { isRecordingShortcut = true }
+								})
+						})
+				}
 			}
 			if screenshots.isPermissionDenied {
 				SettingsHairline()
@@ -33,6 +51,19 @@ struct GameScreenshotsSettingsPanel: View {
 						tone: .neutral,
 						action: screenshots.openSystemScreenRecordingSettings
 					)
+				}
+				if settings.screenshotNotifies, screenshots.isNotificationAccessDenied {
+					SettingsHairline()
+					SettingsActionRow(
+						title: "Notifications are off for Arknights Client."
+					) {
+						CapsuleActionButton(
+							title: "Open System Settings",
+							systemImage: "gearshape",
+							tone: .neutral,
+							action: openNotificationSettings
+						)
+					}
 				}
 			}
 			SettingsHairline()
@@ -56,11 +87,20 @@ struct GameScreenshotsSettingsPanel: View {
 				SettingsToggle("Notify when saved", isOn: $settings.screenshotNotifies)
 			}
 		}
-		.onAppear { screenshots.refreshPermission() }
+		.onAppear {
+			screenshots.refreshPermission()
+			Task { await screenshots.refreshNotificationAccess() }
+		}
 		.onReceive(
 			NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
 		) {
-			_ in screenshots.refreshPermission()
+			_ in
+			screenshots.refreshPermission()
+			Task { await screenshots.refreshNotificationAccess() }
+		}
+		.onChange(of: settings.screenshotNotifies) { _, isOn in
+			guard isOn else { return }
+			Task { await screenshots.refreshNotificationAccess() }
 		}
 	}
 
@@ -82,12 +122,12 @@ struct GameScreenshotsSettingsPanel: View {
 		}
 	}
 
-	private static func title(for shortcut: ScreenshotShortcut) -> String {
-		switch shortcut {
-		case .off: "Off"
-		case .controlOptionS: "⌃⌥S"
-		case .f13: "F13"
-		case .controlOptionCommandS: "⌃⌥⌘S"
+	/// Off and the default shortcut, plus the recorded shortcut while one is set.
+	private var shortcutOptions: [(value: ScreenshotShortcut, title: String)] {
+		var shortcuts: [ScreenshotShortcut] = [.off, .standard]
+		if case .custom = settings.screenshotShortcut {
+			shortcuts.append(settings.screenshotShortcut)
 		}
+		return shortcuts.map { (value: $0, title: $0.displayName) }
 	}
 }

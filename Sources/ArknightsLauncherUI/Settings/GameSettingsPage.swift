@@ -8,7 +8,6 @@ struct GameSettingsPage: View {
 	let settings: LauncherPreferencesController
 	let gameSession: GameSessionController
 	let lifecycle: LauncherLifecycleStore
-	let screenshots: GameScreenshotController
 
 	var body: some View {
 		SettingsPage(
@@ -25,7 +24,7 @@ struct GameSettingsPage: View {
 				isLocked: gameSession.isGameActive,
 				isFrameRateLocked: isDisplayLocked,
 			)
-			GameScreenshotsSettingsPanel(settings: settings, screenshots: screenshots)
+
 			GameCompatibilitySettingsPanel(
 				settings: settings,
 				isLocked: gameSession.isGameActive,

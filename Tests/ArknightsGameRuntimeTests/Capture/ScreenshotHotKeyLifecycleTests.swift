@@ -10,6 +10,10 @@ import Testing
 
 @testable import ArknightsGameRuntime
 
+/// The shortcut the controller tests record: the F13 key on its own.
+private let f13Shortcut = ScreenshotShortcut.custom(
+	HotKeyCombination(keyCode: HotKeyCombination.keyCodeF13), label: "F13")
+
 private final class FakeHotKey: HotKeyRegistration, Sendable {
 	let isCancelled = Mutex(false)
 	func cancel() { isCancelled.withLock { $0 = true } }
@@ -116,10 +120,10 @@ private struct RegistrationCase: Sendable, CustomTestStringConvertible {
 @MainActor
 @Test(
 	arguments: [
-		RegistrationCase(gameRuns: true, shortcut: .f13, granted: true, registers: true),
-		RegistrationCase(gameRuns: false, shortcut: .f13, granted: true, registers: false),
+		RegistrationCase(gameRuns: true, shortcut: f13Shortcut, granted: true, registers: true),
+		RegistrationCase(gameRuns: false, shortcut: f13Shortcut, granted: true, registers: false),
 		RegistrationCase(gameRuns: true, shortcut: .off, granted: true, registers: false),
-		RegistrationCase(gameRuns: true, shortcut: .f13, granted: false, registers: false),
+		RegistrationCase(gameRuns: true, shortcut: f13Shortcut, granted: false, registers: false),
 	])
 private func theShortcutRegistersOnlyWhileTheGameRunsAndAccessExists(
 	_ testCase: RegistrationCase
@@ -141,7 +145,7 @@ private func theShortcutRegistersOnlyWhileTheGameRunsAndAccessExists(
 @MainActor
 @Test
 private func theShortcutIsReleasedWhenTheGameEndsOrTheShortcutTurnsOff() throws {
-	let fixture = try Fixture(granted: true, shortcut: .controlOptionS)
+	let fixture = try Fixture(granted: true, shortcut: .standard)
 	defer { fixture.remove() }
 
 	fixture.startGame()
@@ -161,7 +165,7 @@ private func choosingAShortcutWithoutAccessTurnsItOffAndShowsThePermissionRow() 
 	let fixture = try Fixture(granted: false, shortcut: .off)
 	defer { fixture.remove() }
 
-	fixture.settings.screenshotShortcut = .f13
+	fixture.settings.screenshotShortcut = f13Shortcut
 
 	#expect(fixture.settings.screenshotShortcut == .off)
 	#expect(fixture.controller.isPermissionDenied)

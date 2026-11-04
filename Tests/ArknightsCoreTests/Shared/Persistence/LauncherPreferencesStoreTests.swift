@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import ArknightsTestSupport
 import Foundation
 import Testing
@@ -7,6 +8,11 @@ import Testing
 @testable import ArknightsCore
 
 private typealias Key = LauncherPreferencesStore.Key
+
+private struct StoredShortcutCase: Sendable {
+	let shortcut: ScreenshotShortcut
+	let stored: String
+}
 
 @MainActor
 struct LauncherPreferencesStoreTests {
@@ -37,6 +43,37 @@ struct LauncherPreferencesStoreTests {
 		try store.setLaunchOptions(expected)
 
 		#expect(store.launchOptions() == expected)
+	}
+
+	@Test(
+		arguments: [
+			StoredShortcutCase(shortcut: .off, stored: "off"),
+			StoredShortcutCase(shortcut: .standard, stored: "standard"),
+			StoredShortcutCase(
+				shortcut: .custom(
+					HotKeyCombination(keyCode: HotKeyCombination.keyCodeF13), label: "F13"),
+				stored: "custom:105:0:F13"),
+			StoredShortcutCase(
+				shortcut: .custom(
+					HotKeyCombination(
+						keyCode: HotKeyCombination.keyCodeS, modifiers: [.control, .command]),
+					label: "S"),
+				stored: "custom:1:4352:S"),
+			// The label may contain ":", so the parser must split at most three times.
+			StoredShortcutCase(
+				shortcut: .custom(
+					HotKeyCombination(keyCode: 41, modifiers: [.shift, .option]), label: ":"),
+				stored: "custom:41:2560::"),
+		])
+	private func screenshotShortcutRoundTripsThroughStorage(_ testCase: StoredShortcutCase) {
+		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setScreenshotShortcut(testCase.shortcut)
+
+		#expect(defaults.string(forKey: Key.screenshotShortcut) == testCase.stored)
+		#expect(store.screenshotShortcut() == testCase.shortcut)
 	}
 
 	@Test

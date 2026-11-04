@@ -15,6 +15,8 @@ import Observation
 package final class GameScreenshotController {
 	/// `true` after macOS refused Screen Recording. Settings shows how to allow it.
 	package private(set) var isPermissionDenied = false
+	/// `true` while macOS notifications are denied for the app. Settings shows how to allow them.
+	package private(set) var isNotificationAccessDenied = false
 
 	private let lifecycle: LauncherLifecycleStore
 	private let settings: LauncherPreferencesController
@@ -108,6 +110,12 @@ package final class GameScreenshotController {
 		if isPermissionDenied, permission.isGranted() { isPermissionDenied = false }
 	}
 
+	/// Reads the notification permission without prompting. Settings calls this when it appears.
+	package func refreshNotificationAccess() async {
+		guard settings.screenshotNotifies else { return }
+		isNotificationAccessDenied = await scheduler.authorization() == .denied
+	}
+
 	package func openSystemScreenRecordingSettings() {
 		if let url = URL(string: AppConstants.Screenshots.screenRecordingSettingsAddress) {
 			NSWorkspace.shared.open(url)
@@ -185,6 +193,7 @@ package final class GameScreenshotController {
 			if authorization == .notDetermined {
 				authorization = try await scheduler.requestAuthorization() ? .authorized : .denied
 			}
+			isNotificationAccessDenied = authorization == .denied
 			guard authorization == .authorized else { return }
 			try await scheduler.add(
 				LocalNotification(

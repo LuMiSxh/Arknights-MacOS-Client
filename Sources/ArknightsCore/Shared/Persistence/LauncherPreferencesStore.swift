@@ -264,11 +264,11 @@ package struct LauncherPreferencesStore {
 
 	package func screenshotShortcut() -> ScreenshotShortcut {
 		defaults.string(forKey: Key.screenshotShortcut)
-			.flatMap(ScreenshotShortcut.init(rawValue:)) ?? .off
+			.flatMap(ScreenshotShortcut.init(storageValue:)) ?? .off
 	}
 
 	package func setScreenshotShortcut(_ shortcut: ScreenshotShortcut) {
-		defaults.set(shortcut.rawValue, forKey: Key.screenshotShortcut)
+		defaults.set(shortcut.storageValue, forKey: Key.screenshotShortcut)
 	}
 
 	/// The folder the user chose for screenshots, or `nil` for the default folder.

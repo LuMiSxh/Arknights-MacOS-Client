@@ -69,8 +69,7 @@ struct LauncherSettingsView: View {
 						GameSettingsPage(
 							settings: settings,
 							gameSession: gameSession,
-							lifecycle: lifecycle,
-							screenshots: screenshots
+							lifecycle: lifecycle
 						)
 					case .appearance:
 						AppearanceSettingsPage(
@@ -83,7 +82,8 @@ struct LauncherSettingsView: View {
 					case .integration:
 						IntegrationSettingsPage(
 							settings: settings,
-							reminders: reminders
+							reminders: reminders,
+							screenshots: screenshots
 						)
 					case .updates:
 						UpdatesSettingsPage(

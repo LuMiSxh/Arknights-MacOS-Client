@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameRuntime
 import SwiftUI
 
 struct IntegrationSettingsPage: View {
 	@Environment(\.launcherTheme) private var theme
 	@Bindable var settings: LauncherPreferencesController
 	let reminders: ResetReminderController
+	let screenshots: GameScreenshotController
 
 	private static let timingOptions: [(value: ResetReminderTiming, title: String)] = [
 		(.off, "Off"),
@@ -154,6 +156,10 @@ struct IntegrationSettingsPage: View {
 					}
 				}
 			}
+
+			ScreenshotsSettingsPanel(
+				settings: settings, screenshots: screenshots,
+				openNotificationSettings: reminders.openSystemNotificationSettings)
 
 			SettingsPanel(title: "Discord") {
 				SettingsActionRow(
