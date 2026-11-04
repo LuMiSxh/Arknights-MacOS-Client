@@ -53,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Clicking the Notices window brings the game to the front when another app is active.
 - Launcher music now plays until the game window appears. It then fades out once, without stuttering.
 - The music controls no longer dim for a moment when you fade or change a track.
 - The launcher no longer changes the music track after the game window appears.
