@@ -34,11 +34,11 @@ recovery message. It is separate from the per-prefix Wine and DXMT migration. Se
 
 Sign-in differs per client:
 
-| Client                      | Sign-in path                                                                                                                                                                                                                                                                                                                               |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Global, Japan, Korea, China | Chromium-based Vuplex helper. Before launch, the launcher moves the official helper beside a Vuplex compatibility component. The component keeps the game's arguments and starts the untouched helper with the system DNS resolver. A process-local `userenv.dll` supplies the AppContainer SID function that the tested Wine build lacks. |
-| China (Bilibili)            | Bilibili's own CEF login window (`BLPlatform64/PCGamePlatform.exe` with `BLWebBrowser`). `BilibiliPlatformCompatibility` installs a launcher-owned window controller and AppKit bridge beside it. It does not replace Bilibili's platform helper.                                                                                          |
-| Taiwan                      | macOS default browser. No embedded helper. No sign-in path inspects credentials or bypasses provider challenges.                                                                                                                                                                                                                           |
+| Client                      | Sign-in path                                                                                                                                                                                                                                      |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Global, Japan, Korea, China | Chromium-based Vuplex helper. Before launch, the launcher moves the official helper beside a Vuplex compatibility component. The component keeps the game's arguments and starts the untouched helper with the system DNS resolver.               |
+| China (Bilibili)            | Bilibili's own CEF login window (`BLPlatform64/PCGamePlatform.exe` with `BLWebBrowser`). `BilibiliPlatformCompatibility` installs a launcher-owned window controller and AppKit bridge beside it. It does not replace Bilibili's platform helper. |
+| Taiwan                      | macOS default browser. No embedded helper. No sign-in path inspects credentials or bypasses provider challenges.                                                                                                                                  |
 
 Notices use a separate Qt WebEngine helper, `PlatformProcess.exe`. It runs as a top-level companion
 process. The game process stays unmodified.
@@ -76,7 +76,6 @@ flowchart LR
 		DXMT[DXMT]
 		VuplexComponent[Vuplex compatibility component]
 		CEF[Official Vuplex / CEF]
-		Userenv[userenv compatibility DLL]
 		PlatformComponent[PlatformProcess compatibility component]
 		Platform[Official PlatformProcess / Qt WebEngine]
 	end
@@ -90,7 +89,6 @@ flowchart LR
 	DXMT --> Metal
 	Game -->|starts web helper| VuplexComponent
 	VuplexComponent --> CEF
-	Userenv -. process-local override .-> CEF
 	CEF -->|HTTPS login and game pages| Web[Official web services]
 	Game -->|opens Notices| PlatformComponent
 	PlatformComponent --> Platform
@@ -138,8 +136,6 @@ Helper limits under Wine:
 - On the tested DXMT path, Vuplex and Chromium cannot coordinate write access to the accelerated
   off-screen surface that Vuplex shares through D3D11. The Vuplex compatibility component uses
   Vuplex's CPU `OnPaint` transfer and keeps Chromium's internal GPU compositor enabled.
-- CEF's asynchronous DNS path calls `SIO_ADDRESS_LIST_SORT`, which Wine does not implement. The Vuplex
-  compatibility component disables that path, so CEF uses Wine's system resolver.
 - Social login starts a separate Chromium process. First use can take several seconds.
 - The Notices helper stays a separate process. Fast window dragging can show a small delay. Clicking
   between the game and the helper can briefly show the macOS focus transition. The launcher accepts

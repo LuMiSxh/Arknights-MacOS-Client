@@ -138,44 +138,4 @@ enum GameShimIO {
 		}
 		throw operationError
 	}
-
-	// `backupURL` restores `destinationURL` if copying or moving the replacement fails.
-	static func replaceWithBackup(
-		destinationURL: URL,
-		sourceURL: URL,
-		backupURL: URL,
-		temporaryName: String,
-		fileManager: FileManager,
-		log: LauncherLog?
-	) throws {
-		let temporaryURL = destinationURL.deletingLastPathComponent().appending(path: temporaryName)
-		defer {
-			attempt("Could not remove a temporary userenv copy", log: log) {
-				try fileManager.removeItem(at: temporaryURL)
-			}
-		}
-		do {
-			try fileManager.copyItem(at: sourceURL, to: temporaryURL)
-			try fileManager.moveItem(at: temporaryURL, to: destinationURL)
-			attempt("Could not remove the userenv backup", log: log) {
-				try fileManager.removeItem(at: backupURL)
-			}
-		} catch {
-			try rethrowAfterRollback(
-				error,
-				steps: [
-					{
-						if fileManager.fileExists(atPath: destinationURL.path) {
-							try fileManager.removeItem(at: destinationURL)
-						}
-					},
-					{
-						if fileManager.fileExists(atPath: backupURL.path) {
-							try fileManager.moveItem(at: backupURL, to: destinationURL)
-						}
-					},
-				]
-			)
-		}
-	}
 }

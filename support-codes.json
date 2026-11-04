@@ -328,7 +328,7 @@
       "causes": [
         "A game environment (Wine prefix) migration, registry setup, or DXMT installation failed.",
         "Another Wine process was running.",
-        "If the message mentions Vuplex, PlatformProcess, the Bilibili login window, userenv, or a game helper, see [RT-CMP](rt-cmp.md)."
+        "If the message mentions Vuplex, PlatformProcess, the Bilibili login window, or a game helper, see [RT-CMP](rt-cmp.md)."
       ],
       "steps": [
         "Quit other Wine apps.",
@@ -355,7 +355,7 @@
       ],
       "steps": [
         "Quit Arknights and any official updater.",
-        "Do not delete or rename the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, userenv.dll, or the temporary files of the launcher.",
+        "Do not delete or rename the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, or the temporary files of the launcher.",
         "If the code returns after Repair, restart the Mac. Then choose **Repair…** in **Settings → Servers** again."
       ],
       "report": "In the report, say whether the second Repair failed. Attach no helper binaries.",

@@ -5,7 +5,6 @@ name = "vuplex"
 directory = "Vuplex"
 artifacts = [
   { source = "VuplexShim.c", output = "Vuplex WebView.vuplex", kind = "windows-executable", arguments = ["-Wl,/subsystem:windows", "-lshell32"] },
-  { source = "UserenvCompat.c", output = "userenv.dll", kind = "windows-library", arguments = ["-ladvapi32"] },
 ]
 
 [[components]]
