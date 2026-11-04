@@ -102,10 +102,12 @@ items:
 ````
 
 - `title` is required. It names the chart.
+- `type` is optional. Use `bar` (default) or `pie`. A `pie` draws a donut with a legend.
 - `items` is a non-empty list. Each item needs a `label` and a `share`.
 - A `share` is a number from 0 to 1. The build fails for any other value.
-- The chart shows no numbers. Screen readers hear a coarse wording, such as "about a third".
-- The bars keep the order you write.
+- For `type: pie`, the shares must add up to between 0.98 and 1.02. The build fails otherwise.
+- The chart shows the rounded percentage next to each bar or slice. Screen readers hear a coarse wording, such as "about a third".
+- The bars and slices keep the order you write. Colours repeat after seven items, and the seventh is a neutral grey.
 - Quote a value that contains a colon, such as `"Chip family: TODO"`. Unquoted colons break the YAML.
 
 Use a fenced block with the info string `contact` to add a contact callout. Write the block as YAML:
@@ -119,7 +121,7 @@ topic: testing
 ````
 
 - `title` and `text` are required. Each must be a non-empty string.
-- `topic` is optional. Use `testing` or `translation`. The button selects the matching answer for the first form question and adds `topic=<topic>`. To add a topic, add it with its exact form option text to `contactTopics` in `web/src/lib/site.ts`.
+- `topic` is optional. Use `testing` or `translation`. The button adds `?topic=<Topic>` with a capitalized value to the form URL, which fills the hidden `topic` field. To add a topic, add its key and capitalized value to `contactTopics` in `web/src/lib/site.ts`.
 - The button opens the contact form in a new tab. Other keys fail the build.
 - The form URL comes from `contactFormUrl` in `web/src/lib/site.ts`. Do not write the URL in the block.
 
