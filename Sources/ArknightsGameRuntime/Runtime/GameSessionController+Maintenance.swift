@@ -17,7 +17,8 @@ extension GameSessionController {
 				self.installedRuntime = InstalledRuntimeDetails(
 					name: runtime.displayName,
 					pins: runtime.pins,
-					capabilities: discovery.capabilities
+					capabilities: discovery.capabilities,
+					architecture: runtime.runtimeArchitecture
 				)
 				if let diagnostic = discovery.diagnostic {
 					self.log.info("Runtime capability fallback: \(diagnostic)")

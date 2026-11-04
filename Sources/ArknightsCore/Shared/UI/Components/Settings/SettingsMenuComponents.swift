@@ -155,11 +155,12 @@ package struct QuietLink: View {
 		self.destination = destination
 	}
 
+	@Environment(\.launcherTheme) private var theme
 	@State private var isHovering = false
 
 	package var body: some View {
 		Link(title, destination: destination)
-			.foregroundStyle(isHovering ? Color.primary : Color.secondary)
+			.foregroundStyle(theme.accentInk)
 			.underline(isHovering)
 			.onHover { isHovering = $0 }
 	}

@@ -28,4 +28,5 @@ name = "bilibili-platform"
 directory = "BilibiliPlatform"
 artifacts = [
   { source = "BilibiliWindowController.c", output = "BilibiliWindowController.exe", kind = "windows-executable", arguments = ["-municode", "-Wl,/subsystem:windows", "-luser32"] },
+  { source = "BilibiliWindowBridge.m", output = "BilibiliWindowBridge.dylib", kind = "macos-library", arguments = ["-lobjc"], frameworks = ["CoreGraphics", "CoreFoundation"] },
 ]

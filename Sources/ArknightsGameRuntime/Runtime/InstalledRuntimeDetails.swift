@@ -11,6 +11,7 @@ struct RuntimePins: Equatable, Sendable {
 /// What the installed runtime reports about itself. Settings → About shows it.
 package struct InstalledRuntimeDetails: Equatable, Sendable {
 	package let name: String
+	package let architecture: String
 	package let wineVersion: String?
 	package let wineCommit: String?
 	package let dxmtVersion: String?
@@ -19,8 +20,14 @@ package struct InstalledRuntimeDetails: Equatable, Sendable {
 	package let metalFXSpatialUpscaling: Bool
 	package let nativeFullscreenSpace: Bool
 
-	init(name: String, pins: RuntimePins, capabilities: RuntimeCapabilities) {
+	init(
+		name: String,
+		pins: RuntimePins,
+		capabilities: RuntimeCapabilities,
+		architecture: String = "Unknown"
+	) {
 		self.name = name
+		self.architecture = architecture
 		wineVersion = pins.wineVersion
 		wineCommit = pins.wineCommit
 		dxmtVersion = pins.dxmtVersion

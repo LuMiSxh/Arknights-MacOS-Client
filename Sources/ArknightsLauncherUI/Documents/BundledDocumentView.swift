@@ -157,19 +157,27 @@ private struct DocumentLoadErrorView: View {
 }
 
 struct MarkdownDocument: View {
+	enum Style {
+		case document
+		case compact
+	}
+
 	@Environment(\.launcherTheme) private var theme
 	private let initialDocument: ParsedMarkdownDocument?
 	private let source: String?
+	private let style: Style
 	@State private var loadedDocument: ParsedMarkdownDocument?
 
-	init(source: String) {
+	init(source: String, style: Style = .document) {
 		initialDocument = nil
 		self.source = source
+		self.style = style
 	}
 
-	init(parsed: ParsedMarkdownDocument) {
+	init(parsed: ParsedMarkdownDocument, style: Style = .document) {
 		initialDocument = parsed
 		source = nil
+		self.style = style
 	}
 
 	var body: some View {
@@ -179,7 +187,8 @@ struct MarkdownDocument: View {
 					ForEach(document.blocks.indices, id: \.self) { index in
 						MarkdownBlockView(
 							block: document.blocks[index],
-							columnWidths: document.tableColumnWidths[index] ?? []
+							columnWidths: document.tableColumnWidths[index] ?? [],
+							style: style
 						)
 					}
 				}
@@ -206,6 +215,7 @@ private struct MarkdownBlockView: View {
 	@Environment(\.launcherTheme) private var theme
 	let block: MarkdownBlock
 	let columnWidths: [CGFloat]
+	let style: MarkdownDocument.Style
 
 	@ViewBuilder
 	var body: some View {
@@ -213,7 +223,11 @@ private struct MarkdownBlockView: View {
 		case .heading(let level, let source):
 			Text(markdownInline(source))
 				.font(headingFont(level: level))
-				.padding(.top, level == 1 ? 0 : 12)
+				.foregroundStyle(style == .compact ? theme.textSecondary : theme.textPrimary)
+				.padding(
+					.top,
+					level == 1 ? 0 : (style == .compact ? LauncherTokens.Spacing.control : 12)
+				)
 				.accessibilityHeading(level == 1 ? .h1 : level == 2 ? .h2 : .h3)
 		case .paragraph(let source):
 			Text(markdownInline(source))
@@ -251,10 +265,15 @@ private struct MarkdownBlockView: View {
 	}
 
 	private func headingFont(level: Int) -> Font {
+		if style == .compact {
+			return level <= 2
+				? LauncherTokens.Typography.sectionLabel
+				: .subheadline.weight(.semibold)
+		}
 		switch level {
-		case 1: .title.weight(.medium)
-		case 2: .title2.weight(.medium)
-		default: .headline
+		case 1: return .title.weight(.medium)
+		case 2: return .title2.weight(.medium)
+		default: return .headline
 		}
 	}
 }

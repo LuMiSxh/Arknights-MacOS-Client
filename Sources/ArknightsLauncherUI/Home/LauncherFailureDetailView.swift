@@ -30,6 +30,16 @@ struct LauncherFailureDetailView: View {
 		self.saveDiagnostics = saveDiagnostics
 		self.onDismiss = onDismiss
 		troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
+			.map(Self.recoveryMarkdown)
+	}
+
+	/// The footer owns Report a Problem and Save Diagnostics now, so keep only the recovery
+	/// section from the bundled article.
+	private static func recoveryMarkdown(_ markdown: String) -> String {
+		guard let range = markdown.range(of: "\n## Report the problem") else {
+			return markdown
+		}
+		return String(markdown[..<range.lowerBound])
 	}
 
 	private func copySupportCode(_ code: SupportCode) {
@@ -44,43 +54,43 @@ struct LauncherFailureDetailView: View {
 	var body: some View {
 		ThemedModalView(
 			title: "Needs attention",
-
-			width: failure.code == nil ? 620 : 820,
+			subtitle: failure.message,
+			width: failure.code == nil ? 620 : 720,
 			height: failure.code == nil ? 432 : 600,
 			minimumHeight: 432
 		) {
 			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.section) {
 				if let code = failure.code {
-					HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
-						LauncherSupportCodeLabel(code: code)
-						IconActionButton(
-							title: "Copy Support Code",
-							systemImage: didCopySupportCode ? "checkmark" : "doc.on.doc",
-							surface: .neutral
-						) {
-							copySupportCode(code)
+					SettingsPanel(title: "Support code") {
+						HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
+							LauncherSupportCodeLabel(code: code)
+							Spacer(minLength: 0)
+							CapsuleActionButton(
+								title: didCopySupportCode ? "Copied" : "Copy",
+								systemImage: didCopySupportCode ? "checkmark" : "doc.on.doc",
+								tone: .neutral,
+								presentation: .compact
+							) {
+								copySupportCode(code)
+							}
 						}
-					}
-					.task(id: didCopySupportCode) {
-						guard didCopySupportCode else { return }
-						do {
-							try await Task.sleep(for: AppConstants.Support.copyConfirmationDuration)
-						} catch {
-							return
+						.task(id: didCopySupportCode) {
+							guard didCopySupportCode else { return }
+							do {
+								try await Task.sleep(
+									for: AppConstants.Support.copyConfirmationDuration)
+							} catch {
+								return
+							}
+							didCopySupportCode = false
 						}
-						didCopySupportCode = false
 					}
 				}
 
-				Text(failure.message)
-					.foregroundStyle(theme.textSecondary)
-					.fixedSize(horizontal: false, vertical: true)
-
 				if let troubleshootingMarkdown {
-					Divider()
-					MarkdownDocument(
-						source: troubleshootingMarkdown
-					)
+					SettingsHairline()
+					MarkdownDocument(source: troubleshootingMarkdown, style: .compact)
+						.frame(maxWidth: 640, alignment: .leading)
 				}
 			}
 			.textSelection(.enabled)
@@ -103,10 +113,7 @@ struct LauncherFailureDetailView: View {
 			HStack(spacing: LauncherTokens.Spacing.control) {
 				recoveryActions
 				if hasSupportActions {
-					supportActions
-					Divider()
-						.frame(height: 24)
-						.padding(.horizontal, LauncherTokens.Spacing.compact)
+					helpMenu
 				}
 				dismissButton
 			}
@@ -116,7 +123,7 @@ struct LauncherFailureDetailView: View {
 				}
 				HStack(spacing: LauncherTokens.Spacing.control) {
 					if hasSupportActions {
-						supportActions
+						helpMenu
 					}
 					dismissButton
 				}
@@ -183,60 +190,29 @@ struct LauncherFailureDetailView: View {
 		.keyboardShortcut(.cancelAction)
 	}
 
-	// Three buttons do not fit the narrow modal on one line, so the footer stacks instead.
-	private var supportActions: some View {
-		ViewThatFits(in: .horizontal) {
-			HStack(spacing: LauncherTokens.Spacing.control) { supportButtons }
-			VStack(alignment: .trailing, spacing: LauncherTokens.Spacing.control) { supportButtons }
-		}
-	}
-
-	@ViewBuilder
-	private var supportButtons: some View {
-		if failure.actions.contains(.openTroubleshooting) {
-			supportAction(
-				.openTroubleshooting,
-				title: "Open on Website",
-				systemImage: "arrow.up.right.square"
-			)
-		}
-		if failure.actions.contains(.reportProblem) {
-			supportAction(
-				.reportProblem,
-				title: "Report a Problem",
-				systemImage: "ladybug"
-			)
-			supportButton(
-				title: "Save Diagnostics",
-				systemImage: "square.and.arrow.down"
-			) {
-				saveDiagnostics()
+	private var helpMenu: some View {
+		GlassActionMenu(title: "Get Help", systemImage: "questionmark.circle") {
+			if failure.actions.contains(.openTroubleshooting) {
+				Button {
+					perform(.openTroubleshooting, failure)
+				} label: {
+					Label("Open on Website", systemImage: "arrow.up.right.square")
+				}
 			}
-			.disabled(isSavingDiagnostics)
+			if failure.actions.contains(.reportProblem) {
+				Button {
+					perform(.reportProblem, failure)
+				} label: {
+					Label("Report a Problem", systemImage: "ladybug")
+				}
+				Button {
+					saveDiagnostics()
+				} label: {
+					Label("Save Diagnostics", systemImage: "square.and.arrow.down")
+				}
+				.disabled(isSavingDiagnostics)
+			}
 		}
-	}
-
-	private func supportAction(
-		_ action: RecoveryAction,
-		title: String,
-		systemImage: String
-	) -> some View {
-		supportButton(title: title, systemImage: systemImage) {
-			perform(action, failure)
-		}
-	}
-
-	private func supportButton(
-		title: String,
-		systemImage: String,
-		action: @escaping () -> Void
-	) -> some View {
-		CapsuleActionButton(
-			title: title,
-			systemImage: systemImage,
-			tone: .neutral,
-			action: action
-		)
 	}
 
 	private var hasSupportActions: Bool {

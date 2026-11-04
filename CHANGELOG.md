@@ -33,12 +33,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The first and last setup pages now use the same panels and rows as the other setup steps. The last page shows where to find help in the **Help** menu and in **Settings → Help**.
 - Gryphline Taiwan is now a stable server. It no longer needs **Canary Features**.
 - Rebuilt the launcher design on one color theme for dark and light. Glow effects, hover zoom, and bouncy motion are gone. Text uses lighter weights, and spacing follows one grid in every window.
-- Secondary buttons and links in Settings, setup, and the update window use quiet neutral colors. The theme color marks only the main action, progress, and selection. Destructive buttons use a red tint in dark and light.
+- Secondary buttons in Settings, setup, and the update window use quiet neutral colors. Links use the runtime accent color for their text. Destructive buttons use a red tint in dark and light.
+- The failure dialog groups the support code and recovery steps like the Settings panels, uses smaller section headings, and moves support actions into a **Get Help** menu.
 - The selection in the Settings sidebar now slides between rows.
 - Setup has a new **Look** step for artwork, Dynamic Theme, Home controls, Branding, appearance, and Dock icons. Setup keeps a custom window size. Setup runs once more after this update so you can review the new options.
 - Renamed **Settings → Audio** to **Settings → Integration**. It holds the daily reset reminder, launcher music, and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates & Integrations**.
 - Reorganized **Settings**: **Installation** is now **Servers**, recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
 - **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
+- **Settings → About** shows whether the installed runtime is native ARM64 or x86_64 via Rosetta.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.
 - Onboarding answer cards use quieter hover and press effects.
 - Dialogs and help texts use plain words instead of technical terms such as partial files. Repair and reset actions still name the Wine prefix they change.
@@ -55,7 +57,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - The Notices backdrop shows the blurred game again instead of solid black, also with the MetalFX rendering mode (Thanks to @darkwebdev, #119).
 - Clicking the Notices window brings the game to the front when another app is active (Thanks to @darkwebdev, #120).
-- The Notices window no longer stays above all other Mac windows. It stays directly above the game, other apps can cover it, and it hides while the game is minimized or on another Space (Thanks to @darkwebdev, #118).
+- The Notices window no longer stays above all other Mac windows (Thanks to @darkwebdev, #118).
+- The Bilibili sign-in window stays directly above the game, hides while the game is minimized or on another Space, and no longer floats above all other Mac windows.
 - Launcher music now plays until the game window appears. It then fades out once, without stuttering.
 - The music controls no longer dim for a moment when you fade or change a track.
 - The launcher no longer changes the music track after the game window appears.

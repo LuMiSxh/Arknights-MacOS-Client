@@ -99,6 +99,10 @@ struct AboutSettingsPage: View {
 				valueText(runtime.name)
 			}
 			SettingsHairline()
+			SettingsActionRow(title: "Architecture") {
+				valueText(runtime.architecture)
+			}
+			SettingsHairline()
 			// Not a stack: the panel pads and divides each top-level row, including the expanded ones.
 			Group {
 				Button {

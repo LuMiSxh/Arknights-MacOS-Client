@@ -4,6 +4,7 @@ import SwiftUI
 
 package struct ThemedModalView<Content: View, Actions: View>: View {
 	let title: String
+	let subtitle: String?
 
 	package let width: CGFloat
 	package let height: CGFloat
@@ -17,6 +18,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 
 	package init(
 		title: String,
+		subtitle: String? = nil,
 
 		width: CGFloat,
 		height: CGFloat,
@@ -26,6 +28,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 		@ViewBuilder actions: () -> Actions
 	) {
 		self.title = title
+		self.subtitle = subtitle
 
 		self.width = width
 		self.height = height
@@ -41,7 +44,13 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 		VStack(spacing: 0) {
 			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 				Text(title)
-					.font(.title2.weight(.medium))
+					.font(LauncherTokens.Typography.pageTitle)
+				if let subtitle {
+					Text(subtitle)
+						.font(.body)
+						.foregroundStyle(theme.textSecondary)
+						.fixedSize(horizontal: false, vertical: true)
+				}
 				HStack(spacing: LauncherTokens.Spacing.control) {
 					Rectangle()
 						.fill(theme.accentFill)

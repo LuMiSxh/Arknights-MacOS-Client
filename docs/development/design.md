@@ -38,7 +38,7 @@ The launcher must feel like a current macOS app. It must feel like an Arknights 
 - The accent marks the current primary operation, progress, selection, and interaction highlights.
 - Give each panel or screen one accent action.
 - Install, Update, and Play use the accent as a prominent Liquid Glass tint.
-- Keep secondary actions, retry buttons that are not the default, links, and status text neutral. This includes About and the legal links.
+- Keep secondary actions, retry buttons that are not the default, and status text neutral. Links use the accent text role (`accentInk`), including About and the legal links.
 - Do not use accent-colored shadows.
 - Keep neutrals graphite. Do not tint surfaces, borders, or secondary controls with the accent hue.
 - Use `LauncherVisuals.cyan` (#18D1FF) only as the fallback. Use it only when no artwork accent exists. Do not write any other fixed cyan value in UI styling.
@@ -166,7 +166,7 @@ Show a failure in the shared failure dialog. Give actionable guidance and matchi
 
 ## Feedback and review
 
-Use native controls first. Use the shared components in `Sources/ArknightsCore/Shared/UI/Components` before you add a local variant. Create a custom control only for a different interaction contract. Padding and tint do not justify a custom control. Keep primary emphasis on the current game action. Keep secondary links, settings, diagnostics, and legal text quiet.
+Use native controls first. Use the shared components in `Sources/ArknightsCore/Shared/UI/Components` before you add a local variant. Create a custom control only for a different interaction contract. Padding and tint do not justify a custom control. Keep primary emphasis on the current game action. Keep secondary actions, settings, diagnostics, and legal text quiet. Links still use `accentInk`.
 
 For a UI change, use the debug simulator. Check these states: an empty region, an installed region, an active operation, and a failure with its recovery path. Repeat the checks with keyboard navigation, VoiceOver, Reduce Motion, and normal and large text. The release matrix is in [Testing architecture](testing.md#manual-compatibility-matrix).
 

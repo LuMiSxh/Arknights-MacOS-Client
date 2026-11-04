@@ -30,6 +30,7 @@ struct RuntimeConfiguration: Decodable, Sendable {
 	}
 	struct Interface: Decodable, Sendable {
 		let runtimeCapabilities: String?
+		let macDriver: String?
 	}
 	struct Components: Decodable, Sendable {
 		let wine: String?
@@ -58,7 +59,9 @@ struct WineRuntime: Sendable {
 	let executableURL: URL
 	let displayName: String
 	let revision: String
+	let runtimeArchitecture: String
 	let gameIconBridgeURL: URL?
+	let bilibiliWindowBridgeURL: URL?
 	let capabilityManifestFileName: String?
 	let pins: RuntimePins
 	private let compatibilityManager: GameCompatibilityManager
@@ -67,7 +70,9 @@ struct WineRuntime: Sendable {
 		executableURL: URL,
 		displayName: String,
 		revision: String,
+		runtimeArchitecture: String = "Unknown",
 		gameIconBridgeURL: URL? = nil,
+		bilibiliWindowBridgeURL: URL? = nil,
 		capabilityManifestFileName: String? = nil,
 		pins: RuntimePins = RuntimePins(),
 		compatibilityManager: GameCompatibilityManager
@@ -75,7 +80,9 @@ struct WineRuntime: Sendable {
 		self.executableURL = executableURL
 		self.displayName = displayName
 		self.revision = revision
+		self.runtimeArchitecture = runtimeArchitecture
 		self.gameIconBridgeURL = gameIconBridgeURL
+		self.bilibiliWindowBridgeURL = bilibiliWindowBridgeURL
 		self.capabilityManifestFileName = capabilityManifestFileName
 		self.pins = pins
 		self.compatibilityManager = compatibilityManager
@@ -166,13 +173,22 @@ struct WineRuntime: Sendable {
 				"runtime.sha256 must not be empty"
 			)
 		}
+		let bilibiliWindowBridge = resources.appending(
+			path: "Compatibility/BilibiliPlatform/BilibiliWindowBridge.dylib"
+		)
 		return WineRuntime(
 			executableURL: executable,
 			displayName: configuration.runtime.name,
 			revision: configuration.revision,
+			runtimeArchitecture: Self.architectureLabel(
+				macDriver: configuration.interface?.macDriver,
+				runtimeName: configuration.runtime.name
+			),
 			gameIconBridgeURL: resources.appending(
 				path: "Compatibility/GameIcon/GameIconBridge.dylib"
 			),
+			bilibiliWindowBridgeURL: fileManager.fileExists(atPath: bilibiliWindowBridge.path)
+				? bilibiliWindowBridge : nil,
 			capabilityManifestFileName: configuration.interface?.runtimeCapabilities,
 			pins: RuntimePins(
 				wineVersion: configuration.components?.wine,
@@ -182,6 +198,17 @@ struct WineRuntime: Sendable {
 			),
 			compatibilityManager: compatibilityManager
 		)
+	}
+
+	static func architectureLabel(macDriver: String?, runtimeName: String) -> String {
+		if let macDriver {
+			if macDriver.contains("aarch64") { return "ARM64 native" }
+			if macDriver.contains("x86_64") { return "x86_64 via Rosetta" }
+		}
+		if runtimeName.localizedCaseInsensitiveContains("aarch64") {
+			return "ARM64 native"
+		}
+		return "Unknown"
 	}
 
 	@concurrent

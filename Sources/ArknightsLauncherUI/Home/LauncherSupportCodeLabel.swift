@@ -9,7 +9,7 @@ struct LauncherSupportCodeLabel: View {
 
 	var body: some View {
 		Text(code.rawValue)
-			.font(.caption.monospaced().weight(.medium))
+			.font(.title3.monospaced().weight(.semibold))
 			.foregroundStyle(theme.dangerText)
 			.textSelection(.enabled)
 			.accessibilityLabel(
