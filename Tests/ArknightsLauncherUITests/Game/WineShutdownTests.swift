@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import ArknightsTestSupport
 import Darwin
 import Dispatch
@@ -98,8 +99,10 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 	)
 	let prefixDirectory = root.appending(path: "prefix", directoryHint: .isDirectory)
 	let spawnGate = WineProcessSpawnGate()
+	let helperPID = root.appending(path: "helper.pid")
 	let script = """
 		trap '' TERM
+		echo $$ > '\(helperPID.path).tmp' && mv '\(helperPID.path).tmp' '\(helperPID.path)'
 		: > '\(started.path)'
 		read ignored < '\(fifo.path)'
 		: > '\(delayedConnection.path)'
@@ -125,6 +128,8 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 		}
 	}
 	await waitForFile(at: started)
+	// A failed assertion must not leave the helper blocked on the FIFO.
+	defer { killHelperIfRunning(at: helperPID) }
 	let didTimeOut = await wait.value
 	#expect(didTimeOut)
 	#expect(startedWaiting.duration(to: clock.now) < .seconds(1))
@@ -143,9 +148,21 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n")
 	#expect(!FileManager.default.fileExists(atPath: delayedConnection.path))
 
-	let writer = try FileHandle(forWritingTo: fifo)
-	try writer.write(contentsOf: Data("connect\n".utf8))
-	try writer.close()
+	// A nonblocking open fails instead of hanging when the helper is no longer reading.
+	let descriptor = fifo.path.withCString { Darwin.open($0, O_WRONLY | O_NONBLOCK) }
+	guard descriptor >= 0 else {
+		Issue.record("The Wine helper stopped reading the FIFO before the test released it.")
+		return
+	}
+	let release = Data("connect\n".utf8)
+	let written = release.withUnsafeBytes {
+		Darwin.write(descriptor, $0.baseAddress, $0.count)
+	}
+	Darwin.close(descriptor)
+	guard written == release.count else {
+		Issue.record("The Wine helper did not receive the FIFO release.")
+		return
+	}
 	await waitForFile(at: delayedConnection)
 	try await runtime.stop(
 		prefixDirectory: prefixDirectory,
@@ -153,6 +170,18 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 		spawnGate: spawnGate
 	)
 	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-k\n-k\n-w\n")
+}
+
+/// Kills the fake Wine helper when a failed assertion left it running.
+private func killHelperIfRunning(at pidFile: URL) {
+	guard
+		let data = FileManager.default.contents(atPath: pidFile.path),
+		let pid = Int32(
+			String(decoding: data, as: UTF8.self)
+				.trimmingCharacters(in: .whitespacesAndNewlines)),
+		Darwin.kill(pid, 0) == 0
+	else { return }
+	_ = Darwin.kill(pid, SIGKILL)
 }
 
 @Test(arguments: [false, true])

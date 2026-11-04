@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import Foundation
 import Synchronization
 
@@ -11,7 +12,7 @@ struct WineProcessSpawnGateNotSealed: Error, Sendable {}
 // Serializes Wine process creation with shutdown and retains children until they exit.
 // States: open (spawns allowed) -> sealed (no spawns; waiters resume once the last child retires).
 // Each child retires through its own `terminationHandler`; nothing polls.
-final class WineProcessSpawnGate: @unchecked Sendable {
+final class WineProcessSpawnGate: ProcessSpawnGating, @unchecked Sendable {
 	private struct State {
 		var allowsSpawn = true
 		var processes: [ObjectIdentifier: Process] = [:]
@@ -25,7 +26,7 @@ final class WineProcessSpawnGate: @unchecked Sendable {
 		self.beforeSpawnAttempt = beforeSpawnAttempt
 	}
 
-	func runIfAllowed<T>(process: Process, _ operation: () throws -> T) throws -> T {
+	package func runIfAllowed<T>(process: Process, _ operation: () throws -> T) throws -> T {
 		beforeSpawnAttempt()
 		// The lock is held across `operation` so a spawn cannot interleave with sealing.
 		return try state.withLock { state in

@@ -303,7 +303,7 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 
 	private func startHandshakeTimer() {
 		let timer = DispatchSource.makeTimerSource(queue: queue)
-		timer.schedule(deadline: .now() + Self.dispatchInterval(for: handshakeTimeout))
+		timer.schedule(deadline: .now() + DispatchTimeInterval(duration: handshakeTimeout))
 		timer.setEventHandler { [weak self] in
 			self?.closeLocked(error: DiscordIPCError.handshakeTimedOut)
 		}
@@ -435,12 +435,6 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 		)
 	}
 
-	private static func dispatchInterval(for duration: Duration) -> DispatchTimeInterval {
-		let components = duration.components
-		let nanoseconds =
-			components.seconds * 1_000_000_000 + components.attoseconds / 1_000_000_000
-		return .nanoseconds(Int(clamping: nanoseconds))
-	}
 }
 
 private struct Handshake: Encodable {

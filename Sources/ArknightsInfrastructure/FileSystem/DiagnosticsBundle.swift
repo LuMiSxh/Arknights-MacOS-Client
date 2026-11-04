@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import Foundation
-import Synchronization
 
 enum DiagnosticsBundleError: LocalizedError {
 	case unsafeArchivePath(String)
@@ -106,12 +105,15 @@ package enum DiagnosticsBundle {
 		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
 		let archive = availableArchive(named: baseName, in: directory, fileManager)
 		do {
-			let status = try await CancellableProcess(
+			let result = try await ChildProcess(
 				executable: URL(fileURLWithPath: "/usr/bin/ditto"),
-				arguments: ["-c", "-k", "--sequesterRsrc", staging.path, archive.path]
+				arguments: ["-c", "-k", "--sequesterRsrc", staging.path, archive.path],
+				output: .discarded
 			).run()
 			try Task.checkCancellation()
-			guard status == 0 else { throw DiagnosticsBundleError.archiveFailed(status) }
+			guard result.status == 0 else {
+				throw DiagnosticsBundleError.archiveFailed(result.status)
+			}
 		} catch {
 			remove(archive, using: fileManager, report: reportCleanupFailure)
 			throw error
@@ -190,48 +192,5 @@ package enum DiagnosticsBundle {
 			}
 		}
 		try emit(pending)
-	}
-}
-
-/// Runs a child process and terminates it when the awaiting task is cancelled.
-private final class CancellableProcess: @unchecked Sendable {
-	private struct State {
-		var isRunning = false
-		var isCancelled = false
-	}
-
-	private let process = Process()
-	private let state = Mutex(State())
-
-	init(executable: URL, arguments: [String]) {
-		process.executableURL = executable
-		process.arguments = arguments
-	}
-
-	func run() async throws -> Int32 {
-		try await withTaskCancellationHandler {
-			try await withCheckedThrowingContinuation {
-				(continuation: CheckedContinuation<Int32, any Error>) in
-				process.terminationHandler = {
-					continuation.resume(returning: $0.terminationStatus)
-				}
-				do {
-					try state.withLock { state in
-						if state.isCancelled { throw CancellationError() }
-						try process.run()
-						state.isRunning = true
-					}
-				} catch {
-					process.terminationHandler = nil
-					continuation.resume(throwing: error)
-				}
-			}
-		} onCancel: {
-			let shouldTerminate = state.withLock { state in
-				state.isCancelled = true
-				return state.isRunning
-			}
-			if shouldTerminate, process.isRunning { process.terminate() }
-		}
 	}
 }

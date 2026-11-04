@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsInfrastructure
 import Darwin
 import Foundation
 
