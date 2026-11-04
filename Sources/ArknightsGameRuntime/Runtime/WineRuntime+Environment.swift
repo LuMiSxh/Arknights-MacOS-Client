@@ -70,26 +70,12 @@ extension WineRuntime {
 		)
 	}
 
-	/// DXMT paces frames from the display refresh rate, so a cap that does not divide it gives
-	/// uneven frame pacing. Returns the largest divisor of `displayRefreshRate` that does not
-	/// exceed `requested`, unless that drops below two thirds of `requested` (165 Hz at 30 would
-	/// give 15); then the next divisor above `requested` wins. A cap at or above the refresh rate,
-	/// or an unknown rate, keeps `requested`.
-	static func dxmtFrameRateCap(requested: Int, displayRefreshRate: Int) -> Int {
-		guard displayRefreshRate > 0, requested < displayRefreshRate else { return requested }
-		let divides = { (rate: Int) in displayRefreshRate % rate == 0 }
-		let below = stride(from: requested, through: 1, by: -1).first(where: divides) ?? 1
-		if below * 3 >= requested * 2 { return below }
-		return (requested...displayRefreshRate).first(where: divides) ?? displayRefreshRate
-	}
-
 	static func isolatedEnvironment(
 		prefixDirectory: URL,
 		executableDirectory: URL,
 		baseEnvironment: [String: String] = ProcessInfo.processInfo.environment,
 		userName: String = NSUserName(),
 		frameRateLimit: GameFrameRateLimit,
-		displayRefreshRate: Int = 0,
 		synchronizationMode: WineSynchronizationMode = .msync
 	) -> [String: String] {
 		let home = prefixDirectory.appending(path: "home", directoryHint: .isDirectory)
@@ -121,9 +107,8 @@ extension WineRuntime {
 		environment["DXMT_LOG_LEVEL"] = "error"
 		// DXMT reads "key=value" entries separated by ";". The cap is always written, so DXMT
 		// never applies its own default pacing.
-		let frameCap = Self.dxmtFrameRateCap(
-			requested: frameRateLimit.framesPerSecond, displayRefreshRate: displayRefreshRate)
-		environment["DXMT_CONFIG"] = "d3d11.preferredMaxFrameRate=\(frameCap)"
+		environment["DXMT_CONFIG"] =
+			"d3d11.preferredMaxFrameRate=\(frameRateLimit.framesPerSecond)"
 		for (name, value) in Self.synchronizationEnvironment(for: synchronizationMode) {
 			environment[name] = value
 		}
@@ -139,14 +124,12 @@ extension WineRuntime {
 		prefixDirectory: URL,
 		graphicsDiagnostics: Bool = false,
 		frameRateLimit: GameFrameRateLimit,
-		displayRefreshRate: Int = 0,
 		synchronizationMode: WineSynchronizationMode = .msync
 	) -> [String: String] {
 		var environment = Self.isolatedEnvironment(
 			prefixDirectory: prefixDirectory,
 			executableDirectory: executableURL.deletingLastPathComponent(),
 			frameRateLimit: frameRateLimit,
-			displayRefreshRate: displayRefreshRate,
 			synchronizationMode: synchronizationMode
 		)
 		if graphicsDiagnostics {

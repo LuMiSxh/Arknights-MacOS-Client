@@ -268,7 +268,6 @@ extension GameSessionController {
 			metalPerformanceHUDEnabled: request.options.usesMetalPerformanceHUD,
 			synchronizationMode: request.options.synchronizationMode,
 			frameRateLimit: request.options.frameRateLimit,
-			displayRefreshRate: screen?.maximumFramesPerSecond ?? 0,
 			runtimeEnvironmentOverrides: prepared.environment,
 			clientVariant: request.region.clientVariant,
 			publisher: request.region.publisher,

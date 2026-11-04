@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-/// Frame-rate cap the launcher passes to DXMT. DXMT paces frames from the display refresh rate,
-/// so each limit should divide that rate.
+/// Frame-rate cap the launcher passes to DXMT unchanged.
 package enum GameFrameRateLimit: String, CaseIterable, Codable, Sendable {
 	case fps30
 	case fps60

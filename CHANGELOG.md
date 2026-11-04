@@ -53,8 +53,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- The frame rate cap now divides the display refresh rate evenly. For example, a 60 FPS limit on a 144 Hz display runs at 48 FPS.
-
 - Launcher music now plays until the game window appears. It then fades out once, without stuttering.
 - The music controls no longer dim for a moment when you fade or change a track.
 - The launcher no longer changes the music track after the game window appears.

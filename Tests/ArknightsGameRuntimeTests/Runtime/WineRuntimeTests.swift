@@ -61,7 +61,7 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 }
 
 @Test(arguments: GameFrameRateLimit.allCases)
-func frameRateLimitWritesDXMTConfigOnlyWhenCapped(limit: GameFrameRateLimit) {
+func frameRateLimitPassesThePickedCapToDXMT(limit: GameFrameRateLimit) {
 	let environment = WineRuntime.isolatedEnvironment(
 		prefixDirectory: URL(filePath: "/isolated/prefix", directoryHint: .isDirectory),
 		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
@@ -69,7 +69,8 @@ func frameRateLimitWritesDXMTConfigOnlyWhenCapped(limit: GameFrameRateLimit) {
 		userName: "tester",
 		frameRateLimit: limit
 	)
-	#expect(environment["DXMT_CONFIG"] != nil)
+	#expect(
+		environment["DXMT_CONFIG"] == "d3d11.preferredMaxFrameRate=\(limit.framesPerSecond)")
 }
 
 @Test

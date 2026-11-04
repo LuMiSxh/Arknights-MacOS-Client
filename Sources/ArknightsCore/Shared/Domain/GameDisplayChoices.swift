@@ -5,20 +5,18 @@ import AppKit
 package struct GameScreenMetrics: Equatable, Sendable {
 	package let visibleSize: CGSize
 	package let pixelSize: CGSize
-	/// The refresh rate of the main screen, or 0 when the screen is unknown.
-	package let maximumFramesPerSecond: Int
+
 	package var titleBarHeight = AppConstants.Game.standardWindowTitleBarHeight
 
 	init(
 		visibleSize: CGSize,
 		pixelSize: CGSize,
-		titleBarHeight: CGFloat = AppConstants.Game.standardWindowTitleBarHeight,
-		maximumFramesPerSecond: Int = 0
+		titleBarHeight: CGFloat = AppConstants.Game.standardWindowTitleBarHeight
 	) {
 		self.visibleSize = visibleSize
 		self.pixelSize = pixelSize
 		self.titleBarHeight = titleBarHeight
-		self.maximumFramesPerSecond = maximumFramesPerSecond
+
 	}
 
 	@MainActor package static var main: GameScreenMetrics? {
@@ -31,8 +29,7 @@ package struct GameScreenMetrics: Equatable, Sendable {
 				width: screen.frame.width * screen.backingScaleFactor,
 				height: screen.frame.height * screen.backingScaleFactor
 			),
-			titleBarHeight: frame.height - content.height,
-			maximumFramesPerSecond: screen.maximumFramesPerSecond
+			titleBarHeight: frame.height - content.height
 		)
 	}
 

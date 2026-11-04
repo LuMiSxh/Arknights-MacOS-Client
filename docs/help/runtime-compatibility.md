@@ -46,9 +46,7 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 | **Standard** | Draws one pixel per macOS point. macOS stretches the window. Blurry on Retina displays.                                                          |
 
 **Frame rate limit** caps the frames per second the game draws. Use the slider to choose **30 FPS**,
-**60 FPS**, or **120 FPS**. Lower values save battery. If the limit does not
-divide the display refresh rate evenly, the launcher uses the nearest value that does.
-It prefers a lower value. It uses a higher value only when the lower one is less than two thirds of the limit.
+**60 FPS**, or **120 FPS**. Lower values save battery.
 
 **Window size** uses the "Looks like" sizes of **System Settings → Displays**. **Fill screen** fills the usable screen area with the title bar visible. **Compact** picks a smaller 16:9 window. The menu also lists exact sizes.
 
