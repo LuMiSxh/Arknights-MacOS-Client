@@ -24,6 +24,7 @@ static char notice_mask_key;
 static CGWindowID logged_game_window;
 static CGWindowID logged_notice_window;
 static BOOL (*original_set_activation_policy)(id, SEL, NSApplicationActivationPolicy);
+static void (*original_draw_rect)(id, SEL, NSRect);
 
 /* Wine starts with LSUIElement enabled, then requests Regular when showing its first
  * window. Keep that request accessory-only before AppKit can publish a Dock tile;
@@ -123,6 +124,64 @@ static void apply_notice_mask(NSView *view) {
 	view.clipsToBounds = YES;
 }
 
+/* Returns whether `layer` or a descendant is a CAMetalLayer. */
+static BOOL layer_hosts_metal(CALayer *layer) {
+	if ([layer isKindOfClass:[CAMetalLayer class]])
+		return YES;
+	for (CALayer *sublayer in layer.sublayers) {
+		if (layer_hosts_metal(sublayer))
+			return YES;
+	}
+	return NO;
+}
+
+/* Qt and CEF render the notice through a D3D swapchain that Wine presents in a
+ * CAMetalLayer. Its drawable keeps the page's alpha, so the transparent backdrop can show
+ * the game's own blurred frame, but a CAMetalLayer is opaque by default and the swapchain
+ * can reset it. Behind it, Wine's GDI window surface (initialised to opaque white) fills
+ * the enclosing views, so their contents are dropped once a Metal layer covers them.
+ * Returns whether `layer` hosts a Metal layer. */
+static BOOL clear_metal_backdrop(CALayer *layer) {
+	BOOL hosts_metal = NO;
+
+	if ([layer isKindOfClass:[CAMetalLayer class]]) {
+		if (layer.opaque)
+			layer.opaque = NO;
+		if (layer.backgroundColor != NULL)
+			layer.backgroundColor = NULL;
+		return YES;
+	}
+	for (CALayer *sublayer in layer.sublayers)
+		hosts_metal |= clear_metal_backdrop(sublayer);
+	if (hosts_metal && layer.contents != nil)
+		layer.contents = nil;
+	return hosts_metal;
+}
+
+/* Skips Wine's surface painting in a view that hosts the notice's Metal layer; see
+ * clear_metal_backdrop. Other Wine views draw as usual. */
+static void draw_wine_content_view(id view, SEL selector, NSRect rect) {
+	if (layer_hosts_metal(((NSView *)view).layer))
+		return;
+	original_draw_rect(view, selector, rect);
+}
+
+/* Wine's AppKit classes live in winemac.so, which loads after this bridge. */
+static void install_draw_rect_hook(void) {
+	Class content_view_class;
+	Method method;
+
+	if (original_draw_rect != NULL)
+		return;
+	content_view_class = objc_getClass("WineContentView");
+	method = content_view_class ? class_getInstanceMethod(content_view_class, @selector(drawRect:))
+	                            : NULL;
+	if (method == NULL)
+		return;
+	original_draw_rect = (void (*)(id, SEL, NSRect))method_getImplementation(method);
+	method_setImplementation(method, (IMP)draw_wine_content_view);
+}
+
 /* The core presentation policy, reapplied every tick since Wine's window server can revert
  * these at any time: joins all Spaces without forcing a Space switch, enables Wine's input
  * path, and keeps the AppKit panel non-activating. WineBaseView already accepts first mouse,
@@ -190,6 +249,8 @@ static void configure_window(NSWindow *window) {
 		frame.layer.backgroundColor = NSColor.clearColor.CGColor;
 	}
 	apply_notice_mask(frame != nil ? frame : content);
+	install_draw_rect_hook();
+	clear_metal_backdrop((frame != nil ? frame : content).layer);
 
 	if (logged_notice_window != window.windowNumber) {
 		fprintf(
