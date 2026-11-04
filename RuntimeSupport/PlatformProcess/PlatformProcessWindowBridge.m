@@ -22,6 +22,7 @@ static const volatile char launcher_marker[] = "Arknights Client PlatformProcess
 static dispatch_source_t presentation_timer;
 static char notice_mask_key;
 static CGWindowID logged_game_window;
+static pid_t game_process;
 static CGWindowID logged_notice_window;
 static BOOL (*original_set_activation_policy)(id, SEL, NSApplicationActivationPolicy);
 static void (*original_draw_rect)(id, SEL, NSRect);
@@ -316,8 +317,36 @@ static void maintain_presentation(void) {
 			    game.number,
 			    game.process_id);
 			logged_game_window = game.number;
+			game_process = game.process_id;
 		}
 	}
+}
+
+/* The notice is a non-activating panel in its own process, so a click on it never brings
+ * the game forward when another app is active; only the game's title bar would. A click
+ * is a user request, so the helper may activate itself and hand activation straight to
+ * the game. */
+static void activate_game_for_click(void) {
+	NSRunningApplication *game;
+
+	if (game_process <= 0)
+		return;
+	game = [NSRunningApplication runningApplicationWithProcessIdentifier:game_process];
+	if (game == nil || game.active)
+		return;
+	[NSApp activate];
+	[NSApp yieldActivationToApplication:game];
+	[game activateFromApplication:NSRunningApplication.currentApplication options:0];
+}
+
+static void install_click_activation(void) {
+	[NSEvent
+	    addLocalMonitorForEventsMatchingMask:NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown |
+	                                         NSEventMaskOtherMouseDown
+	                                 handler:^NSEvent *(NSEvent *event) {
+		                               activate_game_for_click();
+		                               return event;
+	                                 }];
 }
 
 /* Entry point: runs automatically when Wine loads this dylib (see PlatformProcessShim.c's
@@ -345,6 +374,7 @@ __attribute__((constructor)) static void install_platform_process_bridge(void) {
 	    NSProcessInfo.processInfo.processName.UTF8String);
 
 	dispatch_async(dispatch_get_main_queue(), ^{
+	  install_click_activation();
 	  presentation_timer =
 		  dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
 	  dispatch_source_set_timer(
