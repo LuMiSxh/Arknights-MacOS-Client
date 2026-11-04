@@ -132,7 +132,7 @@ function renderPie(items: ShareChartItem[]): string {
 			const length = (item.share / total) * 100;
 			const offset = 25 - before;
 			before += length;
-			return `<circle cx="18" cy="18" r="15.9155" fill="none" stroke-width="6" style="stroke: ${seriesColor(index)}" stroke-dasharray="${length.toFixed(3)} ${(100 - length).toFixed(3)}" stroke-dashoffset="${offset.toFixed(3)}"/>`;
+			return `<circle cx="20" cy="20" r="15.9155" fill="none" stroke-width="6" style="stroke: ${seriesColor(index)}" stroke-dasharray="${length.toFixed(3)} ${(100 - length).toFixed(3)}" stroke-dashoffset="${offset.toFixed(3)}"/>`;
 		})
 		.join('');
 	const legend = items
@@ -141,5 +141,5 @@ function renderPie(items: ShareChartItem[]): string {
 				`<li><span class="share-chart-swatch" style="background: ${seriesColor(index)}" aria-hidden="true"></span><span class="share-chart-label">${escapeHtml(item.label)}</span><span class="share-chart-value" aria-hidden="true">${percent(item.share)}</span><span class="share-chart-verbal">: ${verbalShare(item.share)}</span></li>`
 		)
 		.join('\n');
-	return `<div class="share-chart-pie-body"><svg class="share-chart-donut" viewBox="0 0 36 36" aria-hidden="true" focusable="false">${slices}</svg><ol class="share-chart-legend">\n${legend}\n</ol></div>`;
+	return `<div class="share-chart-pie-body"><svg class="share-chart-donut" viewBox="0 0 40 40" aria-hidden="true" focusable="false">${slices}</svg><ol class="share-chart-legend">\n${legend}\n</ol></div>`;
 }
