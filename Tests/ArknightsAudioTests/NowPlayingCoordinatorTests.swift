@@ -12,7 +12,7 @@ struct NowPlayingCoordinatorTests {
 	func artworkCanBeRequestedFromMediaPlayersPrivateQueue() async {
 		let center = RecordingNowPlayingInfoCenter()
 		let coordinator = NowPlayingCoordinator(
-			icon: NSImage(size: NSSize(width: 32, height: 32)),
+			icon: musicTestIcon(size: NSSize(width: 32, height: 32)),
 			center: center
 		)
 		coordinator.updateTrack(title: "Radiant", artist: nil)

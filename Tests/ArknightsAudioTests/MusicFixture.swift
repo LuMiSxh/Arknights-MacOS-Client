@@ -12,6 +12,38 @@ import YouTubePlayerKit
 
 @testable import ArknightsAudio
 
+/// Returns a bitmap-backed icon, so encoding it does not fail like an empty `NSImage` does.
+@MainActor
+func musicTestIcon(size: NSSize = NSSize(width: 64, height: 64)) -> NSImage {
+	let image = NSImage(size: size)
+	image.lockFocus()
+	NSColor.systemTeal.setFill()
+	NSBezierPath(rect: NSRect(origin: .zero, size: size)).fill()
+	image.unlockFocus()
+	return image
+}
+
+/// Counts event subscriptions from any thread, because Combine cancels them off the main actor.
+final class SubscriptionRecorder: Sendable {
+	private let started = Mutex(0)
+	private let cancelled = Mutex(0)
+	/// Fires when an event subscription is cancelled.
+	let cancellation = Signal()
+
+	var active: Int { started.withLock { $0 } }
+	var terminated: Int { cancelled.withLock { $0 } }
+
+	func didSubscribe(_ subscription: any Subscription) {
+		started.withLock { $0 += 1 }
+	}
+
+	func didCancel() {
+		started.withLock { $0 -= 1 }
+		cancelled.withLock { $0 += 1 }
+		cancellation.fire()
+	}
+}
+
 /// Records every player command and can hold `getPlaylist` until the test releases it.
 @MainActor
 @Observable
@@ -26,14 +58,13 @@ final class FakeMusicPlayer {
 	var playlist = ["a", "b"]
 	/// Makes `nextVideo` and `previousVideo` throw.
 	var failsNavigation = false
-	private let subscriptionCount = Mutex(0)
-	private let cancelledCount = Mutex(0)
+	private let subscriptions = SubscriptionRecorder()
 	/// Fires when an event subscription is cancelled.
-	let subscriptionCancelled = Signal()
+	var subscriptionCancelled: Signal { subscriptions.cancellation }
 	/// Event subscriptions that are started and not yet cancelled.
-	var activeSubscriptions: Int { subscriptionCount.withLock { $0 } }
+	var activeSubscriptions: Int { subscriptions.active }
 	/// Event subscriptions that were cancelled.
-	var terminatedStreams: Int { cancelledCount.withLock { $0 } }
+	var terminatedStreams: Int { subscriptions.terminated }
 	/// What `getPlaybackMetadata` returns; it throws while nil.
 	var metadata: YouTubePlayer.PlaybackMetadata?
 	/// What `getPlaybackState` returns.
@@ -81,14 +112,8 @@ final class FakeMusicPlayer {
 				BackgroundMusicPlayerEvents(
 					eventSubject
 						.handleEvents(
-							receiveSubscription: { _ in
-								self.subscriptionCount.withLock { $0 += 1 }
-							},
-							receiveCancel: {
-								self.subscriptionCount.withLock { $0 -= 1 }
-								self.cancelledCount.withLock { $0 += 1 }
-								self.subscriptionCancelled.fire()
-							}
+							receiveSubscription: subscriptions.didSubscribe,
+							receiveCancel: subscriptions.didCancel
 						)
 						.eraseToAnyPublisher()
 				)
@@ -166,7 +191,7 @@ struct MusicFixture {
 			launcherIconManager: LauncherIconManager(
 				setBundleIcon: { _ in true },
 				setRunningIcon: { _ in },
-				defaultIcon: { NSImage(size: NSSize(width: 64, height: 64)) }
+				defaultIcon: { musicTestIcon() }
 			),
 			playerCommands: fake.playerCommands,
 			clock: clock,
