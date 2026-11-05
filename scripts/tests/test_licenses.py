@@ -358,6 +358,28 @@ def test_bundle_writes_one_compiled_file_with_runtime_components(
     assert warnings == ["Art 1.0.0: license not yet verified"]
 
 
+def test_arm_runtime_license_index_is_accepted(project: Path, tmp_path: Path) -> None:
+    runtime = tmp_path / "runtime"
+    (runtime / "Licenses/runtime").mkdir(parents=True)
+    (runtime / "Licenses/runtime/MIT.txt").write_text("MIT", encoding="utf-8")
+    entry = component(name="FEX", files=["runtime/MIT.txt"])
+    (runtime / "Licenses/index.json").write_text(
+        json.dumps({"schemaVersion": 1, "components": [entry]}), encoding="utf-8"
+    )
+    (runtime / "NOTICE.md").write_text("Runtime notice", encoding="utf-8")
+    resources = tmp_path / "Resources"
+    resources.mkdir()
+
+    warnings = licenses.stage_bundle(project, resources, runtime, strict=False)
+
+    assert "the runtime archive has no Licenses/index.json" not in warnings
+    notices = zlib.decompress(
+        (resources / "ThirdPartyNotices.deflate").read_bytes(), -15
+    ).decode("utf-8")
+    assert "[FEX](" in notices
+    assert "Runtime notice" in notices
+
+
 def test_compiled_notices_keep_each_distinct_text_once(project: Path) -> None:
     (project / "docs/legal/licenses/same.txt").write_text("MIT text", encoding="utf-8")
     rewrite(
