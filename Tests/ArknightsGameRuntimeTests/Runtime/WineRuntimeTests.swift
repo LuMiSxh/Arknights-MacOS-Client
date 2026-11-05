@@ -99,6 +99,37 @@ func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 }
 
 @Test
+func runtimeInstallsTheARMDXMTPayloadFromTheInterface() throws {
+	let fileManager = FileManager.default
+	let libraries = ["d3d10core.dll", "d3d11.dll", "dxgi.dll"]
+	let destinations = [
+		WineRuntime.DXMTDestination(architecture: "x64", windowsDirectory: "system32")
+	]
+	let fixture = try DXMTFixture(fileManager: fileManager, libraries: libraries)
+	defer { fixture.remove(fileManager: fileManager) }
+
+	try WineRuntime.installDXMT(
+		from: fixture.payload,
+		in: fixture.prefix,
+		destinations: destinations,
+		libraries: libraries
+	)
+	#expect(
+		WineRuntime.dxmtIsCurrent(
+			from: fixture.payload,
+			in: fixture.prefix,
+			destinations: destinations,
+			libraries: libraries
+		)
+	)
+	let installed = fixture.prefix.appending(
+		path: "drive_c/windows/system32",
+		directoryHint: .isDirectory
+	)
+	#expect(!fileManager.fileExists(atPath: installed.appending(path: "winemetal.dll").path))
+}
+
+@Test
 func injectedBridgesShareTheDynamicLoaderPath() {
 	let runtime = WineRuntime(
 		executableURL: URL(filePath: "/runtime/bin/Arknights"),
@@ -193,7 +224,11 @@ private struct DXMTFixture {
 	let payload: URL
 	let prefix: URL
 
-	init(fileManager: FileManager, architectures: [String] = ["x64"]) throws {
+	init(
+		fileManager: FileManager,
+		architectures: [String] = ["x64"],
+		libraries: [String] = WineRuntime.dxmtLibraryNames
+	) throws {
 		root = fileManager.temporaryDirectory.appending(
 			path: "dxmt-test-\(UUID().uuidString)",
 			directoryHint: .isDirectory
@@ -201,7 +236,7 @@ private struct DXMTFixture {
 		payload = root.appending(path: "DXMT", directoryHint: .isDirectory)
 		prefix = root.appending(path: "prefix", directoryHint: .isDirectory)
 		for architecture in architectures {
-			for library in WineRuntime.dxmtLibraryNames {
+			for library in libraries {
 				let source = payload.appending(path: architecture).appending(path: library)
 				try fileManager.createDirectory(
 					at: source.deletingLastPathComponent(),

@@ -133,7 +133,9 @@ extension WineRuntime {
 		let dxmtCurrent = Self.dxmtIsCurrent(
 			from: dxmtPayload,
 			in: prefixDirectory,
-			fileManager: fileManager
+			fileManager: fileManager,
+			destinations: dxmtPayloadDestinations,
+			libraries: dxmtPayloadLibraries
 		)
 		let invalidatedMigrations: Set<RuntimeMigration> =
 			dxmtCurrent ? [] : [.installDXMT]
@@ -187,7 +189,9 @@ extension WineRuntime {
 				try Self.installDXMT(
 					from: dxmtPayload,
 					in: prefixDirectory,
-					fileManager: fileManager
+					fileManager: fileManager,
+					destinations: dxmtPayloadDestinations,
+					libraries: dxmtPayloadLibraries
 				)
 			case .configureRegistry:
 				try await configureCompatibilityOverrides(
@@ -228,18 +232,20 @@ extension WineRuntime {
 	@concurrent
 	private static func deduplicateRuntimeLibraries(
 		prefixDirectory: URL,
-		runtimeRoot: URL
+		runtimeRoot: URL,
+		libraries: [String]
 	) async -> WinePrefixLibraryDeduplicator.Report {
-		WinePrefixLibraryDeduplicator(excludingNames: Set(Self.dxmtLibraryNames))
+		WinePrefixLibraryDeduplicator(excludingNames: Set(libraries))
 			.deduplicate(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
 	}
 
 	@concurrent
 	private static func cleanLegacyLibraries(
 		prefixDirectory: URL,
-		runtimeRoot: URL
+		runtimeRoot: URL,
+		libraries: [String]
 	) async -> WinePrefixLegacyLibraryCleaner.Report {
-		WinePrefixLegacyLibraryCleaner(launcherInstalledNames: Set(Self.dxmtLibraryNames))
+		WinePrefixLegacyLibraryCleaner(launcherInstalledNames: Set(libraries))
 			.clean(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
 	}
 
@@ -248,7 +254,8 @@ extension WineRuntime {
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
 		let report = await Self.deduplicateRuntimeLibraries(
 			prefixDirectory: prefixDirectory,
-			runtimeRoot: runtimeRoot
+			runtimeRoot: runtimeRoot,
+			libraries: dxmtPayloadLibraries
 		)
 		try Task.checkCancellation()
 		if let code = report.cloneUnsupportedCode {
@@ -269,7 +276,8 @@ extension WineRuntime {
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
 		let report = await Self.cleanLegacyLibraries(
 			prefixDirectory: prefixDirectory,
-			runtimeRoot: runtimeRoot
+			runtimeRoot: runtimeRoot,
+			libraries: dxmtPayloadLibraries
 		)
 		try Task.checkCancellation()
 		if report.skipped {
@@ -341,29 +349,33 @@ extension WineRuntime {
 	static func installDXMT(
 		from payloadDirectory: URL,
 		in prefixDirectory: URL,
-		fileManager: FileManager = .default
+		fileManager: FileManager = .default,
+		destinations: [DXMTDestination] = dxmtDestinations,
+		libraries: [String] = dxmtLibraryNames
 	) throws {
-		let destinations = dxmtDestinations
-		let sources = destinations.flatMap { architecture, _ in
-			dxmtLibraryNames.map {
-				payloadDirectory.appending(path: architecture).appending(path: $0)
+		let sources = destinations.flatMap { destination in
+			libraries.map {
+				payloadDirectory.appending(path: destination.architecture).appending(path: $0)
 			}
 		}
 		guard sources.allSatisfy({ fileManager.fileExists(atPath: $0.path) }) else {
 			throw GameRuntimeError.runtimeConfiguration("The bundled DXMT payload is incomplete.")
 		}
 
-		for (architecture, windowsDirectory) in destinations {
+		for destination in destinations {
 			let destinationDirectory =
 				prefixDirectory
 				.appending(path: "drive_c/windows", directoryHint: .isDirectory)
-				.appending(path: windowsDirectory, directoryHint: .isDirectory)
+				.appending(path: destination.windowsDirectory, directoryHint: .isDirectory)
 			try fileManager.createDirectory(
 				at: destinationDirectory,
 				withIntermediateDirectories: true
 			)
-			for library in dxmtLibraryNames {
-				let source = payloadDirectory.appending(path: architecture).appending(path: library)
+			for library in libraries {
+				let source =
+					payloadDirectory
+					.appending(path: destination.architecture)
+					.appending(path: library)
 				let destination = destinationDirectory.appending(path: library)
 				if filesMatch(source, destination, fileManager: fileManager) { continue }
 				if fileManager.fileExists(atPath: destination.path) {
@@ -377,15 +389,20 @@ extension WineRuntime {
 	static func dxmtIsCurrent(
 		from payloadDirectory: URL,
 		in prefixDirectory: URL,
-		fileManager: FileManager = .default
+		fileManager: FileManager = .default,
+		destinations: [DXMTDestination] = dxmtDestinations,
+		libraries: [String] = dxmtLibraryNames
 	) -> Bool {
-		for (architecture, windowsDirectory) in dxmtDestinations {
-			for library in dxmtLibraryNames {
-				let source = payloadDirectory.appending(path: architecture).appending(path: library)
+		for destination in destinations {
+			for library in libraries {
+				let source =
+					payloadDirectory
+					.appending(path: destination.architecture)
+					.appending(path: library)
 				let destination =
 					prefixDirectory
 					.appending(path: "drive_c/windows", directoryHint: .isDirectory)
-					.appending(path: windowsDirectory, directoryHint: .isDirectory)
+					.appending(path: destination.windowsDirectory, directoryHint: .isDirectory)
 					.appending(path: library)
 				guard filesMatch(source, destination, fileManager: fileManager) else {
 					return false

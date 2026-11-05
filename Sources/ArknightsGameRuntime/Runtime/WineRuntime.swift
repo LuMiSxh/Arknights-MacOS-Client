@@ -29,8 +29,13 @@ struct RuntimeConfiguration: Decodable, Sendable {
 		let sha256: String
 	}
 	struct Interface: Decodable, Sendable {
+		struct DXMT: Decodable, Sendable {
+			let destinations: [String: String]
+			let libraries: [String]
+		}
 		let runtimeCapabilities: String?
 		let macDriver: String?
+		let dxmt: DXMT?
 	}
 	struct Components: Decodable, Sendable {
 		let wine: String?
@@ -57,10 +62,17 @@ struct RuntimeConfiguration: Decodable, Sendable {
 /// The bundled Wine + DXMT build, discovered from `RUNTIME.json` in the app's resources, and
 /// the single entry point for launching, monitoring, and stopping the Windows game process.
 struct WineRuntime: Sendable {
+	struct DXMTDestination: Sendable, Equatable {
+		let architecture: String
+		let windowsDirectory: String
+	}
+
 	let executableURL: URL
 	let displayName: String
 	let revision: String
 	let runtimeArchitecture: String
+	let dxmtPayloadDestinations: [DXMTDestination]
+	let dxmtPayloadLibraries: [String]
 	let gameIconBridgeURL: URL?
 	let capabilityManifestFileName: String?
 	let pins: RuntimePins
@@ -71,6 +83,8 @@ struct WineRuntime: Sendable {
 		displayName: String,
 		revision: String,
 		runtimeArchitecture: String = "Unknown",
+		dxmtPayloadDestinations: [DXMTDestination] = WineRuntime.dxmtDestinations,
+		dxmtPayloadLibraries: [String] = WineRuntime.dxmtLibraryNames,
 		gameIconBridgeURL: URL? = nil,
 		capabilityManifestFileName: String? = nil,
 		pins: RuntimePins = RuntimePins(),
@@ -80,6 +94,8 @@ struct WineRuntime: Sendable {
 		self.displayName = displayName
 		self.revision = revision
 		self.runtimeArchitecture = runtimeArchitecture
+		self.dxmtPayloadDestinations = dxmtPayloadDestinations
+		self.dxmtPayloadLibraries = dxmtPayloadLibraries
 		self.gameIconBridgeURL = gameIconBridgeURL
 		self.capabilityManifestFileName = capabilityManifestFileName
 		self.pins = pins
@@ -109,7 +125,9 @@ struct WineRuntime: Sendable {
 	static let inheritedEnvironmentKeys = ["LANG", "LC_ALL", "LC_CTYPE", "__CF_USER_TEXT_ENCODING"]
 	// Earlier builds shipped 32-bit DXMT files. `removeLegacy32BitLibraries` cleans them up
 	// once the runtime stops shipping `i386-windows`.
-	static let dxmtDestinations = [("x64", "system32")]
+	static let dxmtDestinations = [
+		DXMTDestination(architecture: "x64", windowsDirectory: "system32")
+	]
 	static let dxmtLibraryNames = ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
 	static let crashDialogRegistryKey = "HKCU\\Software\\Wine\\WineDbg"
 	static let crashDialogRegistryValue = "ShowCrashDialog"
@@ -171,6 +189,29 @@ struct WineRuntime: Sendable {
 				"runtime.sha256 must not be empty"
 			)
 		}
+		let dxmtLibraries = configuration.interface?.dxmt?.libraries ?? Self.dxmtLibraryNames
+		let dxmtDestinations =
+			configuration.interface?.dxmt?.destinations.map {
+				DXMTDestination(architecture: $0.key, windowsDirectory: $0.value)
+			}.sorted { $0.architecture < $1.architecture } ?? Self.dxmtDestinations
+		guard !dxmtLibraries.isEmpty, dxmtLibraries.allSatisfy(Self.isSafeDXMTComponent) else {
+			throw WineRuntimeDiscoveryError.invalidConfiguration(
+				configurationURL,
+				"interface.dxmt.libraries must be a non-empty list of file names"
+			)
+		}
+		guard
+			!dxmtDestinations.isEmpty,
+			dxmtDestinations.allSatisfy({
+				Self.isSafeDXMTComponent($0.architecture)
+					&& Self.isSafeDXMTComponent($0.windowsDirectory)
+			})
+		else {
+			throw WineRuntimeDiscoveryError.invalidConfiguration(
+				configurationURL,
+				"interface.dxmt.destinations must be non-empty path components"
+			)
+		}
 		let lane = RuntimeLane.declared(
 			architecture: configuration.architecture,
 			macDriver: configuration.interface?.macDriver,
@@ -181,6 +222,8 @@ struct WineRuntime: Sendable {
 			displayName: configuration.runtime.name,
 			revision: configuration.revision,
 			runtimeArchitecture: lane?.label ?? "Unknown",
+			dxmtPayloadDestinations: dxmtDestinations,
+			dxmtPayloadLibraries: dxmtLibraries,
 			gameIconBridgeURL: resources.appending(
 				path: "Compatibility/GameIcon/GameIconBridge.dylib"
 			),
@@ -193,6 +236,15 @@ struct WineRuntime: Sendable {
 			),
 			compatibilityManager: compatibilityManager
 		)
+	}
+
+	static func isSafeDXMTComponent(_ value: String) -> Bool {
+		!value.isEmpty
+			&& value != "."
+			&& value != ".."
+			&& !value.contains("/")
+			&& !value.contains("\\")
+			&& !value.utf8.contains(0)
 	}
 
 	@concurrent
