@@ -71,6 +71,7 @@ struct WineRuntime: Sendable {
 	let displayName: String
 	let revision: String
 	let runtimeArchitecture: String
+	let lane: RuntimeLane?
 	let dxmtPayloadDestinations: [DXMTDestination]
 	let dxmtPayloadLibraries: [String]
 	let gameIconBridgeURL: URL?
@@ -83,6 +84,7 @@ struct WineRuntime: Sendable {
 		displayName: String,
 		revision: String,
 		runtimeArchitecture: String = "Unknown",
+		lane: RuntimeLane? = nil,
 		dxmtPayloadDestinations: [DXMTDestination] = WineRuntime.dxmtDestinations,
 		dxmtPayloadLibraries: [String] = WineRuntime.dxmtLibraryNames,
 		gameIconBridgeURL: URL? = nil,
@@ -94,6 +96,7 @@ struct WineRuntime: Sendable {
 		self.displayName = displayName
 		self.revision = revision
 		self.runtimeArchitecture = runtimeArchitecture
+		self.lane = lane
 		self.dxmtPayloadDestinations = dxmtPayloadDestinations
 		self.dxmtPayloadLibraries = dxmtPayloadLibraries
 		self.gameIconBridgeURL = gameIconBridgeURL
@@ -101,6 +104,8 @@ struct WineRuntime: Sendable {
 		self.pins = pins
 		self.compatibilityManager = compatibilityManager
 	}
+
+	var isNativeARMLane: Bool { lane == .arm }
 
 	static let dllOverrides =
 		"d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
@@ -222,6 +227,7 @@ struct WineRuntime: Sendable {
 			displayName: configuration.runtime.name,
 			revision: configuration.revision,
 			runtimeArchitecture: lane?.label ?? "Unknown",
+			lane: lane,
 			dxmtPayloadDestinations: dxmtDestinations,
 			dxmtPayloadLibraries: dxmtLibraries,
 			gameIconBridgeURL: resources.appending(
@@ -391,6 +397,21 @@ struct WineRuntime: Sendable {
 		}
 		for (key, value) in gameIconEnvironment(customIconURL: gameIconURL) {
 			environment[key] = value
+		}
+		if isNativeARMLane {
+			// The SDK login view is Qt WebEngine 5.15 (Chromium 87), whose AppContainer
+			// setup is unavailable in the ARM64EC Wine build. The game throws when the
+			// browser process dies, so disable the sandbox on this lane only.
+			environment["QTWEBENGINE_DISABLE_SANDBOX"] = "1"
+			environment["QTWEBENGINE_CHROMIUM_FLAGS"] = "--no-sandbox --disable-gpu"
+			environment[AppConstants.Runtime.runtimeLaneEnvironmentKey] = "arm"
+			// V8 relies on x86 total store order for its compressed pointers. FEX only
+			// emulates scalar TSO by default; enable the vector and memcpy variants and
+			// keep the unsafe half-barrier backpatching disabled.
+			environment["FEX_TSOENABLED"] = "1"
+			environment["FEX_VECTORTSOENABLED"] = "1"
+			environment["FEX_MEMCPYSETTSOENABLED"] = "1"
+			environment["FEX_HALFBARRIERTSOENABLED"] = "0"
 		}
 		let process = Process()
 		process.executableURL = executableURL

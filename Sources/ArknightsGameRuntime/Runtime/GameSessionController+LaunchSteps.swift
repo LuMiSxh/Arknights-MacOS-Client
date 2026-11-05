@@ -253,16 +253,22 @@ extension GameSessionController {
 				"Window size \(request.options.windowSize.displayName) is scaled to \(fittedWindowSize.displayName) to fit the screen."
 			)
 		}
+		var gameArguments = ["-logFile", AppPaths.windowsUnityLogPath]
+		if context.runtime.isNativeARMLane {
+			// The ARM64EC Wine build cannot set up AppContainer for the SDK login view; its
+			// browser process aborts and the game throws. Keep the flag on this lane only.
+			gameArguments.append("--no-sandbox")
+		}
+		gameArguments += installation.configuration?.gameStartParams ?? []
+		gameArguments += request.options.playerArguments(
+			gamePixelsPerPoint: prepared.displayConfiguration.gamePixelsPerPoint,
+			fullscreenDisplay: fullscreenDisplay,
+			screen: screen
+		)
 		let launch = try await context.runtime.launch(
 			gameExecutable: request.executable,
 			prefixDirectory: request.prefixDirectory,
-			gameArguments: ["-logFile", AppPaths.windowsUnityLogPath]
-				+ (installation.configuration?.gameStartParams ?? [])
-				+ request.options.playerArguments(
-					gamePixelsPerPoint: prepared.displayConfiguration.gamePixelsPerPoint,
-					fullscreenDisplay: fullscreenDisplay,
-					screen: screen
-				),
+			gameArguments: gameArguments,
 			displayConfiguration: prepared.displayConfiguration,
 			graphicsDiagnostics: graphicsDiagnosticsEnabled,
 			metalPerformanceHUDEnabled: request.options.usesMetalPerformanceHUD,

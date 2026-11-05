@@ -3,6 +3,7 @@
 import AppKit
 import ArknightsCore
 import CoreGraphics
+import Darwin
 import Foundation
 
 // Polls `CGWindowListCopyWindowInfo` for the game's onscreen window. Process launch alone is
@@ -36,9 +37,52 @@ struct WineWindowReadiness {
 	}
 
 	static func isVisible(processIdentifier: Int32, windows: [[String: Any]]) -> Bool {
-		GameWindowLocator.select(
-			windows.compactMap(GameWindowCandidate.init(windowInfo:)), pid: processIdentifier)
-			!= nil
+		isVisible(
+			processIdentifier: processIdentifier,
+			windows: windows,
+			descendantIdentifiers: descendants(of: processIdentifier)
+		)
+	}
+
+	/// Wine's launcher process (`start.exe`) owns the child that creates the game window, so a
+	/// window of a descendant is the game window too.
+	static func isVisible(
+		processIdentifier: Int32,
+		windows: [[String: Any]],
+		descendantIdentifiers: [Int32]
+	) -> Bool {
+		let candidates = windows.compactMap(GameWindowCandidate.init(windowInfo:))
+		if GameWindowLocator.select(candidates, pid: processIdentifier) != nil {
+			return true
+		}
+		return descendantIdentifiers.contains {
+			GameWindowLocator.select(candidates, pid: $0) != nil
+		}
+	}
+
+	private static func descendants(of processIdentifier: Int32) -> [Int32] {
+		var descendants: [Int32] = []
+		var visited: Set<Int32> = [processIdentifier]
+		var pending: [Int32] = [processIdentifier]
+		while let parent = pending.popLast() {
+			for child in children(of: parent) where visited.insert(child).inserted {
+				descendants.append(child)
+				pending.append(child)
+			}
+		}
+		return descendants
+	}
+
+	// `proc_listchildpids` visits only the process tree. The full `KERN_PROC_ALL` table costs more
+	// and this runs once per readiness poll.
+	private static func children(of processIdentifier: Int32) -> [Int32] {
+		let capacity = 256
+		var buffer = [pid_t](repeating: 0, count: capacity)
+		let bytes = proc_listchildpids(
+			processIdentifier, &buffer, Int32(capacity * MemoryLayout<pid_t>.size))
+		guard bytes > 0 else { return [] }
+		let count = min(capacity, Int(bytes) / MemoryLayout<pid_t>.size)
+		return buffer[0..<count].map { Int32($0) }
 	}
 
 	private static func currentWindows() -> [[String: Any]] {

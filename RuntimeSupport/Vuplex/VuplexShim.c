@@ -42,6 +42,10 @@ static const wchar_t *compatibility_arguments[] = {
     L"--disable-features=ClipboardMaximumAge",
     L"--log-file=L:\\chromium.log"};
 
+/* Native ARM64 lane only. The emulated GPU process aborts CEF popups, and FEX can run stale
+ * translations of V8 JIT code until the W^X model is fixed. */
+static const wchar_t *arm_compatibility_arguments[] = {L"--disable-gpu", L"--js-flags=--jitless"};
+
 static const wchar_t *high_resolution_arguments[] = {
     L"--high-dpi-support=1",
     L"--force-device-scale-factor=2",
@@ -84,6 +88,17 @@ static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected
 			return TRUE;
 	}
 	return FALSE;
+}
+
+/* The client sets this only when it launches the native ARM64 runtime. The x86_64 lane keeps
+ * Chromium's own GPU and JIT paths. Keep the key in sync with
+ * AppConstants.Runtime.runtimeLaneEnvironmentKey. */
+static BOOL uses_native_arm_runtime(void) {
+	wchar_t value[8];
+	DWORD length =
+	    GetEnvironmentVariableW(L"ARKNIGHTS_CLIENT_RUNTIME_LANE", value, ARRAYSIZE(value));
+
+	return length == 3 && value[0] == L'a' && value[1] == L'r' && value[2] == L'm';
 }
 
 /* Reads the scale factor WineRuntime.swift sets before launch: "2" means the Swift launcher
@@ -157,6 +172,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 	int compatibility_index;
 	int high_resolution_index;
 	BOOL use_high_resolution;
+	BOOL use_arm_compatibility;
 	SIZE_T command_length = 1;
 	STARTUPINFOW startup_info = {
 	    .cb = sizeof(startup_info), .dwFlags = STARTF_USESHOWWINDOW, .wShowWindow = SW_HIDE};
@@ -206,6 +222,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 		return (int)error;
 	}
 	use_high_resolution = high_resolution_enabled();
+	use_arm_compatibility = uses_native_arm_runtime();
 	command_length += 2 * wcslen(original_path) + 3;
 	for (index = 1; index < argument_count; index++)
 		command_length += 2 * wcslen(arguments[index]) + 3;
@@ -214,6 +231,15 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 		if (!has_argument(
 		        argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			command_length += 2 * wcslen(compatibility_arguments[compatibility_index]) + 3;
+		}
+	}
+	if (use_arm_compatibility) {
+		for (compatibility_index = 0; compatibility_index < ARRAYSIZE(arm_compatibility_arguments);
+		     compatibility_index++) {
+			if (!has_argument(
+			        argument_count, arguments, arm_compatibility_arguments[compatibility_index])) {
+				command_length += 2 * wcslen(arm_compatibility_arguments[compatibility_index]) + 3;
+			}
 		}
 	}
 	if (use_high_resolution) {
@@ -243,6 +269,16 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 		        argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			*cursor++ = L' ';
 			cursor = append_quoted(cursor, compatibility_arguments[compatibility_index]);
+		}
+	}
+	if (use_arm_compatibility) {
+		for (compatibility_index = 0; compatibility_index < ARRAYSIZE(arm_compatibility_arguments);
+		     compatibility_index++) {
+			if (!has_argument(
+			        argument_count, arguments, arm_compatibility_arguments[compatibility_index])) {
+				*cursor++ = L' ';
+				cursor = append_quoted(cursor, arm_compatibility_arguments[compatibility_index]);
+			}
 		}
 	}
 	if (use_high_resolution) {

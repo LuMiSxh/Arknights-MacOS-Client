@@ -30,6 +30,10 @@ package enum AppConstants {
 	}
 
 	package enum Runtime {
+		/// The Dock and menu-bar name of the game process.
+		package static let applicationName = "Arknights"
+		/// Set to `arm` only when the native ARM64 runtime launches the game.
+		package static let runtimeLaneEnvironmentKey = "ARKNIGHTS_CLIENT_RUNTIME_LANE"
 		static let aceCompactEnvironmentKey = "ARKNIGHTS_RUNTIME_ACE_COMPACT"
 		static let cefCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CEF_COMPAT"
 		static let cnCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CN_COMPAT"

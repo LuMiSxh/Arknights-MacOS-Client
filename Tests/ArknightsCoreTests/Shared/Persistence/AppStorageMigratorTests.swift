@@ -6,7 +6,7 @@ import Testing
 
 @testable import ArknightsCore
 
-private final class FailingMoveFileManager: FileManager, @unchecked Sendable {
+private final class FailingMoveFileManager: FileManager {
 	private let failingMove: Int
 	private var moves = 0
 	private(set) var shouldFail = true

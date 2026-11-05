@@ -88,7 +88,7 @@ extension WineRuntime {
 		environment["WINEHOMEDIR"] = home.path
 		// Crash-report matching (GameSessionController.recentCrashReportPath) looks for
 		// "Arknights-*.ips" under DiagnosticReports, so this name must stay in sync.
-		environment["WINEPRELOADERAPPNAME"] = "Arknights"
+		environment["WINEPRELOADERAPPNAME"] = AppConstants.Runtime.applicationName
 		environment["WINEDEBUG"] = Self.debugChannels
 		environment["CFFIXED_USER_HOME"] = home.path
 		environment["XDG_CACHE_HOME"] = home.appending(path: ".cache").path
