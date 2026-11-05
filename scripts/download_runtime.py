@@ -177,7 +177,7 @@ def main() -> None:
         prepare_runtime(
             url,
             checksum.lower(),
-            config.layout,
+            config.selected_layout,
             f"{project_configuration.product.bundle_identifier}.build",
         )
     )

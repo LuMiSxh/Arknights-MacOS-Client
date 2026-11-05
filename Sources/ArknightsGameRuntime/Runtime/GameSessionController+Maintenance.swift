@@ -5,6 +5,9 @@ import Foundation
 
 extension GameSessionController {
 	package func refreshRuntime() {
+		if let diagnostic = paths.runtimeLaneDiagnostic {
+			log.error(diagnostic)
+		}
 		do {
 			let runtime = try discoverRuntime()
 			runtimeName = runtime.displayName

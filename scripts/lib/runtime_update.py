@@ -22,6 +22,7 @@ from typing import Any
 
 from runtime_config import (
     COMMIT_PATTERN,
+    RUNTIME_ARCHITECTURES,
     SHA256_PATTERN,
     RuntimeLayout,
     load_runtime_config,
@@ -198,6 +199,7 @@ def updated_manifest(
     manifest: Mapping[str, Any],
     tag: str,
     provenance: Mapping[str, Any],
+    architecture: str = RUNTIME_ARCHITECTURE,
     moltenvk_version: str | None = None,
 ) -> dict[str, Any]:
     """Return `manifest` with every release-derived field taken from `provenance`."""
@@ -215,6 +217,7 @@ def updated_manifest(
         if COMMIT_PATTERN.fullmatch(commit) is None:
             fail(f"provenance.json has an invalid Git commit: {commit!r}")
     result = json.loads(json.dumps(manifest))
+    result["architecture"] = architecture
     previous = result["provenance"]
     moltenvk_changed = previous["moltenvkCommit"] != base["moltenvk"]["commit"]
     if moltenvk_changed and moltenvk_version is None:
@@ -392,7 +395,11 @@ def manifest_problems(manifest: Mapping[str, Any]) -> list[str]:
     """Compare the release-derived fields with the tag in the archive URL (offline)."""
     release = runtime_release(manifest)
     archive, source = asset_names(release.tag)
+    architecture = manifest.get("architecture")
+    if architecture not in RUNTIME_ARCHITECTURES:
+        return [f"runtime.json: architecture is {architecture!r}, expected x86 or arm"]
     expected = {
+        "architecture": (architecture, tag_architecture(release.tag)),
         "runtime.name": (
             manifest["runtime"]["name"],
             f"Arknights macOS Runtime {release.version}",
@@ -432,16 +439,23 @@ def update(
     tag: str,
     fetch: Fetch,
     moltenvk_version: str | None = None,
+    *,
+    architecture: str = RUNTIME_ARCHITECTURE,
 ) -> list[Path]:
     """Pin `tag` and rewrite `runtime.json` and the `runtime` blocks; return changes."""
     target = root / RUNTIME_CONFIG
     original = target.read_text(encoding="utf-8")
+    if tag_architecture(tag) != architecture:
+        fail(
+            f"release {tag} is for {tag_architecture(tag)}, not {architecture}; "
+            "pass the matching --architecture"
+        )
     provenance = fetch_provenance(fetch, tag)
     current = load_runtime_config(target)
     manifest = current.raw
-    check_interface(current.layout, provenance)
+    check_interface(current.for_architecture(architecture), provenance)
     text = format_manifest(
-        updated_manifest(manifest, tag, provenance, moltenvk_version)
+        updated_manifest(manifest, tag, provenance, architecture, moltenvk_version)
     )
     changed: list[Path] = []
     if text != original:

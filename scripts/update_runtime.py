@@ -26,12 +26,18 @@ from lib.runtime_update import (
     normalize_tag,
     update,
 )
-from runtime_config import prepared_runtime
+from runtime_config import RUNTIME_ARCHITECTURES, prepared_runtime
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tag", default="latest", help="release tag or latest")
+    parser.add_argument(
+        "--architecture",
+        choices=tuple(RUNTIME_ARCHITECTURES),
+        default="x86",
+        help="runtime lane to pin (default: x86)",
+    )
     parser.add_argument(
         "--include-prerelease",
         action="store_true",
@@ -53,18 +59,26 @@ def main() -> None:
     fetch = https_fetcher(f"{product.bundle_identifier}.build")
     info("Resolving the runtime release")
     tag = (
-        latest_tag(fetch, arguments.include_prerelease)
+        latest_tag(fetch, arguments.include_prerelease, arguments.architecture)
         if arguments.tag == "latest"
         else normalize_tag(arguments.tag)
     )
-    info(f"Pinning runtime {tag}")
+    info(f"Pinning the {arguments.architecture} runtime {tag}")
     info("Reading the release provenance")
-    changed = update(PROJECT_DIR, tag, fetch, arguments.moltenvk_version)
+    changed = update(
+        PROJECT_DIR,
+        tag,
+        fetch,
+        arguments.moltenvk_version,
+        architecture=arguments.architecture,
+    )
     changed.extend(regenerate(PROJECT_DIR, prepared_runtime(PROJECT_DIR)))
     for path in changed:
         info(f"Updated {path}")
     success(
-        f"Runtime {tag} is pinned" if changed else f"Runtime {tag} was already pinned"
+        f"The {arguments.architecture} runtime {tag} is pinned"
+        if changed
+        else f"The {arguments.architecture} runtime {tag} was already pinned"
     )
 
 

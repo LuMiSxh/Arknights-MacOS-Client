@@ -8,6 +8,8 @@ order: 30
 
 Each server keeps its own game files. Servers of one publisher share one **game environment** (Wine prefix): the Windows environment with sign-ins, settings, and caches.
 
+A launcher built for the native ARM64 runtime keeps a separate game environment in `Yostar/Prefix-ARM64`, `Gryphline/Prefix-ARM64`, or `Hypergryph/Prefix-ARM64`. The x86_64 runtime keeps the existing environment. Switching between the two keeps both. The environments do not share sign-ins, settings, or caches, so a switch requires a new sign-in.
+
 ## Where files live
 
 Paths start with `~/Library/Application Support/com.lumisxh.arknights-client/` unless noted.

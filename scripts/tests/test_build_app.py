@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import plistlib
 import subprocess
 from dataclasses import replace
@@ -9,6 +10,7 @@ from pathlib import Path
 
 import build_app
 import pytest
+from lib.common import ScriptError
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 
@@ -27,6 +29,61 @@ def test_app_resources_follow_project_configuration(
     )
     for source in configuration.copied_resource_source_paths:
         assert resources[source] == Path(source.name)
+
+
+def test_arm_bundle_promotes_the_arm_interface(tmp_path: Path) -> None:
+    configuration = tmp_path / "RUNTIME.json"
+    configuration.write_text(
+        json.dumps(
+            {
+                "interface": {"macDriver": "lib/wine/x86_64-unix/winemac.so"},
+                "armInterface": {"macDriver": "lib/wine/aarch64-unix/winemac.so"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    build_app.promote_arm_interface(configuration)
+
+    value = json.loads(configuration.read_text(encoding="utf-8"))
+    assert value["interface"] == {"macDriver": "lib/wine/aarch64-unix/winemac.so"}
+    assert "armInterface" not in value
+
+
+def test_arm_bundle_requires_the_arm_interface(tmp_path: Path) -> None:
+    configuration = tmp_path / "RUNTIME.json"
+    configuration.write_text(json.dumps({"interface": {}}), encoding="utf-8")
+
+    with pytest.raises(ScriptError, match="armInterface"):
+        build_app.promote_arm_interface(configuration)
+
+
+def test_record_runtime_lane_records_the_embedded_lane(tmp_path: Path) -> None:
+    configuration = tmp_path / "RUNTIME.json"
+    configuration.write_text(
+        json.dumps({"runtime": {"name": "Arknights macOS Runtime"}}),
+        encoding="utf-8",
+    )
+
+    build_app.record_runtime_lane(configuration, "arm")
+
+    value = json.loads(configuration.read_text(encoding="utf-8"))
+    assert value["architecture"] == "arm"
+    assert value["runtime"]["name"] == "Arknights macOS Runtime (aarch64 canary)"
+
+
+def test_record_runtime_lane_keeps_the_x86_name(tmp_path: Path) -> None:
+    configuration = tmp_path / "RUNTIME.json"
+    configuration.write_text(
+        json.dumps({"runtime": {"name": "Arknights macOS Runtime"}}),
+        encoding="utf-8",
+    )
+
+    build_app.record_runtime_lane(configuration, "x86")
+
+    value = json.loads(configuration.read_text(encoding="utf-8"))
+    assert value["architecture"] == "x86"
+    assert value["runtime"]["name"] == "Arknights macOS Runtime"
 
 
 def test_compatibility_artifacts_are_discovered_recursively(tmp_path: Path) -> None:

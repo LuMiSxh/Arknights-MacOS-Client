@@ -129,7 +129,7 @@ package enum AppStorageMigrator {
 
 	private static func directoryMoves(for paths: AppPaths) -> [DirectoryMove] {
 		let support = paths.applicationSupportRoot
-		return [
+		let installs = [
 			DirectoryMove(
 				region: .global,
 				legacy: support.appending(path: "Games/Arknights-Global"),
@@ -150,6 +150,11 @@ package enum AppStorageMigrator {
 				region: .chinaBilibili,
 				legacy: support.appending(path: "Games/Arknights-China-Bilibili"),
 				current: paths.gameInstall(for: .chinaBilibili)),
+		]
+		// A legacy prefix contains x86 runtime files. Never move it into the ARM64 lane,
+		// which would mix module architectures in one environment.
+		guard paths.runtimeLane == .x86 else { return installs }
+		return installs + [
 			DirectoryMove(
 				region: nil,
 				legacy: support.appending(path: "Wine/Prefixes/Arknights-Global"),

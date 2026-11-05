@@ -15,12 +15,12 @@ Each release is a complete Apple Silicon DMG with the launcher, Wine, DXMT, lice
 
 Check these inputs first:
 
-| Input                   | Required state                                                                                                                                       |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CHANGELOG.md`          | Non-empty `## [X.Y.Z]` section; it becomes the GitHub and Sparkle release notes                                                                      |
-| `Resources/Info.plist`  | `CFBundleShortVersionString` exactly matches `X.Y.Z`; `SUPublicEDKey` stays the tracked release public key                                           |
-| `runtime.json`          | Valid schema, HTTPS downloads, lowercase SHA-256 values, safe interface paths, paired provenance repositories and commits, intended `prefixRevision` |
-| Working tree and `main` | Clean, on `main`, equal to upstream. `just release` checks all three                                                                                 |
+| Input                   | Required state                                                                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CHANGELOG.md`          | Non-empty `## [X.Y.Z]` section; it becomes the GitHub and Sparkle release notes                                                                                         |
+| `Resources/Info.plist`  | `CFBundleShortVersionString` exactly matches `X.Y.Z`; `SUPublicEDKey` stays the tracked release public key                                                              |
+| `runtime.json`          | Valid schema, HTTPS downloads, lowercase SHA-256 values, safe interface paths, paired provenance repositories and commits, intended `architecture` and `prefixRevision` |
+| Working tree and `main` | Clean, on `main`, equal to upstream. `just release` checks all three                                                                                                    |
 
 The `pages` and `package` jobs run independently from the same commit. Pages requires `main`, runs `pnpm check`, and builds with `BASE_PATH=/Arknights-MacOS-Client`. A Pages failure does not stop the draft but keeps the workflow red.
 
@@ -44,7 +44,11 @@ flowchart LR
 
 ## Local packaging
 
-Run `just dev` to download the pinned runtime and build the app. Run `just dev dmg` to continue to the installable DMG. `just runtime` only downloads the runtime. It verifies the SHA-256, extracts the archive safely, validates Wine and the DXMT x64 library set, and replaces `.build/runtime`.
+Run `just dev` to download the pinned runtime and build the app. Run `just dev dmg` to continue to the installable DMG. `just runtime` only downloads the runtime. It verifies the SHA-256, extracts the archive safely, validates the runtime against the interface of the pinned lane, and replaces `.build/runtime`.
+
+`just app RUNTIME` and `just dmg RUNTIME` use the lane in `runtime.json`. Add `arm` as the second argument to build the ARM64 lane from a local runtime directory: `just app .build/runtime-arm arm` or `just dmg .build/runtime-arm arm`. Add `strict` after the lane for a verified-license check: `just dmg .build/runtime x86 strict`.
+
+Each lane uses its own Wine prefix. The x86 lane keeps `<Publisher>/Prefix`; the ARM64 lane uses `<Publisher>/Prefix-ARM64`. A lane switch keeps the other lane's game environment.
 
 Packaging compiles only the Swift launcher and the x86-64 components in `RuntimeSupport`. It writes one compact `ThirdPartyNotices.deflate` file into the app. See [License automation](license-automation.md).
 

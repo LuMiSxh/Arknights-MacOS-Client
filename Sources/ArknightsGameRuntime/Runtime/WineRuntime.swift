@@ -42,6 +42,7 @@ struct RuntimeConfiguration: Decodable, Sendable {
 	}
 
 	let prefixRevision: Int
+	let architecture: String?
 	let runtime: Archive
 	let interface: Interface?
 	/// Optional so bundles that predate these fields still decode.
@@ -170,14 +171,16 @@ struct WineRuntime: Sendable {
 				"runtime.sha256 must not be empty"
 			)
 		}
+		let lane = RuntimeLane.declared(
+			architecture: configuration.architecture,
+			macDriver: configuration.interface?.macDriver,
+			runtimeName: configuration.runtime.name
+		)
 		return WineRuntime(
 			executableURL: executable,
 			displayName: configuration.runtime.name,
 			revision: configuration.revision,
-			runtimeArchitecture: Self.architectureLabel(
-				macDriver: configuration.interface?.macDriver,
-				runtimeName: configuration.runtime.name
-			),
+			runtimeArchitecture: lane?.label ?? "Unknown",
 			gameIconBridgeURL: resources.appending(
 				path: "Compatibility/GameIcon/GameIconBridge.dylib"
 			),
@@ -190,17 +193,6 @@ struct WineRuntime: Sendable {
 			),
 			compatibilityManager: compatibilityManager
 		)
-	}
-
-	static func architectureLabel(macDriver: String?, runtimeName: String) -> String {
-		if let macDriver {
-			if macDriver.contains("aarch64") { return "ARM64 native" }
-			if macDriver.contains("x86_64") { return "x86_64 via Rosetta" }
-		}
-		if runtimeName.localizedCaseInsensitiveContains("aarch64") {
-			return "ARM64 native"
-		}
-		return "Unknown"
 	}
 
 	@concurrent

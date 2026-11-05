@@ -11,6 +11,23 @@ import Testing
 @MainActor
 struct IntelTranslationControllerTests {
 	@Test
+	func armRuntimeSkipsTheRosettaProbe() async {
+		let lifecycle = makeLifecycleStore()
+		let controller = IntelTranslationController(
+			lifecycle: lifecycle,
+			runtimeLane: .arm,
+			checkIntelTranslation: {
+				IntelTranslationCheck(state: .rosettaMissing, diagnostics: "probe")
+			}
+		)
+
+		let state = await controller.refreshAvailability()
+
+		#expect(state == .available)
+		#expect(controller.allowsWine)
+	}
+
+	@Test
 	func failedInstallationKeepsLaunchBlockedAndExposesRecovery() async throws {
 		let installer = RosettaInstallationRecorder(status: 7)
 		let lifecycle = makeLifecycleStore()

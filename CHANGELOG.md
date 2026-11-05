@@ -41,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Reorganized **Settings**: **Installation** is now **Servers**, recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
 - **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
 - **Settings → About** shows whether the installed runtime is native ARM64 or x86_64 via Rosetta.
+- Game environments are now architecture-aware.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.
 - Onboarding answer cards use quieter hover and press effects.
 - Dialogs and help texts use plain words instead of technical terms such as partial files. Repair and reset actions still name the Wine prefix they change.

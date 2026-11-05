@@ -1,5 +1,6 @@
 {
   "schemaVersion": 2,
+  "architecture": "x86",
   "prefixRevision": 2,
   "runtime": {
     "name": "Arknights macOS Runtime 0.8.0-rc5",
@@ -40,7 +41,7 @@
       "dxmtDirectory": "DXMT"
     },
     "executables": ["bin/wine64", "bin/wineserver"],
-    "runtimeCapabilities": "runtime-capabilities.json",
+    "runtimeCapabilities": "runtime-capabilities-arm64.json",
     "requiredFiles": [
       "lib/wine/aarch64-unix/winecoreaudio.so",
       "lib/wine/aarch64-windows/winemetal.dll"

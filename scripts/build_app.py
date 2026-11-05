@@ -275,7 +275,8 @@ def embed_runtime(
         if count:
             info(f"Thinned {count} universal runtime files")
     else:
-        label_runtime_architecture(resources / "RUNTIME.json", architecture)
+        promote_arm_interface(resources / "RUNTIME.json")
+    record_runtime_lane(resources / "RUNTIME.json", architecture)
 
     launcher = destination / layout.launcher.path
     remove_path(launcher)
@@ -284,12 +285,25 @@ def embed_runtime(
         fail("packaged runtime does not satisfy runtime.json interface")
 
 
-def label_runtime_architecture(configuration: Path, architecture: str) -> None:
-    """Mark a local canary bundle so its About window names the lane."""
+def record_runtime_lane(configuration: Path, architecture: str) -> None:
+    """Record the embedded lane and name a local canary in About."""
     value = json.loads(configuration.read_text(encoding="utf-8"))
-    name = value["runtime"]["name"]
-    label = RUNTIME_ARCHITECTURES[architecture]
-    value["runtime"]["name"] = f"{name} ({label} canary)"
+    value["architecture"] = architecture
+    if architecture != "x86":
+        name = value["runtime"]["name"]
+        label = RUNTIME_ARCHITECTURES[architecture]
+        value["runtime"]["name"] = f"{name} ({label} canary)"
+    configuration.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+
+
+def promote_arm_interface(configuration: Path) -> None:
+    """Embed the ARM interface so the app resolves aarch64 runtime paths."""
+    value = json.loads(configuration.read_text(encoding="utf-8"))
+    arm = value.get("armInterface")
+    if arm is None:
+        fail("RUNTIME.json has no armInterface")
+    value["interface"] = arm
+    value.pop("armInterface", None)
     configuration.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
 
 
@@ -298,11 +312,12 @@ def build(
     configuration: str = "release",
     project_configuration: ProjectConfiguration | None = None,
     strict_licenses: bool = False,
-    runtime_architecture: str = "x86",
+    runtime_architecture: str | None = None,
 ) -> Path:
     project_configuration = project_configuration or load_project_configuration()
     project = project_configuration.project_directory
     runtime_configuration = load_runtime_config(project / "runtime.json")
+    runtime_architecture = runtime_architecture or runtime_configuration.architecture
     layout = runtime_configuration.for_architecture(runtime_architecture)
     runtime = runtime.resolve() if runtime is not None else None
     validate_inputs(runtime, project_configuration, layout)
@@ -380,8 +395,8 @@ def main() -> None:
     parser.add_argument(
         "--runtime-architecture",
         choices=tuple(RUNTIME_ARCHITECTURES),
-        default="x86",
-        help="architecture of the embedded runtime (default: x86)",
+        default=None,
+        help="architecture of the embedded runtime (default: the runtime.json lane)",
     )
     parser.add_argument(
         "--configuration", choices=("debug", "release"), default="release"

@@ -10,6 +10,7 @@ import Observation
 @Observable
 package final class IntelTranslationController {
 	private let lifecycle: LauncherLifecycleStore
+	private let runtimeLane: RuntimeLane
 	private let checkIntelTranslation: @Sendable () async -> IntelTranslationCheck
 	private let installRosettaSystemSoftware:
 		@Sendable () async throws -> IntelTranslationProcessResult
@@ -24,6 +25,7 @@ package final class IntelTranslationController {
 
 	package init(
 		lifecycle: LauncherLifecycleStore,
+		runtimeLane: RuntimeLane = .x86,
 		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 			await RosettaAvailability.check()
 		},
@@ -34,6 +36,7 @@ package final class IntelTranslationController {
 		log: LauncherLog? = nil
 	) {
 		self.lifecycle = lifecycle
+		self.runtimeLane = runtimeLane
 		self.checkIntelTranslation = checkIntelTranslation
 		self.installRosettaSystemSoftware = installRosettaSystemSoftware
 		self.log = log ?? lifecycle.log
@@ -51,6 +54,17 @@ package final class IntelTranslationController {
 
 	@discardableResult
 	package func refreshAvailability(force: Bool = false) async -> IntelTranslationState {
+		// The native ARM64 runtime has no Intel translation step, so Rosetta must not
+		// block launch. `.available` is the existing state that allows Wine to start.
+		if runtimeLane == .arm {
+			lifecycle.state.readiness.intelTranslation = .available
+			lifecycle.state.readiness.rosettaInstallation = .idle
+			updatePreflightFailure(
+				for: IntelTranslationCheck(
+					state: .available, diagnostics: "lane=arm intelTranslation=notRequired"))
+			log.info("Intel translation preflight skipped; lane=arm state=not-required")
+			return .available
+		}
 		if !force,
 			lifecycle.state.readiness.intelTranslation != .checking,
 			lifecycle.state.readiness.intelTranslation != .waitingForLauncherCheck

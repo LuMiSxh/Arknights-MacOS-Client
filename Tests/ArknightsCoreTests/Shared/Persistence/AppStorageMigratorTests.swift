@@ -179,3 +179,27 @@ func appStorageMigratorReportsCompletedMovesWhenALaterMoveFailsAndResumesOnRetry
 			.china: paths.gameInstall(for: .china),
 		])
 }
+
+@Test
+func armStorageMigrationLeavesLegacyX86PrefixesInPlace() throws {
+	let temporary = try TemporaryDirectory("AppStorageMigratorLaneTests")
+	defer { temporary.remove() }
+	let root = temporary.url
+	let paths = AppPaths(
+		applicationSupportDirectory: root.appending(path: "Support"),
+		cachesDirectory: root.appending(path: "Caches"),
+		libraryDirectory: root.appending(path: "Library"),
+		runtimeLane: .arm
+	)
+	let fileManager = FileManager.default
+	let legacyPrefix = paths.applicationSupportRoot.appending(
+		path: "Wine/Prefixes/Arknights-Global")
+	try fileManager.createDirectory(at: legacyPrefix, withIntermediateDirectories: true)
+
+	let result = AppStorageMigrator.migrate(
+		paths: paths, persistedInstallDirectories: [:], fileManager: fileManager)
+
+	#expect(result.failure == nil)
+	#expect(fileManager.fileExists(atPath: legacyPrefix.path))
+	#expect(!fileManager.fileExists(atPath: paths.winePrefix.path))
+}

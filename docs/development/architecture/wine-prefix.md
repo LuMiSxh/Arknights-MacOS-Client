@@ -20,10 +20,13 @@ is the only source of prefix locations.
 ## Prefix topology
 
 Each publisher family has its own prefix: Yostar (Global, Japan, Korea), Gryphline (Taiwan), and
-Hypergryph (China and China (Bilibili)). Windows-side state, logins, registry, and processes never mix
-across families. [Storage](../../help/storage.md#where-files-live) lists the default paths.
+Hypergryph (China and China (Bilibili)). Each runtime lane also has its own prefix: the x86 lane uses
+`Prefix`, and the native ARM64 lane uses `Prefix-ARM64`. Windows-side state, logins, registry, and
+processes never mix across families or lanes. A lane switch keeps the other lane's environment.
+[Storage](../../help/storage.md#where-files-live) lists the default paths.
 
 - Resolve the active path with `AppPaths.winePrefix(for:)`. Never select a directory name in other code.
+- `AppPaths` reads the bundled `RUNTIME.json` lane and applies it to every publisher prefix.
 - Tests and the isolated preview inject temporary `AppPaths` roots.
 - The launcher permits one install, maintenance operation, or Wine-backed session at a time. A session
   keeps its launch-time region and prefix until prefix-wide shutdown finishes.
@@ -33,7 +36,7 @@ across families. [Storage](../../help/storage.md#where-files-live) lists the def
 The launcher owns this structure inside Wine's prefix:
 
 ```text
-{Yostar,Gryphline,Hypergryph}/Prefix/
+{Yostar,Gryphline,Hypergryph}/{Prefix,Prefix-ARM64}/
 ├── .arknights-runtime-migrations.json
 ├── dosdevices/
 │   ├── c: -> ../drive_c
@@ -99,7 +102,8 @@ Migration state lives in `.arknights-runtime-migrations.json`. The effective run
 <runtime archive SHA-256>-prefix-<prefixRevision>
 ```
 
-The plan comes from the bundled runtime, not the game version. The ordered migrations are:
+Each lane keeps its own state inside its own prefix, so a lane switch runs that lane's plan without
+touching the other environment. The plan comes from the bundled runtime, not the game version. The ordered migrations are:
 
 1. `initialize-wine-prefix` runs `wineboot.exe -u`.
 2. `install-dxmt` copies the bundled x64 DXMT libraries into `system32`. Step 5 removes x32 copies from

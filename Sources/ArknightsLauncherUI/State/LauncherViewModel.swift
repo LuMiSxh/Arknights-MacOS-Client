@@ -120,6 +120,7 @@ package final class LauncherViewModel {
 		self.installation = installation
 		let intelTranslation = IntelTranslationController(
 			lifecycle: lifecycle,
+			runtimeLane: paths.runtimeLane,
 			checkIntelTranslation: checkIntelTranslation,
 			installRosettaSystemSoftware: installRosettaSystemSoftware,
 			log: launcherLog

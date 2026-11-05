@@ -33,6 +33,10 @@ package struct AppPaths: Sendable {
 	let chinaWinePrefix: URL
 	let gryphlineWinePrefix: URL
 	package let bundledRuntimeDirectory: URL?
+	/// The lane of the bundled runtime. Every publisher prefix and derived cache uses it.
+	package let runtimeLane: RuntimeLane
+	/// A problem reading the lane from `RUNTIME.json`, when the file exists but is unusable.
+	package let runtimeLaneDiagnostic: String?
 
 	package init(
 		fileManager: FileManager = .default,
@@ -41,7 +45,8 @@ package struct AppPaths: Sendable {
 		libraryDirectory: URL? = nil,
 		downloadsDirectory: URL? = nil,
 		picturesDirectory: URL? = nil,
-		resourceDirectory: URL? = Bundle.main.resourceURL
+		resourceDirectory: URL? = Bundle.main.resourceURL,
+		runtimeLane: RuntimeLane? = nil
 	) {
 		let supportDirectory =
 			applicationSupportDirectory
@@ -76,16 +81,25 @@ package struct AppPaths: Sendable {
 			libraryDirectory
 			.appending(path: "Logs", directoryHint: .isDirectory)
 			.appending(path: Self.bundleIdentifier, directoryHint: .isDirectory)
+		let detection: (lane: RuntimeLane, diagnostic: String?)
+		if let runtimeLane {
+			detection = (runtimeLane, nil)
+		} else {
+			detection = RuntimeLane.bundled(resourceDirectory: resourceDirectory)
+		}
+		self.runtimeLane = detection.lane
+		runtimeLaneDiagnostic = detection.diagnostic
+		let prefixName = detection.lane.prefixDirectoryName
 		winePrefix = applicationSupportRoot.appending(
-			path: "Yostar/Prefix",
+			path: "Yostar/\(prefixName)",
 			directoryHint: .isDirectory
 		)
 		chinaWinePrefix = applicationSupportRoot.appending(
-			path: "Hypergryph/Prefix",
+			path: "Hypergryph/\(prefixName)",
 			directoryHint: .isDirectory
 		)
 		gryphlineWinePrefix = applicationSupportRoot.appending(
-			path: "Gryphline/Prefix",
+			path: "Gryphline/\(prefixName)",
 			directoryHint: .isDirectory
 		)
 		bundledRuntimeDirectory = resourceDirectory.map(BundledResource.runtime.location)

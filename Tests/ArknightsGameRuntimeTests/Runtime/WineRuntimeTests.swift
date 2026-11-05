@@ -99,23 +99,6 @@ func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 }
 
 @Test
-func runtimeArchitectureComesFromTheWineModuleDirectory() {
-	#expect(
-		WineRuntime.architectureLabel(
-			macDriver: "lib/wine/aarch64-unix/winemac.so", runtimeName: "Runtime")
-			== "ARM64 native")
-	#expect(
-		WineRuntime.architectureLabel(
-			macDriver: "lib/wine/x86_64-unix/winemac.so", runtimeName: "Runtime")
-			== "x86_64 via Rosetta")
-	#expect(
-		WineRuntime.architectureLabel(
-			macDriver: nil, runtimeName: "Runtime (aarch64 canary)")
-			== "ARM64 native")
-	#expect(WineRuntime.architectureLabel(macDriver: nil, runtimeName: "Runtime") == "Unknown")
-}
-
-@Test
 func injectedBridgesShareTheDynamicLoaderPath() {
 	let runtime = WineRuntime(
 		executableURL: URL(filePath: "/runtime/bin/Arknights"),

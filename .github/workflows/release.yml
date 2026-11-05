@@ -166,7 +166,7 @@ jobs:
 
       - name: Build DMG
         run: |
-          just dmg "$GITHUB_WORKSPACE/.build/runtime" strict
+          just dmg "$GITHUB_WORKSPACE/.build/runtime" "" strict
 
       - name: Create and sign Sparkle update
         env:

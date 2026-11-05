@@ -168,20 +168,20 @@ swift-tests level filter='':
 [group('Checks')]
 ci: check integration build
 
-# Download the pinned runtime (default), pin a release with update (tag or latest; add prerelease to allow prereleases), or verify the pin with check.
+# Download the pinned runtime (default), pin a release with update (tag or latest, optional prerelease, then the x86 or arm lane), or verify the pin with check.
 [group('Runtime')]
-runtime action='download' tag='latest' prerelease='':
-    @case {{ quote(action) }} in download) {{ uv }} scripts/download_runtime.py;; check) {{ uv }} scripts/update_runtime.py --check;; update) if [[ {{ quote(prerelease) }} == "prerelease" ]]; then {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }} --include-prerelease; else {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }}; fi;; *) echo "unknown action: "{{ quote(action) }}"; use download, update, or check" >&2; exit 2;; esac
+runtime action='download' tag='latest' prerelease='' arch='x86':
+    @case {{ quote(action) }} in download) {{ uv }} scripts/download_runtime.py;; check) {{ uv }} scripts/update_runtime.py --check;; update) if [[ {{ quote(prerelease) }} == "prerelease" ]]; then {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }} --architecture {{ quote(arch) }} --include-prerelease; else {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }} --architecture {{ quote(arch) }}; fi;; *) echo "unknown action: "{{ quote(action) }}"; use download, update, or check" >&2; exit 2;; esac
 
 # Build the application bundle; optionally embed a Wine runtime directory for one architecture (x86 or arm).
 [group('Packaging')]
-app runtime='' arch='x86':
-    {{ uv_packaging }} scripts/build_app.py {{ if runtime != '' { '--runtime ' + quote(runtime) } else { '' } }} --runtime-architecture {{ quote(arch) }}
+app runtime='' arch='':
+    {{ uv_packaging }} scripts/build_app.py {{ if runtime != '' { '--runtime ' + quote(runtime) } else { '' } }} {{ if arch != '' { '--runtime-architecture ' + quote(arch) } else { '' } }}
 
-# Build a DMG with the required Wine runtime directory; add strict to fail on unverified licenses.
+# Build a DMG with the required Wine runtime directory; the second argument is the runtime lane (x86 or arm), and strict fails on unverified licenses.
 [group('Packaging')]
-dmg runtime strict='':
-    {{ uv_packaging }} scripts/build_dmg.py --runtime {{ quote(runtime) }} {{ if strict != '' { '--strict-licenses' } else { '' } }}
+dmg runtime arch='' strict='':
+    {{ uv_packaging }} scripts/build_dmg.py --runtime {{ quote(runtime) }} {{ if arch != '' { '--runtime-architecture ' + quote(arch) } else { '' } }} {{ if strict != '' { '--strict-licenses' } else { '' } }}
 
 # Regenerate the application icon assets; fails rather than shipping fallback assets.
 [group('Packaging')]

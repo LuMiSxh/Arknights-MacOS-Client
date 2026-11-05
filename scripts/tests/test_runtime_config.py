@@ -36,6 +36,8 @@ def test_validates_complete_configuration(tmp_path: Path) -> None:
     loaded = runtime_config.load_runtime_config(config)
 
     assert loaded.runtime_url == value["runtime"]["url"]
+    assert loaded.architecture == "x86"
+    assert loaded.selected_layout == loaded.layout
     assert (
         dict(loaded.layout.dxmt.destinations)
         == value["interface"]["dxmt"]["destinations"]
@@ -105,6 +107,40 @@ def test_unknown_runtime_architecture_is_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError, match="no arm64 interface"):
         configuration.for_architecture("arm64")
+
+
+def test_selects_the_interface_named_by_the_pin(tmp_path: Path) -> None:
+    config = tmp_path / "runtime.json"
+    value = valid_config()
+    value["architecture"] = "arm"
+    write_config(config, value)
+
+    configuration = runtime_config.load_runtime_config(config)
+
+    assert configuration.architecture == "arm"
+    assert configuration.selected_layout == configuration.arm_layout
+    assert "aarch64-unix" in str(configuration.selected_layout.mac_driver)
+
+
+def test_rejects_an_unknown_pinned_architecture(tmp_path: Path) -> None:
+    config = tmp_path / "runtime.json"
+    value = valid_config()
+    value["architecture"] = "arm64"
+    write_config(config, value)
+
+    with pytest.raises(RuntimeError, match="architecture must be x86 or arm"):
+        runtime_config.load_runtime_config(config)
+
+
+def test_arm_pin_requires_an_arm_interface(tmp_path: Path) -> None:
+    config = tmp_path / "runtime.json"
+    value = valid_config()
+    value["architecture"] = "arm"
+    value.pop("armInterface")
+    write_config(config, value)
+
+    with pytest.raises(RuntimeError, match="has no armInterface"):
+        runtime_config.load_runtime_config(config)
 
 
 def test_reads_safe_runtime_capability_manifest_path(tmp_path: Path) -> None:

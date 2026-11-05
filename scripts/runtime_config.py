@@ -65,6 +65,7 @@ class RuntimeConfiguration:
     raw: dict[str, Any]
     layout: RuntimeLayout
     arm_layout: RuntimeLayout | None = None
+    architecture: str = "x86"
 
     def for_architecture(self, architecture: str) -> RuntimeLayout:
         """Return the interface a local runtime of one architecture must match."""
@@ -73,6 +74,11 @@ class RuntimeConfiguration:
         if architecture == "arm" and self.arm_layout is not None:
             return self.arm_layout
         fail(f"runtime configuration has no {architecture} interface")
+
+    @property
+    def selected_layout(self) -> RuntimeLayout:
+        """Return the interface of the architecture the pin names."""
+        return self.for_architecture(self.architecture)
 
     @property
     def runtime_url(self) -> str:
@@ -118,7 +124,7 @@ def prepared_runtime(root: Path) -> Path | None:
     if (
         revision.is_file()
         and revision.read_text(encoding="utf-8").strip() == config.runtime_sha256
-        and runtime_is_valid(directory, config.layout)
+        and runtime_is_valid(directory, config.selected_layout)
     ):
         return directory
     warning(f"{directory} does not match runtime.json; run just runtime to prepare it")
@@ -307,6 +313,9 @@ def load_runtime_config(config_path: Path) -> RuntimeConfiguration:
         or prefix_revision < 1
     ):
         fail("runtime configuration prefixRevision must be a positive integer")
+    architecture = config.get("architecture", "x86")
+    if architecture not in RUNTIME_ARCHITECTURES:
+        fail("runtime configuration architecture must be x86 or arm")
     for name in ("runtime", "buildRecipe"):
         value = _mapping(config, name)
         _validate_download(name, value)
@@ -317,6 +326,11 @@ def load_runtime_config(config_path: Path) -> RuntimeConfiguration:
         if config.get("armInterface") is not None
         else None
     )
+    if architecture == "arm" and arm_layout is None:
+        fail("runtime configuration pins arm but has no armInterface")
     return RuntimeConfiguration(
-        raw=config, layout=_read_layout(config), arm_layout=arm_layout
+        raw=config,
+        layout=_read_layout(config),
+        arm_layout=arm_layout,
+        architecture=architecture,
     )

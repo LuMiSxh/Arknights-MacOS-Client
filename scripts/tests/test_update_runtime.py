@@ -15,6 +15,7 @@ from lib.common import PROJECT_DIR, ScriptError
 from lib.generated_blocks import apply_blocks
 
 NEW_TAG = "v99.0.0"
+ARM_TAG = "v99.0.0+arm"
 NEW_WINE_COMMIT = "1" * 40
 NEW_SOURCE_COMMIT = "2" * 40
 FIXTURE_FILES = (
@@ -33,7 +34,40 @@ def current_tag(root: Path) -> str:
     return re.search(r"/download/(v[^/]+)/", url).group(1)
 
 
-def release_provenance(tag: str, **overrides: str) -> dict[str, Any]:
+def release_interface(architecture: str = "x86") -> dict[str, Any]:
+    """Render one release interface in the archive layout that provenance.json uses."""
+    interface = json.loads((PROJECT_DIR / "runtime.json").read_text(encoding="utf-8"))[
+        "armInterface" if architecture == "arm" else "interface"
+    ]
+    wine = interface["archive"]["wineDirectory"]
+    dxmt = interface["archive"]["dxmtDirectory"]
+    return {
+        "dxmtDirectory": dxmt,
+        "executables": sorted(
+            [
+                f"{wine}/{path}"
+                for path in (*interface["executables"], interface["launcher"]["path"])
+            ]
+        ),
+        "requiredFiles": sorted(
+            [
+                f"{wine}/{path}"
+                for path in (*interface["requiredFiles"], interface["macDriver"])
+            ]
+            + [
+                f"{dxmt}/{target}/{library}"
+                for target in interface["dxmt"]["destinations"]
+                for library in interface["dxmt"]["libraries"]
+            ]
+        ),
+        "runtimeCapabilities": interface["runtimeCapabilities"],
+        "wineDirectory": wine,
+    }
+
+
+def release_provenance(
+    tag: str, architecture: str = "x86", **overrides: str
+) -> dict[str, Any]:
     """The provenance.json of a release that keeps the interface of runtime.json."""
     archive, source = runtime_update.asset_names(tag)
     return {
@@ -66,25 +100,7 @@ def release_provenance(tag: str, **overrides: str) -> dict[str, Any]:
                         "repository": "https://github.com/NixOS/nixpkgs.git",
                     }
                 },
-                "interface": {
-                    "dxmtDirectory": "DXMT",
-                    "executables": [
-                        "Wine/bin/Arknights",
-                        "Wine/bin/wine64",
-                        "Wine/bin/wineserver",
-                    ],
-                    "requiredFiles": [
-                        "Wine/lib/wine/x86_64-unix/winemac.so",
-                        "Wine/lib/wine/x86_64-unix/winecoreaudio.so",
-                        "Wine/lib/wine/x86_64-windows/winemetal.dll",
-                        "DXMT/x64/d3d10core.dll",
-                        "DXMT/x64/d3d11.dll",
-                        "DXMT/x64/dxgi.dll",
-                        "DXMT/x64/winemetal.dll",
-                    ],
-                    "runtimeCapabilities": "runtime-capabilities.json",
-                    "wineDirectory": "Wine",
-                },
+                "interface": release_interface(architecture),
                 "sources": {
                     "dxmt": {
                         "commit": "5" * 40,
@@ -189,6 +205,46 @@ def test_update_leaves_the_interface_untouched(project: Path) -> None:
     runtime_update.update(project, NEW_TAG, release_fetch())
 
     assert manifest_of(project)["interface"] == before
+
+
+def test_update_pins_an_arm_release(project: Path) -> None:
+    changed = runtime_update.update(
+        project,
+        ARM_TAG,
+        release_fetch(ARM_TAG, release_provenance(ARM_TAG, architecture="arm")),
+        architecture="arm",
+    )
+
+    manifest = manifest_of(project)
+    assert changed == [Path("runtime.json"), runtime_update.NOTICES_DOCUMENT]
+    assert manifest["architecture"] == "arm"
+    assert manifest["runtime"]["name"] == "Arknights macOS Runtime 99.0.0+arm"
+    assert ARM_TAG in manifest["runtime"]["url"]
+    assert (
+        manifest["armInterface"]
+        == json.loads((PROJECT_DIR / "runtime.json").read_text(encoding="utf-8"))[
+            "armInterface"
+        ]
+    )
+    runtime_update.check(project)
+
+
+def test_update_rejects_a_release_from_another_lane(project: Path) -> None:
+    before = (project / "runtime.json").read_text(encoding="utf-8")
+
+    with pytest.raises(ScriptError, match="not arm"):
+        runtime_update.update(project, NEW_TAG, release_fetch(), architecture="arm")
+
+    assert (project / "runtime.json").read_text(encoding="utf-8") == before
+
+
+def test_check_detects_a_lane_that_disagrees_with_the_tag(project: Path) -> None:
+    manifest = manifest_of(project)
+    manifest["architecture"] = "arm"
+    (project / "runtime.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ScriptError, match=r"architecture"):
+        runtime_update.check(project)
 
 
 def test_second_update_changes_nothing(project: Path) -> None:
