@@ -72,20 +72,32 @@ enum StorageOverviewResolver {
 				]
 			)
 		}
-		let browserCaches = try paths.browserCacheDirectories(
-			for: context.region,
-			fileManager: fileManager
-		)
+		let browserCaches = try RuntimeLane.allCases.flatMap { lane in
+			try paths.browserCacheDirectories(
+				for: context.region, lane: lane, fileManager: fileManager)
+		}
 
 		return games + [
-			StorageLocation(category: .winePrefix, urls: [paths.winePrefix(for: context.region)]),
+			StorageLocation(
+				category: .winePrefix,
+				urls: RuntimeLane.allCases.map {
+					paths.winePrefix(for: context.region, lane: $0)
+				}
+			),
 			StorageLocation(
 				category: .compatibilityRuntime,
-				urls: paths.bundledRuntimeDirectory.map { [$0] } ?? []
+				urls: RuntimeLane.allCases.map {
+					paths.runtimeDirectory(for: $0)
+				} + [
+					paths.runtimeDownloadsDirectory,
+					paths.runtimeStagingRoot,
+				]
 			),
 			StorageLocation(
 				category: .dxmtCache,
-				urls: [paths.dxmtCache(for: context.region)]
+				urls: RuntimeLane.allCases.map {
+					paths.dxmtCache(for: context.region, lane: $0)
+				}
 			),
 			StorageLocation(category: .browserCache, urls: browserCaches),
 			StorageLocation(category: .galleryCache, urls: [paths.presetGalleryCache]),

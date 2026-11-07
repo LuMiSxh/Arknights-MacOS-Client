@@ -48,7 +48,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		case .appearance: "Appearance"
 		case .integration: "Integration"
 		case .updates: "Updates"
-		case .servers: "Servers"
+		case .servers: "Installation"
 		case .storage: "Storage"
 		case .statistics: "Playtime"
 		case .help: "Help"

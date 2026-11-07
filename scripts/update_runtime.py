@@ -1,14 +1,14 @@
 #!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
-"""Pin a published runtime release and update every mention of it.
+"""Pin one lane of a published runtime release and update every mention of it.
 
-Without options the script resolves `latest`, reads `provenance.json` and the two
-`.sha256` files of that release over HTTPS, and rewrites `runtime.json`, the generated
-`runtime` blocks, and (through `scripts/licenses.py`) the license documents.
-`--tag TAG` pins a given release. `latest` skips drafts and prereleases unless
-`--include-prerelease` is set. `--check` verifies `runtime.json` and the generated
-blocks offline and writes nothing.
+Without options the script resolves `latest` for the bridge fallback lane, reads
+`provenance.json` and the two `.sha256` files of that release over HTTPS, and rewrites
+one lane of `runtime.json`, the generated `runtime` blocks, and (through
+`scripts/licenses.py`) the license documents. `--tag TAG` pins a given release. `latest`
+skips drafts and prereleases unless `--include-prerelease` is set. `--check` verifies
+`runtime.json` and the generated blocks offline and writes nothing.
 """
 
 from __future__ import annotations
@@ -26,17 +26,18 @@ from lib.runtime_update import (
     normalize_tag,
     update,
 )
-from runtime_config import RUNTIME_ARCHITECTURES, prepared_runtime
+from runtime_config import RUNTIME_ARCHITECTURES, load_runtime_config
 
 
 def main() -> None:
+    config = load_runtime_config(PROJECT_DIR / "runtime.json")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tag", default="latest", help="release tag or latest")
     parser.add_argument(
         "--architecture",
         choices=tuple(RUNTIME_ARCHITECTURES),
-        default="x86",
-        help="runtime lane to pin (default: x86)",
+        default=config.architecture,
+        help="runtime lane to pin (default: the runtime.json architecture)",
     )
     parser.add_argument(
         "--include-prerelease",
@@ -46,6 +47,15 @@ def main() -> None:
     parser.add_argument(
         "--moltenvk-version",
         help="MoltenVK version; required only when its commit changes",
+    )
+    parser.add_argument(
+        "--sha256",
+        help="runtime archive SHA-256; read from provenance.json by default",
+    )
+    parser.add_argument(
+        "--size",
+        type=int,
+        help="runtime archive size in bytes; read from the release by default",
     )
     parser.add_argument("--check", action="store_true", help="verify, do not write")
     arguments = parser.parse_args()
@@ -71,8 +81,10 @@ def main() -> None:
         fetch,
         arguments.moltenvk_version,
         architecture=arguments.architecture,
+        sha256=arguments.sha256,
+        size_bytes=arguments.size,
     )
-    changed.extend(regenerate(PROJECT_DIR, prepared_runtime(PROJECT_DIR)))
+    changed.extend(regenerate(PROJECT_DIR))
     for path in changed:
         info(f"Updated {path}")
     success(

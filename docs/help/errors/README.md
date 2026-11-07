@@ -61,10 +61,12 @@ Each code has its own page. The page title starts with the code.
 | --- | --- | --- |
 | [RT-BIL](rt-bil.md) | Bilibili login unavailable | Quit other Wine apps, then restart the Mac. |
 | [RT-BLK](rt-blk.md) | Intel translation blocked | Turn off Legacy Game Test Mode on a macOS 27 beta, or wait for an update. |
-| [RT-BND](rt-bnd.md) | Bundled runtime missing or damaged | Replace the launcher with a complete copy from the release DMG. |
+| [RT-BND](rt-bnd.md) | Runtime information missing or damaged | Replace the launcher with a complete copy from the release DMG. |
 | [RT-CMP](rt-cmp.md) | Game compatibility setup failed | Quit the official updater. Then choose Repair. |
+| [RT-MIS](rt-mis.md) | Runtime not installed | Set up the runtime, then start the game. |
 | [RT-ROS](rt-ros.md) | Rosetta unavailable | Install Rosetta if the launcher offers it. |
 | [RT-SET](rt-set.md) | Runtime setup failed | Choose Rebuild… in Settings → Help → Troubleshooting, then start the game. |
+| [RT-VER](rt-ver.md) | Runtime failed verification | Download the runtime again. If it fails again, report the problem. |
 
 ### Game
 

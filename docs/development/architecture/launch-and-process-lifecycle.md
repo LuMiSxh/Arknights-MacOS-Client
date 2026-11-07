@@ -26,7 +26,7 @@ recovery message. It is separate from the per-prefix Wine and DXMT migration. Se
 ## Launch process
 
 > [!IMPORTANT]
-> The packaged runtime is x86_64 and runs through Rosetta 2. The launcher gives Wine an isolated
+> The selected runtime is x86_64 or ARM64. The x86_64 lane runs through Rosetta 2; the ARM64 lane runs natively on macOS 26 or later. The launcher gives Wine an isolated
 > prefix and an allowlisted environment, mounts the game directory as `G:`, installs the pinned DXMT
 > libraries, and starts `G:\Arknights.exe`. DXMT translates Direct3D to Metal. See
 > [Runtime compatibility](../../help/runtime-compatibility.md) and
@@ -109,7 +109,7 @@ sequenceDiagram
 	participant Game as Arknights process
 
 	UI->>Session: Request Play for selected region
-	Session->>Runtime: Discover bundled runtime and revision
+	Session->>Runtime: Discover the selected runtime and revision
 	Session->>Session: Check Rosetta and pending prefix migrations
 	Session->>Runtime: Reconcile compatibility files
 	Runtime->>Prefix: Initialize, install DXMT, configure registry, map C:/G:/L:
@@ -176,7 +176,7 @@ The controller runs the launch in fixed steps. The source is in
 3. `beginLease` maps the preflight result to a failure or a launch. It does not suspend between the
    idle check and the lease claim. On success, it claims the lease and creates the session.
 4. `runLaunch` runs in the session's `launchTask`:
-   - `prepareRuntime` discovers runtime capabilities and builds the display settings and environment.
+   - `prepareRuntime` applies the runtime features to build the display settings and environment.
    - `spawn` starts `Arknights.exe` through `WineRuntime`.
    - `monitor` requests Game Mode when the launch enables it. It then waits for the visible game window and publishes **Running**.
 
@@ -367,9 +367,9 @@ state that a newer launch owns. See [Troubleshooting](../../help/troubleshooting
   legacy games is unconfirmed.
 - **Window wait:** After Wine starts the executable, the launcher waits up to 90 seconds for a visible
   game window. Then it stops the timed-out runtime and reports `GM-WIN`.
-- **Compatibility profiles:** `GameRegion.clientProfile` sets the runtime flags. Taiwan and both China
-  clients set `ARKNIGHTS_RUNTIME_ACE_COMPACT=1`, which gates the ACE compatibility patches in the
-  runtime. China (Bilibili) also sets the CEF and CN flags for its login window.
+- **Compatibility profiles:** `GameRegion.clientProfile` sets the per-region runtime flags. Every
+  launch sets `LMISXH_AKMOCL=1`, the master switch for the Arknights compatibility patches.
+  China (Bilibili) also sets `LMISXH_AKMOCL_CEF=1` and `LMISXH_AKMOCL_CN=1` for its login window.
 - **Backups:** Game directories and prefixes set `isExcludedFromBackup`.
 
 ## Diagnostics

@@ -60,11 +60,19 @@
     "domain": "runtime"
   },
   {
+    "code": "RT-MIS",
+    "domain": "runtime"
+  },
+  {
     "code": "RT-ROS",
     "domain": "runtime"
   },
   {
     "code": "RT-SET",
+    "domain": "runtime"
+  },
+  {
+    "code": "RT-VER",
     "domain": "runtime"
   },
   {

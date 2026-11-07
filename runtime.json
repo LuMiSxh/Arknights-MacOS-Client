@@ -1,83 +1,110 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "architecture": "x86",
   "prefixRevision": 2,
-  "runtime": {
-    "name": "Arknights macOS Runtime 0.8.0-rc5",
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc5/Arknights-MacOS-Runtime-v0.8.0-rc5.tar.gz",
-    "sha256": "b424edc1a4be320cae58ab3f798d6dc8756c69138f4b8037cde5a2e3ef019370"
-  },
-  "buildRecipe": {
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc5/Arknights-MacOS-Runtime-v0.8.0-rc5-source.tar.gz",
-    "sha256": "8acfc4418edd0c2c6b7b7389479258cfd7da9dfb3e2a98ef0950c83450ecd588"
-  },
-  "interface": {
-    "archive": {
-      "wineDirectory": "Wine",
-      "dxmtDirectory": "DXMT"
-    },
-    "executables": ["bin/wine64", "bin/wineserver"],
-    "runtimeCapabilities": "runtime-capabilities.json",
-    "requiredFiles": [
-      "lib/wine/x86_64-unix/winecoreaudio.so",
-      "lib/wine/x86_64-windows/winemetal.dll"
-    ],
-    "macDriver": "lib/wine/x86_64-unix/winemac.so",
-    "launcher": {
-      "path": "bin/Arknights",
-      "target": "wine64"
-    },
-    "dxmt": {
-      "payloadDirectory": "DXMT",
-      "destinations": {
-        "x64": "system32"
+  "lanes": {
+    "x86": {
+      "minimumMacOS": "15.0",
+      "prefixRevision": 2,
+      "runtime": {
+        "name": "Arknights macOS Runtime 0.8.0-rc6",
+        "version": "0.8.0-rc6",
+        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc6/Arknights-MacOS-Runtime-v0.8.0-rc6.tar.gz",
+        "sha256": "7b35b658ff99f90bf795748ecceecc0144f2a0c5b011791d4c31acf013d50ec6",
+        "sizeBytes": 119311707
       },
-      "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
-    }
-  },
-  "armInterface": {
-    "archive": {
-      "wineDirectory": "Wine",
-      "dxmtDirectory": "DXMT"
-    },
-    "executables": ["bin/wine64", "bin/wineserver"],
-    "runtimeCapabilities": "runtime-capabilities-arm64.json",
-    "requiredFiles": [
-      "lib/wine/aarch64-unix/winecoreaudio.so",
-      "lib/wine/aarch64-windows/winemetal.dll"
-    ],
-    "macDriver": "lib/wine/aarch64-unix/winemac.so",
-    "launcher": {
-      "path": "bin/Arknights",
-      "target": "wine64"
-    },
-    "dxmt": {
-      "payloadDirectory": "DXMT",
-      "destinations": {
-        "x64": "system32"
+      "interface": {
+        "archive": {
+          "wineDirectory": "Wine",
+          "dxmtDirectory": "DXMT"
+        },
+        "executables": ["bin/wine64", "bin/wineserver"],
+        "features": {
+          "hardwareCursor": true,
+          "metalFXSpatialUpscaling": true,
+          "nativeFullscreenSpace": true
+        },
+        "requiredFiles": [
+          "lib/wine/x86_64-unix/winecoreaudio.so",
+          "lib/wine/x86_64-unix/winemac.so",
+          "lib/wine/x86_64-windows/winemetal.dll"
+        ],
+        "macDriver": "lib/wine/x86_64-unix/winemac.so",
+        "launcher": {
+          "path": "bin/Arknights",
+          "target": "wine64"
+        },
+        "dxmt": {
+          "payloadDirectory": "DXMT",
+          "destinations": {
+            "x64": "system32"
+          },
+          "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
+        }
       },
-      "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll"]
+      "components": {
+        "wine": "11.17",
+        "dxmt": "0.80-361-g9839e55",
+        "moltenvk": "1.4.2"
+      },
+      "provenance": {
+        "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
+        "buildCommit": "01662c99e21594d6a3836c8c6886da5c192fb8a4",
+        "wineRepository": "https://github.com/dappermint/winecx",
+        "wineCommit": "e0aa380780b73e20fabcfe78fd42713b94929a53",
+        "dxmtRepository": "https://github.com/3Shain/dxmt",
+        "dxmtCommit": "9839e55f98d4aca103957ee4132d6395a325a9ed",
+        "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
+        "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
+        "nixpkgsRepository": "https://github.com/NixOS/nixpkgs",
+        "nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d",
+        "baseRecipeRepository": "https://github.com/dappermint/winecx-gptk",
+        "baseRecipeCommit": "0bf3eabc2f0d95154282eb86b11205cbbaae6c65",
+        "baseArchiveUrl": "https://github.com/dappermint/Whisky/releases/download/v4.7.3/Libraries.tar.gz",
+        "baseArchiveSha256": "a4b5d63493f80698cce5cad8e7212d9a51c8292037b00c478f4652636fcfd331"
+      }
+    },
+    "arm": {
+      "minimumMacOS": "26.0",
+      "prefixRevision": 2,
+      "runtime": {
+        "name": "Arknights macOS Runtime 0.9.0+arm",
+        "version": "0.9.0+arm",
+        "url": "",
+        "sha256": "",
+        "sizeBytes": 0
+      },
+      "interface": {
+        "archive": {
+          "wineDirectory": "Wine",
+          "dxmtDirectory": "DXMT"
+        },
+        "executables": ["bin/wine64", "bin/wineserver"],
+        "features": {
+          "hardwareCursor": true,
+          "metalFXSpatialUpscaling": true,
+          "nativeFullscreenSpace": true
+        },
+        "requiredFiles": [
+          "lib/wine/aarch64-unix/winecoreaudio.so",
+          "lib/wine/aarch64-unix/winemac.so",
+          "lib/wine/aarch64-windows/winemetal.dll"
+        ],
+        "macDriver": "lib/wine/aarch64-unix/winemac.so",
+        "launcher": {
+          "path": "bin/Arknights",
+          "target": "wine64"
+        },
+        "dxmt": {
+          "payloadDirectory": "DXMT",
+          "destinations": {
+            "x64": "system32"
+          },
+          "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll"]
+        }
+      },
+      "components": {},
+      "provenance": {}
     }
-  },
-  "components": {
-    "wine": "11.17",
-    "dxmt": "0.80-361-g9839e55",
-    "moltenvk": "1.4.2"
-  },
-  "provenance": {
-    "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-    "buildCommit": "d986f554921985fcae8f03485669bac3a2ae5959",
-    "wineRepository": "https://github.com/dappermint/winecx",
-    "wineCommit": "e0aa380780b73e20fabcfe78fd42713b94929a53",
-    "dxmtRepository": "https://github.com/3Shain/dxmt",
-    "dxmtCommit": "9839e55f98d4aca103957ee4132d6395a325a9ed",
-    "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
-    "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
-    "nixpkgsRepository": "https://github.com/NixOS/nixpkgs",
-    "nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d",
-    "baseRecipeRepository": "https://github.com/dappermint/winecx-gptk",
-    "baseRecipeCommit": "0bf3eabc2f0d95154282eb86b11205cbbaae6c65",
-    "baseArchiveUrl": "https://github.com/dappermint/Whisky/releases/download/v4.7.3/Libraries.tar.gz",
-    "baseArchiveSha256": "a4b5d63493f80698cce5cad8e7212d9a51c8292037b00c478f4652636fcfd331"
   }
 }

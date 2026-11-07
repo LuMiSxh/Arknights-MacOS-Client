@@ -11,13 +11,16 @@ struct InstallationSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
 	let installation: InstallationController
 	let gameSession: GameSessionController
+	let runtimeSelection: RuntimeSelectionController
 	let lifecycle: LauncherLifecycleStore
 	let actions: any LauncherActions
 	@State private var confirmation: InstallationConfirmation?
+	@State var pendingRuntimeLane: RuntimeLane?
+	@State var isRemoveRuntimeConfirmationPresented = false
 
 	var body: some View {
 		SettingsPage(
-			title: "Servers",
+			title: "Installation",
 			subtitle: "Choose a server and manage its game files"
 		) {
 			SettingsPanel(title: "Server") {
@@ -96,6 +99,8 @@ struct InstallationSettingsPage: View {
 				}
 			}
 
+			runtimePanel
+
 			SettingsPanel(
 				title: Self.canaryFeaturesTitle,
 				tone: .warning
@@ -112,10 +117,6 @@ struct InstallationSettingsPage: View {
 					)
 					.disabled(lifecycle.activity != .idle)
 				}
-				if settings.canaryFeaturesEnabled {
-					SettingsHairline()
-					canaryStatusNote
-				}
 			}
 
 			DangerZonePanel {
@@ -130,6 +131,33 @@ struct InstallationSettingsPage: View {
 				)
 			}
 			.installationConfirmation($confirmation, gameSession: gameSession, actions: actions)
+		}
+		.confirmationDialog(
+			runtimeSwitchDialogTitle,
+			isPresented: Binding(
+				get: { pendingRuntimeLane != nil },
+				set: { if !$0 { pendingRuntimeLane = nil } }
+			),
+			titleVisibility: .visible
+		) {
+			Button(runtimeSwitchButtonTitle, action: confirmRuntimeSwitch)
+			Button("Cancel", role: .cancel) { pendingRuntimeLane = nil }
+		} message: {
+			Text(runtimeSwitchMessage)
+		}
+		.confirmationDialog(
+			"Remove the other runtime?",
+			isPresented: $isRemoveRuntimeConfirmationPresented,
+			titleVisibility: .visible
+		) {
+			Button("Remove Runtime", role: .destructive) {
+				_ = actions.removeOtherRuntime()
+			}
+			Button("Cancel", role: .cancel) {}
+		} message: {
+			Text(
+				"The other architecture's runtime files are deleted. Its game environment stays on disk. You can download the runtime again later."
+			)
 		}
 	}
 

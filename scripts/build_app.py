@@ -8,12 +8,9 @@ from __future__ import annotations
 import argparse
 import base64
 import binascii
-import json
 import os
 import plistlib
 import shutil
-import stat
-import subprocess
 import tempfile
 from pathlib import Path
 
@@ -27,7 +24,6 @@ from lib.common import (
     output,
     remove_path,
     require_commands,
-    require_directory,
     require_file,
     run,
     run_main,
@@ -36,12 +32,6 @@ from lib.console import info, success, warning
 from lib.licenses import stage_bundle
 from lib.project_config import ProjectConfiguration, load_project_configuration
 from lib.swift_build import run_swift_build
-from runtime_config import (
-    RUNTIME_ARCHITECTURES,
-    RuntimeLayout,
-    load_runtime_config,
-    runtime_is_valid,
-)
 
 SPARKLE_FRAMEWORK_NAME = "Sparkle.framework"
 SPARKLE_PUBLIC_KEY_BYTES = 32
@@ -184,60 +174,7 @@ def copy_compatibility_helpers(source: Path, destination: Path) -> tuple[Path, .
     return tuple(copied)
 
 
-def copy_runtime(source: Path, destination: Path) -> None:
-    # The callback needs a stable source root to identify the top-level exclusions.
-    def ignore(directory: str, names: list[str]) -> set[str]:
-        relative = Path(directory).relative_to(source)
-        ignored = {name for name in names if name.endswith(".wine-original")}
-        if relative == Path("."):
-            # The compiled notices file replaces the runtime's loose legal files.
-            ignored.update({"include", "Licenses", "NOTICE.md"})
-        if relative == Path("share"):
-            ignored.add("man")
-        if relative == Path("share/wine"):
-            ignored.add("mono")
-        return ignored
-
-    shutil.copytree(source, destination, symlinks=True, ignore=ignore)
-
-
-# Big-endian fat headers (32 and 64 bit). Most runtime files are not fat Mach-O,
-# so this check avoids a `lipo` process for each of them.
-_FAT_MAGICS = (b"\xca\xfe\xba\xbe", b"\xca\xfe\xba\xbf")
-
-
-def _fat_architectures(path: Path) -> set[str]:
-    with path.open("rb") as handle:
-        if handle.read(4) not in _FAT_MAGICS:
-            return set()
-    # A Java class file shares the magic; `lipo` rejects it, so it counts as thin.
-    result = subprocess.run(
-        ["lipo", "-archs", path], capture_output=True, text=True, check=False
-    )
-    return set(result.stdout.split()) if result.returncode == 0 else set()
-
-
-def thin_universal_files(runtime: Path) -> int:
-    count = 0
-    for path in runtime.rglob("*"):
-        if not path.is_file() or path.is_symlink():
-            continue
-        if not {"x86_64", "arm64"} <= _fat_architectures(path):
-            continue
-        temporary = path.with_name(f"{path.name}.x86_64")
-        mode = stat.S_IMODE(path.stat().st_mode)
-        run(["lipo", path, "-thin", "x86_64", "-output", temporary])
-        temporary.chmod(mode)
-        temporary.replace(path)
-        count += 1
-    return count
-
-
-def validate_inputs(
-    runtime: Path | None,
-    configuration: ProjectConfiguration,
-    layout: RuntimeLayout,
-) -> None:
+def validate_inputs(configuration: ProjectConfiguration) -> None:
     require_commands(
         (
             "codesign",
@@ -254,73 +191,16 @@ def validate_inputs(
     for source, _ in app_resources(configuration):
         if not source.exists():
             fail(f"required resource not found: {source}")
-    if runtime is not None:
-        require_directory(runtime)
-        if not runtime_is_valid(runtime, layout):
-            fail("runtime directory does not satisfy runtime.json interface")
-
-
-def embed_runtime(
-    runtime: Path,
-    resources: Path,
-    layout: RuntimeLayout,
-    architecture: str,
-) -> None:
-    destination = resources / "Runtime"
-    info("Embedding the Wine + DXMT runtime")
-    copy_runtime(runtime, destination)
-    if architecture == "x86":
-        info("Removing unused arm64 slices from the x86-64 runtime")
-        count = thin_universal_files(destination)
-        if count:
-            info(f"Thinned {count} universal runtime files")
-    else:
-        promote_arm_interface(resources / "RUNTIME.json")
-    record_runtime_lane(resources / "RUNTIME.json", architecture)
-
-    launcher = destination / layout.launcher.path
-    remove_path(launcher)
-    launcher.symlink_to(layout.launcher.target)
-    if not runtime_is_valid(destination, layout):
-        fail("packaged runtime does not satisfy runtime.json interface")
-
-
-def record_runtime_lane(configuration: Path, architecture: str) -> None:
-    """Record the embedded lane and name a local canary in About."""
-    value = json.loads(configuration.read_text(encoding="utf-8"))
-    value["architecture"] = architecture
-    if architecture != "x86":
-        name = value["runtime"]["name"]
-        label = RUNTIME_ARCHITECTURES[architecture]
-        value["runtime"]["name"] = f"{name} ({label} canary)"
-    configuration.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
-
-
-def promote_arm_interface(configuration: Path) -> None:
-    """Embed the ARM interface so the app resolves aarch64 runtime paths."""
-    value = json.loads(configuration.read_text(encoding="utf-8"))
-    arm = value.get("armInterface")
-    if arm is None:
-        fail("RUNTIME.json has no armInterface")
-    value["interface"] = arm
-    value.pop("armInterface", None)
-    configuration.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
 
 
 def build(
-    runtime: Path | None,
     configuration: str = "release",
     project_configuration: ProjectConfiguration | None = None,
     strict_licenses: bool = False,
-    runtime_architecture: str | None = None,
 ) -> Path:
     project_configuration = project_configuration or load_project_configuration()
     project = project_configuration.project_directory
-    runtime_configuration = load_runtime_config(project / "runtime.json")
-    runtime_architecture = runtime_architecture or runtime_configuration.architecture
-    layout = runtime_configuration.for_architecture(runtime_architecture)
-    runtime = runtime.resolve() if runtime is not None else None
-    validate_inputs(runtime, project_configuration, layout)
+    validate_inputs(project_configuration)
     architectures = project_configuration.product.architecture_priority
     info(f"Building the {configuration} executable for {', '.join(architectures)}")
     run_swift_build(project_configuration, configuration)
@@ -362,15 +242,13 @@ def build(
             sign_code(helper)
         run(["plutil", "-lint", staged_app / "Contents/Info.plist"], capture=True)
 
-        if runtime is not None:
-            embed_runtime(runtime, resources, layout, runtime_architecture)
         framework = copy_sparkle_framework(
             sparkle_framework(binary_dir, project_configuration),
             staged_app / "Contents/Frameworks/Sparkle.framework",
         )
         ensure_framework_rpath(macos / project_configuration.product.executable_name)
         sign_sparkle_framework(framework)
-        for message in stage_bundle(project, resources, runtime, strict_licenses):
+        for message in stage_bundle(project, resources, strict_licenses):
             warning(message)
 
         info("Ad-hoc signing the application bundle")
@@ -391,28 +269,16 @@ def build(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--runtime", type=Path)
-    parser.add_argument(
-        "--runtime-architecture",
-        choices=tuple(RUNTIME_ARCHITECTURES),
-        default=None,
-        help="architecture of the embedded runtime (default: the runtime.json lane)",
-    )
     parser.add_argument(
         "--configuration", choices=("debug", "release"), default="release"
     )
     parser.add_argument(
         "--strict-licenses",
         action="store_true",
-        help="fail on unverified licenses or a runtime without license files",
+        help="fail on an unverified license",
     )
     arguments = parser.parse_args()
-    build(
-        arguments.runtime,
-        arguments.configuration,
-        strict_licenses=arguments.strict_licenses,
-        runtime_architecture=arguments.runtime_architecture,
-    )
+    build(arguments.configuration, strict_licenses=arguments.strict_licenses)
 
 
 if __name__ == "__main__":

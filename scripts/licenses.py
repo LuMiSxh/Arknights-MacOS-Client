@@ -4,13 +4,13 @@
 """Generate or check the third-party license notices.
 
 Without options the script rewrites the generated blocks of `docs/legal/`. Without
-`--runtime` it uses the prepared runtime in `.build/runtime` when that runtime matches
-`runtime.json`.
+`--runtime` it uses the prepared runtime in `.build/runtime-<lane>` when that runtime
+matches `runtime.json`.
 `--check` fails when the index, `Package.resolved`, `web/package.json`, the bundled
 resources, the license texts, or the generated blocks disagree.
-`--runtime DIR` merges the license index of a prepared runtime into the check and into
-the generated license-text page and the compiled notices file. `--strict` fails on any
-license that is not verified and on a runtime without license files.
+`--runtime DIR` validates the license index of a prepared runtime. It never rewrites
+the website documents; the installed runtime archive shows its own notices. `--strict`
+fails on any license that is not verified and on a runtime without license files.
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ def main() -> None:
         success("License inventory is consistent")
         return
 
-    for path in regenerate(PROJECT_DIR, runtime):
+    for path in regenerate(PROJECT_DIR):
         info(f"Updated {path}")
     success("Generated blocks are current")
 

@@ -3,75 +3,58 @@
 from __future__ import annotations
 
 import hashlib
-import json
-import shutil
+import io
 import subprocess
 import tarfile
 from pathlib import Path, PurePosixPath
 
 import download_runtime
 import pytest
-from lib.common import PROJECT_DIR
-from runtime_config import RuntimeLayout, load_runtime_config
+from runtime_config import (
+    DXMTLayout,
+    RuntimeFeatures,
+    RuntimeLayout,
+    RuntimeSymlink,
+)
 
 
 def digest(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
-@pytest.fixture(scope="module")
 def layout() -> RuntimeLayout:
-    return load_runtime_config(PROJECT_DIR / "runtime.json").layout
+    return RuntimeLayout(
+        archive_wine_directory=PurePosixPath("Wine"),
+        archive_dxmt_directory=PurePosixPath("DXMT"),
+        features=RuntimeFeatures(True, True, True),
+        executables=(PurePosixPath("bin/wine64"), PurePosixPath("bin/wineserver")),
+        required_files=(
+            PurePosixPath("lib/wine/aarch64-unix/winecoreaudio.so"),
+            PurePosixPath("lib/wine/aarch64-windows/winemetal.dll"),
+        ),
+        mac_driver=PurePosixPath("lib/wine/aarch64-unix/winemac.so"),
+        launcher=RuntimeSymlink(
+            path=PurePosixPath("bin/Arknights"), target=PurePosixPath("wine64")
+        ),
+        dxmt=DXMTLayout(
+            payload_directory=PurePosixPath("DXMT"),
+            destinations=(("x64", "system32"),),
+            libraries=("d3d10core.dll", "d3d11.dll", "dxgi.dll"),
+        ),
+    )
 
 
-def create_runtime(runtime: Path, layout: RuntimeLayout) -> None:
-    for relative in layout.required_paths:
+def create_runtime(runtime: Path) -> None:
+    files = layout()
+    for relative in files.required_paths:
         path = runtime / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.touch()
-    for relative in layout.executables:
+    for relative in files.executables:
         (runtime / relative).chmod(0o755)
-    launcher = runtime / layout.launcher.path
+    launcher = runtime / files.launcher.path
     launcher.parent.mkdir(parents=True, exist_ok=True)
-    launcher.symlink_to(layout.launcher.target)
-
-
-def write_runtime_archive(
-    archive: Path,
-    root: Path,
-    layout: RuntimeLayout,
-    *,
-    manifest: bytes | None,
-    manifest_symlink: bool = False,
-) -> None:
-    libraries = root / "Libraries"
-    wine = libraries / layout.archive_wine_directory
-    wine.mkdir(parents=True)
-    for relative in (*layout.executables, *layout.required_files, layout.mac_driver):
-        path = wine / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.touch()
-    for relative in layout.executables:
-        (wine / relative).chmod(0o755)
-    launcher = wine / layout.launcher.path
-    launcher.parent.mkdir(parents=True, exist_ok=True)
-    launcher.symlink_to(layout.launcher.target)
-
-    dxmt = libraries / layout.archive_dxmt_directory
-    for architecture, _ in layout.dxmt.destinations:
-        for library in layout.dxmt.libraries:
-            path = dxmt / architecture / library
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.touch()
-    if manifest is not None or manifest_symlink:
-        manifest_path = libraries / layout.capability_manifest_path
-        if manifest_symlink:
-            manifest_path.symlink_to("Wine/bin/wine64")
-        else:
-            manifest_path.write_bytes(manifest or b"")
-
-    with tarfile.open(archive, "w:gz") as contents:
-        contents.add(libraries, arcname="Libraries")
+    launcher.symlink_to(files.launcher.target)
 
 
 URL = "https://example.invalid/runtime.tar.gz"
@@ -101,7 +84,9 @@ def test_download_runs_hardened_resumable_curl_and_renames(
     curl = FakeCurl(b"suffix")
     monkeypatch.setattr(subprocess, "run", curl)
 
-    download_runtime.download(URL, output, digest(b"prefixsuffix"), "fixture-agent")
+    download_runtime.download(
+        URL, output, digest(b"prefixsuffix"), "fixture-agent", len(b"prefixsuffix")
+    )
 
     command = curl.commands[0]
     assert command[0] == "curl"
@@ -124,7 +109,7 @@ def test_download_skips_curl_for_verified_cache(
     curl = FakeCurl(b"")
     monkeypatch.setattr(subprocess, "run", curl)
 
-    download_runtime.download(URL, output, digest(b"runtime"), "fixture-agent")
+    download_runtime.download(URL, output, digest(b"runtime"), "fixture-agent", 7)
 
     assert curl.commands == []
 
@@ -137,6 +122,22 @@ def test_download_rejects_checksum_mismatch_and_removes_partial(
 
     with pytest.raises(RuntimeError, match="SHA-256"):
         download_runtime.download(URL, output, digest(b"runtime"), "fixture-agent")
+
+    assert not output.exists()
+    assert not (tmp_path / "runtime.tar.gz.part").exists()
+
+
+def test_download_rejects_a_wrong_size_and_removes_partial(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "runtime.tar.gz"
+    body = b"runtime"
+    monkeypatch.setattr(subprocess, "run", FakeCurl(body))
+
+    with pytest.raises(RuntimeError, match="size verification"):
+        download_runtime.download(
+            URL, output, digest(body), "fixture-agent", len(body) + 1
+        )
 
     assert not output.exists()
     assert not (tmp_path / "runtime.tar.gz.part").exists()
@@ -170,122 +171,123 @@ def test_download_preserves_partial_after_curl_failure(
     assert not output.exists()
 
 
-@pytest.mark.parametrize("sidecar", ["present", "missing", "symlink"])
-def test_prepare_runtime_preserves_only_regular_capability_sidecar(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    layout: RuntimeLayout,
-    sidecar: str,
-) -> None:
-    archive = tmp_path / "fixture.tar.gz"
-    manifest = json.dumps(
-        {
-            "schemaVersion": 2,
-            "capabilities": {
-                "hardwareCursor": True,
-            },
-        }
-    ).encode()
-    write_runtime_archive(
-        archive,
-        tmp_path / "source",
-        layout,
-        manifest=manifest,
-        manifest_symlink=sidecar == "symlink",
-    )
-    if sidecar == "missing":
-        # Recreate without a sidecar to model the verified legacy 0.6.0 archive.
-        write_runtime_archive(
-            archive,
-            tmp_path / "legacy-source",
-            layout,
-            manifest=None,
-        )
+def test_accepts_complete_runtime_layout(tmp_path: Path) -> None:
+    create_runtime(tmp_path)
 
-    def use_fixture_archive(
-        url: str, output: Path, checksum: str, user_agent: str
-    ) -> None:
-        shutil.copyfile(archive, output)
-
-    monkeypatch.setattr(download_runtime, "BUILD_DIR", tmp_path / "build")
-    monkeypatch.setattr(download_runtime, "download", use_fixture_archive)
-
-    if sidecar == "symlink":
-        with pytest.raises(RuntimeError, match="capability manifest"):
-            download_runtime.prepare_runtime(
-                "https://example.invalid/runtime", "a" * 64, layout, "test"
-            )
-        return
-
-    prepared = download_runtime.prepare_runtime(
-        "https://example.invalid/runtime", "a" * 64, layout, "test"
-    )
-    manifest_path = prepared / layout.capability_manifest_path
-    assert manifest_path.is_file() is (sidecar == "present")
-    if sidecar == "present":
-        assert manifest_path.read_bytes() == manifest
-        assert not manifest_path.is_symlink()
+    assert download_runtime.runtime_is_valid(tmp_path, layout())
 
 
-def test_accepts_complete_runtime_layout(tmp_path: Path, layout: RuntimeLayout) -> None:
-    create_runtime(tmp_path, layout)
-
-    assert download_runtime.runtime_is_valid(tmp_path, layout)
-
-
-def test_accepts_executable_symlink_within_runtime(
-    tmp_path: Path, layout: RuntimeLayout
-) -> None:
-    create_runtime(tmp_path, layout)
-    executable = tmp_path / layout.executables[0]
+def test_accepts_executable_symlink_within_runtime(tmp_path: Path) -> None:
+    files = layout()
+    create_runtime(tmp_path)
+    executable = tmp_path / files.executables[0]
     target = executable.with_name("internal-executable")
     executable.replace(target)
     executable.symlink_to(target.name)
 
-    assert download_runtime.runtime_is_valid(tmp_path, layout)
+    assert download_runtime.runtime_is_valid(tmp_path, files)
 
 
 @pytest.mark.parametrize(
     "mutation", ("wrong-link", "executable-directory", "file-link", "outside-root")
 )
-def test_rejects_invalid_runtime_layout(
-    tmp_path: Path, layout: RuntimeLayout, mutation: str
-) -> None:
+def test_rejects_invalid_runtime_layout(tmp_path: Path, mutation: str) -> None:
+    files = layout()
     runtime = tmp_path / "runtime" if mutation == "outside-root" else tmp_path
-    create_runtime(runtime, layout)
+    create_runtime(runtime)
     if mutation == "wrong-link":
-        launcher = runtime / layout.launcher.path
+        launcher = runtime / files.launcher.path
         launcher.unlink()
         launcher.symlink_to("wrong")
     elif mutation == "executable-directory":
-        executable = runtime / layout.executables[0]
+        executable = runtime / files.executables[0]
         executable.unlink()
         executable.mkdir()
     elif mutation == "file-link":
-        required = runtime / layout.required_regular_files[0]
+        required = runtime / files.required_regular_files[0]
         target = required.with_name("real-file")
         required.replace(target)
         required.symlink_to(target.name)
     else:
         outside = tmp_path / "outside"
-        executable = runtime / layout.executables[0]
+        executable = runtime / files.executables[0]
         escaped_parent = executable.parent
         outside_parent = outside / escaped_parent.relative_to(runtime)
         outside_parent.parent.mkdir(parents=True, exist_ok=True)
         escaped_parent.replace(outside_parent)
         escaped_parent.symlink_to(outside_parent)
-    assert not download_runtime.runtime_is_valid(runtime, layout)
+    assert not download_runtime.runtime_is_valid(runtime, files)
 
 
-@pytest.mark.parametrize(
-    "missing",
-    load_runtime_config(PROJECT_DIR / "runtime.json").layout.required_paths,
-    ids=str,
-)
+@pytest.mark.parametrize("missing", layout().required_paths, ids=str)
 def test_rejects_every_missing_declared_runtime_path(
-    tmp_path: Path, layout: RuntimeLayout, missing: PurePosixPath
+    tmp_path: Path, missing: PurePosixPath
 ) -> None:
-    create_runtime(tmp_path, layout)
+    create_runtime(tmp_path)
     (tmp_path / missing).unlink()
 
-    assert not download_runtime.runtime_is_valid(tmp_path, layout)
+    assert not download_runtime.runtime_is_valid(tmp_path, layout())
+
+
+def archive_bytes() -> bytes:
+    files = layout()
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
+        for relative in files.required_paths:
+            if relative == files.launcher.path or relative.is_relative_to(
+                files.dxmt.payload_directory
+            ):
+                continue
+            data = b"#!/bin/sh\n" if relative in files.executables else b""
+            info = tarfile.TarInfo(f"Libraries/Wine/{relative}")
+            info.size = len(data)
+            info.mode = 0o755 if relative in files.executables else 0o644
+            archive.addfile(info, io.BytesIO(data))
+        launcher = tarfile.TarInfo(f"Libraries/Wine/{files.launcher.path}")
+        launcher.type = tarfile.SYMTYPE
+        launcher.linkname = str(files.launcher.target)
+        archive.addfile(launcher)
+        for library in files.dxmt.libraries:
+            data = b""
+            info = tarfile.TarInfo(f"Libraries/DXMT/x64/{library}")
+            info.size = 0
+            archive.addfile(info, io.BytesIO(data))
+        notice = b"notice"
+        info = tarfile.TarInfo("NOTICE.md")
+        info.size = len(notice)
+        archive.addfile(info, io.BytesIO(notice))
+        license_text = b"MIT"
+        info = tarfile.TarInfo("Licenses/index.json")
+        info.size = len(license_text)
+        archive.addfile(info, io.BytesIO(license_text))
+    return buffer.getvalue()
+
+
+def test_prepare_runtime_selects_the_lane_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = archive_bytes()
+    monkeypatch.setattr(download_runtime, "BUILD_DIR", tmp_path / ".build")
+    monkeypatch.setattr(subprocess, "run", FakeCurl(payload))
+    other = tmp_path / ".build/runtime-x86"
+    other.mkdir(parents=True)
+    (other / "keep").write_text("untouched", encoding="utf-8")
+
+    destination = download_runtime.prepare_runtime(
+        URL,
+        digest(payload),
+        len(payload),
+        layout(),
+        "arm",
+        "fixture-agent",
+    )
+
+    assert destination == tmp_path / ".build/runtime-arm"
+    assert (destination / "bin/wine64").is_file()
+    assert (destination / "DXMT/x64/dxgi.dll").is_file()
+    assert (destination / "Licenses/index.json").is_file()
+    assert (destination / "NOTICE.md").is_file()
+    assert (destination / download_runtime.PREPARED_REVISION_FILE).read_text(
+        encoding="utf-8"
+    ).strip() == digest(payload)
+    assert (other / "keep").read_text(encoding="utf-8") == "untouched"

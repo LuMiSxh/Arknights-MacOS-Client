@@ -67,9 +67,8 @@ FIXED_RESOURCES = (
     StagedResource(
         "SupportArticles", "directory", ORIGIN_APP, source="docs/help/errors"
     ),
-    # Built by `build_compatibility.py` and embedded from the runtime archive.
+    # Built by `build_compatibility.py`.
     StagedResource("Compatibility", "directory", ORIGIN_APP),
-    StagedResource("Runtime", "directory", ORIGIN_APP),
 )
 
 

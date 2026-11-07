@@ -1,7 +1,7 @@
 ---
 title: "GM-CRS: Game closed unexpectedly"
 description: "The game or Wine process ended unexpectedly."
-order: 18
+order: 20
 audience: users
 code: GM-CRS
 domain: game

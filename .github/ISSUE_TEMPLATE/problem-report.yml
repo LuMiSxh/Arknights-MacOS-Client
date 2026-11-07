@@ -52,8 +52,10 @@ body:
         - RT-BLK
         - RT-BND
         - RT-CMP
+        - RT-MIS
         - RT-ROS
         - RT-SET
+        - RT-VER
         - GM-CRS
         - GM-SCP
         - GM-SCW

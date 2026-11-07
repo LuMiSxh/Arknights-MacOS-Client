@@ -217,12 +217,12 @@ Most respondents play on Global. 89% found the update pace about right. About se
 
   </details>
 
-- Settings reorganization. A few of you found the settings groups confusing. 0.8.0 groups settings by task. The **Arknights** group holds **Game**, **Servers**, **Storage**, and **Playtime**, and the **Launcher** group holds **Appearance**, **Integration**, and **Updates**; the **Support** group holds **Help** and **About**, and recovery actions now live under **Help**.
+- Settings reorganization. A few of you found the settings groups confusing. 0.8.0 groups settings by task. The **Arknights** group holds **Game**, **Installation**, **Storage**, and **Playtime**, and the **Launcher** group holds **Appearance**, **Integration**, and **Updates**; the **Support** group holds **Help** and **About**, and recovery actions now live under **Help**.
 
   <details>
   <summary>Developer notes</summary>
 
-  `SettingsGroup` in `Sources/ArknightsLauncherUI/Settings/SettingsSection.swift` defines the captions, and `SettingsSection.group` assigns each page to a group. A page belongs to one group in one place, so moving a page changes one line. The Game page now has Display, Performance, and Compatibility, Installation is now Servers, and Audio is now Integration.
+  `SettingsGroup` in `Sources/ArknightsLauncherUI/Settings/SettingsSection.swift` defines the captions, and `SettingsSection.group` assigns each page to a group. A page belongs to one group in one place, so moving a page changes one line. The Game page now has Display, Performance, and Compatibility, and Audio is now Integration.
 
   </details>
 

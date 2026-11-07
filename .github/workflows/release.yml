@@ -103,20 +103,6 @@ jobs:
       - name: Prepare release notes
         run: uv run --locked --no-dev scripts/release.py notes "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
 
-      - name: Download runtime and build recipe
-        run: |
-          mkdir -p dist
-          build_recipe="$RUNNER_TEMP/Runtime-Build-Recipe.tar.gz"
-          build_recipe_url="$(plutil -extract buildRecipe.url raw runtime.json)"
-          build_recipe_sha256="$(plutil -extract buildRecipe.sha256 raw runtime.json)"
-          uv run --locked --no-dev scripts/download_runtime.py
-          curl --fail --location --proto '=https' --tlsv1.2 "$build_recipe_url" --output "$build_recipe"
-          echo "$build_recipe_sha256  $build_recipe" | shasum -a 256 --check
-          mv "$build_recipe" "dist/Runtime-Build-Recipe.tar.gz"
-
-      - name: Check licenses against the runtime
-        run: uv run --locked --no-dev scripts/licenses.py --check --strict --runtime .build/runtime
-
       - name: Set release version
         env:
           GH_TOKEN: ${{ github.token }}
@@ -165,8 +151,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $bundle_version" Resources/Info.plist
 
       - name: Build DMG
-        run: |
-          just dmg "$GITHUB_WORKSPACE/.build/runtime" "" strict
+        run: just dmg --strict-licenses
 
       - name: Create and sign Sparkle update
         env:
@@ -219,7 +204,7 @@ jobs:
           deltas=(dist/*.delta)
           shasum -a 256 "dist/$DMG_NAME" \
             "dist/$UPDATE_NAME" "${deltas[@]}" \
-            dist/appcast.xml dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
+            dist/appcast.xml > dist/SHA256SUMS
 
       - name: Attest release provenance
         if: ${{ !inputs.dry_run }}
@@ -232,7 +217,6 @@ jobs:
             dist/*.tar.xz
             dist/*.delta
             dist/appcast.xml
-            dist/Runtime-Build-Recipe.tar.gz
             dist/SHA256SUMS
 
       - name: Upload dry-run files for inspection
@@ -245,7 +229,6 @@ jobs:
             dist/*.tar.xz
             dist/*.delta
             dist/appcast.xml
-            dist/Runtime-Build-Recipe.tar.gz
             dist/SHA256SUMS
           retention-days: 3
 
@@ -262,7 +245,6 @@ jobs:
             "dist/$UPDATE_NAME" \
             "${deltas[@]}" \
             dist/appcast.xml \
-            dist/Runtime-Build-Recipe.tar.gz \
             dist/SHA256SUMS \
             --draft \
             --notes-file "$RUNNER_TEMP/release-notes.md" \

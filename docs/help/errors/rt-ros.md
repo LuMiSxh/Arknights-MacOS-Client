@@ -1,7 +1,7 @@
 ---
 title: "RT-ROS: Rosetta unavailable"
 description: "Rosetta is missing or disabled."
-order: 16
+order: 17
 audience: users
 code: RT-ROS
 domain: runtime

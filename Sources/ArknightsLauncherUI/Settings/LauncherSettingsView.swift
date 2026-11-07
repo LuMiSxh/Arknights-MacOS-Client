@@ -19,6 +19,7 @@ struct LauncherSettingsView: View {
 	let communication: LauncherCommunicationController
 	let installation: InstallationController
 	let gameSession: GameSessionController
+	let runtimeSelection: RuntimeSelectionController
 	let lifecycle: LauncherLifecycleStore
 	let reminders: ResetReminderController
 	let screenshots: GameScreenshotController
@@ -100,6 +101,7 @@ struct LauncherSettingsView: View {
 							settings: settings,
 							installation: installation,
 							gameSession: gameSession,
+							runtimeSelection: runtimeSelection,
 							lifecycle: lifecycle,
 							actions: actions
 						)

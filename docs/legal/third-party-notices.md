@@ -7,40 +7,39 @@ order: 20
 # Third-party notices
 
 > [!IMPORTANT]
-> Arknights Client packages a prebuilt compatibility runtime. [`runtime.json`](../../runtime.json) pins its exact versions, archive hashes, and build provenance. The app also embeds small MPL-2.0 compatibility wrappers built from `RuntimeSupport/`. It does not distribute the Vuplex SDK or the upstream game files.
+> Arknights Client downloads a prebuilt compatibility runtime for the architecture that you choose. [`runtime.json`](../../runtime.json) pins one archive per runtime lane, with its exact version, archive hash, size, and build provenance. The app bundle does not contain a runtime. The app embeds small MPL-2.0 compatibility wrappers built from `RuntimeSupport/`. It does not distribute the Vuplex SDK or the upstream game files.
 
-The app bundles one compact file with these notices. This website publishes the same content. The [License texts](license-texts.md) page holds the full text of every named license. The [Source code](source-code.md) page describes how to get the source.
+The app bundles one compact file with the notices of its own components. This website publishes the same content. The [License texts](license-texts.md) page holds the full text of every named license. The [Source code](source-code.md) page describes how to get the source.
 
-`runtime.json` is the source of truth for the runtime artifact. Each source link below points to the provenance commit recorded there. This page is an inventory. It does not relicense a component or decide whether a redistribution is permitted. Read the verbatim texts and the upstream notices for that.
+`runtime.json` is the source of truth for each runtime archive. Each source link below points to the provenance commit recorded there. This page is an inventory. It does not relicense a component or decide whether a redistribution is permitted. Read the verbatim texts and the upstream notices for that.
 
 ## Runtime components
 
 <!-- runtime:begin components -->
-| Component | Version or revision | License | Exact provenance source |
-| --- | --- | --- | --- |
-| WineCX / Wine | Wine 11.17, `e0aa380780b73e20fabcfe78fd42713b94929a53` | LGPL-2.1-or-later and bundled third-party terms | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/e0aa380780b73e20fabcfe78fd42713b94929a53) |
-| DXMT | 0.80-361-g9839e55, `9839e55f98d4aca103957ee4132d6395a325a9ed` | LGPL-2.1-or-later and bundled third-party terms | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/9839e55f98d4aca103957ee4132d6395a325a9ed) |
-| MoltenVK | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf` | Apache-2.0 and bundled third-party terms | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
-| Nix libraries | libpng-apng 1.6.46, libunistring 1.3, libffi 39, GMP 6.3.0, Brotli 1.1.0, GnuTLS 3.8.9, zlib 1.3.1, Nettle 3.10.1, libiconv 1.17, bzip2 1.0.8, FreeType 2.13.3, p11-kit 0.25.5, libidn2 2.3.8, gettext 0.22.5, libtasn1 4.20.0 | LGPL-2.1-or-later AND (GPL-2.0-or-later OR LGPL-3.0-or-later) AND (FTL OR GPL-2.0-only) AND BSD-3-Clause AND MIT AND Zlib AND libpng-2.0 AND bzip2-1.0.6 | [Runtime v0.8.0-rc5](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.8.0-rc5), Nixpkgs `ac62194c3917d5f474c1a844b6fd6da2db95077d` |
+| Runtime | Component | Version or revision | License | Exact provenance source |
+| --- | --- | --- | --- | --- |
+| x86 | WineCX / Wine | 11.17, `e0aa380780b73e20fabcfe78fd42713b94929a53` | LGPL-2.1-or-later | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/e0aa380780b73e20fabcfe78fd42713b94929a53) |
+| x86 | DXMT | 0.80-361-g9839e55, `9839e55f98d4aca103957ee4132d6395a325a9ed` | LGPL-2.1-or-later | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/9839e55f98d4aca103957ee4132d6395a325a9ed) |
+| x86 | MoltenVK | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf` | Apache-2.0 | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
 <!-- runtime:end components -->
 
-The pinned runtime archive has no media stack. It has no Wine Gecko, GStreamer, FFmpeg, or media codec libraries. The `Licenses/` directory and `NOTICE.md` in the archive carry the license texts of every component.
+The x86_64 runtime contains WineCX, DXMT, and MoltenVK. The ARM64 runtime contains Wine, FEX, Mesa, and DXMT. Each runtime archive carries its own license index, license texts, and `NOTICE.md`. The launcher shows those notices for the installed runtime under **Settings → About**.
+
+The client does not generate a runtime closure inventory. The runtime archive is the authoritative record of its own components, build inputs, and notices.
 
 ## Runtime build provenance
 
 <!-- runtime:begin build -->
-The v0.8.0-rc5 runtime was built from the release tag and exact inputs below. The base archive and Nixpkgs revision are build inputs, not independently selected runtime components. They remain part of the release's corresponding-source record.
+The client pins one runtime archive per architecture. The launcher downloads the archive for the architecture that you choose; the app bundle does not contain a runtime. Each archive carries its own build provenance, license texts, and notices. The client does not generate a runtime closure inventory.
 
-| Build input | Version or revision | Exact provenance source |
-| --- | --- | --- |
-| Runtime build | Arknights macOS Runtime v0.8.0-rc5 | [Runtime v0.8.0-rc5 tag](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.8.0-rc5), [release](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.8.0-rc5) |
-| Whisky base libraries | v4.7.3, `a4b5d63493f80698cce5cad8e7212d9a51c8292037b00c478f4652636fcfd331` archive SHA-256 | [Whisky v4.7.3 release](https://github.com/dappermint/Whisky/releases/tag/v4.7.3) |
-| winecx-gptk base recipe | `0bf3eabc2f0d95154282eb86b11205cbbaae6c65` | [winecx-gptk commit](https://github.com/dappermint/winecx-gptk/tree/0bf3eabc2f0d95154282eb86b11205cbbaae6c65) |
-| Nixpkgs | `ac62194c3917d5f474c1a844b6fd6da2db95077d` | [Nixpkgs commit](https://github.com/NixOS/nixpkgs/tree/ac62194c3917d5f474c1a844b6fd6da2db95077d) |
+| Runtime | Release | Archive SHA-256 | Archive size |
+| --- | --- | --- | --- |
+| x86 | [v0.8.0-rc6](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.8.0-rc6) | `7b35b658ff99f90bf795748ecceecc0144f2a0c5b011791d4c31acf013d50ec6` | 119311707 bytes |
+| arm | Not pinned yet | | |
 <!-- runtime:end build -->
 
 > [!IMPORTANT]
-> The runtime also contains dynamically linked libraries for text, networking, cryptography, and compression. Their own licenses continue to apply.
+> Each runtime archive contains dynamically linked libraries for text, networking, cryptography, and compression. Their own licenses continue to apply.
 
 ## Generated inventory
 
@@ -82,7 +81,7 @@ The documentation website embeds these packages. They are not part of the app. T
 <!-- licenses:begin runtime -->
 ## Runtime components
 
-The runtime archive lists its components and their licenses in `Licenses/index.json`. The [license texts](license-texts.md) page merges that list with the launcher components when the maintainer generates it with a prepared runtime.
+The launcher downloads one runtime archive for the architecture that you choose. The app bundle does not contain a runtime. Each archive lists its components and licenses in `Licenses/index.json` and carries its own `NOTICE.md`. The launcher shows those notices for the installed runtime under **Settings → About**. The client does not generate a runtime closure inventory.
 <!-- licenses:end runtime -->
 
 A runtime dependency can carry an additional notice. The release artifact and upstream source distributions remain authoritative for the complete notice set.
@@ -92,20 +91,21 @@ A runtime dependency can carry an additional notice. The release artifact and up
 
 ## Included and excluded material
 
-| Material                                   | Packaged?                       | Where its boundary is recorded                                                                                                                                                           |
-| ------------------------------------------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Native launcher                            | Yes                             | Repository source and top-level [`LICENSE`](../../LICENSE)                                                                                                                               |
-| Project compatibility wrappers and bridges | Yes                             | `RuntimeSupport/` source at the matching tag; MPL-2.0 SPDX markers                                                                                                                       |
-| WineCX + DXMT runtime                      | Yes, as a prebuilt runtime unit | [`runtime.json`](../../runtime.json), `RUNTIME.json`, and this page                                                                                                                      |
-| Sparkle framework                          | Yes                             | [License text](license-texts.md#sparkle) and the Sparkle project                                                                                                                         |
-| YouTubePlayerKit                           | Yes                             | [License text](license-texts.md#youtubeplayerkit)                                                                                                                                        |
-| Arknights game files                       | No                              | Downloaded from first-party publisher endpoints after the user starts installation: Yostar for Global, Japan, and Korea; Gryphline for Taiwan; Hypergryph for China and China (Bilibili) |
-| Wine Mono                                  | No                              | Explicitly excluded by packaging                                                                                                                                                         |
-| DXVK                                       | No                              | Not copied into the app bundle                                                                                                                                                           |
-| Apple Game Porting Toolkit                 | No                              | Not copied into the app bundle                                                                                                                                                           |
+| Material                                   | Packaged?                   | Where its boundary is recorded                                                                                                                                                           |
+| ------------------------------------------ | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Native launcher                            | Yes                         | Repository source and top-level [`LICENSE`](../../LICENSE)                                                                                                                               |
+| Project compatibility wrappers and bridges | Yes                         | `RuntimeSupport/` source at the matching tag; MPL-2.0 SPDX markers                                                                                                                       |
+| x86_64 runtime                             | No. Downloaded on first use | [`runtime.json`](../../runtime.json) lane `x86` and the runtime archive notices                                                                                                          |
+| ARM64 runtime                              | No. Downloaded on first use | [`runtime.json`](../../runtime.json) lane `arm` and the runtime archive notices                                                                                                          |
+| Sparkle framework                          | Yes                         | [License text](license-texts.md#sparkle) and the Sparkle project                                                                                                                         |
+| YouTubePlayerKit                           | Yes                         | [License text](license-texts.md#youtubeplayerkit)                                                                                                                                        |
+| Arknights game files                       | No                          | Downloaded from first-party publisher endpoints after the user starts installation: Yostar for Global, Japan, and Korea; Gryphline for Taiwan; Hypergryph for China and China (Bilibili) |
+| Wine Mono                                  | No                          | Explicitly excluded by packaging                                                                                                                                                         |
+| DXVK                                       | No                          | Not part of the client or its runtimes                                                                                                                                                   |
+| Apple Game Porting Toolkit                 | No                          | Not part of the client or its runtimes                                                                                                                                                   |
 
 > [!WARNING]
-> A source link or license text is not evidence that a release bundles a dependency. Before you describe an artifact, confirm the actual app bundle, its `RUNTIME.json`, and its `ThirdPartyNotices.deflate`.
+> A source link or license text is not evidence that a release bundles a dependency. Before you describe an artifact, confirm the actual app bundle and its `RUNTIME.json`, and check the notices inside the installed runtime.
 
 ## Release review
 

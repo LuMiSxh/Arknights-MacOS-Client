@@ -4,7 +4,7 @@
 
 # Arknights Client
 
-**Play Arknights PC on Apple Silicon Macs.** This free, unofficial launcher sets up the game. It runs the publisher's Windows game through bundled Wine and DXMT.
+**Play Arknights PC on Apple Silicon Macs.** This free, unofficial launcher sets up the game. It runs the publisher's Windows game through a downloaded Wine and DXMT runtime.
 
 [![Release](https://img.shields.io/github/v/release/LuMiSxh/Arknights-MacOS-Client?style=flat-square&labelColor=23252a&color=477acc)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases)
 [![macOS 15–27](https://img.shields.io/badge/macOS-15%E2%80%9327-477acc?style=flat-square&labelColor=23252a)](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/)
@@ -62,10 +62,10 @@ just check
 | `just check`       | Run source checks and network-denied Python and Swift tests |
 | `just integration` | Run the network-denied onboarding-to-download workflow      |
 | `just ci`          | Run deterministic tests and build the release configuration |
-| `just dev app run` | Build the app with its runtime and open it                  |
+| `just dev app run` | Build the app and open it                                   |
 | `just dev web`     | Start the local documentation website                       |
 
-Run `just --list` for all commands. [`runtime.json`](runtime.json) pins the tested runtime. Contributor documentation is in [`docs/development/`](docs/development/README.md) and [`docs/legal/`](docs/legal/README.md).
+Run `just --list` for all commands. [`runtime.json`](runtime.json) pins the tested runtime for each architecture. Contributor documentation is in [`docs/development/`](docs/development/README.md) and [`docs/legal/`](docs/legal/README.md).
 
 ## License
 

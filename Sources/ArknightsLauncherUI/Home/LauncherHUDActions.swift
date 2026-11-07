@@ -11,6 +11,7 @@ struct LauncherHUDActions {
 	let selectRegion: (GameRegion) -> Void
 	let installOrUpdate: () -> Void
 	let cancelDownload: () -> Void
+	let installRuntime: () -> Void
 	let launch: () -> Void
 	let stopGame: () -> Void
 	let showFailureDetails: () -> Void

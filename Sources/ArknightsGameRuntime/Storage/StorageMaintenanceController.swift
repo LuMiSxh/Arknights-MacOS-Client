@@ -38,14 +38,18 @@ package final class StorageMaintenanceController {
 		guard let lease = lifecycle.begin(.maintaining(.clearingCache)) else { return }
 		let operationID = UUID()
 		let region = regionProvider()
-		let winePrefix = paths.winePrefix(for: region)
+		let winePrefixes = RuntimeLane.allCases.map {
+			paths.winePrefix(for: region, lane: $0)
+		}
 		Task { [weak self, lifecycle = self.lifecycle] in
 			guard let self else {
 				lifecycle.end(lease)
 				return
 			}
 			do {
-				try await Self.clearCaches(winePrefix: winePrefix)
+				for winePrefix in winePrefixes {
+					try await Self.clearCaches(winePrefix: winePrefix)
+				}
 				lifecycle.end(lease)
 				onStorageOverviewChanged?()
 				log.info("Shader and browser caches cleared")

@@ -1,7 +1,7 @@
 ---
 title: "GM-WIN: No game window"
 description: "The game did not show a window within 90 seconds."
-order: 21
+order: 23
 audience: users
 code: GM-WIN
 domain: game

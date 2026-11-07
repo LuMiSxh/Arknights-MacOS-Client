@@ -23,43 +23,7 @@ struct WineLaunch: Sendable {
 	}
 }
 
-struct RuntimeConfiguration: Decodable, Sendable {
-	struct Archive: Decodable, Sendable {
-		let name: String
-		let sha256: String
-	}
-	struct Interface: Decodable, Sendable {
-		struct DXMT: Decodable, Sendable {
-			let destinations: [String: String]
-			let libraries: [String]
-		}
-		let runtimeCapabilities: String?
-		let macDriver: String?
-		let dxmt: DXMT?
-	}
-	struct Components: Decodable, Sendable {
-		let wine: String?
-		let dxmt: String?
-	}
-	struct Provenance: Decodable, Sendable {
-		let wineCommit: String?
-		let dxmtCommit: String?
-	}
-
-	let prefixRevision: Int
-	let architecture: String?
-	let runtime: Archive
-	let interface: Interface?
-	/// Optional so bundles that predate these fields still decode.
-	let components: Components?
-	let provenance: Provenance?
-
-	var revision: String {
-		"\(runtime.sha256)-prefix-\(prefixRevision)"
-	}
-}
-
-/// The bundled Wine + DXMT build, discovered from `RUNTIME.json` in the app's resources, and
+/// The installed Wine + DXMT build, discovered from the managed runtime's `RUNTIME.json`, and
 /// the single entry point for launching, monitoring, and stopping the Windows game process.
 struct WineRuntime: Sendable {
 	struct DXMTDestination: Sendable, Equatable {
@@ -72,10 +36,11 @@ struct WineRuntime: Sendable {
 	let revision: String
 	let runtimeArchitecture: String
 	let lane: RuntimeLane?
+	let dxmtPayloadDirectory: String
 	let dxmtPayloadDestinations: [DXMTDestination]
 	let dxmtPayloadLibraries: [String]
 	let gameIconBridgeURL: URL?
-	let capabilityManifestFileName: String?
+	let features: RuntimeFeatures
 	let pins: RuntimePins
 	private let compatibilityManager: GameCompatibilityManager
 
@@ -85,10 +50,11 @@ struct WineRuntime: Sendable {
 		revision: String,
 		runtimeArchitecture: String = "Unknown",
 		lane: RuntimeLane? = nil,
+		dxmtPayloadDirectory: String = WineRuntime.defaultDXMTPayloadDirectory,
 		dxmtPayloadDestinations: [DXMTDestination] = WineRuntime.dxmtDestinations,
 		dxmtPayloadLibraries: [String] = WineRuntime.dxmtLibraryNames,
 		gameIconBridgeURL: URL? = nil,
-		capabilityManifestFileName: String? = nil,
+		features: RuntimeFeatures = .conservative,
 		pins: RuntimePins = RuntimePins(),
 		compatibilityManager: GameCompatibilityManager
 	) {
@@ -97,10 +63,11 @@ struct WineRuntime: Sendable {
 		self.revision = revision
 		self.runtimeArchitecture = runtimeArchitecture
 		self.lane = lane
+		self.dxmtPayloadDirectory = dxmtPayloadDirectory
 		self.dxmtPayloadDestinations = dxmtPayloadDestinations
 		self.dxmtPayloadLibraries = dxmtPayloadLibraries
 		self.gameIconBridgeURL = gameIconBridgeURL
-		self.capabilityManifestFileName = capabilityManifestFileName
+		self.features = features
 		self.pins = pins
 		self.compatibilityManager = compatibilityManager
 	}
@@ -134,6 +101,7 @@ struct WineRuntime: Sendable {
 		DXMTDestination(architecture: "x64", windowsDirectory: "system32")
 	]
 	static let dxmtLibraryNames = ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
+	static let defaultDXMTPayloadDirectory = "DXMT"
 	static let crashDialogRegistryKey = "HKCU\\Software\\Wine\\WineDbg"
 	static let crashDialogRegistryValue = "ShowCrashDialog"
 	static let macDriverRegistryKey = "HKCU\\Software\\Wine\\Mac Driver"
@@ -146,63 +114,75 @@ struct WineRuntime: Sendable {
 	]
 
 	static func discover(
-		bundle: Bundle = .main,
+		runtimeRoot: URL,
+		configurationURL: URL,
 		fileManager: FileManager = .default,
 		compatibilityManager: GameCompatibilityManager
 	) throws -> WineRuntime {
-		guard let resources = bundle.resourceURL else {
-			throw WineRuntimeDiscoveryError.missingResourceDirectory
-		}
-		let executable = BundledResource.runtime.location(in: resources)
-			.appending(path: "bin/Arknights")
+		let bridge = Bundle.main.resourceURL?.appending(
+			path: "Compatibility/GameIcon/GameIconBridge.dylib")
+		return try discover(
+			runtimeRoot: runtimeRoot,
+			configurationURL: configurationURL,
+			gameIconBridgeURL: bridge,
+			fileManager: fileManager,
+			compatibilityManager: compatibilityManager
+		)
+	}
+
+	private static func discover(
+		runtimeRoot: URL,
+		configurationURL: URL,
+		gameIconBridgeURL: URL?,
+		fileManager: FileManager,
+		compatibilityManager: GameCompatibilityManager
+	) throws -> WineRuntime {
+		let executable = runtimeRoot.appending(path: "bin/Arknights")
 		guard fileManager.isExecutableFile(atPath: executable.path) else {
 			throw WineRuntimeDiscoveryError.missingExecutable(executable)
 		}
-		let configurationURL = BundledResource.runtimeConfiguration.location(in: resources)
-		let configuration: RuntimeConfiguration
+		let manifest: RuntimeManifest
 		do {
-			configuration = try BundledResource.runtimeConfiguration.decode(
-				RuntimeConfiguration.self, in: bundle)
-		} catch let error as BundledResourceError {
-			switch error {
-			case .missing, .unreadable:
-				throw WineRuntimeDiscoveryError.unreadableConfiguration(
-					configurationURL,
-					error.localizedDescription
-				)
-			case .corrupt:
-				throw WineRuntimeDiscoveryError.invalidConfiguration(
-					configurationURL,
-					error.localizedDescription
-				)
-			}
-		} catch {
+			let data = try Data(contentsOf: configurationURL)
+			manifest = try JSONDecoder().decode(RuntimeManifest.self, from: data)
+		} catch let error as DecodingError {
 			throw WineRuntimeDiscoveryError.invalidConfiguration(
-				configurationURL,
-				error.localizedDescription
+				configurationURL, error.localizedDescription
+			)
+		} catch {
+			throw WineRuntimeDiscoveryError.unreadableConfiguration(
+				configurationURL, error.localizedDescription
 			)
 		}
-		guard configuration.prefixRevision > 0 else {
+		guard manifest.prefixRevision > 0 else {
 			throw WineRuntimeDiscoveryError.invalidConfiguration(
 				configurationURL,
 				"prefixRevision must be greater than zero"
 			)
 		}
-		guard !configuration.runtime.sha256.isEmpty else {
+		guard !manifest.runtime.sha256.isEmpty else {
 			throw WineRuntimeDiscoveryError.invalidConfiguration(
 				configurationURL,
 				"runtime.sha256 must not be empty"
 			)
 		}
-		let dxmtLibraries = configuration.interface?.dxmt?.libraries ?? Self.dxmtLibraryNames
+		let dxmtLibraries = manifest.interface.dxmt.libraries
 		let dxmtDestinations =
-			configuration.interface?.dxmt?.destinations.map {
+			manifest.interface.dxmt.destinations.map {
 				DXMTDestination(architecture: $0.key, windowsDirectory: $0.value)
-			}.sorted { $0.architecture < $1.architecture } ?? Self.dxmtDestinations
+			}.sorted { $0.architecture < $1.architecture }
 		guard !dxmtLibraries.isEmpty, dxmtLibraries.allSatisfy(Self.isSafeDXMTComponent) else {
 			throw WineRuntimeDiscoveryError.invalidConfiguration(
 				configurationURL,
 				"interface.dxmt.libraries must be a non-empty list of file names"
+			)
+		}
+		guard
+			Self.isSafeDXMTComponent(manifest.interface.dxmt.payloadDirectory)
+		else {
+			throw WineRuntimeDiscoveryError.invalidConfiguration(
+				configurationURL,
+				"interface.dxmt.payloadDirectory must be a path component"
 			)
 		}
 		guard
@@ -217,28 +197,22 @@ struct WineRuntime: Sendable {
 				"interface.dxmt.destinations must be non-empty path components"
 			)
 		}
-		let lane = RuntimeLane.declared(
-			architecture: configuration.architecture,
-			macDriver: configuration.interface?.macDriver,
-			runtimeName: configuration.runtime.name
-		)
 		return WineRuntime(
 			executableURL: executable,
-			displayName: configuration.runtime.name,
-			revision: configuration.revision,
-			runtimeArchitecture: lane?.label ?? "Unknown",
-			lane: lane,
+			displayName: manifest.runtime.name,
+			revision: manifest.revision,
+			runtimeArchitecture: manifest.architecture.label,
+			lane: manifest.architecture,
+			dxmtPayloadDirectory: manifest.interface.dxmt.payloadDirectory,
 			dxmtPayloadDestinations: dxmtDestinations,
 			dxmtPayloadLibraries: dxmtLibraries,
-			gameIconBridgeURL: resources.appending(
-				path: "Compatibility/GameIcon/GameIconBridge.dylib"
-			),
-			capabilityManifestFileName: configuration.interface?.runtimeCapabilities,
+			gameIconBridgeURL: gameIconBridgeURL,
+			features: manifest.interface.features,
 			pins: RuntimePins(
-				wineVersion: configuration.components?.wine,
-				wineCommit: configuration.provenance?.wineCommit,
-				dxmtVersion: configuration.components?.dxmt,
-				dxmtCommit: configuration.provenance?.dxmtCommit
+				wineVersion: manifest.components?.wine,
+				wineCommit: manifest.provenance?.wineCommit,
+				dxmtVersion: manifest.components?.dxmt,
+				dxmtCommit: manifest.provenance?.dxmtCommit
 			),
 			compatibilityManager: compatibilityManager
 		)
@@ -254,14 +228,6 @@ struct WineRuntime: Sendable {
 	}
 
 	@concurrent
-	func discoverCapabilities() async -> RuntimeCapabilityDiscovery {
-		let runtimeDirectory = executableURL.deletingLastPathComponent().deletingLastPathComponent()
-		return RuntimeCapabilities.discover(
-			inRuntimeDirectory: runtimeDirectory,
-			manifestRelativePath: capabilityManifestFileName
-		)
-	}
-
 	func launch(
 		gameExecutable: URL,
 		prefixDirectory: URL,

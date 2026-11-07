@@ -28,7 +28,7 @@ Use the smallest level that proves the changed contract:
 | Parser, state transition, path rule, persistence value, or controller logic | A focused test in the unit test target of the owning source target, using local values and fixtures. Add it only when no type or existing test covers the contract. |
 | Flow across onboarding, API decoding, installation, or persisted state      | `ArknightsClientIntegrationTests` with `IntegrationTestEnvironment` and `LocalFixtureNetwork`                                                                       |
 | Yostar or Gryphline endpoint, response shape, manifest, or signing          | A live probe, plus a fixture test when the decoder changes                                                                                                          |
-| `runtime.json` or a new packaged runtime release                            | `just check`, `just runtime`, and the manual compatibility matrix                                                                                                   |
+| `runtime.json` or a new runtime release                                     | `just check`, `just runtime`, and the manual compatibility matrix                                                                                                   |
 | Website Markdown, Svelte UI, routes, or Mermaid                             | The website checks in [Development](README.md#documentation-website)                                                                                                |
 
 ## What to test

@@ -148,8 +148,6 @@ struct AboutSettingsPage: View {
 					SettingsHairline()
 					capabilityRow(
 						"Native fullscreen Space", advertised: runtime.nativeFullscreenSpace)
-					SettingsHairline()
-					capabilityRow("ACE compatibility", advertised: runtime.aceCompat)
 				}
 			}
 		} else {

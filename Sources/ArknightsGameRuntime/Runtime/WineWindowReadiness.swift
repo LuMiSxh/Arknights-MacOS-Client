@@ -78,11 +78,16 @@ struct WineWindowReadiness {
 	private static func children(of processIdentifier: Int32) -> [Int32] {
 		let capacity = 256
 		var buffer = [pid_t](repeating: 0, count: capacity)
-		let bytes = proc_listchildpids(
+		let listed = proc_listchildpids(
 			processIdentifier, &buffer, Int32(capacity * MemoryLayout<pid_t>.size))
-		guard bytes > 0 else { return [] }
-		let count = min(capacity, Int(bytes) / MemoryLayout<pid_t>.size)
-		return buffer[0..<count].map { Int32($0) }
+		return childIdentifiers(listed: Int(listed), buffer: buffer, capacity: capacity)
+	}
+
+	// `proc_listchildpids` returns the number of PIDs written, not the byte count, so the caller
+	// must not divide by `MemoryLayout<pid_t>.size`.
+	static func childIdentifiers(listed: Int, buffer: [pid_t], capacity: Int) -> [Int32] {
+		guard listed > 0 else { return [] }
+		return buffer[0..<min(capacity, listed)].map { Int32($0) }
 	}
 
 	private static func currentWindows() -> [[String: Any]] {

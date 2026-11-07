@@ -11,6 +11,7 @@ struct LauncherHUDView: View {
 	let settings: LauncherPreferencesController
 	let installation: InstallationController
 	let gameSession: GameSessionController
+	let runtimeSelection: RuntimeSelectionController
 	let intelTranslation: IntelTranslationController
 	let communication: LauncherCommunicationController
 	let canSwitchRegion: Bool
@@ -60,7 +61,8 @@ struct LauncherHUDView: View {
 		HStack(spacing: LauncherTokens.Spacing.panel) {
 			LauncherActivityStatusView(
 				lifecycle: lifecycle,
-				installation: installation
+				installation: installation,
+				runtimeSelection: runtimeSelection
 			)
 			.id(installation.isDownloading ? "download-progress" : "launcher-status")
 			.transition(.opacity)
@@ -94,8 +96,11 @@ struct LauncherHUDView: View {
 					installation: installation,
 					gameSession: gameSession,
 					intelTranslation: intelTranslation,
+					runtimeSelection: runtimeSelection,
+					lifecycle: lifecycle,
 					installOrUpdate: actions.installOrUpdate,
 					cancelDownload: actions.cancelDownload,
+					installRuntime: actions.installRuntime,
 					launch: actions.launch,
 					stopGame: actions.stopGame
 				)

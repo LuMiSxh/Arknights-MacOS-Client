@@ -101,7 +101,10 @@ extension GameSessionController {
 		}
 		return
 			entries
-			.filter { $0.lastPathComponent.hasPrefix("Arknights-") }
+			.filter {
+				$0.lastPathComponent.hasPrefix(
+					"\(AppConstants.Runtime.applicationName)-")
+			}
 			.compactMap { url -> (URL, Date)? in
 				do {
 					guard

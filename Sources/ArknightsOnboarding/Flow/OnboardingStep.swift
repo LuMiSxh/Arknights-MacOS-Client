@@ -7,6 +7,8 @@ import Foundation
 nonisolated enum OnboardingStep: Int, CaseIterable, Codable, Identifiable, Sendable {
 	case welcome = 10
 	case region = 11
+	// Added after the 0.8.0 steps, so a saved step keeps its meaning.
+	case runtime = 16
 	case display = 12
 	case look = 13
 	case extras = 14
@@ -18,6 +20,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Codable, Identifiable, Senda
 		switch self {
 		case .welcome: "System Check"
 		case .region: "Server"
+		case .runtime: "Runtime"
 		case .display: "Display"
 		case .look: "Look"
 		case .extras: "Updates & Integrations"
@@ -29,6 +32,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Codable, Identifiable, Senda
 		switch self {
 		case .welcome: "checkmark.shield"
 		case .region: "globe"
+		case .runtime: "shippingbox"
 		case .display: "display"
 		case .look: "paintbrush"
 		case .extras: "slider.horizontal.3"

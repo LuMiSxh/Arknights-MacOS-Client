@@ -8,9 +8,9 @@ toc: true
 
 # Wine prefix architecture
 
-A Wine prefix is the mutable Windows environment of the bundled runtime. It holds the Wine registry,
+A Wine prefix is the mutable Windows environment of the installed runtime. It holds the Wine registry,
 Windows profiles, embedded-browser sessions, DXMT libraries, caches, and launcher migration state. The
-runtime is read-only in the app bundle. Prefixes persist below Application Support across launcher
+runtime is read-only in Application Support. Prefixes persist below Application Support across launcher
 updates.
 
 [`GameSessionController`](../../../Sources/ArknightsGameRuntime/Runtime/GameSessionController.swift)
@@ -26,7 +26,7 @@ processes never mix across families or lanes. A lane switch keeps the other lane
 [Storage](../../help/storage.md#where-files-live) lists the default paths.
 
 - Resolve the active path with `AppPaths.winePrefix(for:)`. Never select a directory name in other code.
-- `AppPaths` reads the bundled `RUNTIME.json` lane and applies it to every publisher prefix.
+- `AppPaths` reads the selected runtime lane and applies it to every publisher prefix.
 - Tests and the isolated preview inject temporary `AppPaths` roots.
 - The launcher permits one install, maintenance operation, or Wine-backed session at a time. A session
   keeps its launch-time region and prefix until prefix-wide shutdown finishes.
@@ -80,8 +80,8 @@ launcher variable. It:
   selected prefix;
 - keeps XDG, GStreamer, and DXMT paths below the private home, and `TMPDIR`, `TMP`, and `TEMP` below
   `<prefix>/home/tmp`;
-- restricts `PATH` to the bundled runtime, `/usr/bin`, and `/bin`;
-- points the dynamic-library fallback path at the bundled runtime libraries;
+- restricts `PATH` to the selected runtime, `/usr/bin`, and `/bin`;
+- points the dynamic-library fallback path at the selected runtime libraries;
 - adds only launcher-owned synchronization, frame-rate, diagnostics, icon, audio, and cursor
   overrides for the current launch.
 
@@ -103,10 +103,10 @@ Migration state lives in `.arknights-runtime-migrations.json`. The effective run
 ```
 
 Each lane keeps its own state inside its own prefix, so a lane switch runs that lane's plan without
-touching the other environment. The plan comes from the bundled runtime, not the game version. The ordered migrations are:
+touching the other environment. The plan comes from the selected runtime, not the game version. The ordered migrations are:
 
 1. `initialize-wine-prefix` runs `wineboot.exe -u`.
-2. `install-dxmt` copies the bundled x64 DXMT libraries into `system32`. Step 5 removes x32 copies from
+2. `install-dxmt` copies the selected x64 DXMT libraries into `system32`. Step 5 removes x32 copies from
    earlier builds.
 3. `configure-registry` installs stable DLL overrides, disables Wine's crash dialog, and maps the
    Command keys to Control.

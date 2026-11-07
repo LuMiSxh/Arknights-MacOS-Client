@@ -136,10 +136,11 @@ The Home screen shows one primary operation at a time. The current state selects
 | Selected server absent or partial   | **Install** or **Resume** |
 | Cancellable download                | **Pause**                 |
 | Newer game manifest available       | **Update**                |
+| Selected runtime absent             | **Set Up Runtime**        |
 | Server ready                        | **Play**                  |
 | The server’s game session is active | **Stop**                  |
 
-Use one control for these actions. Secondary controls stay neutral. Update checks never download game data. A download starts only when the user selects the update action.
+Use one control for these actions. Secondary controls stay neutral. Update checks never download game data. A download starts only when the user selects the update action. **Play** stays disabled until the selected runtime is installed and the server is ready.
 
 Each server owns its game directory and installed manifest. The Home action and status capsule show only the active server. See [Installation architecture](architecture/installation.md) and [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md).
 
@@ -160,7 +161,8 @@ Show a failure in the shared failure dialog. Give actionable guidance and matchi
 - Write the version as "Version 1.2.3". Do not use a "v" prefix.
 - Use typographic apostrophes (’) in all copy.
 - Use one label for each action.
-- Keep developer terms out of dialogs and help text. These terms include Wine, prefix, runtime, partial files, registry, and DXMT. About shows them only in a collapsed "Technical details" disclosure.
+- Keep developer terms out of dialogs and help text. These terms include Wine, prefix, partial files, registry, and DXMT. About shows them only in a collapsed "Technical details" disclosure.
+- **Runtime** is a user term for the files that run the game. Name the architecture when a choice or state depends on it. Do not use Wine internals to explain it.
 - An advanced compatibility or display option names the technology it controls. Examples are MetalFX and Wine sync.
 - Danger zones and destructive confirmations name the technical object they change. An example is the Wine prefix.
 
@@ -179,7 +181,8 @@ For a UI change, use the debug simulator. Check these states: an empty region, a
 
 - The Settings sheet adapts to the window size. `AppConstants.Settings` sets its margin and size limits.
 - Group related controls in quiet glass panels. Switch Settings pages at once. Do not use page transitions. The selected rail row uses the accent.
-- Use a grouped list rail. The Arknights group holds Game, Servers, Storage, and Playtime. The Launcher group holds Appearance, Integration, and Updates. In Integration, the panels are Notifications, Music, and Discord. The Notifications panel holds the daily reset reminder, a server menu limited to installed servers, and a status row with **Open System Settings** when macOS blocks notifications. Help and About follow. Debug builds add Developer. Game opens first. Later, Settings reopens the last page while the app runs.
+- Use a grouped list rail. The Arknights group holds Game, Installation, Storage, and Playtime. The Launcher group holds Appearance, Integration, and Updates. In Integration, the panels are Notifications, Music, and Discord. The Notifications panel holds the daily reset reminder, a server menu limited to installed servers, and a status row with **Open System Settings** when macOS blocks notifications. Help and About follow. Debug builds add Developer. Game opens first. Later, Settings reopens the last page while the app runs.
+- In Settings → Installation, the Runtime panel shows the selected architecture, the installed version for each architecture, and the download size. It offers **Switch to x86_64**, **Switch to ARM64**, and **Remove Other Runtime**. Disable these changes unless the launcher is idle. A switch that needs a download uses the same warning as setup. The new architecture applies after a relaunch.
 - In Settings → Appearance, panels appear in this order: Artwork, Dynamic Theme, Appearance, Launcher shows, and Dock icons. The Dynamic Theme panel holds three rows: Follow the artwork, Home controls, and Branding.
 - The Look step of onboarding asks these questions in this order: Artwork, Dynamic Theme, Appearance, Home controls, Branding, Launcher shows, and Dock icons.
 - Explain destructive or expensive actions in user terms.
@@ -203,7 +206,9 @@ For a UI change, use the debug simulator. Check these states: an empty region, a
 - Check for a newer launcher first. If one exists, stop setup at the update action. The user installs it and reopens the launcher.
 - Verify Intel execution through Rosetta 2 after the launcher preflight. Explain the macOS 27 beta-only Legacy Game Test Mode recovery. Do not present it as a stable-OS step.
 - Ask the daily reset reminder question in Updates & Integrations. The answers are Off (recommended), At reset, and 1 hour before. Ask macOS for notification permission only when the user picks a reminder, and keep Off if macOS refuses.
-- Walk through these steps in order: System Check, Server, Display, Look, Updates & Integrations, and Ready. Ask each question with an answer card (`OnboardingQuestion`). Use one answer, several answers with checkboxes, or action cards that open a chooser. Mark the recommended answer. End Display with a one-sentence summary.
+- Walk through these steps in order: System Check, Server, Runtime, Display, Look, Updates & Integrations, and Ready. Ask each question with an answer card (`OnboardingQuestion`). Use one answer, several answers with checkboxes, or action cards that open a chooser. Mark the recommended answer. End Display with a one-sentence summary.
+- The Runtime step offers **x86_64 (recommended)** and, on macOS 26 or later, **ARM64 (Apple Silicon)**. Show the installed version, download size, and macOS requirement for each choice. **Download and Continue** installs the selected runtime. On older macOS, show only x86_64 and state that ARM64 requires macOS 26 or later.
+- Before a lane change in setup or Settings, show the architecture warning. It states that the architectures use separate game environments, that the game may treat the switch as a fresh install and ask for sign-in and resources again, and that the switch can add a download. Apply the warning in both directions.
 - Apply each choice at once. Use the same actions as Settings. The user reopens the assistant from Settings → Help → Troubleshooting.
 - When a release requires a rerun, open with a "Something important changed" briefing. Explain why. Hide Skip Setup until the user finishes. First runs stay skippable.
 - End with a plain statement: the launcher is an unofficial community project. Route launcher, game compatibility, and embedded-browser reports to the pre-filled GitHub form. Route account, payment, and game-service issues through the [publisher support routing table](../help/README.md#publisher-support-routing).

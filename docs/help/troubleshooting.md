@@ -41,13 +41,13 @@ Do not move or rename partly downloaded files or change the installation locatio
 
 ## A server shows “Not installed”
 
-1. Select the server in **Settings → Servers**.
-2. Choose **Settings → Servers → Location → Change… → Locate Existing Installation…** and select the folder that directly contains `Arknights.exe`.
+1. Select the server in **Settings → Installation**.
+2. Choose **Settings → Installation → Location → Change… → Locate Existing Installation…** and select the folder that directly contains `Arknights.exe`.
 3. If the server still shows **Not installed**, run **Repair…**.
 
 ## An update or repair does not finish
 
-When no other download runs, choose **Settings → Servers → Repair…**.
+When no other download runs, choose **Settings → Installation → Repair…**.
 
 ## The game will not start
 

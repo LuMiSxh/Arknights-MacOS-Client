@@ -10,7 +10,7 @@
 />
 
 <article class="privacy-page">
-	<p class="eyebrow">Last updated 2026-11-03</p>
+	<p class="eyebrow">Last updated 2026-11-07</p>
 	<h1>Privacy notice</h1>
 	<p>
 		This notice covers the Arknights Client website and the Arknights Client
@@ -118,7 +118,8 @@
 		</li>
 		<li><code>api.github.com</code>: launcher announcements.</li>
 		<li>
-			<code>github.com</code>: update checks.
+			<code>github.com</code>: app updates and the pinned runtime download
+			for the architecture that you choose.
 		</li>
 		<li>
 			<code>www.youtube.com</code>: background music in the embedded

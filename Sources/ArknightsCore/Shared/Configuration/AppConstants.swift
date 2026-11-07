@@ -34,15 +34,17 @@ package enum AppConstants {
 		package static let applicationName = "Arknights"
 		/// Set to `arm` only when the native ARM64 runtime launches the game.
 		package static let runtimeLaneEnvironmentKey = "ARKNIGHTS_CLIENT_RUNTIME_LANE"
-		static let aceCompactEnvironmentKey = "ARKNIGHTS_RUNTIME_ACE_COMPACT"
-		static let cefCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CEF_COMPAT"
-		static let cnCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CN_COMPAT"
-		package static let hardwareCursorEnvironmentKey = "ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"
+		package static let masterEnvironmentKey = "LMISXH_AKMOCL"
+		package static let cefCompatEnvironmentKey = "LMISXH_AKMOCL_CEF"
+		package static let cnCompatEnvironmentKey = "LMISXH_AKMOCL_CN"
+		package static let hardwareCursorEnvironmentKey = "LMISXH_AKMOCL_CURSOR"
 		package static let nativeFullscreenSpaceEnvironmentKey =
-			"ARKNIGHTS_RUNTIME_NATIVE_FULLSCREEN_SPACE"
+			"LMISXH_AKMOCL_FULLSCREEN"
 		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
 		package static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
-		package static let capabilityManifestMaximumBytes = 4 * 1_024
+		/// The only persisted runtime choice. It names the lane, not a version.
+		package static let runtimeSelectionFilename = "runtime-selection.json"
+		package static let runtimeSelectionMaximumBytes = 4 * 1_024
 	}
 
 	package enum Icon {

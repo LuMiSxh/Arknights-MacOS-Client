@@ -14,7 +14,6 @@ from build_app import build
 from lib.common import run, run_main
 from lib.console import info, success
 from lib.project_config import ProjectConfiguration, load_project_configuration
-from runtime_config import RUNTIME_ARCHITECTURES
 
 
 def dmgbuild_arguments(
@@ -39,18 +38,14 @@ def dmgbuild_arguments(
 
 
 def build_dmg(
-    runtime: Path,
     configuration: ProjectConfiguration | None = None,
     strict_licenses: bool = False,
-    runtime_architecture: str | None = None,
 ) -> Path:
     configuration = configuration or load_project_configuration()
     project = configuration.project_directory
     app = build(
-        runtime,
         project_configuration=configuration,
         strict_licenses=strict_licenses,
-        runtime_architecture=runtime_architecture,
     )
     dist = project / "dist"
     destination = dist / configuration.dmg_name
@@ -67,24 +62,13 @@ def build_dmg(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--runtime", required=True, type=Path)
-    parser.add_argument(
-        "--runtime-architecture",
-        choices=tuple(RUNTIME_ARCHITECTURES),
-        default=None,
-        help="architecture of the embedded runtime (default: the runtime.json lane)",
-    )
     parser.add_argument(
         "--strict-licenses",
         action="store_true",
-        help="fail on unverified licenses or a runtime without license files",
+        help="fail on an unverified license",
     )
     arguments = parser.parse_args()
-    build_dmg(
-        arguments.runtime.resolve(),
-        strict_licenses=arguments.strict_licenses,
-        runtime_architecture=arguments.runtime_architecture,
-    )
+    build_dmg(strict_licenses=arguments.strict_licenses)
 
 
 if __name__ == "__main__":

@@ -43,13 +43,14 @@ extension GameSessionController {
 	static func preflight(
 		executable: URL,
 		prefixDirectory: URL,
+		paths: AppPaths,
 		compatibilityManager: GameCompatibilityManager
 	) async -> LaunchPreflight {
 		guard FileManager.default.fileExists(atPath: executable.path) else {
 			return LaunchPreflight(executableExists: false, runtime: nil, pendingMigration: nil)
 		}
 		let runtime = Result {
-			try WineRuntime.discover(compatibilityManager: compatibilityManager)
+			try Self.discoverRuntime(paths: paths, compatibilityManager: compatibilityManager)
 		}
 		guard case .success(let discovered) = runtime else {
 			return LaunchPreflight(executableExists: true, runtime: runtime, pendingMigration: nil)
@@ -71,6 +72,7 @@ extension GameSessionController {
 		let preflight = await Self.preflight(
 			executable: request.executable,
 			prefixDirectory: request.prefixDirectory,
+			paths: paths,
 			compatibilityManager: gameCompatibilityManager
 		)
 		guard ownsPendingLaunch(request.id) else { return }
@@ -156,7 +158,7 @@ extension GameSessionController {
 	private func runLaunch(_ context: LaunchContext) async {
 		let id = context.request.id
 		do {
-			guard let prepared = try await prepareRuntime(context) else { return }
+			guard let prepared = try prepareRuntime(context) else { return }
 			guard let launch = try await spawn(context, prepared: prepared) else { return }
 			try await monitor(context, launch: launch)
 		} catch is CancellationError {
@@ -181,7 +183,7 @@ extension GameSessionController {
 		} catch {
 			guard activeGameSessionID == id, !applicationTerminationRequested else { return }
 			let launchError: any Error
-			if RosettaAvailability.isBadCPUType(error) {
+			if !context.runtime.isNativeARMLane, RosettaAvailability.isBadCPUType(error) {
 				lifecycle.state.readiness.intelTranslation = .unavailable
 				launchError = GameRuntimeError.intelTranslationUnavailable
 			} else {
@@ -202,29 +204,26 @@ extension GameSessionController {
 	}
 
 	// Returns nil when the session no longer owns the launch.
-	private func prepareRuntime(_ context: LaunchContext) async throws -> PreparedLaunch? {
+	private func prepareRuntime(_ context: LaunchContext) throws -> PreparedLaunch? {
 		let request = context.request
-		let discovery = await context.runtime.discoverCapabilities()
 		try Task.checkCancellation()
 		guard activeGameSessionID == request.id else { return nil }
-		if let diagnostic = discovery.diagnostic {
-			log.info("Runtime capability fallback: \(diagnostic)")
-		}
+		let features = context.runtime.features
 		let displayConfiguration = WineDisplayConfiguration.current(
 			renderingMode: request.options.renderingMode,
 			forceDisabled: request.forceDisableRetina,
-			metalFXSupported: discovery.capabilities.metalFXSpatialUpscalingSupported
+			metalFXSupported: features.metalFXSpatialUpscaling
 		)
 		let environment = Self.runtimeEnvironmentOverrides(
 			for: request.region,
 			usesHardwareCursor: request.usesHardwareCursor,
 			displayMode: request.options.displayMode,
-			capabilities: discovery.capabilities
+			features: features
 		)
 		return PreparedLaunch(
 			displayConfiguration: displayConfiguration,
 			environment: environment,
-			usesNativeFullscreenSpace: discovery.capabilities.usesNativeFullscreenSpace(
+			usesNativeFullscreenSpace: features.usesNativeFullscreenSpace(
 				for: request.options.displayMode)
 		)
 	}

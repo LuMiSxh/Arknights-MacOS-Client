@@ -29,7 +29,6 @@ package final class GameSessionController {
 	package internal(set) var metalFXSpatialUpscalingSupported: Bool?
 	/// nil until discovery finishes or when no runtime is installed. Settings → About reads it.
 	package internal(set) var installedRuntime: InstalledRuntimeDetails?
-	@ObservationIgnored let capabilitySlot = TaskSlot()
 	package var isGameActive: Bool { lifecycle.activity.isGameActive }
 	var isGameProcessRunning: Bool { lifecycle.activity.isGameProcessRunning }
 	var activeGameSessionID: UUID? { lifecycle.activity.activeGameSessionID }
@@ -84,8 +83,11 @@ package final class GameSessionController {
 		self.preferences = preferences
 		self.log = log
 		self.gameCompatibilityManager = gameCompatibilityManager
+		let runtimePaths = paths
+		let runtimeCompatibility = gameCompatibilityManager
 		runtimeSessionControllerProvider = {
-			try WineRuntime.discover(compatibilityManager: gameCompatibilityManager)
+			try Self.discoverRuntime(
+				paths: runtimePaths, compatibilityManager: runtimeCompatibility)
 		}
 		self.playtimeStatistics = playtimeStatistics
 		self.graphicsDiagnosticsEnabled = graphicsDiagnosticsEnabled

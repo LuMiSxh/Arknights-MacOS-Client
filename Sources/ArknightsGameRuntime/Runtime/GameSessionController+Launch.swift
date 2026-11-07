@@ -8,14 +8,14 @@ extension GameSessionController {
 		for region: GameRegion,
 		usesHardwareCursor: Bool,
 		displayMode: GameDisplayMode,
-		capabilities: RuntimeCapabilities = .conservative
+		features: RuntimeFeatures = .conservative
 	) -> [String: String] {
 		var environment = [
-			"ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT": "1"
+			AppConstants.Runtime.masterEnvironmentKey: "1"
 		]
 		environment.merge(region.runtimeEnvironmentOverrides) { _, profileValue in profileValue }
 		environment.merge(
-			capabilities.environmentOverrides(
+			features.environmentOverrides(
 				usesHardwareCursor: usesHardwareCursor,
 				displayMode: displayMode
 			)

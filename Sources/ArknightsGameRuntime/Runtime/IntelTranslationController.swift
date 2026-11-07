@@ -25,7 +25,7 @@ package final class IntelTranslationController {
 
 	package init(
 		lifecycle: LauncherLifecycleStore,
-		runtimeLane: RuntimeLane = .x86,
+		runtimeLane: RuntimeLane,
 		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 			await RosettaAvailability.check()
 		},

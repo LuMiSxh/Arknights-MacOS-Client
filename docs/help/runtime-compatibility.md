@@ -1,12 +1,12 @@
 ---
 title: macOS compatibility
-description: Supported macOS versions, display settings, and Canary Features
+description: Supported macOS versions, runtime architectures, display settings, and Canary Features
 order: 40
 ---
 
 # macOS compatibility
 
-The launcher runs the Windows game through a bundled Wine. You need no Wine, virtual machine, or Windows.
+The launcher runs the Windows game through a downloaded Wine runtime. You need no Wine, virtual machine, or Windows.
 
 ## macOS support
 
@@ -15,7 +15,21 @@ The launcher runs the Windows game through a bundled Wine. You need no Wine, vir
 | macOS 15–27 | Supported with Rosetta 2                                                                              |
 | macOS 28    | Blocked by current launcher policy; compatibility with Apple's limited Rosetta support is unconfirmed |
 
-Only Apple silicon Macs work: M-series Macs and the MacBook Neo (A18 Pro). The launcher runs natively; the Windows part needs Rosetta 2.
+Only Apple silicon Macs work: M-series Macs and the MacBook Neo (A18 Pro). The launcher runs natively; the x86_64 runtime needs Rosetta 2. The ARM64 runtime needs macOS 26 or later.
+
+## Runtime architecture
+
+Setup asks for one runtime architecture:
+
+- **x86_64 (recommended)** runs through Rosetta 2. It works on macOS 15 and later.
+- **ARM64 (Apple Silicon)** runs natively and does not use Rosetta 2. It needs macOS 26 or later.
+
+You can change the architecture in **Settings → Installation → Runtime**. The launcher downloads the runtime for the selected architecture. The other runtime stays on disk until you choose **Remove Other Runtime**.
+
+> [!WARNING]
+> Each architecture keeps a separate game environment (Wine prefix). A switch can look like a fresh install: the game may ask you to sign in and download resources again. The switch can also download the other runtime.
+
+After a switch, quit and reopen the launcher to use the new architecture.
 
 Apple says macOS 27 is the last release with general Rosetta support. From macOS 28, Rosetta stays only for some older games that use Intel frameworks. Apple has not said if this runtime qualifies. The launcher blocks macOS 28 by policy, not because of a verified failure. See Apple's [Rosetta details](https://support.apple.com/en-au/102527) and [developer notice](https://developer.apple.com/news/?id=w5ngl9k2).
 
@@ -73,9 +87,7 @@ Choose **30 FPS** or **60 FPS** for **Battery Saver frame rate limit**. Changes 
 
 ## Canary Features
 
-**Settings → Servers → Canary Features** turns on experimental options. Turning it off restores normal behavior and deletes nothing.
-
-No Canary option exists right now. The panel shows a note instead.
+**Settings → Installation → Canary Features** turns on experimental options. There are no Canary features right now. Turning it off restores normal behavior and deletes nothing.
 
 If a Canary option causes a problem, turn it off and mention it in your [report](README.md#report-a-problem).
 

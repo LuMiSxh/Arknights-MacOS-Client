@@ -129,7 +129,8 @@ extension WineRuntime {
 			)
 		}
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
-		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
+		let dxmtPayload = runtimeRoot.appending(
+			path: dxmtPayloadDirectory, directoryHint: .isDirectory)
 		let dxmtCurrent = Self.dxmtIsCurrent(
 			from: dxmtPayload,
 			in: prefixDirectory,
@@ -233,20 +234,22 @@ extension WineRuntime {
 	private static func deduplicateRuntimeLibraries(
 		prefixDirectory: URL,
 		runtimeRoot: URL,
-		libraries: [String]
+		libraries: [String],
+		lane: RuntimeLane
 	) async -> WinePrefixLibraryDeduplicator.Report {
 		WinePrefixLibraryDeduplicator(excludingNames: Set(libraries))
-			.deduplicate(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
+			.deduplicate(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot, lane: lane)
 	}
 
 	@concurrent
 	private static func cleanLegacyLibraries(
 		prefixDirectory: URL,
 		runtimeRoot: URL,
-		libraries: [String]
+		libraries: [String],
+		lane: RuntimeLane
 	) async -> WinePrefixLegacyLibraryCleaner.Report {
 		WinePrefixLegacyLibraryCleaner(launcherInstalledNames: Set(libraries))
-			.clean(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
+			.clean(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot, lane: lane)
 	}
 
 	// Clones are APFS-only and best effort: any failure keeps Wine's copies and never blocks launch.
@@ -255,7 +258,8 @@ extension WineRuntime {
 		let report = await Self.deduplicateRuntimeLibraries(
 			prefixDirectory: prefixDirectory,
 			runtimeRoot: runtimeRoot,
-			libraries: dxmtPayloadLibraries
+			libraries: dxmtPayloadLibraries,
+			lane: lane ?? .x86
 		)
 		try Task.checkCancellation()
 		if let code = report.cloneUnsupportedCode {
@@ -277,7 +281,8 @@ extension WineRuntime {
 		let report = await Self.cleanLegacyLibraries(
 			prefixDirectory: prefixDirectory,
 			runtimeRoot: runtimeRoot,
-			libraries: dxmtPayloadLibraries
+			libraries: dxmtPayloadLibraries,
+			lane: lane ?? .x86
 		)
 		try Task.checkCancellation()
 		if report.skipped {

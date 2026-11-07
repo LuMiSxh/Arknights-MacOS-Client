@@ -32,7 +32,8 @@ extension LauncherViewModel {
 				directory: paths.diagnosticsDirectory,
 				redaction: DiagnosticsRedaction(
 					homeDirectory: NSHomeDirectory(), userName: NSUserName()),
-				log: log
+				log: log,
+				runtimeConfigurationURL: paths.activeRuntimeConfigurationURL()
 			).write()
 			log.info("Diagnostics archive written: \(archive.lastPathComponent)")
 			NSWorkspace.shared.activateFileViewerSelecting([archive])

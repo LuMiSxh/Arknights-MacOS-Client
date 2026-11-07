@@ -51,8 +51,9 @@ Use these terms in user help. Keep one term for each concept.
 
 - **Server**: a publisher server, such as Global, Japan, or China. User help says "server", not "region".
 - **Game environment**: the Wine prefix that runs the game. On the first mention on each page, write "game environment (Wine prefix)". Then write "game environment".
+- **Runtime**: the files that run the game. User help names the architecture when the choice matters.
 - **Lane**: one runtime architecture and its artifact. Use this term in developer documentation only, not in user help.
-- Keep developer terms out of user help, such as runtime and partial files. The only exception is the first mention of game environment, which adds "(Wine prefix)".
+- Keep developer terms out of user help, such as Wine internals and partial files. The only exception is the first mention of game environment, which adds "(Wine prefix)".
 
 ## Documentation website
 

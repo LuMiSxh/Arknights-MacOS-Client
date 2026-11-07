@@ -34,6 +34,7 @@ struct IntelTranslationControllerTests {
 		lifecycle.state.readiness.intelTranslation = .rosettaMissing
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
+			runtimeLane: .x86,
 			checkIntelTranslation: {
 				IntelTranslationCheck(state: .rosettaMissing, diagnostics: "test")
 			},

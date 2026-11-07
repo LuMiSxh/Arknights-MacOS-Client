@@ -18,6 +18,7 @@ package struct DiagnosticsArchive: Sendable {
 	private let directory: URL
 	private let redaction: DiagnosticsRedaction
 	private let log: LauncherLog
+	private let runtimeConfigurationURL: URL?
 
 	package init(
 		logFiles: [URL],
@@ -28,7 +29,8 @@ package struct DiagnosticsArchive: Sendable {
 		baseName: String,
 		directory: URL,
 		redaction: DiagnosticsRedaction,
-		log: LauncherLog
+		log: LauncherLog,
+		runtimeConfigurationURL: URL? = nil
 	) {
 		self.logFiles = logFiles
 		self.sdkLogDirectory = sdkLogDirectory
@@ -39,6 +41,7 @@ package struct DiagnosticsArchive: Sendable {
 		self.directory = directory
 		self.redaction = redaction
 		self.log = log
+		self.runtimeConfigurationURL = runtimeConfigurationURL
 	}
 
 	/// Writes the archive as `baseName.zip` in `directory`, or `baseName-2.zip` when that name is taken.
@@ -71,8 +74,35 @@ package struct DiagnosticsArchive: Sendable {
 			log.error("SDK logs skipped: \(launcherDiagnosticDescription(for: error))")
 		}
 		do {
-			let runtimeConfiguration = try BundledResource.runtimeConfiguration.url()
-			items.append(.init(archivePath: "RUNTIME.json", content: .file(runtimeConfiguration)))
+			let runtimeConfiguration =
+				try runtimeConfigurationURL ?? BundledResource.runtimeConfiguration.url()
+			guard FileManager.default.fileExists(atPath: runtimeConfiguration.path) else {
+				throw CocoaError(.fileNoSuchFile)
+			}
+			let runtimeRoot =
+				runtimeConfiguration.deletingLastPathComponent()
+				.deletingLastPathComponent()
+				.deletingLastPathComponent()
+			let installed = AppPaths.installedRuntimeConfigurationURLs(in: runtimeRoot)
+			if installed.isEmpty {
+				items.append(
+					.init(archivePath: "RUNTIME.json", content: .file(runtimeConfiguration)))
+			} else {
+				let selected = runtimeConfiguration.standardizedFileURL
+				var includedSelected = false
+				for (lane, url) in installed
+				where FileManager.default.fileExists(atPath: url.path) {
+					if url.standardizedFileURL == selected { includedSelected = true }
+					let name =
+						url.standardizedFileURL == selected
+						? "RUNTIME.json" : "RUNTIME-\(lane.rawValue).json"
+					items.append(.init(archivePath: name, content: .file(url)))
+				}
+				if !includedSelected {
+					items.append(
+						.init(archivePath: "RUNTIME.json", content: .file(runtimeConfiguration)))
+				}
+			}
 		} catch {
 			log.error("RUNTIME.json skipped: \(launcherDiagnosticDescription(for: error))")
 		}

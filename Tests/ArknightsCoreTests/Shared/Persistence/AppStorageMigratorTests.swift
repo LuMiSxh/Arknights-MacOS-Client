@@ -189,7 +189,7 @@ func armStorageMigrationLeavesLegacyX86PrefixesInPlace() throws {
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
 		libraryDirectory: root.appending(path: "Library"),
-		runtimeLane: .arm
+		runtimeSelection: RuntimeSelection(selected: .arm)
 	)
 	let fileManager = FileManager.default
 	let legacyPrefix = paths.applicationSupportRoot.appending(

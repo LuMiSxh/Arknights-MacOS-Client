@@ -17,8 +17,7 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library"),
-		resourceDirectory: root.appending(path: "Resources")
+		libraryDirectory: root.appending(path: "Library")
 	)
 	let (defaults, suiteName) = makeIsolatedDefaults("StorageOverviewTests")
 	defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -42,7 +41,7 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 	)
 	#expect(
 		locations.first { $0.category == .compatibilityRuntime }?.urls.first?.path
-			== root.appending(path: "Resources/Runtime").path
+			== paths.runtimeDirectory(for: .x86).path
 	)
 	#expect(
 		locations.first { $0.category == .browserCache }?.urls.first?.resolvingSymlinksInPath()
@@ -72,8 +71,7 @@ func galleryCleanupDoesNotOverlapActiveLifecycle() throws {
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library"),
-		resourceDirectory: root.appending(path: "Resources")
+		libraryDirectory: root.appending(path: "Library")
 	)
 	let catalog = PresetCatalogService(cacheDirectory: paths.presetGalleryCache, log: log)
 	let storage = StorageMaintenanceController(
@@ -100,8 +98,7 @@ func persistedStorageMeasurementSeedsTheNextOpenUntilItIsReplaced() async throws
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library"),
-		resourceDirectory: root.appending(path: "Resources")
+		libraryDirectory: root.appending(path: "Library")
 	)
 	let (defaults, suiteName) = makeIsolatedDefaults("StorageOverviewTests")
 	defer { defaults.removePersistentDomain(forName: suiteName) }

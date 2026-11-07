@@ -105,6 +105,7 @@ extension LauncherViewModel: LauncherActions {
 	// MARK: - Launching and stopping
 
 	package func launch() {
+		guard !runtimeSelection.requiresRelaunch else { return }
 		let region = installation.region
 		if Self.shouldPresentACEWarning(
 			for: region,
@@ -140,7 +141,7 @@ extension LauncherViewModel: LauncherActions {
 	}
 
 	package func launchFromDock(region: GameRegion) async -> Bool {
-		guard canRequestDockLaunch else { return false }
+		guard canRequestDockLaunch, !runtimeSelection.requiresRelaunch else { return false }
 		await installation.updateInstalledState().value
 		guard canRequestDockLaunch, installation.isRegionInstalled(region) else { return false }
 		if installation.region != region {
@@ -187,6 +188,51 @@ extension LauncherViewModel: LauncherActions {
 				refreshController?.startRefresh()
 			}
 		)
+	}
+
+	// MARK: - Runtime
+
+	/// Downloads the pinned runtime for `lane`, selects it, and refreshes discovery. A lane that
+	/// differs from the one this process started with takes effect at the next launch.
+	@discardableResult
+	package func installRuntime(_ lane: RuntimeLane) async -> Bool {
+		let installed = await runtimeSelection.install(lane: lane)
+		if installed { gameSession.refreshRuntime() }
+		return installed
+	}
+
+	@discardableResult
+	package func selectRuntimeLane(_ lane: RuntimeLane) -> Bool {
+		do {
+			try runtimeSelection.select(lane: lane)
+			return true
+		} catch {
+			log.error(
+				"Runtime lane switch failed: \(launcherDiagnosticDescription(for: error))")
+			return false
+		}
+	}
+
+	@discardableResult
+	package func removeOtherRuntime() -> Bool {
+		do {
+			try runtimeSelection.removeOtherLane()
+			return true
+		} catch {
+			log.error(
+				"Other runtime removal failed: \(launcherDiagnosticDescription(for: error))")
+			return false
+		}
+	}
+
+	/// Starts the Home runtime action. It goes through `actions`, so a developer preview does
+	/// not write the runtime selection to disk.
+	package func installSelectedRuntime() {
+		let lane = runtimeSelection.selectedLane
+		Task { [weak self] in
+			guard let self else { return }
+			_ = await actions.installRuntime(lane)
+		}
 	}
 
 	// MARK: - Rosetta

@@ -3,13 +3,13 @@
 """Validate, merge, and render the third-party license inventory.
 
 Two indexes use one component schema. The client index lives in
-`docs/legal/licenses/index.json` and lists SwiftPM packages, website packages, and
-bundled resources. The runtime index is `Licenses/index.json` inside the runtime
-archive. The generator fills the generated blocks of the notice, source-offer, and
-license-text documents that the website publishes. It also compiles one compact
-notices file for the app bundle: each distinct license text appears once, and the
-whole file is raw-deflate compressed. The app build generates that file; the
-repository does not commit it.
+`docs/legal/licenses/index.json` and lists SwiftPM packages, website packages, bundled
+resources, and the runtime components that the client can download. The runtime index is
+`Licenses/index.json` inside a runtime archive. The generator fills the generated blocks
+of the notice, source-offer, and license-text documents that the website publishes. It
+also compiles one compact notices file for the app bundle: each distinct license text
+appears once, and the whole file is raw-deflate compressed. The app build generates that
+file; the repository does not commit it.
 """
 
 from __future__ import annotations
@@ -26,7 +26,6 @@ from urllib.parse import urlparse
 
 from lib.common import ScriptError, fail, safe_relative_path
 from lib.generated_blocks import (
-    read_blocks,
     render_documents,
     stale_documents,
     write_documents,
@@ -38,10 +37,10 @@ VERIFIED = "verified"
 UNVERIFIED = "unverified"
 APP_SCOPE = "app"
 WEBSITE_SCOPE = "website"
-FALLBACK_RUNTIME_SCOPE = "runtime-fallback"
+RUNTIME_REFERENCE_SCOPE = "runtime-reference"
 RUNTIME_SCOPE = "runtime"
 RUNTIME_TEXTS_BLOCK = "runtime-texts"
-CLIENT_SCOPES = (APP_SCOPE, WEBSITE_SCOPE, FALLBACK_RUNTIME_SCOPE)
+CLIENT_SCOPES = (APP_SCOPE, WEBSITE_SCOPE, RUNTIME_REFERENCE_SCOPE)
 ECOSYSTEMS = ("swiftpm", "npm")
 
 LICENSE_DIRECTORY = Path("docs/legal/licenses")
@@ -80,9 +79,7 @@ class Component:
     package: str | None = None
     paths: tuple[str, ...] = ()
     note: str | None = None
-    runtime_release: bool = False
     runtime_component: str | None = None
-    libraries: tuple[str, ...] = ()
 
     @property
     def is_verified(self) -> bool:
@@ -105,47 +102,26 @@ def read_json(path: Path) -> Any:
         fail(f"unable to read {path}: {error}")
 
 
-def runtime_source(manifest: Mapping[str, Any], key: str) -> str:
-    """Return the pinned source tree URL of a `runtime.json` component."""
-    provenance = manifest["provenance"]
-    return tree_url(provenance[f"{key}Repository"], provenance[f"{key}Commit"])
-
-
-@dataclass(frozen=True)
-class RuntimeRelease:
-    """The release of the Arknights macOS Runtime that `runtime.json` pins."""
-
-    repository: str
-    tag: str
-
-    @property
-    def version(self) -> str:
-        return self.tag.removeprefix("v")
-
-    @property
-    def tree(self) -> str:
-        return f"{self.repository}/tree/{self.tag}"
-
-    @property
-    def page(self) -> str:
-        return f"{self.repository}/releases/tag/{self.tag}"
-
-
-def runtime_release(manifest: Mapping[str, Any]) -> RuntimeRelease:
-    """Derive the pinned release from the runtime archive URL in `runtime.json`."""
-    url = manifest["runtime"]["url"]
-    match = RELEASE_ASSET_PATTERN.fullmatch(url)
-    if match is None:
-        fail(f"cannot derive the runtime release from {url}")
-    return RuntimeRelease(match["repository"], match["tag"])
-
-
 def tree_url(repository: str, commit: str) -> str:
     """Return the browsable source tree URL of a commit."""
     tree = (
         "/-/tree/" if urlparse(repository).hostname == "gitlab.winehq.org" else "/tree/"
     )
     return f"{repository}{tree}{commit}"
+
+
+def runtime_component(manifest: Mapping[str, Any], key: str) -> tuple[str, str] | None:
+    """Return the pinned version and source tree of a runtime component."""
+    for lane in manifest.get("lanes", {}).values():
+        if not isinstance(lane, dict) or key not in lane.get("components", {}):
+            continue
+        provenance = lane["provenance"]
+        repository = provenance.get(f"{key}Repository")
+        commit = provenance.get(f"{key}Commit")
+        if not isinstance(repository, str) or not isinstance(commit, str):
+            fail(f"runtime.json has no source for runtime component {key}")
+        return lane["components"][key], tree_url(repository, commit)
+    return None
 
 
 def parse_components(
@@ -176,32 +152,24 @@ def parse_components(
         derived = _text(entry, "runtimeComponent", where, problems)
         version = _text(entry, "version", where, problems)
         source = _text(entry, "source", where, problems)
-        release_flag = entry.get("runtimeRelease", False)
-        if not isinstance(release_flag, bool):
-            problems.append(f"{where}: runtimeRelease must be true or false")
-            release_flag = False
-        if release_flag and manifest is not None:
+        unpinned = False
+        if derived is not None and manifest is not None:
             try:
-                release = runtime_release(manifest)
+                found = runtime_component(manifest, derived)
             except ScriptError as error:
                 problems.append(f"{where}: {error}")
             else:
-                version = version or release.version
-                source = source or release.tree
-                if text["name"]:
-                    text["name"] = text["name"].replace("{version}", release.version)
-        libraries = _strings(entry.get("libraries", []), "libraries", where, problems)
-        if derived is not None:
-            try:
-                assert manifest is not None
-                version = version or manifest["components"][derived]
-                source = source or runtime_source(manifest, derived)
-            except AssertionError, KeyError, TypeError:
-                problems.append(f"{where}: runtimeComponent {derived!r} is not pinned")
+                if found is None:
+                    unpinned = True
+                else:
+                    version = version or found[0]
+                    source = source or found[1]
         for key, value in (("name", text["name"]), ("spdx", text["spdx"])):
             if not value:
                 problems.append(f"{where}: {key} is required")
-        if not version or not source or not source.startswith("https://"):
+        if not unpinned and (
+            not version or not source or not source.startswith("https://")
+        ):
             problems.append(f"{where}: version and an HTTPS source are required")
         if text["status"] not in (VERIFIED, UNVERIFIED):
             problems.append(f"{where}: status must be verified or unverified")
@@ -237,9 +205,7 @@ def parse_components(
                     package=package,
                     paths=paths,
                     note=text["note"],
-                    runtime_release=release_flag,
                     runtime_component=derived,
-                    libraries=libraries,
                 )
             )
     names = [component.name for component in components]
@@ -477,56 +443,59 @@ def render_runtime_block() -> str:
     """Render the runtime section of the notices document."""
     return (
         "## Runtime components\n\n"
-        "The runtime archive lists its components and their licenses in "
-        f"`{RUNTIME_LICENSE_DIRECTORY}/index.json`. The [license texts](license-texts.md) "
-        "page merges that list with the launcher components when the maintainer generates "
-        "it with a prepared runtime.\n"
+        "The launcher downloads one runtime archive for the architecture that you choose. "
+        "The app bundle does not contain a runtime. Each archive lists its components and "
+        f"licenses in `{RUNTIME_LICENSE_DIRECTORY}/index.json` and carries its own "
+        f"`{RUNTIME_NOTICE_FILE}`. The launcher shows those notices for the installed "
+        "runtime under **Settings → About**. The client does not generate a runtime "
+        "closure inventory.\n"
     )
 
 
 def release_url(archive_url: str) -> str:
     """Map a release asset URL to the page of its release."""
-    match = re.fullmatch(
-        r"(https://github\.com/[^/]+/[^/]+)/releases/download/([^/]+)/[^/]+",
-        archive_url,
-    )
+    match = RELEASE_ASSET_PATTERN.fullmatch(archive_url)
     if match is None:
         fail(f"cannot derive the release page from {archive_url}")
-    return f"{match[1]}/releases/tag/{match[2]}"
+    return f"{match['repository']}/releases/tag/{match['tag']}"
 
 
 def render_source_offer(manifest: Mapping[str, Any]) -> str:
     """Render the written source offer from the facts in `runtime.json`."""
-    recipe = manifest["buildRecipe"]
-    provenance = manifest["provenance"]
-    release = release_url(manifest["runtime"]["url"])
-    nixpkgs = f"{provenance['nixpkgsRepository']}/tree/{provenance['nixpkgsCommit']}"
-    return (
-        "## Written offer for LGPL and GPL components\n\n"
-        "The runtime contains software under the GNU LGPL and GNU GPL licenses. Wine is "
-        "one example. You can ask for the corresponding source of any such component in "
-        "a release that you received. To ask, fill in the "
-        "[Source code request](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new?template=source-request.yml) "
-        "issue form. Name the version of the app and the component. The maintainer then "
-        "sends the source or the exact public location of the source.\n\n"
-        "### What this offer covers today\n\n"
-        f"- The runtime release page: [{release}]({release}).\n"
-        f"- The pinned build recipe archive: [{recipe['url']}]({recipe['url']}). Its "
-        f"SHA-256 is `{recipe['sha256']}`.\n"
+    lines = [
+        "## Written offer for LGPL and GPL components\n\n",
+        "The runtimes contain software under the GNU LGPL and GNU GPL licenses. Wine is ",
+        "one example. You can ask for the corresponding source of any such component in ",
+        "a release that you received. To ask, fill in the ",
+        "[Source code request](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new?template=source-request.yml) ",
+        "issue form. Name the version of the app, the architecture, and the component. ",
+        "The maintainer then sends the source or the exact public location of the source.\n\n",
+        "### What this offer covers today\n\n",
+    ]
+    for architecture, lane in manifest.get("lanes", {}).items():
+        if not isinstance(lane, dict):
+            continue
+        runtime = lane["runtime"]
+        if not runtime["url"]:
+            continue
+        release = release_url(runtime["url"])
+        lines.append(
+            f"- The {architecture} runtime release page: [{release}]({release}).\n"
+        )
+    lines.append(
         "- The pinned source trees of the runtime components, as `runtime.json` records "
         "them. [Third-party notices](third-party-notices.md) links each tree.\n"
-        f"- The pinned [Nixpkgs revision]({nixpkgs}). It names the exact source of each "
-        "library that the runtime copies from Nixpkgs.\n\n"
+        "- The license texts and notices inside each runtime archive. The launcher "
+        "shows them for the installed runtime under **Settings → About**.\n\n"
         "### What this offer does not cover today\n\n"
-        "- The build recipe archive is a provenance record. It is not a complete "
-        "corresponding-source archive.\n"
-        "- The project has not yet published one source archive for the libraries that "
-        "the runtime copies from Nixpkgs. The runtime repository still has this work "
-        "open. Until the project publishes that archive, the written offer for these "
-        "libraries uses the issue process above.\n"
+        "- The app bundle does not contain a runtime. Each runtime archive is the "
+        "authoritative record of its own build inputs, notices, and corresponding "
+        "source.\n"
+        "- The client does not publish a generated runtime closure inventory.\n"
         "- This text does not fix a period of validity for the offer. The maintainer "
         "must set that period before a public binary release.\n"
     )
+    return "".join(lines)
 
 
 def document_blocks(
@@ -563,15 +532,14 @@ def _fenced(text: str) -> str:
 
 
 def render_license_texts(
-    root: Path, components: tuple[Component, ...], legal: RuntimeLegal | None
+    root: Path, components: tuple[Component, ...]
 ) -> dict[str, str]:
     """Render the full license text of every component with a text file.
 
     Each component has a heading. An identical text file appears once and later
-    components link to it. The `runtime-texts` block merges the runtime index when
-    `legal` is present; the `texts` block never depends on the runtime.
+    components link to it. The `runtime-texts` block uses the reference entries;
+    the installed runtime archive supplies its own notices at run time.
     """
-    manifest = read_json(root / "runtime.json")
     slugger = _Slugger()
     printed: dict[Path, tuple[str, str]] = {}
 
@@ -581,6 +549,8 @@ def render_license_texts(
         slugger.slug(title)
         text = f"## {title}\n\n{intro}\n\n"
         for member in members:
+            if not member.source:
+                continue
             files = (*member.files, *([member.notice] if member.notice else []))
             if not files:
                 continue
@@ -623,38 +593,18 @@ def render_license_texts(
             directory,
         ),
     ]
-    runtime_parts: list[str] = []
-    if legal is None:
-        release = release_url(manifest["runtime"]["url"])
-        runtime_parts.append(
-            section(
-                "Runtime components",
-                "> [!WARNING]\n"
-                "> This page does not list the runtime license index. The components below "
-                "come from `runtime.json` and the project's own records. They are not a "
-                "complete component list. The runtime archive carries its own license "
-                f"texts in `{RUNTIME_LICENSE_DIRECTORY}/`. See the "
-                f"[runtime release]({release}).",
-                (c for c in components if c.scope == FALLBACK_RUNTIME_SCOPE),
-                directory,
-            )
+    runtime_parts = [
+        section(
+            "Runtime components",
+            "These entries describe the runtimes that the launcher can download. "
+            "Each runtime archive carries the authoritative license texts and "
+            f"notices in its `{RUNTIME_LICENSE_DIRECTORY}/` directory and "
+            f"`{RUNTIME_NOTICE_FILE}`. The launcher shows them for the installed "
+            "runtime under **Settings → About**.",
+            (c for c in components if c.scope == RUNTIME_REFERENCE_SCOPE),
+            directory,
         )
-    else:
-        runtime_parts.append(
-            section(
-                "Runtime components",
-                "The runtime archive supplies this list.",
-                legal.components,
-                legal.license_directory,
-            )
-        )
-        if legal.notice is not None:
-            slugger.slug("Runtime notice")
-            runtime_parts.append(
-                "### Runtime notice\n\n"
-                + _fenced(legal.notice.read_text(encoding="utf-8"))
-                + "\n"
-            )
+    ]
     return {
         "texts": "".join(parts).rstrip("\n") + "\n",
         RUNTIME_TEXTS_BLOCK: "".join(runtime_parts).rstrip("\n") + "\n",
@@ -673,23 +623,12 @@ def load_legal(
     return components, legal
 
 
-def generate_documents(
-    root: Path, runtime: Path | None = None, keep_runtime_blocks: bool = False
-) -> dict[Path, str]:
-    """Return the repository documents with up-to-date generated blocks.
-
-    `keep_runtime_blocks` keeps the on-disk body of every block that needs the
-    runtime index, so a check without a runtime still covers the other blocks.
-    """
-    components, legal = load_legal(root, runtime)
+def generate_documents(root: Path) -> dict[Path, str]:
+    """Return the repository documents with up-to-date generated blocks."""
+    components, _ = load_legal(root, None)
     manifest = read_json(root / "runtime.json")
     notices, source = document_blocks(components, manifest)
-    texts = render_license_texts(root, components, legal)
-    if keep_runtime_blocks:
-        on_disk = read_blocks(
-            (root / LICENSE_TEXTS_DOCUMENT).read_text(encoding="utf-8"), "licenses"
-        )
-        texts[RUNTIME_TEXTS_BLOCK] = on_disk.get(RUNTIME_TEXTS_BLOCK, "")
+    texts = render_license_texts(root, components)
     documents = (
         (NOTICES_DOCUMENT, notices),
         (SOURCE_DOCUMENT, source),
@@ -703,18 +642,16 @@ def check_all(
 ) -> list[str]:
     """Return warnings after every consistency check passes; fail on any problem.
 
-    Without a runtime, the block that needs the runtime index is not compared.
     Strict mode also fails on an unverified component and on a runtime without a
-    license index or notice.
+    license index or notice. A prepared runtime is validated, but it never changes
+    the website documents; the installed runtime shows its own notices.
     """
     components, legal = load_legal(root, runtime)
     problems = check_inventory(root, components)
     if not problems:
         problems.extend(
             f"{path}: generated blocks are stale; run just generate"
-            for path in stale_documents(
-                root, generate_documents(root, runtime, runtime is None)
-            )
+            for path in stale_documents(root, generate_documents(root))
         )
     warnings = _unverified_warnings([*components, *(legal.components if legal else ())])
     if runtime is not None and legal is None:
@@ -738,29 +675,17 @@ def _text_id(spdx: str, taken: Iterable[str]) -> str:
     return candidate
 
 
-def render_compiled_notices(
-    root: Path, components: tuple[Component, ...], legal: RuntimeLegal | None
-) -> str:
+def render_compiled_notices(root: Path, components: tuple[Component, ...]) -> str:
     """Render the notices that the app shows: component tables and each text once.
 
     Components reference a license text by its id. Two files with identical content
-    share one entry. The app never ships the website-only components.
+    share one entry. The app never ships the website-only components or a runtime.
     """
     members: list[tuple[str, Component, Path]] = [
         ("Launcher components", c, root / LICENSE_DIRECTORY)
         for c in components
         if c.scope == APP_SCOPE
     ]
-    runtime_members = (
-        [(c, legal.license_directory) for c in legal.components]
-        if legal is not None
-        else [
-            (c, root / LICENSE_DIRECTORY)
-            for c in components
-            if c.scope == FALLBACK_RUNTIME_SCOPE
-        ]
-    )
-    members += [("Runtime components", c, d) for c, d in runtime_members]
 
     ids_by_text: dict[str, str] = {}
     bodies: dict[str, str] = {}
@@ -790,7 +715,8 @@ def render_compiled_notices(
         "This file lists the third-party components of the app and holds each license "
         f"text once. The same content is on the website: {SITE_URL}legal/third-party-notices/ "
         f"and {SITE_URL}legal/license-texts/. The source offer is at "
-        f"{SITE_URL}legal/source-code/.\n\n"
+        f"{SITE_URL}legal/source-code/. The app does not ship a runtime; the installed "
+        "runtime archive carries its own notices.\n\n"
     )
     for title, rows in sections.items():
         text += (
@@ -800,10 +726,6 @@ def render_compiled_notices(
     text += "## License texts\n\n"
     for identifier, body in bodies.items():
         text += f"### {identifier}\n\n{_fenced(body)}\n"
-    if legal is not None and legal.notice is not None:
-        text += "### Runtime notice\n\n" + _fenced(
-            legal.notice.read_text(encoding="utf-8")
-        )
     return text.rstrip("\n") + "\n"
 
 
@@ -813,38 +735,29 @@ def compress_notices(text: str) -> bytes:
     return compressor.compress(text.encode("utf-8")) + compressor.flush()
 
 
-def regenerate(root: Path, runtime: Path | None = None) -> list[Path]:
+def regenerate(root: Path) -> list[Path]:
     """Rewrite the generated blocks; return the changed paths."""
-    return write_documents(root, generate_documents(root, runtime))
+    return write_documents(root, generate_documents(root))
 
 
-def stage_bundle(
-    root: Path, resources: Path, runtime: Path | None, strict: bool
-) -> list[str]:
-    """Write the compiled notices into an app `Resources` directory.
+def stage_bundle(root: Path, resources: Path, strict: bool) -> list[str]:
+    """Write the compiled app notices into an app `Resources` directory.
 
-    Return the warnings. In strict mode a missing runtime index, a missing runtime
-    notice, or an unverified component in the app or runtime fails the build.
+    Return the warnings. In strict mode an unverified component in the app fails the
+    build. The runtime archive carries its own notices, so the app bundle never
+    includes a runtime component list.
     """
-    components, legal = load_legal(root, runtime)
+    components, _ = load_legal(root, None)
     problems = check_inventory(root, components)
     if problems:
         fail("\n".join(problems))
 
     shipped = [c for c in components if c.scope == APP_SCOPE]
-    if legal is None:
-        shipped.extend(c for c in components if c.scope == FALLBACK_RUNTIME_SCOPE)
-    else:
-        shipped.extend(legal.components)
     warnings = _unverified_warnings(shipped)
-    if legal is None:
-        warnings.insert(0, "the runtime archive has no Licenses/index.json")
-    elif legal.notice is None:
-        warnings.insert(0, f"the runtime archive has no {RUNTIME_NOTICE_FILE}")
     if strict and warnings:
         fail("strict license check failed:\n" + "\n".join(warnings))
 
-    text = render_compiled_notices(root, components, legal)
+    text = render_compiled_notices(root, components)
     (resources / BUNDLE_NOTICES_NAME).write_bytes(compress_notices(text))
     return warnings
 

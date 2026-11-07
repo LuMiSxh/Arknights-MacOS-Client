@@ -1,7 +1,7 @@
 ---
 title: "UI-IMG: Artwork image not usable"
 description: "The image cannot be used as launcher artwork."
-order: 24
+order: 26
 audience: users
 code: UI-IMG
 domain: customization

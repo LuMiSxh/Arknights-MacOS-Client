@@ -19,15 +19,16 @@ Arknights Client is a community project. It is not affiliated with Yostar, Gryph
 
 ## What a release contains
 
-| Part                         | License                                                                         |
-| ---------------------------- | ------------------------------------------------------------------------------- |
-| The launcher                 | MPL-2.0. Source is available from the matching repository tag                   |
-| Wine + DXMT runtime          | Each component's own license. See [Third-party notices](third-party-notices.md) |
-| Sparkle and YouTubePlayerKit | Their own licenses. See [License texts](license-texts.md)                       |
-| Arknights game files         | Not included. Downloaded from the publisher after you choose a region           |
-| Artwork                      | Not included. Official wallpapers are downloaded and cached at runtime          |
+| Part                         | License                                                                                                  |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| The launcher                 | MPL-2.0. Source is available from the matching repository tag                                            |
+| x86_64 runtime               | Downloaded on first use. Each component's own license. See [Third-party notices](third-party-notices.md) |
+| ARM64 runtime                | Downloaded on first use. Each component's own license. See [Third-party notices](third-party-notices.md) |
+| Sparkle and YouTubePlayerKit | Their own licenses. See [License texts](license-texts.md)                                                |
+| Arknights game files         | Not included. Downloaded from the publisher after you choose a region                                    |
+| Artwork                      | Not included. Official wallpapers are downloaded and cached at runtime                                   |
 
 > [!WARNING]
-> The launcher's MPL-2.0 license does not cover the bundled third-party components, the game, or its artwork. Check each component's license before you redistribute a build.
+> The launcher's MPL-2.0 license does not cover the downloaded runtime components, the game, or its artwork. Check each component's license before you redistribute a build.
 
-The app bundles one compact file with the third-party notices and license texts. This website publishes the same content. **Settings → About** shows the file and links to the website.
+The app bundles one compact file with the notices of its own components. Each runtime archive carries its own license texts and notices; the launcher shows them for the installed runtime under **Settings → About**. This website publishes the launcher notices.

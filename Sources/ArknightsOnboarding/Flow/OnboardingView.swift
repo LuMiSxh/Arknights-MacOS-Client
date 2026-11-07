@@ -3,6 +3,7 @@
 import ArknightsCore
 import ArknightsCustomization
 import ArknightsGameInstallation
+import ArknightsGameRuntime
 import SwiftUI
 
 package struct OnboardingView: View {
@@ -10,6 +11,7 @@ package struct OnboardingView: View {
 	let preferences: LauncherPreferencesController
 	let customization: CustomizationController
 	let installation: InstallationController
+	let runtimeSelection: RuntimeSelectionController
 	let lifecycle: LauncherLifecycleStore
 	let presetCatalog: PresetCatalogService
 	let canSwitchRegion: Bool
@@ -19,6 +21,10 @@ package struct OnboardingView: View {
 	@State private var presentedGallery: PresetGalleryDestination?
 	@State private var isSkipConfirmationPresented = false
 	@State private var scrollPosition = ScrollPosition(edge: .top)
+	@State private var runtimeLane: RuntimeLane?
+	@State private var pendingRuntimeLane: RuntimeLane?
+	@State private var isRuntimeWarningPresented = false
+	@State private var didInitializeRuntimeLane = false
 
 	let retryUpdateCheck: () -> Void
 
@@ -26,6 +32,7 @@ package struct OnboardingView: View {
 		preferences: LauncherPreferencesController,
 		customization: CustomizationController,
 		installation: InstallationController,
+		runtimeSelection: RuntimeSelectionController,
 		lifecycle: LauncherLifecycleStore,
 		presetCatalog: PresetCatalogService,
 		canSwitchRegion: Bool,
@@ -36,6 +43,7 @@ package struct OnboardingView: View {
 		self.preferences = preferences
 		self.customization = customization
 		self.installation = installation
+		self.runtimeSelection = runtimeSelection
 		self.lifecycle = lifecycle
 		self.presetCatalog = presetCatalog
 		self.canSwitchRegion = canSwitchRegion
@@ -77,6 +85,12 @@ package struct OnboardingView: View {
 								canSwitchRegion: canSwitchRegion,
 								selectRegion: actions.selectRegion
 							)
+						case .runtime:
+							OnboardingRuntimeView(
+								runtimeSelection: runtimeSelection,
+								selectedLane: runtimeLaneBinding,
+								isDisabled: runtimeSelection.isInstalling
+							)
 						case .display:
 							OnboardingDisplayView(
 								preferences: preferences,
@@ -116,6 +130,10 @@ package struct OnboardingView: View {
 				.scrollPosition($scrollPosition)
 				.onChange(of: coordinator.step) {
 					scrollPosition.scrollTo(edge: .top)
+					if coordinator.step == .runtime, !didInitializeRuntimeLane {
+						runtimeLane = runtimeSelection.selectedLane
+						didInitializeRuntimeLane = true
+					}
 				}
 
 				FloatingActionFooterFade(height: 76)
@@ -193,6 +211,26 @@ package struct OnboardingView: View {
 				destination: destination
 			)
 		}
+		.onAppear {
+			if !didInitializeRuntimeLane {
+				runtimeLane = runtimeSelection.selectedLane
+				didInitializeRuntimeLane = true
+			}
+		}
+		.confirmationDialog(
+			runtimeWarningTitle,
+			isPresented: $isRuntimeWarningPresented,
+			titleVisibility: .visible
+		) {
+			Button(runtimeWarningButtonTitle) {
+				if let pendingRuntimeLane { runtimeLane = pendingRuntimeLane }
+				pendingRuntimeLane = nil
+				runtimeSelection.clearFailure()
+			}
+			Button("Cancel", role: .cancel) { pendingRuntimeLane = nil }
+		} message: {
+			Text(runtimeWarningMessage)
+		}
 	}
 
 	private var primaryTitle: String {
@@ -211,6 +249,12 @@ package struct OnboardingView: View {
 			}
 			return installation.hasPartialDownload
 				? "Resume & Continue" : "Install & Continue"
+		}
+		if coordinator.step == .runtime {
+			guard let runtimeLane, runtimeSelection.installedVersion(for: runtimeLane) != nil
+			else { return "Download and Continue" }
+			return runtimeLane == runtimeSelection.selectedLane
+				? "Continue Setup" : "Switch & Continue"
 		}
 		if coordinator.step == .finish { return "Finish Setup" }
 		return "Continue"
@@ -232,6 +276,16 @@ package struct OnboardingView: View {
 			return installation.isInstalled || installation.isDownloading
 				|| installation.canInstall
 		}
+		if coordinator.step == .runtime {
+			guard !runtimeSelection.isInstalling, let runtimeLane,
+				runtimeSelection.availableLanes.contains(runtimeLane)
+			else { return false }
+			if runtimeSelection.installedVersion(for: runtimeLane) != nil {
+				return runtimeLane == runtimeSelection.selectedLane
+					|| lifecycle.activity == .idle
+			}
+			return lifecycle.activity == .idle || lifecycle.activity.isInstalling
+		}
 		return true
 	}
 
@@ -243,6 +297,12 @@ package struct OnboardingView: View {
 			&& !installation.isDownloading
 		{
 			return installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
+		}
+		if coordinator.step == .runtime,
+			let runtimeLane,
+			runtimeSelection.installedVersion(for: runtimeLane) == nil
+		{
+			return "arrow.down"
 		}
 		if coordinator.step == .finish { return "checkmark" }
 		return "chevron.forward"
@@ -260,7 +320,66 @@ package struct OnboardingView: View {
 		{
 			actions.installOrUpdate()
 		}
+		if coordinator.step == .runtime {
+			performRuntimeAction()
+			return
+		}
 		coordinator.advance()
+	}
+
+	private func performRuntimeAction() {
+		guard let runtimeLane else { return }
+		if runtimeSelection.installedVersion(for: runtimeLane) != nil {
+			if runtimeLane != runtimeSelection.selectedLane {
+				guard actions.selectRuntimeLane(runtimeLane) else { return }
+			}
+			coordinator.advance()
+			return
+		}
+		Task {
+			guard await actions.installRuntime(runtimeLane) else { return }
+			guard coordinator.step == .runtime else { return }
+			coordinator.advance()
+		}
+	}
+
+	private var runtimeLaneBinding: Binding<RuntimeLane?> {
+		Binding(
+			get: { runtimeLane },
+			set: { newLane in
+				guard let newLane, newLane != runtimeLane else { return }
+				if newLane == .arm || runtimeLane == .arm {
+					pendingRuntimeLane = newLane
+					isRuntimeWarningPresented = true
+				} else {
+					runtimeLane = newLane
+					runtimeSelection.clearFailure()
+				}
+			}
+		)
+	}
+
+	private var runtimeWarningTitle: String {
+		runtimeWarningLane == .arm ? "Switch to ARM64?" : "Switch to x86_64?"
+	}
+
+	private var runtimeWarningButtonTitle: String {
+		runtimeWarningLane == .arm ? "Use ARM64" : "Use x86_64"
+	}
+
+	private var runtimeWarningLane: RuntimeLane {
+		pendingRuntimeLane ?? runtimeLane ?? .x86
+	}
+
+	private var runtimeWarningMessage: String {
+		let lane = runtimeWarningLane
+		guard let pin = runtimeSelection.pinnedRuntime(for: lane) else {
+			return RuntimeSwitchWarning.message
+		}
+		return RuntimeSwitchWarning.message(
+			for: pin,
+			isInstalled: runtimeSelection.installedVersion(for: lane) != nil
+		)
 	}
 
 	private func retryIntelTranslation() {

@@ -6,9 +6,9 @@ order: 10
 
 # Architecture
 
-Arknights Client is a native SwiftUI launcher around a bundled Windows compatibility runtime. The
+Arknights Client is a native SwiftUI launcher around a downloaded Windows compatibility runtime. The
 launcher owns downloads, updates, settings, diagnostics, and process state. It does not ship game
-files. It does not run Wine until the user selects **Play**.
+files or a runtime. It does not run Wine until the user selects **Play**.
 
 [`LauncherViewModel`](../../../Sources/ArknightsLauncherUI/State/LauncherViewModel.swift) is the
 composition root. Read the system map first. Then read the page that matches your change.
@@ -110,7 +110,7 @@ number. The compiler rejects a cycle.
 | 7   | `ArknightsAudio`            | Background playback, Now Playing, settings, HUD controls                                                                                       | 2, 3                   | `YouTubePlayerKit` |
 | 8   | `ArknightsOnboarding`       | Resumable flow, progress persistence, step views                                                                                               | 2, 3, 4, 5             | none               |
 | 9   | `ArknightsLauncherUI`       | Composition (`LauncherViewModel`), home, Settings, documents, popups, launcher updates                                                         | 1, 2, 3, 4, 5, 6, 7, 8 | `Sparkle`          |
-| 10  | `ArknightsClient`           | The executable. It holds only the app entry point, AppDelegate, menus, and scenes                                                       | 2, 7, 8, 9             | none               |
+| 10  | `ArknightsClient`           | The executable. It holds only the app entry point, AppDelegate, menus, and scenes                                                              | 2, 7, 8, 9             | none               |
 
 Each library target has an `Arknights<Name>Tests` target. `ArknightsClientTests` holds only
 app-entry tests. `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests` cover the

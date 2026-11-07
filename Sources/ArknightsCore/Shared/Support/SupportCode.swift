@@ -32,8 +32,10 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 	case intelTranslationBlocked = "RT-BLK"
 	case bundledRuntimeDamaged = "RT-BND"
 	case compatibilitySetupFailed = "RT-CMP"
+	case runtimeNotInstalled = "RT-MIS"
 	case rosettaMissing = "RT-ROS"
 	case runtimeSetupFailed = "RT-SET"
+	case runtimeVerificationFailed = "RT-VER"
 	case gameClosedUnexpectedly = "GM-CRS"
 	case screenCapturePermissionDenied = "GM-SCP"
 	case screenCaptureWindowMissing = "GM-SCW"
@@ -75,9 +77,13 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 			.runtime
 		case .compatibilitySetupFailed:
 			.runtime
+		case .runtimeNotInstalled:
+			.runtime
 		case .rosettaMissing:
 			.runtime
 		case .runtimeSetupFailed:
+			.runtime
+		case .runtimeVerificationFailed:
 			.runtime
 		case .gameClosedUnexpectedly:
 			.game
@@ -126,13 +132,17 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 		case .intelTranslationBlocked:
 			"Intel translation is blocked or not supported on this macOS version."
 		case .bundledRuntimeDamaged:
-			"The launcher app does not contain a complete runtime."
+			"The launcher cannot read its runtime information."
 		case .compatibilitySetupFailed:
 			"The launcher could not apply or restore a compatibility file in the game folder."
+		case .runtimeNotInstalled:
+			"The selected runtime is not installed."
 		case .rosettaMissing:
 			"Rosetta is missing or disabled."
 		case .runtimeSetupFailed:
 			"The launcher could not set up the game runtime."
+		case .runtimeVerificationFailed:
+			"The downloaded runtime did not pass verification."
 		case .gameClosedUnexpectedly:
 			"The game or Wine process ended unexpectedly."
 		case .screenCapturePermissionDenied:
@@ -183,9 +193,13 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 			false
 		case .compatibilitySetupFailed:
 			true
+		case .runtimeNotInstalled:
+			true
 		case .rosettaMissing:
 			true
 		case .runtimeSetupFailed:
+			true
+		case .runtimeVerificationFailed:
 			true
 		case .gameClosedUnexpectedly:
 			true
@@ -237,9 +251,13 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 			false
 		case .compatibilitySetupFailed:
 			true
+		case .runtimeNotInstalled:
+			false
 		case .rosettaMissing:
 			false
 		case .runtimeSetupFailed:
+			false
+		case .runtimeVerificationFailed:
 			false
 		case .gameClosedUnexpectedly:
 			true

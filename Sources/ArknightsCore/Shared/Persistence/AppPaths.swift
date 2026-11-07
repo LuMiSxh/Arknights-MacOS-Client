@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import Foundation
 
 enum AppPathsError: LocalizedError, Sendable {
@@ -32,11 +33,18 @@ package struct AppPaths: Sendable {
 	package let winePrefix: URL
 	let chinaWinePrefix: URL
 	let gryphlineWinePrefix: URL
-	package let bundledRuntimeDirectory: URL?
-	/// The lane of the bundled runtime. Every publisher prefix and derived cache uses it.
+	/// The selected runtime lane. Every publisher prefix and derived cache uses it.
 	package let runtimeLane: RuntimeLane
-	/// A problem reading the lane from `RUNTIME.json`, when the file exists but is unusable.
+	/// A problem reading `runtimeSelectionFile`, when the file exists but is unusable.
 	package let runtimeLaneDiagnostic: String?
+	/// The root of the downloaded, managed runtimes. Never inside the app bundle.
+	package let runtimeRoot: URL
+	/// Where runtime archives download before verification.
+	package let runtimeDownloadsDirectory: URL
+	/// Where a runtime archive extracts before it is installed.
+	package let runtimeStagingRoot: URL
+	/// The only persisted runtime choice, written atomically.
+	package let runtimeSelectionFile: URL
 
 	package init(
 		fileManager: FileManager = .default,
@@ -45,8 +53,7 @@ package struct AppPaths: Sendable {
 		libraryDirectory: URL? = nil,
 		downloadsDirectory: URL? = nil,
 		picturesDirectory: URL? = nil,
-		resourceDirectory: URL? = Bundle.main.resourceURL,
-		runtimeLane: RuntimeLane? = nil
+		runtimeSelection: RuntimeSelection? = nil
 	) {
 		let supportDirectory =
 			applicationSupportDirectory
@@ -81,15 +88,39 @@ package struct AppPaths: Sendable {
 			libraryDirectory
 			.appending(path: "Logs", directoryHint: .isDirectory)
 			.appending(path: Self.bundleIdentifier, directoryHint: .isDirectory)
-		let detection: (lane: RuntimeLane, diagnostic: String?)
-		if let runtimeLane {
-			detection = (runtimeLane, nil)
+		runtimeRoot = applicationSupportRoot.appending(
+			path: "Runtimes",
+			directoryHint: .isDirectory
+		)
+		runtimeDownloadsDirectory = runtimeRoot.appending(
+			path: ".downloads",
+			directoryHint: .isDirectory
+		)
+		runtimeStagingRoot = runtimeRoot.appending(
+			path: ".staging",
+			directoryHint: .isDirectory
+		)
+		let selectionFile = applicationSupportRoot.appending(
+			path: AppConstants.Runtime.runtimeSelectionFilename
+		)
+		runtimeSelectionFile = selectionFile
+
+		let selection: RuntimeSelection
+		if let runtimeSelection {
+			selection = runtimeSelection
+			runtimeLaneDiagnostic = nil
 		} else {
-			detection = RuntimeLane.bundled(resourceDirectory: resourceDirectory)
+			do {
+				selection = try RuntimeSelectionStore(fileURL: selectionFile).load()
+				runtimeLaneDiagnostic = nil
+			} catch {
+				selection = RuntimeSelection()
+				runtimeLaneDiagnostic =
+					"Could not read the runtime selection at \(selectionFile.path): \(error.localizedDescription); using the x86 lane"
+			}
 		}
-		self.runtimeLane = detection.lane
-		runtimeLaneDiagnostic = detection.diagnostic
-		let prefixName = detection.lane.prefixDirectoryName
+		runtimeLane = selection.selected
+		let prefixName = selection.selected.prefixDirectoryName
 		winePrefix = applicationSupportRoot.appending(
 			path: "Yostar/\(prefixName)",
 			directoryHint: .isDirectory
@@ -102,7 +133,98 @@ package struct AppPaths: Sendable {
 			path: "Gryphline/\(prefixName)",
 			directoryHint: .isDirectory
 		)
-		bundledRuntimeDirectory = resourceDirectory.map(BundledResource.runtime.location)
+	}
+
+	package func runtimeDirectory(for lane: RuntimeLane) -> URL {
+		runtimeRoot.appending(path: lane.rawValue, directoryHint: .isDirectory)
+	}
+
+	package func runtimeVersionDirectory(for lane: RuntimeLane, version: String) -> URL {
+		runtimeDirectory(for: lane)
+			.appending(path: version, directoryHint: .isDirectory)
+	}
+
+	/// The installed version for `lane`, taken from the version directory that holds `RUNTIME.json`.
+	package func installedRuntimeVersion(
+		for lane: RuntimeLane,
+		fileManager: FileManager = .default
+	) -> String? {
+		Self.installedRuntimeVersion(
+			in: runtimeDirectory(for: lane), fileManager: fileManager)
+	}
+
+	/// The selected lane's installed `RUNTIME.json`, or `nil` when no runtime is installed.
+	package func activeRuntimeConfigurationURL(fileManager: FileManager = .default) -> URL? {
+		installedRuntimeConfigurationURL(for: runtimeLane, fileManager: fileManager)
+	}
+
+	package func installedRuntimeConfigurationURL(
+		for lane: RuntimeLane,
+		fileManager: FileManager = .default
+	) -> URL? {
+		guard let version = installedRuntimeVersion(for: lane, fileManager: fileManager) else {
+			return nil
+		}
+		return runtimeVersionDirectory(for: lane, version: version)
+			.appending(path: "RUNTIME.json")
+	}
+
+	/// Both lanes' installed manifests, used by storage and diagnostics.
+	package static func installedRuntimeConfigurationURLs(
+		in runtimeRoot: URL,
+		fileManager: FileManager = .default
+	) -> [(lane: RuntimeLane, url: URL)] {
+		RuntimeLane.allCases.compactMap { lane in
+			let laneDirectory = runtimeRoot.appending(
+				path: lane.rawValue, directoryHint: .isDirectory)
+			guard let version = installedRuntimeVersion(in: laneDirectory, fileManager: fileManager)
+			else { return nil }
+			let url = laneDirectory.appending(path: version, directoryHint: .isDirectory)
+				.appending(path: "RUNTIME.json")
+			return (lane, url)
+		}
+	}
+
+	private static func installedRuntimeVersion(
+		in laneDirectory: URL,
+		fileManager: FileManager
+	) -> String? {
+		let entries: [URL]
+		do {
+			entries = try fileManager.contentsOfDirectory(
+				at: laneDirectory,
+				includingPropertiesForKeys: [
+					.isDirectoryKey, .isSymbolicLinkKey, .contentModificationDateKey,
+				]
+			)
+		} catch {
+			return nil
+		}
+		var newest: (version: String, modified: Date)?
+		for entry in entries {
+			let values: URLResourceValues
+			do {
+				values = try entry.resourceValues(forKeys: [
+					.isDirectoryKey, .isSymbolicLinkKey, .contentModificationDateKey,
+				])
+			} catch {
+				continue
+			}
+			guard values.isDirectory == true, values.isSymbolicLink != true else { continue }
+			guard
+				fileManager.fileExists(
+					atPath: entry.appending(path: "RUNTIME.json").path)
+			else { continue }
+			let modified = values.contentModificationDate ?? .distantPast
+			if let current = newest {
+				if modified > current.modified {
+					newest = (entry.lastPathComponent, modified)
+				}
+			} else {
+				newest = (entry.lastPathComponent, modified)
+			}
+		}
+		return newest?.version
 	}
 
 	package func gameInstall(for region: GameRegion) -> URL {
@@ -126,11 +248,19 @@ package struct AppPaths: Sendable {
 	}
 
 	package func winePrefix(for publisher: GamePublisher) -> URL {
-		switch publisher {
-		case .yostar: winePrefix
-		case .hypergryph: chinaWinePrefix
-		case .gryphline: gryphlineWinePrefix
-		}
+		winePrefix(for: publisher, lane: runtimeLane)
+	}
+
+	package func winePrefix(for region: GameRegion, lane: RuntimeLane) -> URL {
+		winePrefix(for: region.publisher, lane: lane)
+	}
+
+	/// The publisher prefix of either lane. Storage and cleanup see both lanes.
+	package func winePrefix(for publisher: GamePublisher, lane: RuntimeLane) -> URL {
+		applicationSupportRoot.appending(
+			path: "\(publisher.storageDirectoryName)/\(lane.prefixDirectoryName)",
+			directoryHint: .isDirectory
+		)
 	}
 
 	package var logsDirectory: URL { logRoot }
@@ -187,7 +317,12 @@ package struct AppPaths: Sendable {
 	}
 
 	package func dxmtCache(for region: GameRegion) -> URL {
-		winePrefix(for: region).appending(path: "home/.cache/dxmt", directoryHint: .isDirectory)
+		dxmtCache(for: region, lane: runtimeLane)
+	}
+
+	package func dxmtCache(for region: GameRegion, lane: RuntimeLane) -> URL {
+		winePrefix(for: region, lane: lane)
+			.appending(path: "home/.cache/dxmt", directoryHint: .isDirectory)
 	}
 
 	package func browserCacheDirectories(fileManager: FileManager = .default) throws -> [URL] {
@@ -198,8 +333,17 @@ package struct AppPaths: Sendable {
 		for region: GameRegion,
 		fileManager: FileManager = .default
 	) throws -> [URL] {
-		try Self.gameCacheDirectories(winePrefix: winePrefix(for: region), fileManager: fileManager)
-			.filter { $0 != dxmtCache(for: region) }
+		try browserCacheDirectories(for: region, lane: runtimeLane, fileManager: fileManager)
+	}
+
+	package func browserCacheDirectories(
+		for region: GameRegion,
+		lane: RuntimeLane,
+		fileManager: FileManager = .default
+	) throws -> [URL] {
+		let prefix = winePrefix(for: region, lane: lane)
+		return try Self.gameCacheDirectories(winePrefix: prefix, fileManager: fileManager)
+			.filter { $0 != dxmtCache(for: region, lane: lane) }
 	}
 
 	package static func gameCacheDirectories(

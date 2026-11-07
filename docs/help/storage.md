@@ -6,24 +6,27 @@ order: 30
 
 # Storage
 
-Each server keeps its own game files. Servers of one publisher share one **game environment** (Wine prefix): the Windows environment with sign-ins, settings, and caches.
+Each server keeps its own game files. Servers of one publisher share one **game environment** (Wine prefix) for the selected runtime architecture.
 
-A launcher built for the native ARM64 runtime keeps a separate game environment in `Yostar/Prefix-ARM64`, `Gryphline/Prefix-ARM64`, or `Hypergryph/Prefix-ARM64`. The x86_64 runtime keeps the existing environment. Switching between the two keeps both. The environments do not share sign-ins, settings, or caches, so a switch requires a new sign-in.
+The x86_64 runtime uses `Prefix`. The ARM64 runtime uses `Prefix-ARM64` in the same publisher folder. Each architecture keeps its own game environment. Switching between them keeps both. The environments do not share sign-ins, settings, or caches, so a switch can look like a fresh install.
+
+The launcher downloads one runtime for the selected architecture. Both runtimes can stay on disk. **Settings → Installation → Runtime** shows the installed version of each and offers **Remove Other Runtime**.
 
 ## Where files live
 
 Paths start with `~/Library/Application Support/com.lumisxh.arknights-client/` unless noted.
 
-| What                                  | Location                                                             |
-| ------------------------------------- | -------------------------------------------------------------------- |
-| Yostar games and game environment     | `Yostar/Global`, `Yostar/Japan`, `Yostar/Korea`, `Yostar/Prefix`     |
-| Gryphline game and game environment   | `Gryphline/Taiwan`, `Gryphline/Prefix`                               |
-| Hypergryph games and game environment | `Hypergryph/China`, `Hypergryph/China-Bilibili`, `Hypergryph/Prefix` |
-| Custom icons and artwork              | `Artwork/Custom`                                                     |
-| Playtime statistics                   | `playtime-v1.json` (local only, never uploaded)                      |
-| Storage measurements                  | `storage-overview-cache.json` (local only; safe to delete)           |
-| Caches                                | `~/Library/Caches/com.lumisxh.arknights-client/`                     |
-| Logs                                  | `~/Library/Logs/com.lumisxh.arknights-client/`                       |
+| What                                  | Location                                                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Yostar games and game environment     | `Yostar/Global`, `Yostar/Japan`, `Yostar/Korea`, `Yostar/Prefix`, `Yostar/Prefix-ARM64`         |
+| Gryphline game and game environment   | `Gryphline/Taiwan`, `Gryphline/Prefix`, `Gryphline/Prefix-ARM64`                                |
+| Hypergryph games and game environment | `Hypergryph/China`, `Hypergryph/China-Bilibili`, `Hypergryph/Prefix`, `Hypergryph/Prefix-ARM64` |
+| Custom icons and artwork              | `Artwork/Custom`                                                                                |
+| Playtime statistics                   | `playtime-v1.json` (local only, never uploaded)                                                 |
+| Storage measurements                  | `storage-overview-cache.json` (local only; safe to delete)                                      |
+| Caches                                | `~/Library/Caches/com.lumisxh.arknights-client/`                                                |
+| Runtimes                              | `Runtimes/x86`, `Runtimes/arm`                                                                  |
+| Logs                                  | `~/Library/Logs/com.lumisxh.arknights-client/`                                                  |
 
 A custom installation location replaces only the game folder of that server. **Settings → Storage** shows the space each part uses. macOS backups exclude game folders and game environments.
 
@@ -53,7 +56,7 @@ Logs can contain private paths, URLs, account IDs, or access keys. Do not attach
 | **Delete Environment…** | Settings → Help → Troubleshooting | The publisher's game environment: sign-ins and Windows settings | All game files and launcher settings       |
 | **Reset All Settings…** | Settings → Help → Troubleshooting | Launcher preferences and launch options                         | Server, installation locations, game files |
 | **Reset Statistics…**   | Settings → Playtime               | Playtime totals                                                 | Everything else                            |
-| **Uninstall Game…**     | Settings → Servers                | The game folder of the selected server (moved to the Trash)     | Other servers, game environment, launcher  |
+| **Uninstall Game…**     | Settings → Installation           | The game folder of the selected server (moved to the Trash)     | Other servers, game environment, launcher  |
 
 Try **Clear Caches** and **Rebuild…** before **Delete Environment…**.
 

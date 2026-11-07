@@ -1,7 +1,7 @@
 ---
 title: "GM-SCP: Screen Recording is off"
 description: "The launcher cannot take a screenshot because Screen Recording is off."
-order: 19
+order: 21
 audience: users
 code: GM-SCP
 domain: game

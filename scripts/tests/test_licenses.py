@@ -9,6 +9,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from conftest import runtime_manifest
 from lib import licenses
 from lib.common import PROJECT_DIR, ScriptError
 from lib.project_config import ProjectConfiguration, load_project_configuration
@@ -62,9 +63,7 @@ def project(tmp_path: Path) -> Path:
         json.dumps({"pins": [{"identity": "pkg", "state": {"version": "2.0.0"}}]}),
         encoding="utf-8",
     )
-    (root / "runtime.json").write_text(
-        (PROJECT_DIR / "runtime.json").read_text(encoding="utf-8"), encoding="utf-8"
-    )
+    (root / "runtime.json").write_text(json.dumps(runtime_manifest()), encoding="utf-8")
     write_index(
         root,
         [
@@ -103,7 +102,7 @@ def project(tmp_path: Path) -> Path:
 
 
 def regenerate(root: Path, runtime: Path | None = None) -> None:
-    licenses.regenerate(root, runtime)
+    licenses.regenerate(root)
 
 
 def write_index(root: Path, components: list[dict[str, object]]) -> None:
@@ -213,14 +212,14 @@ def test_stale_generated_block_fails_and_generate_repairs_it(project: Path) -> N
     licenses.check_all(project)
 
 
-def test_source_offer_derives_urls_from_runtime_manifest() -> None:
-    manifest = json.loads((PROJECT_DIR / "runtime.json").read_text(encoding="utf-8"))
+def test_source_offer_uses_each_lane_release(project: Path) -> None:
+    manifest = json.loads((project / "runtime.json").read_text(encoding="utf-8"))
     offer = licenses.render_source_offer(manifest)
 
-    assert manifest["buildRecipe"]["url"] in offer
-    assert manifest["buildRecipe"]["sha256"] in offer
-    assert manifest["provenance"]["nixpkgsCommit"] in offer
-    assert licenses.release_url(manifest["runtime"]["url"]) in offer
+    for lane in manifest["lanes"].values():
+        assert licenses.release_url(lane["runtime"]["url"]) in offer
+    assert "buildRecipe" not in offer
+    assert "Nixpkgs" not in offer
     assert "does not cover today" in offer
 
 
@@ -252,16 +251,19 @@ def test_license_texts_page_holds_every_text_once(project: Path) -> None:
     assert "### Art" not in page
 
 
-def test_license_texts_page_merges_runtime_index(project: Path, tmp_path: Path) -> None:
+def test_license_texts_page_does_not_merge_a_prepared_runtime(
+    project: Path, tmp_path: Path
+) -> None:
     runtime = make_runtime(tmp_path)
-    page = licenses.generate_documents(project, runtime)[
-        licenses.LICENSE_TEXTS_DOCUMENT
-    ]
+    page = licenses.generate_documents(project)[licenses.LICENSE_TEXTS_DOCUMENT]
 
-    assert "### Lib" in page
-    assert "Runtime notice" in page
-    assert "This page does not list the runtime license index" not in page
-    assert licenses.generate_documents(project)[licenses.LICENSE_TEXTS_DOCUMENT] != page
+    assert "### Lib" not in page
+    assert "Runtime notice" not in page
+    assert "carries the authoritative license texts" in page
+    assert licenses.generate_documents(project)[licenses.LICENSE_TEXTS_DOCUMENT] == page
+    assert licenses.check_all(project, runtime) == [
+        "Art 1.0.0: license not yet verified"
+    ]
 
 
 def test_stale_license_texts_page_fails_and_generate_repairs_it(
@@ -278,33 +280,13 @@ def test_stale_license_texts_page_fails_and_generate_repairs_it(
     licenses.check_all(project)
 
 
-def test_check_with_runtime_detects_a_page_without_runtime_texts(
+def test_check_with_runtime_keeps_the_website_documents(
     project: Path, tmp_path: Path
 ) -> None:
     runtime = make_runtime(tmp_path)
-    with pytest.raises(
-        ScriptError, match="license-texts.md: generated blocks are stale"
-    ):
-        licenses.check_all(project, runtime)
-    regenerate(project, runtime)
     assert licenses.check_all(project, runtime) == [
         "Art 1.0.0: license not yet verified"
     ]
-
-
-def test_check_without_runtime_skips_only_runtime_dependent_blocks(
-    project: Path, tmp_path: Path
-) -> None:
-    regenerate(project, make_runtime(tmp_path))
-    assert licenses.check_all(project) == ["Art 1.0.0: license not yet verified"]
-
-    (project / "docs/legal/licenses/example.txt").write_text(
-        "Changed text", encoding="utf-8"
-    )
-    with pytest.raises(
-        ScriptError, match="license-texts.md: generated blocks are stale"
-    ):
-        licenses.check_all(project)
 
 
 def test_runtime_without_index_warns_and_strict_fails(
@@ -340,44 +322,31 @@ def test_runtime_index_with_missing_text_fails(project: Path, tmp_path: Path) ->
         licenses.check_all(project, runtime)
 
 
-def test_bundle_writes_one_compiled_file_with_runtime_components(
-    project: Path, tmp_path: Path
+def test_bundle_writes_one_compiled_file_with_launcher_notices(
+    project: Path,
 ) -> None:
-    resources = tmp_path / "Resources"
+    resources = project / "Resources"
     resources.mkdir()
-    runtime = make_runtime(tmp_path)
 
-    warnings = licenses.stage_bundle(project, resources, runtime, strict=False)
+    warnings = licenses.stage_bundle(project, resources, strict=False)
 
     assert [path.name for path in resources.iterdir()] == ["ThirdPartyNotices.deflate"]
     compressed = (resources / "ThirdPartyNotices.deflate").read_bytes()
     notices = zlib.decompress(compressed, -15).decode("utf-8")
-    assert "[Lib](" in notices
-    assert "Runtime notice" in notices
+    assert "[pkg](" in notices
+    assert "does not ship a runtime" in notices
     assert "licenses:begin" not in notices
     assert warnings == ["Art 1.0.0: license not yet verified"]
 
 
-def test_arm_runtime_license_index_is_accepted(project: Path, tmp_path: Path) -> None:
-    runtime = tmp_path / "runtime"
-    (runtime / "Licenses/runtime").mkdir(parents=True)
-    (runtime / "Licenses/runtime/MIT.txt").write_text("MIT", encoding="utf-8")
-    entry = component(name="FEX", files=["runtime/MIT.txt"])
-    (runtime / "Licenses/index.json").write_text(
-        json.dumps({"schemaVersion": 1, "components": [entry]}), encoding="utf-8"
-    )
-    (runtime / "NOTICE.md").write_text("Runtime notice", encoding="utf-8")
-    resources = tmp_path / "Resources"
+def test_strict_bundle_fails_on_an_unverified_launcher_component(
+    project: Path,
+) -> None:
+    resources = project / "Resources"
     resources.mkdir()
 
-    warnings = licenses.stage_bundle(project, resources, runtime, strict=False)
-
-    assert "the runtime archive has no Licenses/index.json" not in warnings
-    notices = zlib.decompress(
-        (resources / "ThirdPartyNotices.deflate").read_bytes(), -15
-    ).decode("utf-8")
-    assert "[FEX](" in notices
-    assert "Runtime notice" in notices
+    with pytest.raises(ScriptError, match="license not yet verified"):
+        licenses.stage_bundle(project, resources, strict=True)
 
 
 def test_compiled_notices_keep_each_distinct_text_once(project: Path) -> None:
@@ -393,19 +362,22 @@ def test_compiled_notices_keep_each_distinct_text_once(project: Path) -> None:
     )
     components = licenses.load_client_components(project, [])
 
-    notices = licenses.render_compiled_notices(project, components, None)
+    notices = licenses.render_compiled_notices(project, components)
 
     assert notices.count("MIT text") == 1
     assert notices.count("| `MIT` |") == 2
 
 
-def test_compiled_notices_exclude_website_components(project: Path) -> None:
+def test_compiled_notices_exclude_website_and_runtime_components(
+    project: Path,
+) -> None:
     components = licenses.load_client_components(project, [])
 
-    notices = licenses.render_compiled_notices(project, components, None)
+    notices = licenses.render_compiled_notices(project, components)
 
     assert "[lib](" not in notices
     assert "[pkg](" in notices
+    assert "Runtime components" not in notices
 
 
 def test_runtime_index_http_sources_load_as_https(tmp_path: Path) -> None:
@@ -445,18 +417,3 @@ def test_staging_runtime_legal_copies_files(tmp_path: Path) -> None:
     assert (runtime / "Licenses/index.json").is_file()
     assert (runtime / "NOTICE.md").is_file()
     assert not licenses.stage_runtime_legal(tmp_path / "empty", runtime)
-
-
-def test_strict_bundle_fails_without_runtime_index(
-    project: Path, tmp_path: Path
-) -> None:
-    resources = tmp_path / "Resources"
-    resources.mkdir()
-    runtime = tmp_path / "runtime"
-    runtime.mkdir()
-
-    warnings = licenses.stage_bundle(project, resources, runtime, strict=False)
-
-    assert warnings[0] == "the runtime archive has no Licenses/index.json"
-    with pytest.raises(ScriptError, match="no Licenses/index.json"):
-        licenses.stage_bundle(project, resources, runtime, strict=True)

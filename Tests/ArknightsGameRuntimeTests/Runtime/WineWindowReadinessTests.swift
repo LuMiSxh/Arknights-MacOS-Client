@@ -1,10 +1,21 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import CoreGraphics
+import Darwin
 import Foundation
 import Testing
 
 @testable import ArknightsGameRuntime
+
+@Test
+private func convertsThePidCountFromProcListChildPids() {
+	let buffer: [pid_t] = [42, 43, 0, 0]
+	#expect(
+		WineWindowReadiness.childIdentifiers(
+			listed: 2, buffer: buffer, capacity: 4
+		) == [42, 43]
+	)
+}
 
 @Test
 private func acceptsTheGameWindowOfALaunchedProcessChild() {

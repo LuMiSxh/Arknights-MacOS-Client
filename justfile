@@ -20,7 +20,7 @@ preview:
     binary_dir="$({{ uv }} scripts/swift_build.py --configuration debug --show-bin-path)"
     "$binary_dir/$({{ uv }} scripts/project_config.py executable-name)" --developer-preview
 
-# Start the website or download the verified runtime and build a local app bundle or dmg; add run to open app artifacts (default: app).
+# Start the website or build the local app bundle or dmg; add run to open app artifacts (default: app).
 [group('Development')]
 dev target='app' run='':
     #!/usr/bin/env bash
@@ -31,8 +31,7 @@ dev target='app' run='':
         dmg) name="$({{ uv }} scripts/project_config.py dmg-name)" ;;
         *) echo "unknown target: "{{ quote(target) }}"; use app, dmg, or web" >&2; exit 2 ;;
     esac
-    {{ just }} runtime
-    {{ just }} {{ quote(target) }} .build/runtime
+    {{ just }} {{ quote(target) }}
     if [[ {{ quote(run) }} == "run" ]]; then open "dist/$name"; fi
 
 # Check core sources (default: all) or one of swift, scripts, shim, web.
@@ -168,20 +167,33 @@ swift-tests level filter='':
 [group('Checks')]
 ci: check integration build
 
-# Download the pinned runtime (default), pin a release with update (tag or latest, optional prerelease, then the x86 or arm lane), or verify the pin with check.
+# Download the pinned runtime for a lane (--architecture), pin a release lane with update, or verify the pin with check.
 [group('Runtime')]
-runtime action='download' tag='latest' prerelease='' arch='x86':
-    @case {{ quote(action) }} in download) {{ uv }} scripts/download_runtime.py;; check) {{ uv }} scripts/update_runtime.py --check;; update) if [[ {{ quote(prerelease) }} == "prerelease" ]]; then {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }} --architecture {{ quote(arch) }} --include-prerelease; else {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }} --architecture {{ quote(arch) }}; fi;; *) echo "unknown action: "{{ quote(action) }}"; use download, update, or check" >&2; exit 2;; esac
+runtime action='download' *arguments:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    action={{ quote(action) }}
+    set -- {{ arguments }}
+    case "$action" in
+        download) exec {{ uv }} scripts/download_runtime.py "$@" ;;
+        check) exec {{ uv }} scripts/update_runtime.py --check ;;
+        update)
+            # Accept `just runtime update TAG` as well as the script's `--tag TAG`.
+            if [[ $# -gt 0 && $1 != -* ]]; then set -- --tag "$@"; fi
+            exec {{ uv }} scripts/update_runtime.py "$@"
+            ;;
+        *) echo "unknown action: $action; use download, update, or check" >&2; exit 2 ;;
+    esac
 
-# Build the application bundle; optionally embed a Wine runtime directory for one architecture (x86 or arm).
+# Build the application bundle.
 [group('Packaging')]
-app runtime='' arch='':
-    {{ uv_packaging }} scripts/build_app.py {{ if runtime != '' { '--runtime ' + quote(runtime) } else { '' } }} {{ if arch != '' { '--runtime-architecture ' + quote(arch) } else { '' } }}
+app:
+    {{ uv_packaging }} scripts/build_app.py
 
-# Build a DMG with the required Wine runtime directory; the second argument is the runtime lane (x86 or arm), and strict fails on unverified licenses.
+# Build the distributable disk image that contains only the application bundle.
 [group('Packaging')]
-dmg runtime arch='' strict='':
-    {{ uv_packaging }} scripts/build_dmg.py --runtime {{ quote(runtime) }} {{ if arch != '' { '--runtime-architecture ' + quote(arch) } else { '' } }} {{ if strict != '' { '--strict-licenses' } else { '' } }}
+dmg *arguments:
+    {{ uv_packaging }} scripts/build_dmg.py {{ arguments }}
 
 # Regenerate the application icon assets; fails rather than shipping fallback assets.
 [group('Packaging')]

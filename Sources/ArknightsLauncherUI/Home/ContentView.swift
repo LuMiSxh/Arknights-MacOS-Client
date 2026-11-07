@@ -72,6 +72,7 @@ package struct ContentView: View {
 					settings: model.settings,
 					installation: model.installation,
 					gameSession: model.gameSession,
+					runtimeSelection: model.runtimeSelection,
 					intelTranslation: model.intelTranslation,
 					communication: model.communication,
 					canSwitchRegion: model.refreshController.canSwitchRegion,
@@ -84,6 +85,7 @@ package struct ContentView: View {
 						selectRegion: { model.actions.selectRegion($0) },
 						installOrUpdate: { model.actions.installOrUpdate() },
 						cancelDownload: { model.actions.cancelDownload() },
+						installRuntime: { model.installSelectedRuntime() },
 						launch: { model.actions.launch() },
 						stopGame: { model.actions.stopGame() },
 						showFailureDetails: showFailureDetails
@@ -116,6 +118,7 @@ package struct ContentView: View {
 					preferences: model.settings,
 					customization: model.customization,
 					installation: model.installation,
+					runtimeSelection: model.runtimeSelection,
 					lifecycle: model.lifecycle,
 					presetCatalog: model.presetCatalog,
 					canSwitchRegion: model.refreshController.canSwitchRegion,
@@ -124,6 +127,8 @@ package struct ContentView: View {
 						selectRegion: { model.actions.selectRegion($0) },
 						resetArtwork: { model.actions.resetArtwork() },
 						installOrUpdate: { model.actions.installOrUpdate() },
+						installRuntime: { lane in await model.actions.installRuntime(lane) },
+						selectRuntimeLane: { lane in model.actions.selectRuntimeLane(lane) },
 						openLauncherUpdate: { model.actions.openLauncherUpdate() },
 						retryIntelTranslation: {
 							await model.actions.refreshIntelTranslationForUI(force: true)
@@ -274,6 +279,7 @@ package struct ContentView: View {
 				settings: model.settings, customization: model.customization,
 				communication: model.communication,
 				installation: model.installation, gameSession: model.gameSession,
+				runtimeSelection: model.runtimeSelection,
 				lifecycle: model.lifecycle, reminders: model.reminders,
 				screenshots: model.screenshots,
 				storage: model.storage, storageOverview: model.storageOverview,

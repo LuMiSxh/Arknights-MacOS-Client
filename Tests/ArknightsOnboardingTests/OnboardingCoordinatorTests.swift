@@ -28,7 +28,7 @@ struct OnboardingCoordinatorTests {
 
 		coordinator.advance()
 		coordinator.advance()
-		#expect(coordinator.step == .display)
+		#expect(coordinator.step == .runtime)
 
 		let resumed = OnboardingCoordinator(store: store)
 		await resumed.startIfNeeded(
@@ -40,7 +40,7 @@ struct OnboardingCoordinatorTests {
 		)
 		resumed.advance()
 
-		#expect(resumed.step == .display)
+		#expect(resumed.step == .runtime)
 
 		store.save(step: .look)
 		let withoutGame = OnboardingCoordinator(store: store)
@@ -67,6 +67,16 @@ struct OnboardingCoordinatorTests {
 		#expect(fromEarlierLauncher.step == .welcome)
 		fromEarlierLauncher.advance()
 		#expect(fromEarlierLauncher.step == .region)
+	}
+
+	@Test
+	func runtimeStepFollowsServerAndPrecedesDisplay() {
+		#expect(OnboardingStep.region.next == .runtime)
+		#expect(OnboardingStep.runtime.previous == .region)
+		#expect(OnboardingStep.runtime.next == .display)
+		#expect(OnboardingStep.display.previous == .runtime)
+		#expect(OnboardingStep.runtime.title == "Runtime")
+		#expect(OnboardingStep.runtime.rawValue == 16)
 	}
 
 	@Test(arguments: [

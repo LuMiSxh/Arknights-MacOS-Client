@@ -128,7 +128,7 @@ comes from the build and the translation, not from a higher frame rate or a larg
 
 ## Ongoing work
 
-These numbers are a snapshot. Arknights Client, its bundled runtime, Wine, and DXMT are all under
+These numbers are a snapshot. Arknights Client, its runtime, Wine, and DXMT are all under
 active development. Performance work continues in all four projects, so expect the numbers to change
 with future releases.
 

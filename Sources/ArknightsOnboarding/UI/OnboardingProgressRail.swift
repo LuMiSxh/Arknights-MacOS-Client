@@ -43,6 +43,9 @@ struct OnboardingProgressRail: View {
 	}
 
 	private func markerImage(for step: OnboardingStep) -> String {
-		step.rawValue < currentStep.rawValue ? "checkmark" : step.systemImage
+		guard let current = OnboardingStep.allCases.firstIndex(of: currentStep),
+			let index = OnboardingStep.allCases.firstIndex(of: step)
+		else { return step.systemImage }
+		return index < current ? "checkmark" : step.systemImage
 	}
 }

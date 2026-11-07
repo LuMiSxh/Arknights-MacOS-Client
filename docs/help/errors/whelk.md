@@ -10,4 +10,4 @@ hidden: true
 
 Launcher 0.8.0 replaced WHELK with **RT-BND**.
 
-[RT-BND](rt-bnd.md): The launcher app does not contain a complete runtime.
+[RT-BND](rt-bnd.md): The launcher cannot read its runtime information.

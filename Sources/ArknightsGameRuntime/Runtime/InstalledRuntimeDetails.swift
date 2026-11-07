@@ -19,12 +19,11 @@ package struct InstalledRuntimeDetails: Equatable, Sendable {
 	package let hardwareCursor: Bool
 	package let metalFXSpatialUpscaling: Bool
 	package let nativeFullscreenSpace: Bool
-	package let aceCompat: Bool
 
 	init(
 		name: String,
 		pins: RuntimePins,
-		capabilities: RuntimeCapabilities,
+		features: RuntimeFeatures,
 		architecture: String = "Unknown"
 	) {
 		self.name = name
@@ -33,9 +32,8 @@ package struct InstalledRuntimeDetails: Equatable, Sendable {
 		wineCommit = pins.wineCommit
 		dxmtVersion = pins.dxmtVersion
 		dxmtCommit = pins.dxmtCommit
-		hardwareCursor = capabilities.hardwareCursorSupported
-		metalFXSpatialUpscaling = capabilities.metalFXSpatialUpscalingSupported
-		nativeFullscreenSpace = capabilities.nativeFullscreenSpaceSupported
-		aceCompat = capabilities.aceCompatSupported
+		hardwareCursor = features.hardwareCursor
+		metalFXSpatialUpscaling = features.metalFXSpatialUpscaling
+		nativeFullscreenSpace = features.nativeFullscreenSpace
 	}
 }

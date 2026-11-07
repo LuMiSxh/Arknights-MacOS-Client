@@ -15,6 +15,7 @@ package final class LauncherViewModel {
 	package let lifecycle: LauncherLifecycleStore
 	package let settings: LauncherPreferencesController
 	package let installation: InstallationController
+	package let runtimeSelection: RuntimeSelectionController
 	let gameSession: GameSessionController
 	package let intelTranslation: IntelTranslationController
 	let customization: CustomizationController
@@ -82,6 +83,11 @@ package final class LauncherViewModel {
 		self.playtimeStatistics = playtimeStatistics
 		let lifecycle = LauncherLifecycleStore(log: launcherLog)
 		self.lifecycle = lifecycle
+		runtimeSelection = RuntimeSelectionController(
+			paths: paths,
+			lifecycle: lifecycle,
+			log: launcherLog
+		)
 		let settings = LauncherPreferencesController(store: preferences, log: launcherLog)
 		self.settings = settings
 		let iconManager = launcherIconManager ?? LauncherIconManager()

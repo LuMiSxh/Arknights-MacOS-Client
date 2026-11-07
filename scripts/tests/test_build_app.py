@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import plistlib
-import subprocess
 from dataclasses import replace
 from pathlib import Path
 
 import build_app
 import pytest
-from lib.common import ScriptError
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 
@@ -31,59 +28,14 @@ def test_app_resources_follow_project_configuration(
         assert resources[source] == Path(source.name)
 
 
-def test_arm_bundle_promotes_the_arm_interface(tmp_path: Path) -> None:
-    configuration = tmp_path / "RUNTIME.json"
-    configuration.write_text(
-        json.dumps(
-            {
-                "interface": {"macDriver": "lib/wine/x86_64-unix/winemac.so"},
-                "armInterface": {"macDriver": "lib/wine/aarch64-unix/winemac.so"},
-            }
-        ),
-        encoding="utf-8",
+def test_app_resources_bundle_the_runtime_configuration(
+    configuration: ProjectConfiguration,
+) -> None:
+    resources = dict(build_app.app_resources(configuration))
+
+    assert resources[configuration.project_directory / "runtime.json"] == Path(
+        "RUNTIME.json"
     )
-
-    build_app.promote_arm_interface(configuration)
-
-    value = json.loads(configuration.read_text(encoding="utf-8"))
-    assert value["interface"] == {"macDriver": "lib/wine/aarch64-unix/winemac.so"}
-    assert "armInterface" not in value
-
-
-def test_arm_bundle_requires_the_arm_interface(tmp_path: Path) -> None:
-    configuration = tmp_path / "RUNTIME.json"
-    configuration.write_text(json.dumps({"interface": {}}), encoding="utf-8")
-
-    with pytest.raises(ScriptError, match="armInterface"):
-        build_app.promote_arm_interface(configuration)
-
-
-def test_record_runtime_lane_records_the_embedded_lane(tmp_path: Path) -> None:
-    configuration = tmp_path / "RUNTIME.json"
-    configuration.write_text(
-        json.dumps({"runtime": {"name": "Arknights macOS Runtime"}}),
-        encoding="utf-8",
-    )
-
-    build_app.record_runtime_lane(configuration, "arm")
-
-    value = json.loads(configuration.read_text(encoding="utf-8"))
-    assert value["architecture"] == "arm"
-    assert value["runtime"]["name"] == "Arknights macOS Runtime (aarch64 canary)"
-
-
-def test_record_runtime_lane_keeps_the_x86_name(tmp_path: Path) -> None:
-    configuration = tmp_path / "RUNTIME.json"
-    configuration.write_text(
-        json.dumps({"runtime": {"name": "Arknights macOS Runtime"}}),
-        encoding="utf-8",
-    )
-
-    build_app.record_runtime_lane(configuration, "x86")
-
-    value = json.loads(configuration.read_text(encoding="utf-8"))
-    assert value["architecture"] == "x86"
-    assert value["runtime"]["name"] == "Arknights macOS Runtime"
 
 
 def test_compatibility_artifacts_are_discovered_recursively(tmp_path: Path) -> None:
@@ -102,66 +54,6 @@ def test_compatibility_artifacts_are_discovered_recursively(tmp_path: Path) -> N
     assert copied == tuple(
         destination / artifact.relative_to(source) for artifact in artifacts
     )
-
-
-def test_runtime_copy_excludes_development_payloads(tmp_path: Path) -> None:
-    source = tmp_path / "source"
-    (source / "include").mkdir(parents=True)
-    (source / "share/man").mkdir(parents=True)
-    (source / "share/wine/mono").mkdir(parents=True)
-    (source / "bin").mkdir(parents=True)
-    (source / "include/header.h").write_text("header", encoding="utf-8")
-    (source / "share/man/wine.1").write_text("manual", encoding="utf-8")
-    (source / "share/wine/mono/runtime").write_text("mono", encoding="utf-8")
-    (source / "bin/wine64").write_text("wine", encoding="utf-8")
-    (source / "bin/backup.wine-original").write_text("backup", encoding="utf-8")
-
-    destination = tmp_path / "destination"
-    build_app.copy_runtime(source, destination)
-
-    assert (destination / "bin/wine64").is_file()
-    assert not (destination / "include").exists()
-    assert not (destination / "share/man").exists()
-    assert not (destination / "share/wine/mono").exists()
-    assert not (destination / "bin/backup.wine-original").exists()
-
-
-def fake_lipo(
-    monkeypatch: pytest.MonkeyPatch, stdout: str, returncode: int = 0
-) -> list[object]:
-    calls: list[object] = []
-
-    def run(command: list[object], **_: object) -> subprocess.CompletedProcess[str]:
-        calls.append(command)
-        return subprocess.CompletedProcess(command, returncode, stdout, "")
-
-    monkeypatch.setattr(build_app.subprocess, "run", run)
-    return calls
-
-
-def test_detects_universal_x86_64_and_arm64(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    path = tmp_path / "universal"
-    path.write_bytes(b"\xca\xfe\xba\xbe\0\0\0\2")
-    calls = fake_lipo(monkeypatch, "x86_64 arm64\n")
-
-    assert build_app._fat_architectures(path) == {"x86_64", "arm64"}
-    assert calls == [["lipo", "-archs", path]]
-
-
-def test_ignores_files_without_a_fat_header_and_rejected_fat_magic(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    plain = tmp_path / "plain.txt"
-    plain.write_text("not a binary", encoding="utf-8")
-    java = tmp_path / "Thing.class"
-    java.write_bytes(b"\xca\xfe\xba\xbe\0\0\0\x41")
-    calls = fake_lipo(monkeypatch, "", returncode=1)
-
-    assert build_app._fat_architectures(plain) == set()
-    assert calls == []
-    assert build_app._fat_architectures(java) == set()
 
 
 def test_bundle_retains_tracked_sparkle_key(tmp_path: Path) -> None:

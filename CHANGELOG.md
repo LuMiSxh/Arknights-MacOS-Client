@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+> [!IMPORTANT]
+> Huge thanks to @riverfog7 for providing this client with an [ARM runtime](https://github.com/riverfog7/wine-build-new)!
+
 ### Added
 
 - Added a light mode. Choose System, Light, or Dark under **Settings → Appearance**. The choice applies to Settings, setup, and dialogs.
@@ -26,6 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added **Contact the developer** to **Settings → Help** for private messages, feedback, and testing offers. Use **Contact…** to get in touch.
 - The failure sheet can copy the support code.
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version, the pinned Wine and DXMT versions and commits, and the capabilities the runtime advertises.
+- Added runtime architecture selection under **Settings → Installation → Runtime**. The launcher downloads the runtime for the chosen architecture instead of shipping it inside the app bundle.
+- Added an ARM64 runtime option for macOS 26 or later. Switching architectures uses a separate game environment and may look like a fresh install.
 
 ### Changed
 
@@ -38,7 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The selection in the Settings sidebar now slides between rows.
 - Setup has a new **Look** step for artwork, Dynamic Theme, Home controls, Branding, appearance, and Dock icons. Setup keeps a custom window size. Setup runs once more after this update so you can review the new options.
 - Renamed **Settings → Audio** to **Settings → Integration**. It holds the daily reset reminder, launcher music, and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates & Integrations**.
-- Reorganized **Settings**: **Installation** is now **Servers**, recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
+- Reorganized **Settings**: recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
 - **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.
 - Onboarding answer cards use quieter hover and press effects.
@@ -47,8 +52,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Support codes now use a short, readable format, for example **IN-DSK** for low disk space. Old codes such as **BASALT** link to their new pages.
 - The problem report form asks for logs only when a maintainer requests them.
 - Fullscreen mode now opens the game in its own macOS Space, so you can switch apps and Spaces normally.
-- **Rendering** marks MetalFX as unavailable when the bundled runtime cannot use it. The launcher names the fallback that it uses instead.
-- Updated the bundled runtime to 0.8.0 (DXMT 0.80-361, macOS 27 SDK). It includes the upstream fixes for the display query leaks.
+- **Rendering** marks MetalFX as unavailable when the installed runtime cannot use it. The launcher names the fallback that it uses instead.
+- Runtime versions now ship with the app version. The launcher replaces a stale pinned runtime when the app updates.
+- Updated the pinned runtime to 0.8.0 (DXMT 0.80-361, macOS 27 SDK). It includes the upstream fixes for the display query leaks.
 - The launcher now remembers when you mute the music.
 - Playlists now start on a random track without playing the first track briefly.
 

@@ -84,10 +84,7 @@
         "The file did not match the expected size or checksum.",
         "A proxy or network filter changed the download."
       ],
-      "steps": [
-        "Check that the connection is stable.",
-        "Check that no proxy rewrites downloads."
-      ],
+      "steps": ["Check that the connection is stable.", "Check that no proxy rewrites downloads."],
       "report": "In the report, say whether Retry and Repair both failed. If the official client also cannot download the file, see [publisher support routing](../README.md#publisher-support-routing).",
       "legacy": ["PEBBLE"]
     },
@@ -132,7 +129,7 @@
       "steps": [
         "Free the space that the launcher shows, plus extra space for updates.",
         "Empty the Trash if it holds a previous installation.",
-        "If needed, choose another local volume with the **Change…** menu in **Settings → Servers → Location**."
+        "If needed, choose another local volume with the **Change…** menu in **Settings → Installation → Location**."
       ],
       "report": "In the report, give the volume format and the free space that Finder and the launcher each show. Report only if Finder shows enough free space and the code remains.",
       "legacy": ["SCREE"]
@@ -155,7 +152,7 @@
       ],
       "steps": [
         "Quit Arknights and any app that uses the folder.",
-        "Choose a local folder that your account owns and that is not a symbolic link. Set it with the **Change…** menu in **Settings → Servers → Location**.",
+        "Choose a local folder that your account owns and that is not a symbolic link. Set it with the **Change…** menu in **Settings → Installation → Location**.",
         "Do not change ownership or permissions across your home folder."
       ],
       "report": "In the report, say whether a new local folder works. Give the volume type.",
@@ -192,10 +189,7 @@
       "action": "Quit apps that change the game folder. Then restart the Mac.",
       "allowsRetry": true,
       "allowsRepair": true,
-      "causes": [
-        "A game file was deleted, moved, or not finished installing.",
-        "Another app changed the game folder."
-      ],
+      "causes": ["A game file was deleted, moved, or not finished installing.", "Another app changed the game folder."],
       "steps": [
         "Quit any app that changes the game folder, such as an official updater.",
         "Restart the Mac, then start the game again."
@@ -258,10 +252,7 @@
       "action": "Install Rosetta if the launcher offers it.",
       "allowsRetry": true,
       "allowsRepair": false,
-      "causes": [
-        "Rosetta is not installed on this Mac.",
-        "The Rosetta installation failed or was canceled."
-      ],
+      "causes": ["Rosetta is not installed on this Mac.", "The Rosetta installation failed or was canceled."],
       "steps": [
         "If the launcher offers **Install Rosetta…**, choose it. Confirm the macOS prompt, then wait.",
         "Install pending macOS updates, restart the Mac, then open the launcher again."
@@ -295,25 +286,71 @@
       "code": "RT-BND",
       "swiftName": "bundledRuntimeDamaged",
       "domain": "runtime",
-      "title": "Bundled runtime missing or damaged",
+      "title": "Runtime information missing or damaged",
       "status": "active",
-      "summary": "The launcher app does not contain a complete runtime.",
+      "summary": "The launcher cannot read its runtime information.",
       "action": "Replace the launcher with a complete copy from the release DMG.",
       "allowsRetry": false,
       "allowsRepair": false,
       "causes": [
-        "The launcher app was copied without its full runtime.",
-        "The runtime files in the app were changed.",
-        "A source build has no embedded runtime."
+        "The launcher app was copied without its runtime information.",
+        "The runtime information in the app was changed.",
+        "A source build has no runtime information."
       ],
       "steps": [
         "Quit Arknights Client.",
         "Download the latest complete DMG from the project release page.",
         "Replace the launcher in Applications with that copy, then open it.",
-        "Do not fill the app bundle with Wine or DXMT files from an unverified package."
+        "Do not add Wine or DXMT files from an unverified package to the app bundle."
       ],
       "report": "In the report, say whether the app came from a release DMG or a local build. Do not attach runtime binaries.",
       "legacy": ["WHELK"]
+    },
+    {
+      "code": "RT-MIS",
+      "swiftName": "runtimeNotInstalled",
+      "domain": "runtime",
+      "title": "Runtime not installed",
+      "status": "active",
+      "summary": "The selected runtime is not installed.",
+      "action": "Set up the runtime, then start the game.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The runtime download has not started or has not finished.",
+        "The runtime for the selected architecture is not available in this launcher release.",
+        "The runtime was removed while its architecture was selected."
+      ],
+      "steps": [
+        "On Home, choose **Set Up Runtime**. In setup, choose **Download and Continue**.",
+        "Wait for the download to finish. Then start the game.",
+        "If setup cannot download the runtime, install pending launcher updates and try again."
+      ],
+      "report": "In the report, say which architecture you selected and whether the download started.",
+      "legacy": []
+    },
+    {
+      "code": "RT-VER",
+      "swiftName": "runtimeVerificationFailed",
+      "domain": "runtime",
+      "title": "Runtime failed verification",
+      "status": "active",
+      "summary": "The downloaded runtime did not pass verification.",
+      "action": "Download the runtime again. If it fails again, report the problem.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The runtime archive did not match its expected size or checksum.",
+        "A required runtime file was missing after extraction.",
+        "A runtime file did not have the expected signature."
+      ],
+      "steps": [
+        "Choose **Set Up Runtime** on Home, or **Switch to x86_64** in **Settings → Installation → Runtime**.",
+        "Wait for the download to finish again.",
+        "If verification fails again, install pending launcher updates and report the problem."
+      ],
+      "report": "In the report, say which architecture failed verification and whether the download completed.",
+      "legacy": []
     },
     {
       "code": "RT-SET",
@@ -356,7 +393,7 @@
       "steps": [
         "Quit Arknights and any official updater.",
         "Do not delete or rename the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, or the temporary files of the launcher.",
-        "If the code returns after Repair, restart the Mac. Then choose **Repair…** in **Settings → Servers** again."
+        "If the code returns after Repair, restart the Mac. Then choose **Repair…** in **Settings → Installation** again."
       ],
       "report": "In the report, say whether the second Repair failed. Attach no helper binaries.",
       "legacy": ["ANEMONE"]
@@ -371,14 +408,8 @@
       "action": "Quit other Wine apps, then restart the Mac.",
       "allowsRetry": true,
       "allowsRepair": false,
-      "causes": [
-        "The login controller for China (Bilibili) did not start.",
-        "Another Wine process was running."
-      ],
-      "steps": [
-        "Quit other Wine apps.",
-        "Restart the Mac. Then open the launcher again."
-      ],
+      "causes": ["The login controller for China (Bilibili) did not start.", "Another Wine process was running."],
+      "steps": ["Quit other Wine apps.", "Restart the Mac. Then open the launcher again."],
       "report": "In the report, say whether other Wine apps were open.",
       "legacy": []
     },
@@ -462,10 +493,7 @@
         "The game window was still opening or already closed.",
         "The game window was minimized or on another Space."
       ],
-      "steps": [
-        "Show the game window on the current Space.",
-        "Take the screenshot again."
-      ],
+      "steps": ["Show the game window on the current Space.", "Take the screenshot again."],
       "report": "In the report, say whether the game window was visible and which server was running.",
       "legacy": []
     },
@@ -505,10 +533,7 @@
         "The selected image could not be converted into an app icon.",
         "macOS refused to update the app icon."
       ],
-      "steps": [
-        "Choose another image, then try again.",
-        "If macOS keeps the old icon, restart the Mac."
-      ],
+      "steps": ["Choose another image, then try again.", "If macOS keeps the old icon, restart the Mac."],
       "report": "In the report, say whether macOS kept the old icon. Do not attach the image unless a maintainer asks for it.",
       "legacy": []
     },

@@ -173,6 +173,12 @@ import ArknightsCore
 
 		func resetArtwork() {}
 
+		func installRuntime(_ lane: RuntimeLane) async -> Bool { true }
+
+		func selectRuntimeLane(_ lane: RuntimeLane) -> Bool { true }
+
+		func removeOtherRuntime() -> Bool { true }
+
 		func installRosetta() async -> IntelTranslationState {
 			guard simulation?.rosettaMissing == true else {
 				return await refreshIntelTranslationForUI(force: false)

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
 import Foundation
 
 extension GameSessionController {
@@ -11,25 +12,15 @@ extension GameSessionController {
 		do {
 			let runtime = try discoverRuntime()
 			runtimeName = runtime.displayName
-			// Settings needs the capability before the first launch, so read it once at startup.
-			capabilitySlot.replace { [weak self] token in
-				let discovery = await runtime.discoverCapabilities()
-				guard let self, self.capabilitySlot.owns(token) else { return }
-				self.metalFXSpatialUpscalingSupported =
-					discovery.capabilities.metalFXSpatialUpscalingSupported
-				self.installedRuntime = InstalledRuntimeDetails(
-					name: runtime.displayName,
-					pins: runtime.pins,
-					capabilities: discovery.capabilities,
-					architecture: runtime.runtimeArchitecture
-				)
-				if let diagnostic = discovery.diagnostic {
-					self.log.info("Runtime capability fallback: \(diagnostic)")
-				}
-			}
+			metalFXSpatialUpscalingSupported = runtime.features.metalFXSpatialUpscaling
+			installedRuntime = InstalledRuntimeDetails(
+				name: runtime.displayName,
+				pins: runtime.pins,
+				features: runtime.features,
+				architecture: runtime.runtimeArchitecture
+			)
 		} catch {
 			runtimeName = nil
-			capabilitySlot.invalidate()
 			metalFXSpatialUpscalingSupported = false
 			installedRuntime = nil
 			log.error("Runtime discovery failed: \(error.localizedDescription)")
@@ -107,6 +98,21 @@ extension GameSessionController {
 	}
 
 	func discoverRuntime() throws -> WineRuntime {
-		try WineRuntime.discover(compatibilityManager: gameCompatibilityManager)
+		try Self.discoverRuntime(paths: paths, compatibilityManager: gameCompatibilityManager)
+	}
+
+	nonisolated static func discoverRuntime(
+		paths: AppPaths,
+		compatibilityManager: GameCompatibilityManager
+	) throws -> WineRuntime {
+		guard let configurationURL = paths.activeRuntimeConfigurationURL() else {
+			throw WineRuntimeDiscoveryError.missingRuntime(
+				paths.runtimeDirectory(for: paths.runtimeLane))
+		}
+		return try WineRuntime.discover(
+			runtimeRoot: configurationURL.deletingLastPathComponent(),
+			configurationURL: configurationURL,
+			compatibilityManager: compatibilityManager
+		)
 	}
 }

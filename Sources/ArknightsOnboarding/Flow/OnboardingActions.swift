@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameRuntime
 import Foundation
 
 package struct OnboardingActions {
 	package let selectRegion: @MainActor @Sendable (GameRegion) -> Void
 	let resetArtwork: @MainActor () -> Void
 	let installOrUpdate: () -> Void
+	let installRuntime: @MainActor (RuntimeLane) async -> Bool
+	let selectRuntimeLane: @MainActor (RuntimeLane) -> Bool
 	let openLauncherUpdate: () -> Void
 	let retryIntelTranslation: () async -> IntelTranslationState
 	let installRosetta: () async -> IntelTranslationState
@@ -15,6 +18,8 @@ package struct OnboardingActions {
 		selectRegion: @escaping @MainActor @Sendable (GameRegion) -> Void,
 		resetArtwork: @escaping @MainActor () -> Void,
 		installOrUpdate: @escaping () -> Void,
+		installRuntime: @escaping @MainActor (RuntimeLane) async -> Bool,
+		selectRuntimeLane: @escaping @MainActor (RuntimeLane) -> Bool,
 		openLauncherUpdate: @escaping () -> Void,
 		retryIntelTranslation: @escaping () async -> IntelTranslationState,
 		installRosetta: @escaping () async -> IntelTranslationState
@@ -22,6 +27,8 @@ package struct OnboardingActions {
 		self.selectRegion = selectRegion
 		self.resetArtwork = resetArtwork
 		self.installOrUpdate = installOrUpdate
+		self.installRuntime = installRuntime
+		self.selectRuntimeLane = selectRuntimeLane
 		self.openLauncherUpdate = openLauncherUpdate
 		self.retryIntelTranslation = retryIntelTranslation
 		self.installRosetta = installRosetta

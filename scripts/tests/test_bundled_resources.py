@@ -84,6 +84,15 @@ def test_icons_are_staged_but_not_read_by_name(
     assert all(resource.swift_reads for resource in FIXED_RESOURCES)
 
 
+def test_runtime_configuration_is_staged_without_a_runtime_tree(
+    configuration: ProjectConfiguration,
+) -> None:
+    paths = {resource.path for resource in staged_resources(configuration)}
+
+    assert "RUNTIME.json" in paths
+    assert "Runtime" not in paths
+
+
 def test_package_resources_come_from_package_swift(
     configuration: ProjectConfiguration,
 ) -> None:

@@ -65,7 +65,6 @@ extension BundledResource {
 	package static let runtimeConfiguration = BundledResource(file: "RUNTIME.json", origin: .app)
 	static let supportArticles = BundledResource(directory: "SupportArticles", origin: .app)
 	package static let compatibility = BundledResource(directory: "Compatibility", origin: .app)
-	package static let runtime = BundledResource(directory: "Runtime", origin: .app)
 
 	package static let wallpaperTags = BundledResource(file: "WallpaperTags.json", origin: .package)
 	package static let appIconTintSource = BundledResource(
@@ -77,7 +76,7 @@ extension BundledResource {
 
 	static let all: [BundledResource] = [
 		.projectLicense, .changelog, .thirdPartyNotices, .runtimeConfiguration,
-		.supportArticles, .compatibility, .runtime,
+		.supportArticles, .compatibility,
 		.wallpaperTags, .appIconTintSource, .gameIconBackground, .operatorIconFrame,
 	]
 }

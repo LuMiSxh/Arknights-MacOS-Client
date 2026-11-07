@@ -9,8 +9,11 @@ struct LauncherPrimaryActionView: View {
 	let installation: InstallationController
 	let gameSession: GameSessionController
 	let intelTranslation: IntelTranslationController
+	let runtimeSelection: RuntimeSelectionController
+	let lifecycle: LauncherLifecycleStore
 	let installOrUpdate: () -> Void
 	let cancelDownload: () -> Void
+	let installRuntime: () -> Void
 	let launch: () -> Void
 	let stopGame: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -43,6 +46,7 @@ struct LauncherPrimaryActionView: View {
 		case .stop: stopGame
 		case .pause: cancelDownload
 		case .install, .update: installOrUpdate
+		case .runtime: installRuntime
 		case .play: launch
 		}
 	}
@@ -57,6 +61,7 @@ struct LauncherPrimaryActionView: View {
 				? "Resume" : "Install"
 
 		case .update: "Update"
+		case .runtime: "Set Up Runtime"
 		case .play: "Play"
 		}
 	}
@@ -67,6 +72,7 @@ struct LauncherPrimaryActionView: View {
 		case .pause: "pause.fill"
 		case .install: installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
 		case .update: "arrow.down"
+		case .runtime: "shippingbox"
 		case .play: "play.fill"
 		}
 	}
@@ -74,7 +80,7 @@ struct LauncherPrimaryActionView: View {
 	private var actionTone: CapsuleActionTone {
 		switch actionKind {
 		case .stop, .pause: .neutral
-		case .install, .update, .play: .accent
+		case .install, .update, .runtime, .play: .accent
 		}
 	}
 
@@ -83,7 +89,9 @@ struct LauncherPrimaryActionView: View {
 		case .stop: !gameSession.canStopGame
 		case .pause: false
 		case .install, .update: !installation.canInstall
-		case .play: !gameSession.canLaunch
+		case .runtime:
+			runtimeSelection.isInstalling || lifecycle.activity != .idle
+		case .play: !gameSession.canLaunch || runtimeSelection.requiresRelaunch
 		}
 	}
 
@@ -99,6 +107,8 @@ struct LauncherPrimaryActionView: View {
 				"Download and verify the official \(installation.region.displayName) PC files"
 
 		case .update: return "Download the changed game files"
+		case .runtime:
+			return "Download the runtime for this Mac. Arknights needs it to start."
 		case .play: return intelTranslation.statusDetail ?? "Start Arknights"
 		}
 	}
@@ -109,6 +119,7 @@ struct LauncherPrimaryActionView: View {
 		if installation.hasPartialDownload { return .install }
 		if !installation.isInstalled { return .install }
 		if installation.isGameUpdateAvailable { return .update }
+		if !runtimeSelection.isSelectedLaneInstalled { return .runtime }
 		return .play
 	}
 
@@ -121,6 +132,7 @@ nonisolated enum LauncherPrimaryActionPresentation {
 		case pause
 		case install
 		case update
+		case runtime
 		case play
 	}
 }

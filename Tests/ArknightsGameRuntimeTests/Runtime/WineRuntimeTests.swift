@@ -51,13 +51,13 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	#expect(esync["WINEESYNC"] == "1")
 
 	let controller = WineRuntime.bilibiliControllerEnvironment(from: [
-		"ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1",
-		"ARKNIGHTS_RUNTIME_CEF_COMPAT": "1",
+		"LMISXH_AKMOCL_CURSOR": "1",
+		"LMISXH_AKMOCL_CEF": "1",
 		"DYLD_INSERT_LIBRARIES": "/runtime/bridge.dylib",
 	])
-	#expect(controller["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == nil)
+	#expect(controller["LMISXH_AKMOCL_CURSOR"] == nil)
 	#expect(controller["DYLD_INSERT_LIBRARIES"] == nil)
-	#expect(controller["ARKNIGHTS_RUNTIME_CEF_COMPAT"] == "1")
+	#expect(controller["LMISXH_AKMOCL_CEF"] == "1")
 }
 
 @Test(arguments: GameFrameRateLimit.allCases)
@@ -216,6 +216,69 @@ func runtimeProvidesOnlyPrivateUnixUserDirectoriesAndRejectsInvalidConfiguration
 	try Data([0xC3, 0x28]).write(to: configurationURL)
 	#expect(throws: Error.self) {
 		try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+	}
+}
+
+@Suite
+struct WineRuntimeDiscoveryTests {
+	@Test
+	func pathBasedDiscoveryResolvesTheRuntime() throws {
+		let fileManager = FileManager.default
+		let root = fileManager.temporaryDirectory.appending(
+			path: "wine-path-discovery-\(UUID().uuidString)", directoryHint: .isDirectory)
+		defer {
+			// best effort: the fixture lives under the system temporary directory.
+			try? fileManager.removeItem(at: root)
+		}
+		let bin = root.appending(path: "bin", directoryHint: .isDirectory)
+		try fileManager.createDirectory(at: bin, withIntermediateDirectories: true)
+		let executable = bin.appending(path: "Arknights")
+		try Data("#!/bin/sh\n".utf8).write(to: executable)
+		try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
+		let configurationURL = root.appending(path: "RUNTIME.json")
+		try Data(
+			#"""
+			{
+			  "prefixRevision": 2,
+			  "architecture": "arm",
+			  "runtime": {"name": "Test Runtime", "sha256": "abc"},
+			  "interface": {
+			    "archive": {"wineDirectory": "Wine", "dxmtDirectory": "DXMT"},
+			    "executables": ["bin/wine64"],
+			    "features": {
+			      "hardwareCursor": true,
+			      "metalFXSpatialUpscaling": false,
+			      "nativeFullscreenSpace": false
+			    },
+			    "requiredFiles": ["lib/wine/aarch64-unix/winemac.so"],
+			    "macDriver": "lib/wine/aarch64-unix/winemac.so",
+			    "launcher": {"path": "bin/Arknights", "target": "wine64"},
+			    "dxmt": {
+			      "payloadDirectory": "Payload",
+			      "destinations": {"x64": "system32"},
+			      "libraries": ["d3d11.dll"]
+			    }
+			  }
+			}
+			"""#.utf8
+		).write(to: configurationURL)
+
+		let runtime = try WineRuntime.discover(
+			runtimeRoot: root,
+			configurationURL: configurationURL,
+			compatibilityManager: GameCompatibilityManager()
+		)
+
+		#expect(runtime.executableURL == executable)
+		#expect(runtime.lane == .arm)
+		#expect(runtime.displayName == "Test Runtime")
+		#expect(runtime.dxmtPayloadDirectory == "Payload")
+		#expect(runtime.dxmtPayloadLibraries == ["d3d11.dll"])
+		#expect(
+			runtime.features
+				== RuntimeFeatures(
+					hardwareCursor: true, metalFXSpatialUpscaling: false,
+					nativeFullscreenSpace: false))
 	}
 }
 

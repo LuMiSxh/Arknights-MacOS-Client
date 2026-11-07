@@ -1,7 +1,7 @@
 ---
 title: "GM-SCW: No game window to capture"
 description: "The launcher found no visible game window to capture."
-order: 20
+order: 22
 audience: users
 code: GM-SCW
 domain: game

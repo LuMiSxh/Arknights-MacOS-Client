@@ -27,6 +27,10 @@ let package = Package(
 			name: "CCommonCrypto",
 			path: "RuntimeSupport/CommonCrypto"
 		),
+		.systemLibrary(
+			name: "Czlib",
+			path: "RuntimeSupport/zlib"
+		),
 		.target(
 			name: "ArknightsInfrastructure",
 			path: "Sources/ArknightsInfrastructure"
@@ -57,6 +61,7 @@ let package = Package(
 				"ArknightsInfrastructure",
 				"ArknightsCore",
 				"ArknightsGameInstallation",
+				"Czlib",
 			],
 			path: "Sources/ArknightsGameRuntime"
 		),

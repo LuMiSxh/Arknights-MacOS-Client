@@ -119,9 +119,7 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 				publisher: .gryphline,
 				variant: .standard,
 				// Taiwan signs in through the macOS default browser, so it needs no CEF profile.
-				runtimeEnvironmentOverrides: [
-					AppConstants.Runtime.aceCompactEnvironmentKey: "1"
-				],
+				runtimeEnvironmentOverrides: [:],
 				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
@@ -130,7 +128,8 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 				publisher: .hypergryph,
 				variant: .standard,
 				runtimeEnvironmentOverrides: [
-					AppConstants.Runtime.aceCompactEnvironmentKey: "1"
+					AppConstants.Runtime.cefCompatEnvironmentKey: "1",
+					AppConstants.Runtime.cnCompatEnvironmentKey: "1",
 				],
 				requiresCanaryPermission: false,
 				requiresACEWarning: true
@@ -140,7 +139,6 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 				publisher: .hypergryph,
 				variant: .bilibili,
 				runtimeEnvironmentOverrides: [
-					AppConstants.Runtime.aceCompactEnvironmentKey: "1",
 					AppConstants.Runtime.cefCompatEnvironmentKey: "1",
 					AppConstants.Runtime.cnCompatEnvironmentKey: "1",
 				],

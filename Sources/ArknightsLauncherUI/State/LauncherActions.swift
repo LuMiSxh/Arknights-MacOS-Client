@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameRuntime
 import Foundation
 
 /// Every action the launcher UI can trigger. Views call these rather than the controllers,
@@ -40,6 +41,16 @@ package protocol LauncherActions {
 
 	@discardableResult
 	func installRosetta() async -> IntelTranslationState
+
+	/// Installs the pinned runtime for `lane` and selects it after a successful install.
+	@discardableResult
+	func installRuntime(_ lane: RuntimeLane) async -> Bool
+	/// Switches to an already installed lane. The change applies at the next launch.
+	@discardableResult
+	func selectRuntimeLane(_ lane: RuntimeLane) -> Bool
+	/// Removes the runtime of the lane that is not selected.
+	@discardableResult
+	func removeOtherRuntime() -> Bool
 
 	/// True while a diagnostics archive is being written; views disable their Save buttons.
 	var isSavingDiagnostics: Bool { get }
