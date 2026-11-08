@@ -12,11 +12,15 @@ private func access(macOS major: Int) -> RuntimeAccess {
 }
 
 struct RuntimeAccessTests {
+	@Test(arguments: [15, 25, 26, 27])
+	func x86IsAllowedBeforeMacOS28(major: Int) {
+		#expect(access(macOS: major).allows(.x86))
+	}
+
 	@Test
-	func x86IsAllowedOnEverySupportedMacOS() {
-		#expect(access(macOS: 15).allows(.x86))
-		#expect(access(macOS: 25).allows(.x86))
-		#expect(access(macOS: 26).allows(.x86))
+	func x86IsDeniedOnMacOS28AndLater() {
+		#expect(!access(macOS: 28).allows(.x86))
+		#expect(!access(macOS: 29).allows(.x86))
 	}
 
 	@Test

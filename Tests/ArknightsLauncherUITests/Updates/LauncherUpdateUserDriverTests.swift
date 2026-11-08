@@ -10,12 +10,11 @@ import Testing
 struct LauncherUpdateUserDriverTests {
 	@Test
 	func userInitiatedFailureGoesToTheSheetAndLeavesTheOverlayIdle() {
-		let driver = LauncherUpdateUserDriver()
 		var reportedFailures = 0
-		driver.reportFailure = { _ in
+		let driver = LauncherUpdateUserDriver(reportFailure: { _ in
 			reportedFailures += 1
 			return true
-		}
+		})
 		var acknowledgements = 0
 		driver.showUserInitiatedUpdateCheck {}
 		driver.showUpdaterError(

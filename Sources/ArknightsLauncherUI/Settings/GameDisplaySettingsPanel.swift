@@ -3,76 +3,6 @@
 import ArknightsCore
 import SwiftUI
 
-// Windowed sizes are macOS points; the launcher converts them into the game's pixel resolution.
-/// Width and height fields for a custom window size, plus the entry to the measuring window.
-private struct CustomWindowSizeRow: View {
-	@Bindable var settings: LauncherPreferencesController
-	let isDisabled: Bool
-	@State private var widthText = ""
-	@State private var heightText = ""
-	@State private var hint: String?
-	@Environment(\.launcherTheme) private var theme
-	@Environment(\.openWindow) private var openWindow
-
-	private static var limitHint: String {
-		let minimum = AppConstants.Game.customWindowMinimum
-		let maximum = AppConstants.Game.customWindowMaximumDimension
-		return
-			"Enter whole points: width \(minimum.width) to \(maximum), height \(minimum.height) to \(maximum)."
-	}
-
-	var body: some View {
-		SettingsActionRow(
-			title: "Custom size",
-			detail: hint,
-			help:
-				"Width and height in points. Press Return to apply. Measure With a Window… reads the size of a resizable window."
-		) {
-			HStack(spacing: LauncherTokens.Spacing.control) {
-				ThemedTextField("Width", text: $widthText, leadingText: "W")
-					.frame(width: 96)
-				Text("×")
-					.foregroundStyle(theme.textSecondary)
-				ThemedTextField("Height", text: $heightText, leadingText: "H")
-					.frame(width: 96)
-				CapsuleActionButton(
-					title: "Measure With a Window…", systemImage: "ruler", tone: .neutral,
-					presentation: .compact
-				) {
-					openWindow(id: GameWindowMeasureView.sceneID)
-				}
-			}
-			.disabled(isDisabled)
-			.onSubmit { applyTypedSize() }
-		}
-		.onAppear { showStoredSize() }
-		.onChange(of: settings.launchOptions.windowSize) { _, _ in
-			hint = nil
-			showStoredSize()
-		}
-	}
-
-	private func showStoredSize() {
-		widthText = String(settings.launchOptions.windowSize.width)
-		heightText = String(settings.launchOptions.windowSize.height)
-	}
-
-	/// Applies both fields together. Invalid input restores the stored size and shows the limits.
-	private func applyTypedSize() {
-		guard
-			let width = Int(widthText.trimmingCharacters(in: .whitespaces)),
-			let height = Int(heightText.trimmingCharacters(in: .whitespaces)),
-			let size = GameDisplaySize.validatedCustom(width: width, height: height)
-		else {
-			hint = Self.limitHint
-			showStoredSize()
-			return
-		}
-		hint = nil
-		settings.launchOptions.windowSize = size
-	}
-}
-
 struct GameDisplaySettingsPanel: View {
 	@Environment(\.launcherTheme) private var theme
 	@Bindable var settings: LauncherPreferencesController
@@ -126,9 +56,18 @@ struct GameDisplaySettingsPanel: View {
 			}
 			SettingsHairline()
 			if options.displayMode == .fullscreen {
-				fullscreenResolutionRow
+				GameFullscreenResolutionRow(
+					settings: settings,
+					nativeFullscreenSize: nativeFullscreenSize,
+					isDisabled: isSizeLocked
+				)
 			} else {
-				windowSizeRow
+				GameWindowSizeRow(
+					settings: settings,
+					screen: screen,
+					isDisabled: isSizeLocked,
+					showsCustomSize: $showsCustomSize
+				)
 				if showsCustomSize {
 					SettingsHairline()
 					CustomWindowSizeRow(settings: settings, isDisabled: isSizeLocked)
@@ -186,113 +125,6 @@ struct GameDisplaySettingsPanel: View {
 		}
 	}
 
-	// MARK: Window size
-
-	private enum WindowSizeSelection: Hashable {
-		case choice(GameWindowSizeChoice)
-		case exact(GameDisplaySize)
-		case custom
-	}
-
-	private var windowSizeRow: some View {
-		let exact = GameDisplaySize.windowOptions(
-			fitting: screen?.visibleSize, current: options.windowSize
-		).map(WindowSizeSelection.exact)
-		let choices =
-			screen == nil ? [] : GameWindowSizeChoice.allCases.map(WindowSizeSelection.choice)
-		return SettingsActionRow(
-			title: "Window size",
-			help:
-				"Measured like the resolutions in System Settings › Displays. The launcher works out the resolution the game draws from this size and the Rendering setting."
-		) {
-			GlassMenuPicker(
-				selection: windowSizeSelection,
-				options: (choices + exact + [.custom]).map { ($0, windowSizeTitle($0)) },
-				isDisabled: isSizeLocked,
-				dividerBefore: { selection in
-					if selection == .custom { return true }
-					guard case .exact(let size) = selection,
-						let index = exact.firstIndex(of: selection)
-					else { return false }
-					guard index > 0, case .exact(let previous) = exact[index - 1] else {
-						return !choices.isEmpty
-					}
-					return size.aspectGroup != previous.aspectGroup
-				}
-			)
-		}
-	}
-
-	private var windowSizeSelection: Binding<WindowSizeSelection> {
-		Binding(
-			get: {
-				if showsCustomSize { return WindowSizeSelection.custom }
-				return screen.flatMap { GameWindowSizeChoice.matching(options.windowSize, on: $0) }
-					.map(WindowSizeSelection.choice) ?? .exact(options.windowSize)
-			},
-			set: { selection in
-				showsCustomSize = selection == .custom
-				switch selection {
-				case .choice(let choice):
-					guard let screen else { return }
-					settings.launchOptions.windowSize = choice.size(on: screen)
-				case .exact(let size):
-					settings.launchOptions.windowSize = size
-				case .custom:
-					break
-				}
-			}
-		)
-	}
-
-	private func windowSizeTitle(_ selection: WindowSizeSelection) -> String {
-		switch selection {
-		case .choice(.fillScreen): "Fill screen"
-		case .choice(.leaveRoom): "Compact"
-		case .exact(let size): size.displayName
-		case .custom: "Custom…"
-		}
-	}
-
-	// MARK: Fullscreen resolution
-
-	private var fullscreenResolutionRow: some View {
-		var resolutions = GameFullscreenResolution.choices(native: nativeFullscreenSize)
-		// Keeps a resolution saved for another display selectable.
-		if !resolutions.contains(options.fullscreenResolution) {
-			resolutions.append(options.fullscreenResolution)
-		}
-		let choices = resolutions.map { ($0, resolutionChoiceTitle($0)) }
-		return SettingsActionRow(
-			title: "Resolution",
-			help:
-				"Fullscreen fills the display with the menu bar. Native matches that display exactly; lower resolutions are scaled up to fill it. With MetalFX or Standard rendering, the game draws one pixel per point, fewer pixels than the resolution on a Retina display, so every resolution needs less graphics power."
-		) {
-			GlassMenuPicker(
-				selection: fullscreenResolution,
-				options: choices,
-				isDisabled: isSizeLocked
-			)
-		}
-	}
-
-	private func resolutionChoiceTitle(_ choice: GameFullscreenResolution) -> String {
-		switch choice {
-		case .native:
-			// For example "Native (6016 × 3384)", like games label the display's own resolution.
-			nativeFullscreenSize.map { "\(Self.nativeResolution) (\($0.displayName))" }
-				?? Self.nativeResolution
-		case .fixed(let size): resolutionTitle(size)
-		}
-	}
-
-	private var fullscreenResolution: Binding<GameFullscreenResolution> {
-		Binding(
-			get: { options.fullscreenResolution },
-			set: { settings.launchOptions.selectFullscreen($0, native: nativeFullscreenSize) }
-		)
-	}
-
 	// MARK: Override and render resolution
 
 	private var launcherDisplayControl: Binding<Bool> {
@@ -335,8 +167,6 @@ struct GameDisplaySettingsPanel: View {
 
 	// MARK: Text
 
-	private static let nativeResolution = "Native"
-
 	private var displayModeDetail: String? {
 		options.displayMode == .borderlessWindow ? "Window without a title bar." : nil
 	}
@@ -365,22 +195,4 @@ struct GameDisplaySettingsPanel: View {
 		}
 	}
 
-	/// For example "2560 × 1440 (WQHD)"; resolutions without a common name stay plain.
-	private func resolutionTitle(_ size: GameDisplaySize) -> String {
-		standardName(size).map { "\(size.displayName) (\($0))" } ?? size.displayName
-	}
-
-	/// Common names, only for the exact resolutions they stand for.
-	private func standardName(_ size: GameDisplaySize) -> String? {
-		switch (size.width, size.height) {
-		case (1280, 720): "HD"
-		case (1920, 1080): "Full HD"
-		case (2560, 1440): "WQHD"
-		case (3840, 2160): "4K"
-		case (5120, 2880): "5K"
-		case (6016, 3384): "6K"
-		case (7680, 4320): "8K"
-		default: nil
-		}
-	}
 }

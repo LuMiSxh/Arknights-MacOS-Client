@@ -19,10 +19,15 @@ private struct ParkedClock: Clock {
 	var minimumResolution: Duration { .nanoseconds(1) }
 
 	func sleep(until deadline: Instant, tolerance: Duration?) async throws {
-		// A stream that never yields ends its iteration only when the task is cancelled.
-		for await _ in AsyncStream<Void>(bufferingPolicy: .bufferingNewest(1)) { _ in } {}
-		throw CancellationError()
+		try await waitForCancellation()
 	}
+}
+
+/// Suspends until the task is cancelled; the stream never yields or finishes on its own.
+private func waitForCancellation() async throws {
+	let stream = AsyncStream<Void>(bufferingPolicy: .bufferingNewest(1)) { _ in }
+	for await _ in stream {}
+	throw CancellationError()
 }
 
 /// A child that ignores SIGTERM and exits when its stdin closes.

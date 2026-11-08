@@ -14,7 +14,9 @@ struct LauncherUpdaterControllerTests {
 	func exactSparkleCheckDelegateAllowsOnlyAnIdleLifecycle(
 		scenario: UpdateLifecycleScenario
 	) throws {
-		let lifecycle = makeLifecycleStore()
+		let storage = try TemporaryDirectory("LauncherUpdaterControllerTests")
+		defer { storage.remove() }
+		let lifecycle = makeLifecycleStore(in: storage)
 		lifecycle.simulateActivity(scenario.activity)
 		let subject = LauncherUpdaterController(
 			lifecycle: lifecycle,
@@ -34,8 +36,10 @@ struct LauncherUpdaterControllerTests {
 	@Test(arguments: UpdateLifecycleScenario.allCases)
 	func relaunchIsPostponedOnlyUntilAnActiveLifecycleFinishes(
 		scenario: UpdateLifecycleScenario
-	) {
-		let lifecycle = makeLifecycleStore()
+	) throws {
+		let storage = try TemporaryDirectory("LauncherUpdaterControllerTests")
+		defer { storage.remove() }
+		let lifecycle = makeLifecycleStore(in: storage)
 		lifecycle.simulateActivity(scenario.activity)
 		let subject = LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
 		let sparkle = makeSparkleUpdater()
@@ -64,8 +68,10 @@ struct LauncherUpdaterControllerTests {
 	}
 
 	@Test
-	func exactSparkleAbortDelegateClearsPendingInstallAndDeferredWork() {
-		let lifecycle = makeLifecycleStore()
+	func exactSparkleAbortDelegateClearsPendingInstallAndDeferredWork() throws {
+		let storage = try TemporaryDirectory("LauncherUpdaterControllerTests")
+		defer { storage.remove() }
+		let lifecycle = makeLifecycleStore(in: storage)
 		lifecycle.beginLauncherUpdate()
 		let subject = LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
 		let sparkle = makeSparkleUpdater()
@@ -79,7 +85,9 @@ struct LauncherUpdaterControllerTests {
 	}
 
 	@Test
-	func sparkleNoUpdateErrorCountsAsCurrentForSilentProbe() {
+	func sparkleNoUpdateErrorCountsAsCurrentForSilentProbe() throws {
+		let storage = try TemporaryDirectory("LauncherUpdaterControllerTests")
+		defer { storage.remove() }
 		let error = NSError(
 			domain: SUSparkleErrorDomain,
 			code: Int(SUError.noUpdateError.rawValue)
@@ -89,7 +97,7 @@ struct LauncherUpdaterControllerTests {
 			(error, LauncherUpdateCheckOutcome.current),
 			(NSError(domain: "Test", code: 1), .failed),
 		] {
-			let subject = makeUpdater()
+			let subject = makeUpdater(storage: storage)
 			var outcome: LauncherUpdateCheckOutcome?
 			subject.beginProbeForTesting { outcome = $0 }
 			subject.updater(makeSparkleUpdater().1, didAbortWithError: probeError)
@@ -113,8 +121,8 @@ private func makeSparkleUpdater() -> (SPUStandardUpdaterController, SPUUpdater) 
 }
 
 @MainActor
-private func makeUpdater() -> LauncherUpdaterController {
-	let lifecycle = makeLifecycleStore()
+private func makeUpdater(storage: TemporaryDirectory) -> LauncherUpdaterController {
+	let lifecycle = makeLifecycleStore(in: storage)
 	return LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
 }
 

@@ -13,7 +13,8 @@ struct InstallationSettingsPage: View {
 	let gameSession: GameSessionController
 	let runtimeSelection: RuntimeSelectionController
 	let lifecycle: LauncherLifecycleStore
-	let actions: any LauncherActions
+	let actions: any LauncherInstallationActions
+	let maintenance: any LauncherSettingsActions
 	@State private var confirmation: InstallationConfirmation?
 	@State var pendingRuntimeLane: RuntimeLane?
 	@State var isRemoveRuntimeConfirmationPresented = false
@@ -130,7 +131,7 @@ struct InstallationSettingsPage: View {
 					confirmation: $confirmation
 				)
 			}
-			.installationConfirmation($confirmation, gameSession: gameSession, actions: actions)
+			.installationConfirmation($confirmation, gameSession: gameSession, actions: maintenance)
 		}
 		.confirmationDialog(
 			runtimeSwitchDialogTitle,

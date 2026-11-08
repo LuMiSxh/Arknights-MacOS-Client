@@ -194,10 +194,10 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 	let api = BlockingBrandingAPI()
 	let model = makeModel(api: api, installer: ControllableInstaller())
 	await api.waitForBrandingRequest()
-	let reachedSpawn = DispatchSemaphore(value: 0)
+	let reachedSpawn = Signal()
 	let continueSpawn = DispatchSemaphore(value: 0)
 	let spawnGate = WineProcessSpawnGate {
-		reachedSpawn.signal()
+		reachedSpawn.fire()
 		continueSpawn.wait()
 	}
 	let sessionID = UUID()
@@ -207,7 +207,7 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 		spawnGate: spawnGate
 	)
 	#expect(model.gameSession.sessionLease != nil)
-	let launch = Task.detached {
+	let launch = Task {
 		try await fixture.runtime.launch(
 			gameExecutable: fixture.gameExecutable,
 			prefixDirectory: fixture.prefixDirectory,
@@ -218,9 +218,7 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 		)
 	}
 
-	let arrived = await Task.detached {
-		waitForSemaphore(reachedSpawn, timeout: .now() + 2)
-	}.value
+	let arrived = await reachedSpawn.wait(timeout: .seconds(2))
 	#expect(arrived)
 	if !arrived {
 		continueSpawn.signal()
@@ -253,10 +251,6 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 		#expect(!FileManager.default.fileExists(atPath: fixture.helperSpawnMarker.path))
 	}
 	await api.resolveBranding()
-}
-
-private func waitForSemaphore(_ semaphore: DispatchSemaphore, timeout: DispatchTime) -> Bool {
-	semaphore.wait(timeout: timeout) == .success
 }
 
 /// Writes an executable fake `wineserver` into `root/Runtime/bin` and returns a runtime that uses it.

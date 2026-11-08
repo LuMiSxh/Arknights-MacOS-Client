@@ -23,7 +23,13 @@ package struct FloatingActionFooterFade: View {
 				theme.sheetTint
 			} else {
 				LinearGradient(
-					colors: [.clear, isDark ? Color.black.opacity(0.45) : theme.sheetTint],
+					colors: [
+						.clear,
+						isDark
+							? LauncherVisuals.opaqueDim.opacity(
+								LauncherVisuals.Shade.footerDarkOpacity)
+							: theme.sheetTint,
+					],
 					startPoint: .top,
 					endPoint: .bottom
 				)

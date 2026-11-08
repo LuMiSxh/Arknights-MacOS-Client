@@ -17,6 +17,7 @@ package final class PlaytimeStatisticsController {
 	@ObservationIgnored private var monotonicStart: TimeInterval?
 	@ObservationIgnored private let snapshotContinuation:
 		AsyncStream<PlaytimeStatistics>.Continuation
+	@ObservationIgnored private var snapshotConsumer: Task<Void, Never>?
 	@ObservationIgnored private let store: PlaytimeStatisticsStore
 	@ObservationIgnored private var loadTask: Task<Void, Never>?
 	@ObservationIgnored private var isLoaded = false
@@ -50,10 +51,16 @@ package final class PlaytimeStatisticsController {
 			self?.applyLoaded(loaded)
 		}
 		loadTask = loading
-		Task {
+		let consumer = Task { [store] in
 			await loading.value
 			for await snapshot in snapshots {
 				await store.save(snapshot)
+			}
+		}
+		snapshotConsumer = consumer
+		continuation.onTermination = { @Sendable [weak self] _ in
+			Task { @MainActor [weak self] in
+				self?.snapshotConsumer?.cancel()
 			}
 		}
 	}

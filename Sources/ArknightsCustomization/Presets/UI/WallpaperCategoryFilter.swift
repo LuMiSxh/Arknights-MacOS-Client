@@ -23,19 +23,15 @@ struct WallpaperCategoryFilter: View {
 				"\(title(for: category)) (\(counts[category] ?? 0))"
 			},
 			trailingMenuItems: {
-				guard !operatorCounts.isEmpty else { return AnyView(EmptyView()) }
-				return AnyView(
+				if !operatorCounts.isEmpty {
 					Menu("Operators") {
 						ForEach(operatorCounts) { entry in
-							Button(
-
-								"\(entry.displayName) (\(entry.count))"
-							) {
+							Button("\(entry.displayName) (\(entry.count))") {
 								onSelectOperator(entry.tag)
 							}
 						}
 					}
-				)
+				}
 			}
 		)
 		.accessibilityLabel(Text("Wallpaper type"))

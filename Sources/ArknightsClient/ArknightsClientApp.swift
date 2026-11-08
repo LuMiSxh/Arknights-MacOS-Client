@@ -18,6 +18,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	var blockingPresentationForQuit: (() -> LauncherPresentationDestination?)?
 	var dismissPresentationForQuit: (() -> Void)?
 	private var quitKeyMonitor: Any?
+	private var quitSheetObserver: Any?
+	private var quitSheetDetachTask: Task<Void, Never>?
 
 	// `swift run` (used by `just preview`) launches the executable directly rather than
 	// through LaunchServices: without a bundle, the process's activation policy isn't
@@ -106,29 +108,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 	}
 
-	private func terminateOnceSheetDetaches(attempt: Int = 0, installationID: UUID? = nil) {
+	private func terminateOnceSheetDetaches(installationID: UUID? = nil) {
 		if let installationID {
 			guard launcherUpdater?.installationID == installationID,
 				launcherUpdater?.canTerminateForUpdate == true
 			else { return }
 		}
-		guard NSApp.windows.contains(where: { $0.attachedSheet != nil }),
-			attempt < AppConstants.Timeouts.quitSheetDetachPollLimit
-		else {
+		guard NSApp.windows.contains(where: { $0.attachedSheet != nil }) else {
 			terminateApplication()
 			return
 		}
-		// SwiftUI clears presentation state before AppKit detaches the sheet.
-		let timer = Timer(
-			timeInterval: AppConstants.Timeouts.quitSheetDetachPollInterval,
-			repeats: false
+		// SwiftUI clears presentation state before AppKit detaches the sheet, so wait for
+		// the sheet-end event. The one-shot timeout covers the event never arriving.
+		guard quitSheetObserver == nil else { return }
+		quitSheetObserver = NotificationCenter.default.addObserver(
+			forName: NSWindow.didEndSheetNotification, object: nil, queue: .main
 		) { [weak self] _ in
 			MainActor.assumeIsolated {
-				self?.terminateOnceSheetDetaches(
-					attempt: attempt + 1, installationID: installationID)
+				self?.sheetDidEnd(installationID: installationID)
 			}
 		}
-		RunLoop.main.add(timer, forMode: .common)
+		quitSheetDetachTask = Task { [weak self] in
+			do {
+				try await Task.sleep(for: AppConstants.Timeouts.quitSheetDetachTimeout)
+			} catch {
+				return
+			}
+			self?.quitAfterSheetTimeout(installationID: installationID)
+		}
+	}
+
+	private func sheetDidEnd(installationID: UUID?) {
+		guard !NSApp.windows.contains(where: { $0.attachedSheet != nil }) else { return }
+		terminateOnce(installationID: installationID)
+	}
+
+	private func quitAfterSheetTimeout(installationID: UUID?) {
+		// The bounded fallback proceeds even when a sheet is still attached.
+		terminateOnce(installationID: installationID)
+	}
+
+	// The observer doubles as the arming token: the first path to reach this removes it,
+	// so the other path can no longer terminate twice.
+	private func terminateOnce(installationID: UUID?) {
+		guard let observer = quitSheetObserver else { return }
+		NotificationCenter.default.removeObserver(observer)
+		quitSheetObserver = nil
+		quitSheetDetachTask?.cancel()
+		quitSheetDetachTask = nil
+		if let installationID {
+			guard launcherUpdater?.installationID == installationID,
+				launcherUpdater?.canTerminateForUpdate == true
+			else { return }
+		}
+		terminateApplication()
 	}
 
 	// requestQuit(isSystemInitiated:) applies presentation policy before asking AppKit to terminate.
@@ -211,9 +244,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	}
 
 	@objc private func reportProblem() {
-		NSWorkspace.shared.open(
-			IssueReportURL.build(
-				runtimeName: model?.lifecycle.state.readiness.runtimeName, source: .dock))
+		model?.openProblemReport(source: .dock)
 	}
 
 	@objc private func showSettings() {
@@ -272,7 +303,7 @@ struct ArknightsClientApp: App {
 	@State private var onboarding: OnboardingCoordinator
 
 	init() {
-		let model = Self.makeModel()
+		let model = LauncherViewModel.makeDefault()
 		_model = State(wrappedValue: model)
 		#if DEBUG
 			let initialMusicTitle = model.developerAccessibilityMusicTitle
@@ -295,73 +326,21 @@ struct ArknightsClientApp: App {
 		)
 	}
 
-	private static func makeModel() -> LauncherViewModel {
-		let arguments = ProcessInfo.processInfo.arguments
-		#if DEBUG
-			if DeveloperSimulationState.isPreviewArgument(arguments) {
-				// One fixed preview store, cleared on every start, so previews never accumulate
-				// preference domains or temporary folders.
-				let suiteName = "com.lumisxh.arknights-client.preview"
-				let root = FileManager.default.temporaryDirectory.appending(
-					path: "ArknightsClientPreview",
-					directoryHint: .isDirectory
-				)
-				do {
-					if FileManager.default.fileExists(atPath: root.path) {
-						try FileManager.default.removeItem(at: root)
-					}
-				} catch {
-					NSLog("ArknightsClient could not clear the previous preview data: \(error)")
-				}
-				let paths = AppPaths(
-					applicationSupportDirectory: root.appending(path: "Support"),
-					cachesDirectory: root.appending(path: "Caches"),
-					libraryDirectory: root.appending(path: "Library")
-				)
-				let defaults = UserDefaults(suiteName: suiteName)!
-				defaults.removePersistentDomain(forName: suiteName)
-				return LauncherViewModel(
-					paths: paths,
-					preferences: LauncherPreferencesStore(defaults: defaults),
-					arguments: arguments
-				)
-			}
-		#endif
-		PreferencesMigrator().migrate(.standard)
-		return LauncherViewModel(
-			paths: AppPaths(),
-			preferences: LauncherPreferencesStore(),
-			arguments: arguments
-		)
-	}
-
-	// nil follows the system; the named appearances pin the whole app, including native controls.
-	private static func nsAppearance(for appearance: LauncherAppearance) -> NSAppearance? {
-		switch appearance {
-		case .system: nil
-		case .light: NSAppearance(named: .aqua)
-		case .dark: NSAppearance(named: .darkAqua)
-		}
-	}
-
 	var body: some Scene {
 		WindowGroup("Arknights Client") {
-			GeometryReader { geometry in
-				ContentView(
-					model: model,
-					musicController: musicController,
-					onboarding: onboarding,
-					registerOpenSettings: { appDelegate.openSettings = $0 },
-					registerQuitPresentationQuery: {
-						appDelegate.blockingPresentationForQuit = $0
-					},
-					registerQuitDismissal: { appDelegate.dismissPresentationForQuit = $0 }
-				)
-				.environment(\.launcherWindowSize, geometry.size)
-			}
+			ContentView(
+				model: model,
+				musicController: musicController,
+				onboarding: onboarding,
+				registerOpenSettings: { appDelegate.openSettings = $0 },
+				registerQuitPresentationQuery: {
+					appDelegate.blockingPresentationForQuit = $0
+				},
+				registerQuitDismissal: { appDelegate.dismissPresentationForQuit = $0 }
+			)
 			.frame(minWidth: 880, minHeight: 560)
 			.onChange(of: model.settings.launcherAppearance, initial: true) { _, appearance in
-				NSApp.appearance = Self.nsAppearance(for: appearance)
+				NSApp.appearance = appearance.nsAppearance
 			}
 			.onAppear {
 				appDelegate.model = model

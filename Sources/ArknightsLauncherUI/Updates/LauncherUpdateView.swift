@@ -79,14 +79,8 @@ struct LauncherUpdateView: View {
 		case .installing:
 			installingContent
 		case .installed:
-			Text(
-
-				driver.relaunched
-					? "The launcher was restarted."
-					: "The update was installed."
-
-			)
-			.foregroundStyle(theme.textSecondary)
+			Text("The update was installed.")
+				.foregroundStyle(theme.textSecondary)
 		case .noUpdate:
 			Text("No newer version was found.")
 				.foregroundStyle(theme.textSecondary)

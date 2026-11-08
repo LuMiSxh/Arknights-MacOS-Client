@@ -89,30 +89,57 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 	private let queue = DispatchQueue(label: "com.lumisxh.arknights-client.discord-ipc")
 	private let maximumPayloadBytes: Int
 	private let handshakeTimeout: Duration
-	private let socketURLs: [URL]
+	private let clock: any Clock<Duration>
+	private let reportProtocolError: @Sendable (String) -> Void
+	private let openSocket: @Sendable () throws -> Int32
 	private var descriptor: Int32 = -1
 	private var readSource: DispatchSourceRead?
-	private var handshakeTimer: DispatchSourceTimer?
+	private var handshakeTimer: Task<Void, Never>?
 	private var buffer = Data()
 	private var handshakeContinuation: CheckedContinuation<Void, any Error>?
 	private var disconnectContinuations: [CheckedContinuation<Void, Never>] = []
 	private var isClosed = false
 	private var isReady = false
 
-	package init(
+	package convenience init(
 		maximumPayloadBytes: Int,
 		handshakeTimeout: Duration,
-		socketURLs: [URL]? = nil
+		socketURLs: [URL]? = nil,
+		clock: any Clock<Duration> = ContinuousClock(),
+		reportProtocolError: @escaping @Sendable (String) -> Void = { _ in }
+	) {
+		let urls = socketURLs ?? DiscordIPCSocket.candidateURLs()
+		self.init(
+			maximumPayloadBytes: maximumPayloadBytes,
+			handshakeTimeout: handshakeTimeout,
+			clock: clock,
+			reportProtocolError: reportProtocolError,
+			openSocket: { try Self.openSocket(at: urls) }
+		)
+	}
+
+	// Tests supply a socketpair descriptor because the test harness denies bind(2).
+	init(
+		maximumPayloadBytes: Int,
+		handshakeTimeout: Duration,
+		clock: any Clock<Duration> = ContinuousClock(),
+		reportProtocolError: @escaping @Sendable (String) -> Void = { _ in },
+		openSocket: @escaping @Sendable () throws -> Int32
 	) {
 		self.maximumPayloadBytes = maximumPayloadBytes
 		self.handshakeTimeout = handshakeTimeout
-		self.socketURLs = socketURLs ?? DiscordIPCSocket.candidateURLs()
+		self.clock = clock
+		self.reportProtocolError = reportProtocolError
+		self.openSocket = openSocket
 	}
 
 	deinit {
 		handshakeTimer?.cancel()
 		readSource?.cancel()
 	}
+
+	/// Longest wait for a full socket buffer to drain before a write fails.
+	private static let writeStallTimeoutMilliseconds: Int32 = 1_000
 
 	/// Connects and returns after Discord sends the `READY` dispatch.
 	package func connect(clientID: String) async throws {
@@ -136,7 +163,7 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 				return
 			}
 			do {
-				let fd = try Self.openSocket(at: socketURLs)
+				let fd = try openSocket()
 				descriptor = fd
 				installReadSource(descriptor: fd)
 				try writeFrame(handshake)
@@ -283,6 +310,8 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 				let message = data?["message"] as? String ?? "Discord refused the command"
 				if handshakeContinuation != nil {
 					closeLocked(error: DiscordIPCError.discordError(code: code, message: message))
+				} else {
+					reportProtocolError("Discord reported error \(code): \(message)")
 				}
 			default:
 				break
@@ -302,13 +331,30 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 	}
 
 	private func startHandshakeTimer() {
-		let timer = DispatchSource.makeTimerSource(queue: queue)
-		timer.schedule(deadline: .now() + DispatchTimeInterval(duration: handshakeTimeout))
-		timer.setEventHandler { [weak self] in
-			self?.closeLocked(error: DiscordIPCError.handshakeTimedOut)
+		let clock = clock
+		let timeout = handshakeTimeout
+		handshakeTimer = Task { [weak self] in
+			do {
+				try await clock.sleep(for: timeout)
+			} catch {
+				return
+			}
+			self?.queue.async { [weak self] in
+				guard let self, handshakeContinuation != nil else { return }
+				closeLocked(error: DiscordIPCError.handshakeTimedOut)
+			}
 		}
-		handshakeTimer = timer
-		timer.resume()
+	}
+
+	/// Blocks the connection queue until the socket accepts more bytes, for at most the stall bound.
+	private func waitUntilWritable() throws {
+		var pollDescriptor = pollfd(fd: descriptor, events: Int16(POLLOUT), revents: 0)
+		while true {
+			let ready = poll(&pollDescriptor, 1, Self.writeStallTimeoutMilliseconds)
+			if ready > 0 { return }
+			if ready == 0 { throw DiscordIPCError.writeFailed(ETIMEDOUT) }
+			if errno != EINTR { throw DiscordIPCError.writeFailed(errno) }
+		}
 	}
 
 	private func writeFrame(_ frame: Data) throws {
@@ -323,6 +369,10 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 				)
 				if count < 0 {
 					if errno == EINTR { continue }
+					if errno == EAGAIN || errno == EWOULDBLOCK {
+						try waitUntilWritable()
+						continue
+					}
 					throw DiscordIPCError.writeFailed(errno)
 				}
 				guard count > 0 else { throw DiscordIPCError.writeFailed(EIO) }
@@ -359,38 +409,27 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 
 	private static func openSocket(at urls: [URL]) throws -> Int32 {
 		for url in urls {
-			let fd = socket(AF_UNIX, SOCK_STREAM, 0)
-			guard fd >= 0 else { throw DiscordIPCError.socketUnavailable }
-			var noSignal: Int32 = 1
-			guard
-				setsockopt(
-					fd,
-					SOL_SOCKET,
-					SO_NOSIGPIPE,
-					&noSignal,
-					socklen_t(MemoryLayout<Int32>.size)
-				) == 0
-			else {
-				close(fd)
-				continue
-			}
-			if connect(fd, to: url) {
-				let flags = fcntl(fd, F_GETFL)
-				guard flags >= 0, fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0 else {
-					close(fd)
-					continue
-				}
-				return fd
-			}
-			close(fd)
+			if let fd = openSocket(to: url) { return fd }
 		}
 		throw DiscordIPCError.socketUnavailable
 	}
 
-	private static func connect(_ fd: Int32, to url: URL) -> Bool {
+	/// Returns a connected, non-blocking socket, or nil when `url` does not accept one.
+	private static func openSocket(to url: URL) -> Int32? {
 		let path = Array(url.path.utf8)
 		let pathCapacity = MemoryLayout.size(ofValue: sockaddr_un().sun_path)
-		guard path.count < pathCapacity else { return false }
+		guard path.count < pathCapacity else { return nil }
+
+		let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+		guard fd >= 0 else { return nil }
+		var noSignal: Int32 = 1
+		guard
+			setsockopt(
+				fd, SOL_SOCKET, SO_NOSIGPIPE, &noSignal, socklen_t(MemoryLayout<Int32>.size)) == 0
+		else {
+			close(fd)
+			return nil
+		}
 
 		var address = sockaddr_un()
 		address.sun_family = sa_family_t(AF_UNIX)
@@ -400,11 +439,17 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 			bytes[path.count] = 0
 		}
 		let length = socklen_t(MemoryLayout<sockaddr_un>.size)
-		return withUnsafePointer(to: &address) { pointer in
+		let connected = withUnsafePointer(to: &address) { pointer in
 			pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { socketAddress in
 				Darwin.connect(fd, socketAddress, length) == 0
 			}
 		}
+		let flags = fcntl(fd, F_GETFL)
+		guard connected, flags >= 0, fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0 else {
+			close(fd)
+			return nil
+		}
+		return fd
 	}
 
 	private static func handshakeFrame(

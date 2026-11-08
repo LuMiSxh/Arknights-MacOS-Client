@@ -5,7 +5,7 @@ import SwiftUI
 /// An accent glass chip that stands in for `Picker`'s stock menu-button chrome, so option
 /// pickers read as the same interaction language as the landing page's region switcher
 /// rather than a default AppKit control.
-package struct GlassMenuPicker<Value: Hashable>: View {
+package struct GlassMenuPicker<Value: Hashable, TrailingMenuItems: View>: View {
 	let selection: Binding<Value>
 	let options: [(value: Value, title: String)]
 	var isDisabled = false
@@ -16,7 +16,7 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 	var dividerBefore: (Value) -> Bool = { _ in false }
 	/// Additional menu content appended after the plain option list — e.g. a submenu that
 	/// doesn't itself change `selection`.
-	var trailingMenuItems: () -> AnyView = { AnyView(EmptyView()) }
+	var trailingMenuItems: () -> TrailingMenuItems
 
 	package init(
 		selection: Binding<Value>,
@@ -24,7 +24,7 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 		isDisabled: Bool = false,
 		listTitle: @escaping (Value) -> String? = { _ in nil },
 		dividerBefore: @escaping (Value) -> Bool = { _ in false },
-		trailingMenuItems: @escaping () -> AnyView = { AnyView(EmptyView()) }
+		@ViewBuilder trailingMenuItems: @escaping () -> TrailingMenuItems
 	) {
 		self.selection = selection
 		self.options = options
@@ -32,6 +32,23 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 		self.listTitle = listTitle
 		self.dividerBefore = dividerBefore
 		self.trailingMenuItems = trailingMenuItems
+	}
+
+	package init(
+		selection: Binding<Value>,
+		options: [(value: Value, title: String)],
+		isDisabled: Bool = false,
+		listTitle: @escaping (Value) -> String? = { _ in nil },
+		dividerBefore: @escaping (Value) -> Bool = { _ in false }
+	) where TrailingMenuItems == EmptyView {
+		self.init(
+			selection: selection,
+			options: options,
+			isDisabled: isDisabled,
+			listTitle: listTitle,
+			dividerBefore: dividerBefore,
+			trailingMenuItems: { EmptyView() }
+		)
 	}
 
 	package var body: some View {

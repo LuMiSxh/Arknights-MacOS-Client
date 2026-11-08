@@ -25,12 +25,19 @@ struct NowPlayingCoordinatorTests {
 		}
 		let callback = SendableMediaArtwork(artwork)
 
-		let image = await Task.detached {
-			callback.artwork.image(at: NSSize(width: 128, height: 128))
-		}.value
+		let rendered = await artworkImageExists(
+			callback, size: NSSize(width: 128, height: 128))
 
-		#expect(image != nil)
+		#expect(rendered)
 	}
+}
+
+@concurrent
+private func artworkImageExists(
+	_ artwork: SendableMediaArtwork,
+	size: NSSize
+) async -> Bool {
+	artwork.artwork.image(at: size) != nil
 }
 
 @MainActor

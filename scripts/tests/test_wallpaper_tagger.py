@@ -5,6 +5,7 @@ import urllib.error
 from unittest import mock
 
 import lib.wallpaper_tagger as tagger
+from lib.http import Response
 from lib.wallpapers import GalleryWallpaper
 
 WALLPAPER = GalleryWallpaper(
@@ -32,7 +33,9 @@ def test_suggestions_are_labelled_known_or_new() -> None:
     known = tagger.known_tag_names(["amiya"], ["closer"])
     payload = gemini_payload('["amiya", "closer", "made up event"]')
     with (
-        mock.patch.object(tagger, "download_image", return_value=(b"png", "image/png")),
+        mock.patch.object(
+            tagger, "download", return_value=Response(b"png", "image/png")
+        ),
         mock.patch.object(tagger, "generate_content", return_value=payload),
     ):
         suggestion = tagger.WallpaperTagger("key", ["amiya"], known).suggest(WALLPAPER)
@@ -53,12 +56,24 @@ def test_http_error_returns_no_tags_without_raising() -> None:
         None,
     )
     with (
-        mock.patch.object(tagger, "download_image", return_value=(b"png", "image/png")),
+        mock.patch.object(
+            tagger, "download", return_value=Response(b"png", "image/png")
+        ),
         mock.patch.object(tagger, "generate_content", side_effect=rate_limited),
     ):
         suggestion = tagger.WallpaperTagger("key", [], frozenset()).suggest(WALLPAPER)
     assert suggestion.tags == ()
     assert "429" in (suggestion.error or "")
+
+
+def test_generate_content_posts_through_the_shared_fetch() -> None:
+    request = tagger.build_gemini_request("key", b"img", "image/png", "p")
+    with mock.patch.object(
+        tagger, "fetch", return_value=Response(b'{"ok": true}', "application/json")
+    ) as fetch:
+        assert tagger.generate_content(request) == {"ok": True}
+    assert fetch.call_args.kwargs["method"] == "POST"
+    assert fetch.call_args.kwargs["data"] == request.data
 
 
 def test_api_key_is_sent_only_in_the_header() -> None:

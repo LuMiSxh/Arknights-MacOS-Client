@@ -44,12 +44,19 @@ extension LauncherViewModel: LauncherActions {
 		region.requiresACEWarning && !acknowledged
 	}
 
-	package var canRequestDockLaunch: Bool {
-		lifecycle.activity == .idle && !lifecycle.state.refresh.isChecking
+	/// True when onboarding may auto-start. A developer simulation that is not an onboarding
+	/// preview stays out of the way.
+	var canStartOnboarding: Bool {
+		#if DEBUG
+			if isDeveloperMode { return isOnboardingPreview }
+		#endif
+		return true
 	}
 
-	private var isMigratingStorage: Bool {
-		lifecycle.activity == .maintaining(.migratingStorage)
+	/// True when onboarding must re-read the installed state from disk first. A developer
+	/// simulation already holds the simulated state, so a refresh would overwrite it.
+	var onboardingShouldRefreshInstalledState: Bool {
+		!isDeveloperMode
 	}
 
 	// MARK: - Region
@@ -229,7 +236,7 @@ extension LauncherViewModel: LauncherActions {
 	/// not write the runtime selection to disk.
 	package func installSelectedRuntime() {
 		let lane = runtimeSelection.selectedLane
-		Task { [weak self] in
+		runtimeInstallSlot.replace { [weak self] _ in
 			guard let self else { return }
 			_ = await actions.installRuntime(lane)
 		}

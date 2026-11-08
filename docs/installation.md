@@ -11,8 +11,8 @@ The launcher downloads the official PC game from its publisher. It contains no g
 ## Requirements
 
 - An Apple silicon Mac: an M-series Mac, or the MacBook Neo (A18 Pro)
-- macOS 15 through macOS 27 (see [macOS compatibility](help/runtime-compatibility.md))
-- Rosetta 2
+- macOS 15 or later (see [Game runtime](help/runtime.md#macos-support))
+- Rosetta 2 for the x86_64 runtime. The ARM64 runtime needs macOS 26 or later and no Rosetta 2.
 - An account for your region
 - An internet connection and free space for the game and its updates
 
@@ -33,19 +33,21 @@ The launcher downloads the official PC game from its publisher. It contains no g
 
 The setup assistant opens on the first start. Change any choice later in **Settings**.
 
-1. **Rosetta 2** — If missing (the assistant installs it), choose **Install Rosetta 2…**, then **Check Again**.
+1. **System Check** — The assistant checks for a launcher update and Rosetta 2. If Rosetta 2 is missing, choose **Install Rosetta 2…**, then **Check Again**. On macOS 28 or later, see [macOS support](help/runtime.md#macos-support).
 2. **Server** — Choose the server of your account:
 
-   | Server               | Publisher  | Availability                       |
-   | -------------------- | ---------- | ---------------------------------- |
-   | **Global**           | Yostar     | Always                             |
-   | **Japan**            | Yostar     | Always                             |
-   | **Korea**            | Yostar     | Always                             |
-   | **Taiwan**           | Gryphline  | Always                             |
-   | **China**            | Hypergryph | Always                             |
-   | **China (Bilibili)** | Hypergryph | Always                             |
+   | Server               | Publisher  | Availability |
+   | -------------------- | ---------- | ------------ |
+   | **Global**           | Yostar     | Always       |
+   | **Japan**            | Yostar     | Always       |
+   | **Korea**            | Yostar     | Always       |
+   | **Taiwan**           | Gryphline  | Always       |
+   | **China**            | Hypergryph | Always       |
+   | **China (Bilibili)** | Hypergryph | Always       |
 
-3. **Download** — Choose **Install & Continue**. The download continues in the background. Closing the launcher pauses it.
+   Choose **Install & Continue** to start the game download. It continues in the background while you finish setup.
+
+3. **Runtime** — Choose **x86_64 (recommended)** or **ARM64 (Apple Silicon)**. Choose **Download and Continue**, **Switch & Continue**, or **Continue Setup**. See [Game runtime](help/runtime.md).
 4. **Display** — Choose display mode, window size, rendering, and cursor. Pick an exact size later in **Settings → Game**.
 5. **Look** — Choose artwork, colors, the Dock operator, and launcher display options.
 6. **Updates & Integrations** — Choose update behavior, Discord presence, the daily reset reminder, and music.

@@ -83,7 +83,7 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 					HUDPillMotion.expandedContentTransition(reduceMotion: reduceMotion))
 			}
 		}
-		.padding(.vertical, expanded ? 12 : 0)
+		.padding(.vertical, expanded ? LauncherTokens.Spacing.content : 0)
 		.frame(width: expanded ? sizing.expandedWidth : nil)
 		.frame(
 			minHeight: expanded ? sizing.expandedMinHeight : sizing.collapsedHeight,
@@ -135,7 +135,12 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 					.accessibilityHidden(true)
 			}
 		}
-		.padding(.horizontal, expanded ? 14 : 12)
+		.padding(
+			.horizontal,
+			expanded
+				? LauncherTokens.Layout.hudExpandedHorizontalPadding
+				: LauncherTokens.Spacing.content
+		)
 		.frame(minHeight: expanded ? nil : sizing.collapsedHeight)
 		.contentShape(Rectangle())
 	}

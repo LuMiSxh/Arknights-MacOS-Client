@@ -21,14 +21,7 @@ See [Error codes](errors/README.md) for codes such as `IN-DLD`.
 
 ## Setup says Rosetta is missing or unavailable
 
-1. Choose **Install Rosetta 2…**, or run this in Terminal:
-
-   ```sh
-   softwareupdate --install-rosetta --agree-to-license
-   ```
-
-2. Restart the Mac and choose **Check Again**.
-3. On a macOS 27 beta, turn off Legacy Game Test Mode. See [macOS compatibility](runtime-compatibility.md#legacy-game-test-mode-on-macos-27-beta).
+Follow [Rosetta 2](runtime.md#rosetta-2). On a macOS 27 beta, also turn off [Legacy Game Test Mode](runtime.md#legacy-game-test-mode-on-macos-27-beta). On macOS 28 or later, choose [ARM64](runtime.md#macos-support).
 
 ## The download is stuck or fails
 
@@ -79,7 +72,7 @@ Allow **Arknights Client** in **System Settings → Privacy & Security → Local
 ## Graphics, window, or performance problems
 
 1. If **Override in-game display settings** (**Settings → Game → Display**) is off, turn it on or change the display settings in the game.
-2. Set **Rendering** to **MetalFX** in **Settings → Game → Display**. See [Display](runtime-compatibility.md#display).
+2. Set **Rendering** to **MetalFX** in **Settings → Game → Display**. See [Display](display.md#display).
 3. Pick **Compact**, a smaller **Window size**, a lower fullscreen **Resolution**, or **Fullscreen** (it can skip a macOS compositing pass).
 4. If fullscreen looks grainy, set **Resolution** to **Native**.
 

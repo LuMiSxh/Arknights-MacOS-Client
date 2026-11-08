@@ -31,10 +31,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version, the pinned Wine and DXMT versions and commits, and the capabilities the runtime advertises.
 - Added runtime architecture selection under **Settings → Installation → Runtime**. The launcher downloads the runtime for the chosen architecture instead of shipping it inside the app bundle.
 - Added an ARM64 runtime option for macOS 26 or later. Switching architectures uses a separate game environment and may look like a fresh install.
+- Added the **Game runtime** help page. It explains **x86_64 (recommended)** and **ARM64 (Apple Silicon)**, how to switch in **Settings → Installation → Runtime**, and what a switch changes. The **Runtime** setup step and Runtime panel link to it with **About game runtimes**.
 
 ### Changed
 
+- On macOS 28 and later, setup now selects **ARM64 (Apple Silicon)** by default and no longer offers **x86_64 (recommended)**. If you still use x86_64 after upgrading macOS, **System Check** and the **RT-BLK** error ask you to switch to the ARM64 runtime.
 - Aligned a few spacing values to the 4 pt grid.
+- The help now has one **Game runtime** page for supported macOS versions, Rosetta 2, and the x86_64 and ARM64 runtimes. Display settings and **Battery Saver** moved to **Display and performance**.
 - The first and last setup pages now use the same panels and rows as the other setup steps. The last page shows where to find help in the **Help** menu and in **Settings → Help**.
 - Gryphline Taiwan is now a stable server. It no longer needs **Canary Features**.
 - Rebuilt the launcher design on one color theme for dark and light. Glow effects, hover zoom, and bouncy motion are gone. Text uses lighter weights, and spacing follows one grid in every window.
@@ -55,6 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Rendering** marks MetalFX as unavailable when the installed runtime cannot use it. The launcher names the fallback that it uses instead.
 - Runtime versions now ship with the app version. The launcher replaces a stale pinned runtime when the app updates.
 - Updated the pinned runtime to 0.8.0 (DXMT 0.80-361, macOS 27 SDK). It includes the upstream fixes for the display query leaks.
+- The launcher now sends every compatibility patch flag to the runtime on each launch. There is no master switch, and no label or setting changed.
 - The launcher now remembers when you mute the music.
 - Playlists now start on a random track without playing the first track briefly.
 
@@ -77,6 +81,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Download verification uses less memory and CPU for each file.
 - A slow Game Mode helper can no longer stop the launcher from quitting.
 - Diagnostics no longer replace parts of other words when your account name is short.
+- Diagnostic archives no longer contain broken characters when they copy a large log file.
 - The **RT-BLK** failure no longer offers a **Retry** that cannot succeed.
 - Warning, success, and danger text is now readable in the light appearance.
 - With **Reduce transparency** on, buttons and menus use the theme colors instead of a black fill.

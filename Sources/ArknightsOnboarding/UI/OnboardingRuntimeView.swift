@@ -25,6 +25,10 @@ struct OnboardingRuntimeView: View {
 				footnote: footnote
 			)
 
+			QuietLink(title: "About game runtimes", destination: SupportLinks.runtimeGuide)
+				.font(.callout)
+				.padding(.horizontal, LauncherTokens.Spacing.panel)
+
 			if runtimeSelection.isInstalling {
 				RuntimeProgressPanel(controller: runtimeSelection)
 			}
@@ -57,6 +61,9 @@ struct OnboardingRuntimeView: View {
 	}
 
 	private var footnote: String? {
+		if !runtimeSelection.allowsX86 {
+			return "x86_64 requires macOS 27 or earlier."
+		}
 		if !runtimeSelection.allowsARM64 {
 			return "ARM64 requires macOS 26 or later."
 		}

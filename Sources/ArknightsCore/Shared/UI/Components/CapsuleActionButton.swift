@@ -9,7 +9,7 @@ package enum CapsuleActionTone {
 	case danger
 
 	/// Label and icon ink from the theme.
-	func ink(in theme: LauncherTheme) -> Color {
+	package func ink(in theme: LauncherTheme) -> Color {
 		switch self {
 		case .accent: theme.accentInk
 		case .neutral: theme.textPrimary
@@ -19,7 +19,7 @@ package enum CapsuleActionTone {
 	}
 
 	/// HUD foreground for an enabled control. Its surface is a tint, so it uses the text inks.
-	func foregroundColor(in theme: LauncherTheme) -> Color {
+	package func foregroundColor(in theme: LauncherTheme) -> Color {
 		switch self {
 		case .accent: theme.accentFill
 		case .neutral: theme.textPrimary
@@ -28,7 +28,7 @@ package enum CapsuleActionTone {
 		}
 	}
 
-	func surfaceColor(in theme: LauncherTheme) -> Color {
+	package func surfaceColor(in theme: LauncherTheme) -> Color {
 		switch self {
 		case .accent: theme.accentFill
 		case .neutral: theme.controlFill
@@ -37,7 +37,7 @@ package enum CapsuleActionTone {
 		}
 	}
 
-	func disabledColor(for contrast: ColorSchemeContrast, theme: LauncherTheme) -> Color {
+	package func disabledColor(for contrast: ColorSchemeContrast, theme: LauncherTheme) -> Color {
 		let opacity = LauncherVisuals.Control.disabledForegroundOpacity(for: contrast)
 		switch self {
 		case .accent: return theme.accentFill.opacity(opacity)

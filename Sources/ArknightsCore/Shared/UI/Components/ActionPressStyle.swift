@@ -68,7 +68,7 @@ struct KeyboardFocusIndicator<S: Shape>: ViewModifier {
 			shape
 				.stroke(
 					isEnabled && appearsActive && isFocused
-						? theme.accentFill.opacity(0.9)
+						? theme.accentFill.opacity(LauncherVisuals.focusStrokeOpacity)
 						: .clear,
 					lineWidth: LauncherTokens.Control.focusWidth
 				)

@@ -16,6 +16,12 @@ package enum SupportLinks {
 	package static let thirdPartyNotices = documentationPage("legal/third-party-notices")
 	package static let privacyNotice = documentationPage("privacy")
 	package static let troubleshootingGuide = documentationPage("help")
+	package static let runtimeGuide = documentationPage("help/runtime")
+	package static let aiAssistance = documentationPage("ai-assistance")
+	private static let githubRoot = URL(string: "https://github.com") ?? documentationRoot
+	package static let maintainerProfile = githubRoot.appending(path: "LuMiSxh")
+	package static let sourceRepository = githubRoot.appending(
+		path: "LuMiSxh/Arknights-MacOS-Client")
 
 	private static func documentationPage(_ path: String) -> URL {
 		documentationRoot.appending(path: path, directoryHint: .isDirectory)

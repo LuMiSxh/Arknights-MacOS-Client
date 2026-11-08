@@ -130,7 +130,7 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 		case .bilibiliLoginUnavailable:
 			"The Bilibili login window could not start."
 		case .intelTranslationBlocked:
-			"Intel translation is blocked or not supported on this macOS version."
+			"Rosetta 2 is not available on macOS 28 and later, or translation is disabled on a macOS 27 beta."
 		case .bundledRuntimeDamaged:
 			"The launcher cannot read its runtime information."
 		case .compatibilitySetupFailed:

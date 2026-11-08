@@ -59,10 +59,18 @@ struct StatusHUDPill: View {
 	}
 
 	private func countdown(for region: GameRegion, now: Date) -> String {
-		let remaining = max(0, Int(region.dailyReset(after: now).timeIntervalSince(now)))
-		let minutes = (remaining % 3600) / 60
+		let remaining = max(0, region.dailyReset(after: now).timeIntervalSince(now))
+		return "Reset in \(Self.countdownText(for: Duration.seconds(remaining)))"
+	}
+
+	/// Whole hours plus zero-padded minutes, like "5h 03m". The HUD redraws on minute
+	/// boundaries, so seconds never appear.
+	private static func countdownText(for duration: Duration) -> String {
+		let seconds = Int(duration.components.seconds)
+		let hours = seconds / 3600
+		let minutes = (seconds % 3600) / 60
 		let minuteText = minutes < 10 ? "0\(minutes)" : "\(minutes)"
-		return "Reset in \(remaining / 3600)h \(minuteText)m"
+		return "\(hours)h \(minuteText)m"
 	}
 
 	private func installedRegionRows(now: Date) -> some View {
@@ -123,7 +131,7 @@ struct StatusHUDPill: View {
 					disabledTint: theme.textTertiary
 				)
 				.opacity(region == installation.region ? 1 : 0)
-				.frame(width: 16, alignment: .center)
+				.frame(width: LauncherTokens.Layout.hudCheckmarkWidth, alignment: .center)
 				.accessibilityHidden(true)
 		}
 		.padding(.horizontal, LauncherTokens.Spacing.control)
@@ -137,7 +145,7 @@ struct StatusHUDPill: View {
 
 	private func rowFill(for region: GameRegion) -> Color {
 		guard region == installation.region else { return .clear }
-		let opacity = canSwitchRegion ? 1 : 0.45
+		let opacity = canSwitchRegion ? 1 : LauncherVisuals.Control.inactiveSelectionOpacity
 		return LauncherVisuals.selectedNavigationFill(for: accentColor).opacity(opacity)
 	}
 }

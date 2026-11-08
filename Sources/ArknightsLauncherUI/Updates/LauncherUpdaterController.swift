@@ -7,11 +7,17 @@ internal import Sparkle
 /// Owns Sparkle's update engine and prevents replacement during launcher activity.
 @MainActor
 package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
-	let userDriver: LauncherUpdateUserDriver
+	private(set) lazy var userDriver = LauncherUpdateUserDriver(
+		activateApplication: activateApplication,
+		canRetryTermination: { [weak self] in self?.lifecycle.hasActiveActivity == false },
+		isGameRunning: { [weak self] in self?.lifecycle.activity.isGameActive == true },
+		reportFailure: { [weak self] error in self?.reportUpdateFailure(error) ?? false }
+	)
 	package private(set) var installationID: UUID?
 
 	private let lifecycle: LauncherLifecycleStore
 	private let log: LauncherLog
+	private let activateApplication: () -> Void
 	private lazy var updater = SPUUpdater(
 		hostBundle: .main,
 		applicationBundle: .main,
@@ -37,18 +43,9 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	) {
 		self.lifecycle = lifecycle
 		self.log = log
-		let driver = LauncherUpdateUserDriver(
-			activateApplication: activateApplication,
-			canRetryTermination: { [weak lifecycle] in
-				lifecycle?.hasActiveActivity == false
-			},
-			isGameRunning: { [weak lifecycle] in
-				lifecycle?.activity.isGameActive == true
-			}
-		)
-		userDriver = driver
+		self.activateApplication = activateApplication
 		super.init()
-		driver.reportFailure = { [weak self] error in self?.reportUpdateFailure(error) ?? false }
+		let driver = userDriver
 		let activityObserverID = lifecycle.observeActivityChanges { [weak driver] in
 			driver?.retryTerminationIfSafe()
 		}

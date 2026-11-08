@@ -25,7 +25,7 @@ package enum ScreenshotShortcut: Hashable, Sendable {
 	package var displayName: String {
 		switch self {
 		case .off: "Off"
-		case .standard: "⌃⌥S"
+		case .standard: Self.modifierSymbols([.control, .option]) + "S"
 		case .custom(let combination, let label):
 			Self.modifierSymbols(combination.modifiers) + label
 		}

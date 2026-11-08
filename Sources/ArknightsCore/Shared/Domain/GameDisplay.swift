@@ -84,6 +84,19 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 	}
 
 	package var displayName: String { "\(width) × \(height)" }
+	/// The common marketing name for this exact resolution, or nil when it has none.
+	package var commonName: String? {
+		switch (width, height) {
+		case (1280, 720): "HD"
+		case (1920, 1080): "Full HD"
+		case (2560, 1440): "WQHD"
+		case (3840, 2160): "4K"
+		case (5120, 2880): "5K"
+		case (6016, 3384): "6K"
+		case (7680, 4320): "8K"
+		default: nil
+		}
+	}
 	var pixelCount: Int { width * height }
 
 	func fits(in other: GameDisplaySize) -> Bool {

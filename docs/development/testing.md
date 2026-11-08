@@ -100,7 +100,7 @@ A failure means an upstream schema or endpoint may have changed. Nothing rewrite
 
 ## Runtime ownership
 
-The Arknights macOS Runtime repository owns runtime source monitoring and release construction. This repository validates the selected release through `runtime.json`. See [Runtime updates](runtime-updates.md).
+The Arknights macOS Runtime repository owns runtime source monitoring and release construction. This repository validates the selected release through `runtime.json`. See [Runtime updates](releases-and-updates.md#runtime-updates).
 
 ## Manual compatibility matrix
 

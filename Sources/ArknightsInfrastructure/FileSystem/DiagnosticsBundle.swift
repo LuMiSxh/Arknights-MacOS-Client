@@ -94,7 +94,9 @@ package enum DiagnosticsBundle {
 				guard fileManager.fileExists(atPath: source.path) else {
 					throw DiagnosticsBundleError.missingSource(source)
 				}
-				try copyRedacted(from: source, to: destination, redaction: redaction, fileManager)
+				try copyRedacted(
+					from: source, to: destination, redaction: redaction, fileManager,
+					report: reportCleanupFailure)
 			case .text(let text):
 				try text.write(to: destination, atomically: true, encoding: .utf8)
 			}
@@ -155,18 +157,42 @@ package enum DiagnosticsBundle {
 		}
 	}
 
+	/// Returns the index after the last complete UTF-8 scalar in `bytes`.
+	private static func completeScalarEnd(of bytes: Data) -> Data.Index {
+		var lead = bytes.endIndex
+		// A scalar has at most three continuation bytes after its lead byte.
+		while lead > bytes.startIndex, bytes.endIndex - lead < 4 {
+			lead -= 1
+			let byte = bytes[lead]
+			if byte & 0xC0 == 0x80 { continue }
+			let length =
+				switch byte {
+				case 0xF0...: 4
+				case 0xE0...: 3
+				case 0xC0...: 2
+				default: 1
+				}
+			return bytes.endIndex - lead >= length ? bytes.endIndex : lead
+		}
+		return bytes.endIndex
+	}
+
 	/// Copies in bounded chunks that end at line breaks, so a large log never sits in memory.
 	private static func copyRedacted(
 		from source: URL, to destination: URL, redaction: DiagnosticsRedaction,
-		_ fileManager: FileManager
+		_ fileManager: FileManager, report: @Sendable (any Error) -> Void
 	) throws {
 		guard fileManager.createFile(atPath: destination.path, contents: nil) else {
 			throw DiagnosticsBundleError.cannotCreateFile(destination)
 		}
 		let input = try FileHandle(forReadingFrom: source)
-		defer { input.closeFile() }
+		defer {
+			do { try input.close() } catch { report(error) }
+		}
 		let output = try FileHandle(forWritingTo: destination)
-		defer { output.closeFile() }
+		defer {
+			do { try output.close() } catch { report(error) }
+		}
 
 		func emit(_ bytes: Data) throws {
 			let text = String(decoding: bytes, as: UTF8.self)
@@ -182,11 +208,13 @@ package enum DiagnosticsBundle {
 				try emit(pending[pending.startIndex...lastNewline])
 				pending = Data(pending[(lastNewline + 1)...])
 			} else if pending.count >= maximumLineBytes {
-				try emit(pending)
-				pending.removeAll(keepingCapacity: true)
+				// Hold back an incomplete trailing scalar so redaction never sees half a character.
+				let cut = completeScalarEnd(of: pending)
+				try emit(pending[pending.startIndex..<cut])
+				pending = Data(pending[cut...])
 			}
 			if consumed >= maximumLogBytes {
-				try emit(pending)
+				try emit(pending[pending.startIndex..<completeScalarEnd(of: pending)])
 				try output.write(contentsOf: Data(truncationNotice.utf8))
 				return
 			}

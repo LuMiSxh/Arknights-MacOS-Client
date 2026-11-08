@@ -16,9 +16,15 @@ private final class FakeScheduler: NotificationScheduling {
 		var pending: [String: LocalNotification] = [:]
 		var requestCount = 0
 		var pendingReads = 0
+		var throwsOnRequest = false
 	}
 
 	private let state: Mutex<State>
+	/// When set, `requestAuthorization` throws instead of answering.
+	var throwsOnRequest: Bool {
+		get { state.withLock { $0.throwsOnRequest } }
+		set { state.withLock { $0.throwsOnRequest = newValue } }
+	}
 	/// When set, the first read of pending requests waits until `releaseFirstRead` fires.
 	let firstReadReached = Signal()
 	let releaseFirstRead = Signal()
@@ -38,8 +44,14 @@ private final class FakeScheduler: NotificationScheduling {
 	func authorization() async -> NotificationAuthorization { state.withLock { $0.authorization } }
 
 	func requestAuthorization() async throws -> Bool {
-		state.withLock {
-			$0.requestCount += 1
+		let shouldThrow = state.withLock { value -> Bool in
+			value.requestCount += 1
+			return value.throwsOnRequest
+		}
+		if shouldThrow {
+			throw NSError(domain: "FakeScheduler", code: 1)
+		}
+		return state.withLock {
 			if $0.authorization == .notDetermined {
 				$0.authorization = $0.grantsRequest ? .authorized : .denied
 			}
@@ -249,6 +261,20 @@ private func fireDates(_ scheduler: FakeScheduler, region: GameRegion) -> [Date]
 		await waitForCondition { harness.controller.isAccessDenied }
 
 		#expect(harness.settings.resetReminderTiming == .off)
+		#expect(scheduler.pending.isEmpty)
+	}
+
+	@Test func aThrownAuthorizationRequestKeepsTheSettingAndLeavesTheStatusUndetermined() async {
+		let scheduler = FakeScheduler(authorization: .notDetermined, grantsRequest: false)
+		scheduler.throwsOnRequest = true
+		let harness = Harness(scheduler: scheduler, now: now)
+		defer { harness.cleanUp() }
+		harness.settings.resetReminderTiming = .atReset
+		await harness.settle()
+
+		#expect(harness.settings.resetReminderTiming == .atReset)
+		#expect(!harness.controller.isAccessDenied)
+		#expect(scheduler.requestCount == 1)
 		#expect(scheduler.pending.isEmpty)
 	}
 

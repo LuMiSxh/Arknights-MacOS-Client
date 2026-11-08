@@ -126,7 +126,7 @@ struct OnboardingWelcomeView: View {
 		case .rosettaMissing: "Rosetta 2 is missing"
 		case .gameTestModeEnabled: "Legacy Game Test Mode is on"
 		case .unavailable: "The check could not finish"
-		case .unsupportedOS: "This macOS version is not supported"
+		case .unsupportedOS: "Rosetta 2 is not available"
 		}
 	}
 
@@ -138,7 +138,8 @@ struct OnboardingWelcomeView: View {
 			"On macOS 27 beta, Legacy Game Test Mode stops the game from running. Turn the test mode off, then restart your Mac:"
 		case .unavailable:
 			"The check could not finish. Restart your Mac, then check again. If it keeps failing, include the launcher log in a bug report."
-		case .unsupportedOS: "This version of macOS can no longer run the game."
+		case .unsupportedOS:
+			"macOS 28 and later cannot run the x86_64 runtime. Choose ARM64 (Apple Silicon) in the Runtime step, then quit and reopen the launcher."
 		}
 	}
 

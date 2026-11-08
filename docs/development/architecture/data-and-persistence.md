@@ -21,9 +21,9 @@ guide lists the paths. Update it in the same change as `AppPaths`.
 | --------------------------- | ------------------------------------------ | --------------------------------------------------------------------------- |
 | Regional game files         | `InstallationController` / `GameInstaller` | Manifest-updated. **Uninstall Game** trashes only the selected directory    |
 | Installed manifest state    | `GameInstaller`                            | Written atomically after all files pass validation and checksums            |
-| Wine prefixes               | `GameSessionController` / `WineRuntime`    | One per publisher family. Deleting a prefix reruns its migration plan       |
+| Wine prefixes               | `GameSessionController` / `WineRuntime`    | One per publisher family and lane. Deleting a prefix reruns its migration plan |
 | Runtime migration state     | `RuntimeMigrationStore`                    | Runtime revision and completed setup steps. It is not game-save data        |
-| Bundled runtime             | Packaging and `WineRuntime`                | Read-only. A launcher update replaces it                                    |
+| Downloaded runtime          | `RuntimeSelectionController`               | One archive per lane in `Runtimes/`. A launcher update replaces a stale pin |
 | Downloaded official artwork | `CustomizationController` / `ArtworkCache` | Recreated when missing                                                      |
 | Preset gallery cache        | `PresetCatalogService`                     | Targeted cleanup in Settings. Recreated on demand                           |
 | Playtime statistics         | `PlaytimeStatisticsController`             | Versioned totals plus 31 daily buckets. Only a confirmed reset removes them |
@@ -92,7 +92,7 @@ Step(version: 2) { $0.remove("lastAppliedDynamicIconHue") },
 ```
 
 Keep the step idempotent. A fresh install runs every step on empty defaults. Every key name stays in
-`LauncherPreferencesStore.Key`. Name a retired key as a literal in its step.
+`LauncherPreferencesStore.Key.Name`. Name a retired key as a literal in its step.
 
 ## Runtime state and atomicity
 

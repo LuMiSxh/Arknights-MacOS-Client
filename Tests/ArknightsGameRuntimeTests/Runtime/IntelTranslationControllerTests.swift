@@ -11,8 +11,10 @@ import Testing
 @MainActor
 struct IntelTranslationControllerTests {
 	@Test
-	func armRuntimeSkipsTheRosettaProbe() async {
-		let lifecycle = makeLifecycleStore()
+	func armRuntimeSkipsTheRosettaProbe() async throws {
+		let storage = try TemporaryDirectory("IntelTranslationControllerTests")
+		defer { storage.remove() }
+		let lifecycle = makeLifecycleStore(in: storage)
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
 			runtimeLane: .arm,
@@ -29,8 +31,10 @@ struct IntelTranslationControllerTests {
 
 	@Test
 	func failedInstallationKeepsLaunchBlockedAndExposesRecovery() async throws {
+		let storage = try TemporaryDirectory("IntelTranslationControllerTests")
+		defer { storage.remove() }
 		let installer = RosettaInstallationRecorder(status: 7)
-		let lifecycle = makeLifecycleStore()
+		let lifecycle = makeLifecycleStore(in: storage)
 		lifecycle.state.readiness.intelTranslation = .rosettaMissing
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,

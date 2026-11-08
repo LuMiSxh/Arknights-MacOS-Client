@@ -134,6 +134,27 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
+	func homeLuminanceRoundTripsThroughTheStoredDictionaryFormat() {
+		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+		let stored: [[String: Any]] = [
+			["identity": "old", "score": 0.25],
+			["identity": "new", "score": 0.75],
+		]
+		defaults.set(stored, forKey: "homeLuminanceCache")
+
+		#expect(store.homeLuminance(for: "new") == 0.75)
+
+		store.setHomeLuminance(0.5, for: "old", limit: 2)
+
+		let written = defaults.array(forKey: "homeLuminanceCache") as? [[String: Any]] ?? []
+		#expect(written.map { $0["identity"] as? String } == ["new", "old"])
+		#expect(written.map { $0["score"] as? Double } == [0.75, 0.5])
+		#expect(store.homeLuminance(for: "old") == 0.5)
+	}
+
+	@Test
 	func resetRemovesExactlyTheResettablePreferences() {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }

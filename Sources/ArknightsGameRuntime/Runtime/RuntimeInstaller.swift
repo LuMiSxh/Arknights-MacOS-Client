@@ -51,8 +51,6 @@ package struct RuntimeInstaller: Sendable {
 	private let chunkSession: HTTPChunkSession
 	private let store: RuntimeStore
 
-	var fileManager: FileManager { .default }
-
 	package init(
 		paths: AppPaths,
 		access: RuntimeAccess = RuntimeAccess(),
@@ -83,7 +81,8 @@ package struct RuntimeInstaller: Sendable {
 
 	/// Verifies an already-downloaded archive: byte size first, then SHA-256.
 	package func verify(pin: PinnedRuntime, archiveAt url: URL) throws {
-		let size = Int64(try fileManager.attributesOfItem(atPath: url.path)[.size] as? Int ?? -1)
+		let size = Int64(
+			try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int ?? -1)
 		guard size == Int64(pin.sizeBytes) else {
 			throw RuntimeInstallError.sizeMismatch(
 				expected: pin.sizeBytes, actual: Int(size))
@@ -118,7 +117,7 @@ package struct RuntimeInstaller: Sendable {
 			path: UUID().uuidString, directoryHint: .isDirectory)
 		defer {
 			// best effort: a failed install never leaves a partial staging tree behind.
-			try? fileManager.removeItem(at: staging)
+			try? FileManager.default.removeItem(at: staging)
 		}
 
 		await progress(
@@ -128,7 +127,7 @@ package struct RuntimeInstaller: Sendable {
 		let librariesRoot = try RuntimeArchive.extract(
 			at: partURL,
 			into: staging.appending(path: "extract", directoryHint: .isDirectory),
-			fileManager: fileManager
+			fileManager: FileManager.default
 		)
 		let prepared = try flatten(
 			pin, librariesRoot: librariesRoot, into: staging)
@@ -147,14 +146,26 @@ package struct RuntimeInstaller: Sendable {
 				phase: .installing))
 		let versionDirectory = laneDirectory.appending(
 			path: pin.version, directoryHint: .isDirectory)
-		try fileManager.createDirectory(at: laneDirectory, withIntermediateDirectories: true)
-		if fileManager.fileExists(atPath: versionDirectory.path) {
+		try FileManager.default.createDirectory(
+			at: laneDirectory, withIntermediateDirectories: true)
+		do {
+			try FileManager.default.moveItem(at: prepared, to: versionDirectory)
+		} catch CocoaError.fileWriteFileExists {
 			// Replaces the tree in one step; a failure leaves the old version in place.
-			_ = try fileManager.replaceItemAt(versionDirectory, withItemAt: prepared)
-		} else {
-			try fileManager.moveItem(at: prepared, to: versionDirectory)
+			_ = try FileManager.default.replaceItemAt(versionDirectory, withItemAt: prepared)
 		}
-		try store.cleanup(pinned: [pin.lane: pin.version])
+		if let log {
+			log.attempt("Could not clean up older runtimes after install") {
+				try store.cleanup(pinned: [pin.lane: pin.version])
+			}
+		} else {
+			// best effort: cleanup must not fail an install that already succeeded.
+			do {
+				try store.cleanup(pinned: [pin.lane: pin.version])
+			} catch {
+				// No logger is available to record the failure.
+			}
+		}
 
 		return InstalledRuntime(lane: pin.lane, version: pin.version, directory: versionDirectory)
 	}
@@ -169,7 +180,8 @@ package struct RuntimeInstaller: Sendable {
 			throw RuntimeInstallError.runtimeUnavailable(pin.lane)
 		}
 		let downloadsDirectory = paths.runtimeDownloadsDirectory
-		try fileManager.createDirectory(at: downloadsDirectory, withIntermediateDirectories: true)
+		try FileManager.default.createDirectory(
+			at: downloadsDirectory, withIntermediateDirectories: true)
 		let archiveURL = downloadsDirectory.appending(path: "\(pin.sha256).part")
 		let descriptor = Darwin.open(
 			archiveURL.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, S_IRUSR | S_IWUSR)
@@ -253,7 +265,7 @@ package struct RuntimeInstaller: Sendable {
 		try handle.synchronize()
 		guard try Self.sha256Hex(at: archiveURL) == pin.sha256 else {
 			do {
-				try fileManager.removeItem(at: archiveURL)
+				try FileManager.default.removeItem(at: archiveURL)
 			} catch {
 				log?.error(
 					"Failed to remove the mismatched runtime archive at \(archiveURL.path): \(error.localizedDescription)"
@@ -287,7 +299,7 @@ package struct RuntimeInstaller: Sendable {
 		// Archive plus the uncompressed tree plus the previous version, with headroom.
 		let required = Int64(pin.sizeBytes) * 4
 		let available = try GameInstaller.availableCapacityBytes(
-			at: directory, fileManager: fileManager)
+			at: directory, fileManager: FileManager.default)
 		guard available >= required else {
 			throw RuntimeInstallError.insufficientDiskSpace(
 				required: required, available: available)
@@ -302,18 +314,18 @@ package struct RuntimeInstaller: Sendable {
 		into staging: URL
 	) throws -> URL {
 		let prepared = staging.appending(path: "runtime", directoryHint: .isDirectory)
-		try fileManager.createDirectory(at: prepared, withIntermediateDirectories: true)
+		try FileManager.default.createDirectory(at: prepared, withIntermediateDirectories: true)
 		let wine = librariesRoot.appending(
 			path: pin.interface.archive.wineDirectory, directoryHint: .isDirectory)
-		for child in try fileManager.contentsOfDirectory(
+		for child in try FileManager.default.contentsOfDirectory(
 			at: wine, includingPropertiesForKeys: nil)
 		{
-			try fileManager.moveItem(
+			try FileManager.default.moveItem(
 				at: child, to: prepared.appending(path: child.lastPathComponent))
 		}
 		let dxmt = librariesRoot.appending(
 			path: pin.interface.archive.dxmtDirectory, directoryHint: .isDirectory)
-		try fileManager.moveItem(
+		try FileManager.default.moveItem(
 			at: dxmt,
 			to: prepared.appending(
 				path: pin.interface.dxmt.payloadDirectory, directoryHint: .isDirectory)
@@ -323,10 +335,10 @@ package struct RuntimeInstaller: Sendable {
 			for root in [librariesRoot.deletingLastPathComponent(), librariesRoot] {
 				let source = root.appending(path: name)
 				let destination = prepared.appending(path: name)
-				guard fileManager.fileExists(atPath: source.path),
-					!fileManager.fileExists(atPath: destination.path)
+				guard FileManager.default.fileExists(atPath: source.path),
+					!FileManager.default.fileExists(atPath: destination.path)
 				else { continue }
-				try fileManager.moveItem(at: source, to: destination)
+				try FileManager.default.moveItem(at: source, to: destination)
 				break
 			}
 		}
@@ -340,7 +352,8 @@ package struct RuntimeInstaller: Sendable {
 		let root = runtimeRoot.standardizedFileURL
 		for relative in interface.executables {
 			let url = runtimeRoot.appending(path: relative)
-			guard Self.isContained(url, in: root), fileManager.isExecutableFile(atPath: url.path)
+			guard Self.isContained(url, in: root),
+				FileManager.default.isExecutableFile(atPath: url.path)
 			else {
 				throw RuntimeInstallError.invalidInterface("missing executable: \(relative)")
 			}
@@ -356,7 +369,7 @@ package struct RuntimeInstaller: Sendable {
 		let launcher = runtimeRoot.appending(path: interface.launcher.path)
 		let linkTarget: String
 		do {
-			linkTarget = try fileManager.destinationOfSymbolicLink(atPath: launcher.path)
+			linkTarget = try FileManager.default.destinationOfSymbolicLink(atPath: launcher.path)
 		} catch {
 			throw RuntimeInstallError.invalidInterface("missing launcher symlink")
 		}

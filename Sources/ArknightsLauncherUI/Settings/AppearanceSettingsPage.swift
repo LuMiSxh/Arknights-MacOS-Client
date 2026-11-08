@@ -17,7 +17,7 @@ struct AppearanceSettingsPage: View {
 	let customization: CustomizationController
 	let lifecycle: LauncherLifecycleStore
 	let presetCatalog: PresetCatalogService
-	let actions: any LauncherActions
+	let actions: any LauncherSettingsActions
 	@State private var presentedGallery: PresetGalleryDestination?
 
 	var body: some View {

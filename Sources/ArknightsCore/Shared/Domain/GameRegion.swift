@@ -32,7 +32,6 @@ package enum GameClientVariant: String, Codable, Sendable {
 struct GameClientProfile: Sendable {
 	let publisher: GamePublisher
 	let variant: GameClientVariant
-	let runtimeEnvironmentOverrides: [String: String]
 	let requiresCanaryPermission: Bool
 	let requiresACEWarning: Bool
 }
@@ -88,7 +87,7 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 			case .japan, .korea: 9
 			case .taiwan, .china, .chinaBilibili: 8
 			}
-		return TimeZone(secondsFromGMT: hoursFromUTC * 3600)!
+		return TimeZone(secondsFromGMT: hoursFromUTC * 3600) ?? .gmt
 	}
 
 	/// The first 04:00 server reset strictly after `date`.
@@ -99,9 +98,11 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		components.hour = 4
 		components.minute = 0
 		components.second = 0
-		let todayReset = calendar.date(from: components)!
-		return todayReset > date
-			? todayReset : calendar.date(byAdding: .day, value: 1, to: todayReset)!
+		guard let todayReset = calendar.date(from: components) else { return date }
+		guard todayReset > date else {
+			return calendar.date(byAdding: .day, value: 1, to: todayReset) ?? todayReset
+		}
+		return todayReset
 	}
 
 	var clientProfile: GameClientProfile {
@@ -110,7 +111,6 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 			GameClientProfile(
 				publisher: .yostar,
 				variant: .standard,
-				runtimeEnvironmentOverrides: [:],
 				requiresCanaryPermission: false,
 				requiresACEWarning: false
 			)
@@ -118,8 +118,6 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 			GameClientProfile(
 				publisher: .gryphline,
 				variant: .standard,
-				// Taiwan signs in through the macOS default browser, so it needs no CEF profile.
-				runtimeEnvironmentOverrides: [:],
 				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
@@ -127,10 +125,6 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 			GameClientProfile(
 				publisher: .hypergryph,
 				variant: .standard,
-				runtimeEnvironmentOverrides: [
-					AppConstants.Runtime.cefCompatEnvironmentKey: "1",
-					AppConstants.Runtime.cnCompatEnvironmentKey: "1",
-				],
 				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
@@ -138,10 +132,6 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 			GameClientProfile(
 				publisher: .hypergryph,
 				variant: .bilibili,
-				runtimeEnvironmentOverrides: [
-					AppConstants.Runtime.cefCompatEnvironmentKey: "1",
-					AppConstants.Runtime.cnCompatEnvironmentKey: "1",
-				],
 				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
@@ -162,8 +152,12 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 
 	package var requiresCanaryPermission: Bool { clientProfile.requiresCanaryPermission }
 
-	package var runtimeEnvironmentOverrides: [String: String] {
-		clientProfile.runtimeEnvironmentOverrides
+	/// China servers sign in through the embedded CEF window. Taiwan uses the default browser.
+	package var usesEmbeddedLoginWindow: Bool {
+		switch self {
+		case .china, .chinaBilibili: true
+		case .global, .japan, .korea, .taiwan: false
+		}
 	}
 
 	package var requiresACEWarning: Bool { clientProfile.requiresACEWarning }
@@ -182,12 +176,19 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 
 	package var apiBaseURL: URL {
 		switch self {
-		case .global: URL(string: "https://api-launcher-en.yo-star.com")!
-		case .japan: URL(string: "https://api-launcher-jp.yo-star.com")!
-		case .korea: URL(string: "https://api-launcher-kr.yo-star.com")!
+		case .global: Self.yostarAPIURL("https://api-launcher-en.yo-star.com")
+		case .japan: Self.yostarAPIURL("https://api-launcher-jp.yo-star.com")
+		case .korea: Self.yostarAPIURL("https://api-launcher-kr.yo-star.com")
 		case .taiwan, .china, .chinaBilibili:
 			preconditionFailure("This region has no Yostar launcher API")
 		}
+	}
+
+	private static func yostarAPIURL(_ string: String) -> URL {
+		guard let url = URL(string: string) else {
+			preconditionFailure("Invalid Yostar API base URL: \(string)")
+		}
+		return url
 	}
 
 }

@@ -71,8 +71,8 @@ private struct LauncherSurfaceModifier: ViewModifier {
 
 	private var defaultShape: AnyShape {
 		switch kind {
-		case .modal: AnyShape(RoundedRectangle(cornerRadius: 20))
-		case .group: AnyShape(RoundedRectangle(cornerRadius: 12))
+		case .modal: AnyShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.glassModal))
+		case .group: AnyShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.glassGroup))
 		case .footer: AnyShape(Capsule())
 		}
 	}
@@ -87,7 +87,10 @@ private struct LauncherSurfaceModifier: ViewModifier {
 				.background {
 					shape.fill(theme.modalTint)
 						.shadow(
-							color: .black.opacity(isDark ? 0.45 : 0.14),
+							color: LauncherVisuals.opaqueDim.opacity(
+								isDark
+									? LauncherVisuals.Shadow.modalDarkOpacity
+									: LauncherVisuals.Shadow.modalLightOpacity),
 							radius: isDark ? 32 : 24, y: isDark ? 12 : 8)
 				}
 				.overlay { shape.stroke(theme.dialogHairline) }
@@ -95,13 +98,21 @@ private struct LauncherSurfaceModifier: ViewModifier {
 			content
 				.background {
 					shape.fill(theme.groupFill)
-						.shadow(color: isDark ? .clear : .black.opacity(0.04), radius: 2, y: 1)
+						.shadow(
+							color: isDark
+								? .clear
+								: LauncherVisuals.opaqueDim.opacity(
+									LauncherVisuals.Shadow.groupLightOpacity),
+							radius: 2, y: 1)
 				}
 				.overlay { shape.stroke(theme.hairline) }
 		case .footer:
 			if isDark {
 				surface(content, tint: theme.footerGlassTint, shape: shape)
-					.shadow(color: .black.opacity(0.35), radius: 10, y: 4)
+					.shadow(
+						color: LauncherVisuals.opaqueDim.opacity(
+							LauncherVisuals.Shadow.footerDarkOpacity),
+						radius: 10, y: 4)
 			} else {
 				// Light footers skip Liquid Glass: macOS 27 glass adds a black backplate under
 				// the tint, which greys the pill.
@@ -111,7 +122,10 @@ private struct LauncherSurfaceModifier: ViewModifier {
 					}
 					.background { shape.fill(theme.footerGlassTint) }
 					.overlay { shape.stroke(theme.hairline) }
-					.shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+					.shadow(
+						color: LauncherVisuals.opaqueDim.opacity(
+							LauncherVisuals.Shadow.footerLightOpacity),
+						radius: 12, y: 4)
 			}
 		}
 	}
@@ -136,7 +150,7 @@ enum AdaptiveGlassBorderTintSource: Equatable {
 }
 
 enum AdaptiveGlassSurfaceTreatment: Equatable {
-	private static let macOS27MinimumTintOpacity = 0.24
+	static let macOS27MinimumTintOpacity = 0.24
 	static let macOS27BackplateOpacity = 0.68
 	static let macOS27ChromaticBackplateOpacity = 0.44
 

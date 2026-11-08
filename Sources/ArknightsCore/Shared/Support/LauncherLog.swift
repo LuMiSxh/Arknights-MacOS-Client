@@ -17,12 +17,15 @@ package final class LauncherLog: Sendable {
 	private let queue = DispatchQueue(label: "com.lumisxh.arknights-client.log", qos: .utility)
 	private let writer: LauncherLogWriter
 
+	/// Room for the timestamp, level, and newline around a message.
+	private static let lineOverheadBytes = 128
+
 	package init(
 		fileURL: URL,
 		maximumFileSize: Int = AppConstants.Logging.maximumFileSize,
 		maximumMessageBytes: Int = AppConstants.Logging.maximumMessageBytes
 	) {
-		precondition(maximumMessageBytes + 128 <= maximumFileSize)
+		precondition(maximumMessageBytes + Self.lineOverheadBytes <= maximumFileSize)
 		writer = LauncherLogWriter(
 			fileURL: fileURL,
 			maximumFileSize: maximumFileSize,
@@ -122,7 +125,11 @@ private final class LauncherLogWriter: @unchecked Sendable {
 	}
 
 	func write(_ level: LauncherLog.Level, _ message: String, at date: Date) {
-		let sanitized = boundedMessage(message.replacingOccurrences(of: "\n", with: " "))
+		var flattened = String.UnicodeScalarView()
+		for scalar in message.unicodeScalars {
+			flattened.append(scalar.properties.generalCategory == .control ? " " : scalar)
+		}
+		let sanitized = boundedMessage(String(flattened))
 		let line = "\(formatter.string(from: date)) [\(level.rawValue)] \(sanitized)\n"
 		let bytes = Array(line.utf8)
 		do {

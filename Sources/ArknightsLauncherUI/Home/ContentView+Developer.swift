@@ -10,8 +10,14 @@ extension ContentView {
 				get: { model.developerSimulation ?? DeveloperSimulationState() },
 				set: { model.applyDeveloperSimulation($0) })
 		}
-		var developerExpandedPillID: String? {
-			model.developerSimulation?.expandedPill.rawValue
+		var developerExpandedPill: ExpandedPill? {
+			guard let pill = model.developerSimulation?.expandedPill else { return nil }
+			switch pill {
+			case .music: return .music
+			case .version: return .version
+			case .status: return .status
+			case .none: return nil
+			}
 		}
 		package var developerAccessibilityMusicTitle: String? {
 			guard model.isDeveloperMode else { return nil }
@@ -19,7 +25,7 @@ extension ContentView {
 		}
 	#else
 		var developerSimulationBinding: DeveloperSimulationBinding? { nil }
-		var developerExpandedPillID: String? { nil }
+		var developerExpandedPill: ExpandedPill? { nil }
 		package var developerAccessibilityMusicTitle: String? { nil }
 	#endif
 }

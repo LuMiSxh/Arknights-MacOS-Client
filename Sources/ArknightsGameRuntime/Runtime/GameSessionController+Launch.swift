@@ -4,25 +4,6 @@ import ArknightsCore
 import Foundation
 
 extension GameSessionController {
-	static func runtimeEnvironmentOverrides(
-		for region: GameRegion,
-		usesHardwareCursor: Bool,
-		displayMode: GameDisplayMode,
-		features: RuntimeFeatures = .conservative
-	) -> [String: String] {
-		var environment = [
-			AppConstants.Runtime.masterEnvironmentKey: "1"
-		]
-		environment.merge(region.runtimeEnvironmentOverrides) { _, profileValue in profileValue }
-		environment.merge(
-			features.environmentOverrides(
-				usesHardwareCursor: usesHardwareCursor,
-				displayMode: displayMode
-			)
-		) { _, value in value }
-		return environment
-	}
-
 	package func launch() {
 		guard lifecycle.activity == .idle, !applicationTerminationRequested,
 			pendingLaunchID == nil

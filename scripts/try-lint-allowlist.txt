@@ -2,8 +2,3 @@
 # Each entry is `path:silent-try:count`, relative to the repository root. The count is the exact number
 # of unmarked `try?` the file may keep. A count that differs from the scan fails the scripts tests.
 # An entry that matches no hit is removed. Temporary-file removal uses `// best effort:` and needs no entry.
-
-# Read-only probes: a failed read picks a safe fallback (the values compare unequal, or the entry
-# counts as a regular file). These types take no logger yet; convert them when they do.
-Sources/ArknightsGameRuntime/Runtime/WineRuntime+Prefix.swift:silent-try:2
-Sources/ArknightsGameRuntime/Storage/StorageOverview.swift:silent-try:1

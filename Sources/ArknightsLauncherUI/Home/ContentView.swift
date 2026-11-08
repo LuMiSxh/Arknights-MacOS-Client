@@ -23,8 +23,8 @@ package struct ContentView: View {
 	@State var repairFailureID: UUID?
 	@State var decorativeMotionVisibility = DecorativeMotionVisibility()
 	@State private var isTerminating = false
-	@State private var windowSize = CGSize.zero
-	@State private var settingsSection = SettingsSection.initial
+	@State var windowSize = CGSize.zero
+	@State var settingsSection = SettingsSection.initial
 
 	package init(
 		model: LauncherViewModel,
@@ -90,7 +90,7 @@ package struct ContentView: View {
 						stopGame: { model.actions.stopGame() },
 						showFailureDetails: showFailureDetails
 					),
-					developerExpandedPill: developerExpandedPillID
+					developerExpandedPill: developerExpandedPill
 				)
 			}
 			.environment(\.decorativeMotionEnabled, homeLayerMotionEnabled)
@@ -98,7 +98,7 @@ package struct ContentView: View {
 		.disabled(updateOverlayIsPresented)
 		.allowsHitTesting(!updateOverlayIsPresented)
 		.accessibilityHidden(updateOverlayIsPresented)
-		.background(Color.black)
+		.background(LauncherVisuals.opaqueDim)
 		// Home artwork stays dark. The wordmark and its scrim follow brandingColorScheme; the HUD
 		// pills and the settings button follow homeColorScheme.
 		// Sheets and overlays attach outside this container.
@@ -140,6 +140,7 @@ package struct ContentView: View {
 			}
 		}
 		.onGeometryChange(for: CGSize.self, of: \.size) { windowSize = $0 }
+		.environment(\.launcherWindowSize, windowSize)
 		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) {
 			sheetContent(for: $0)
 				.launcherTheme(accent: model.customization.accentColor)
@@ -231,7 +232,7 @@ package struct ContentView: View {
 	@ViewBuilder
 	private var initialArtworkCover: some View {
 		if !model.customization.hasCompletedInitialArtworkLoad {
-			Color.black.ignoresSafeArea()
+			LauncherVisuals.opaqueDim.ignoresSafeArea()
 		}
 	}
 
@@ -269,51 +270,6 @@ package struct ContentView: View {
 		LauncherUpdateOverlayPresentation.isPresented(
 			destination: presentation.current,
 			driverIsPresented: model.communication.launcherUpdateUserDriver.isPresented)
-	}
-
-	@ViewBuilder
-	private func sheetContent(for destination: LauncherPresentationDestination) -> some View {
-		switch destination {
-		case .settings:
-			LauncherSettingsView(
-				settings: model.settings, customization: model.customization,
-				communication: model.communication,
-				installation: model.installation, gameSession: model.gameSession,
-				runtimeSelection: model.runtimeSelection,
-				lifecycle: model.lifecycle, reminders: model.reminders,
-				screenshots: model.screenshots,
-				storage: model.storage, storageOverview: model.storageOverview,
-				playtimeStatistics: model.playtimeStatistics, presetCatalog: model.presetCatalog,
-				launcherIconManager: model.launcherIconManager,
-				branding: model.refreshController.branding,
-				actions: model.actions,
-				restartOnboarding: restartOnboarding,
-				requestLauncherUpdateCheck: requestLauncherUpdateCheck,
-				developerSimulation: developerSimulationBinding, windowSize: windowSize,
-				selectedSection: $settingsSection
-			)
-		case .failure(let failure):
-			LauncherFailureDetailView(
-				failure: failure,
-				perform: performRecoveryAction,
-				isSavingDiagnostics: model.actions.isSavingDiagnostics,
-				saveDiagnostics: {
-					Task { await model.actions.saveDiagnostics() }
-				},
-				onDismiss: { presentation.dismissCurrent() }
-			)
-			.onDisappear(perform: failureDetailsDidDismiss)
-		case .popup:
-			if let popup = model.communication.popup {
-				LauncherPopupView(
-					popup: popup,
-					dismiss: model.communication.dismissPopup,
-					openAction: model.communication.openPopupAction)
-			} else {
-				EmptyView()
-			}
-		case .update: EmptyView()
-		}
 	}
 
 	private var homeColorScheme: ColorScheme {
@@ -376,7 +332,7 @@ package struct ContentView: View {
 		else { return }
 		presentation.request(.settings)
 	}
-	private func requestLauncherUpdateCheck() {
+	func requestLauncherUpdateCheck() {
 		let hadCurrentPresentation = presentation.current != nil
 		presentation.request(.update)
 		if !hadCurrentPresentation, presentation.current == .update {
@@ -396,10 +352,7 @@ package struct ContentView: View {
 		if presentation.current == .update { model.actions.openLauncherUpdate() }
 	}
 	private func presentFailure(_ failure: LauncherFailurePresentation?) {
-		if onboarding.isPresented,
-			let operation = failure?.context.operation,
-			operation == .intelTranslationPreflight || operation == .rosettaInstallation
-		{
+		if presentation.suppressesFailure(failure, isOnboardingPresented: onboarding.isPresented) {
 			return
 		}
 		guard let failure else {
@@ -411,9 +364,8 @@ package struct ContentView: View {
 		if previous == .update { model.communication.launcherUpdateUserDriver.dismissFromUser() }
 	}
 	private func startOnboardingIfNeeded() async {
-		guard await model.waitForStartup() else { return }
-		if model.isDeveloperMode, !model.isOnboardingPreview { return }
-		if !model.isDeveloperMode {
+		guard await model.waitForStartup(), model.canStartOnboarding else { return }
+		if model.onboardingShouldRefreshInstalledState {
 			await model.installation.updateInstalledState().value
 		}
 		await onboarding.startIfNeeded(
@@ -432,11 +384,11 @@ package struct ContentView: View {
 				checkIntelTranslation: { await model.actions.refreshIntelTranslationForUI() })
 		}
 	}
-	private func restartOnboarding() {
+	func restartOnboarding() {
 		guard model.lifecycle.activity != .maintaining(.migratingStorage) else { return }
 		presentation.dismissCurrent()
 		Task {
-			if !model.isDeveloperMode {
+			if model.onboardingShouldRefreshInstalledState {
 				await model.installation.updateInstalledState().value
 			}
 			await onboarding.restart(
@@ -454,7 +406,7 @@ package struct ContentView: View {
 			presentation.request(.failure(failure))
 		}
 	}
-	private func failureDetailsDidDismiss() {
+	func failureDetailsDidDismiss() {
 		guard repairFailureID == nil,
 			let failure = model.lifecycle.state.presentation.failure,
 			!presentation.presents(.failure(failure))

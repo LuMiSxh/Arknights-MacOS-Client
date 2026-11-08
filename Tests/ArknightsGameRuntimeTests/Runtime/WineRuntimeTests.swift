@@ -53,9 +53,11 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	let controller = WineRuntime.bilibiliControllerEnvironment(from: [
 		"LMISXH_AKMOCL_CURSOR": "1",
 		"LMISXH_AKMOCL_CEF": "1",
+		"DXMT_METALFX_SPATIAL_SWAPCHAIN": "1",
 		"DYLD_INSERT_LIBRARIES": "/runtime/bridge.dylib",
 	])
-	#expect(controller["LMISXH_AKMOCL_CURSOR"] == nil)
+	#expect(controller["LMISXH_AKMOCL_CURSOR"] == "0")
+	#expect(controller["DXMT_METALFX_SPATIAL_SWAPCHAIN"] == "0")
 	#expect(controller["DYLD_INSERT_LIBRARIES"] == nil)
 	#expect(controller["LMISXH_AKMOCL_CEF"] == "1")
 }
@@ -84,7 +86,7 @@ func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 	try Data("old-x32".utf8).write(to: stale)
 
 	try WineRuntime.installDXMT(from: fixture.payload, in: fixture.prefix)
-	#expect(WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
+	#expect(try WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
 	#expect(try Data(contentsOf: stale) == Data("old-x32".utf8))
 
 	for library in WineRuntime.dxmtLibraryNames {
@@ -95,7 +97,7 @@ func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 	try fileManager.removeItem(
 		at: fixture.prefix.appending(path: "drive_c/windows/system32/d3d11.dll")
 	)
-	#expect(!WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
+	#expect(!(try WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix)))
 }
 
 @Test
@@ -115,7 +117,7 @@ func runtimeInstallsTheARMDXMTPayloadFromTheInterface() throws {
 		libraries: libraries
 	)
 	#expect(
-		WineRuntime.dxmtIsCurrent(
+		try WineRuntime.dxmtIsCurrent(
 			from: fixture.payload,
 			in: fixture.prefix,
 			destinations: destinations,
@@ -154,6 +156,7 @@ func runtimeProcessWaitTerminatesAndResumesWhenCancelled() async throws {
 	)
 	let pidFile = FileManager.default.temporaryDirectory.appending(
 		path: "runtime-wait-\(UUID().uuidString).pid")
+	// best effort: the test owns this temporary file.
 	defer { try? FileManager.default.removeItem(at: pidFile) }
 	let task = Task {
 		try await runtime.runAndWait(
@@ -195,6 +198,7 @@ func runtimeProvidesOnlyPrivateUnixUserDirectoriesAndRejectsInvalidConfiguration
 	let fileManager = FileManager.default
 	let root = fileManager.temporaryDirectory.appending(
 		path: "wine-environment-test-\(UUID().uuidString)", directoryHint: .isDirectory)
+	// best effort: the test owns this temporary directory.
 	defer { try? fileManager.removeItem(at: root) }
 	for directory in WineRuntime.isolatedEnvironmentDirectories(prefixDirectory: root) {
 		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)

@@ -17,6 +17,7 @@ package final class StorageOverviewController {
 	private let preferences: LauncherPreferencesStore
 	private let log: LauncherLog
 	private let regionProvider: @MainActor () -> GameRegion
+	@ObservationIgnored private let now: () -> Date
 	@ObservationIgnored private let measurementSlot = TaskSlot()
 	@ObservationIgnored private let cacheStore: StorageOverviewCacheStore
 	@ObservationIgnored private var cachedEntries: [StorageOverviewCacheEntry]
@@ -31,13 +32,15 @@ package final class StorageOverviewController {
 		paths: AppPaths,
 		preferences: LauncherPreferencesStore,
 		log: LauncherLog,
-		regionProvider: @escaping @MainActor () -> GameRegion = { .global }
+		regionProvider: @escaping @MainActor () -> GameRegion = { .global },
+		now: @escaping () -> Date = { .now }
 	) {
 		self.lifecycle = lifecycle
 		self.paths = paths
 		self.preferences = preferences
 		self.log = log
 		self.regionProvider = regionProvider
+		self.now = now
 		let cacheStore = StorageOverviewCacheStore(
 			fileURL: paths.storageOverviewCache,
 			log: log
@@ -117,7 +120,7 @@ package final class StorageOverviewController {
 	) {
 		isMeasuring = false
 		lastMeasuredContext = context
-		lastMeasuredAt = Date()
+		lastMeasuredAt = now()
 		// Skip the publish when nothing changed, so Observation does not redraw the page.
 		if usages.map(CachedStorageUsage.init) != measured.map(CachedStorageUsage.init) {
 			usages = measured
@@ -162,7 +165,7 @@ package final class StorageOverviewController {
 			lastMeasuredContext == context,
 			let lastMeasuredAt
 		else { return false }
-		return Date().timeIntervalSince(lastMeasuredAt)
+		return now().timeIntervalSince(lastMeasuredAt)
 			< AppConstants.Storage.overviewCacheLifetime
 	}
 

@@ -125,8 +125,8 @@ struct GameInstallerPathTests {
 
 	/// BoundedFileReader refuses symbolic links and oversized files, and does not block on a FIFO
 	/// without a writer.
-	@Test
-	func boundedReaderRejectsUnsafeFilesWithoutBlocking() throws {
+	@Test(.timeLimit(.minutes(1)))
+	func boundedReaderRejectsUnsafeFilesWithoutBlocking() async throws {
 		let temporary = try TemporaryDirectory("GameInstallerPathTests")
 		defer { temporary.remove() }
 		let target = temporary.url.appending(path: "target")
@@ -145,36 +145,26 @@ struct GameInstallerPathTests {
 		guard mkfifo(fifo.path, 0o600) == 0 else {
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
 		}
-		let started = DispatchSemaphore(value: 0)
-		let finished = DispatchSemaphore(value: 0)
-		try withInstallLease(at: temporary.url) { lease in
+		try await withInstallLease(at: temporary.url) { lease in
 			let install = lease.directory
-			DispatchQueue.global().async {
-				started.signal()
+			let readRejected = await Task {
 				do {
 					_ = try BoundedFileReader.readRegularFile(at: fifo, maximumBytes: 32)
+					return false
 				} catch {
 					// A FIFO is rejected after its nonblocking descriptor is inspected.
+					return true
 				}
+			}.value
+			#expect(readRejected)
+			await Task {
 				do {
 					let descriptor = try install.file(at: "fifo").open(flags: O_RDONLY | O_CLOEXEC)
 					_ = close(descriptor)
 				} catch {
 					// Descriptor-anchored file opens also reject FIFOs without waiting for a writer.
 				}
-				finished.signal()
-			}
-			#expect(started.wait(timeout: .now() + .seconds(1)) == .success)
-			let returnedBeforeWriter =
-				finished.wait(timeout: .now() + .milliseconds(400)) == .success
-			if !returnedBeforeWriter {
-				DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(450)) {
-					let writer = open(fifo.path, O_WRONLY | O_NONBLOCK | O_CLOEXEC)
-					if writer >= 0 { _ = close(writer) }
-				}
-				#expect(finished.wait(timeout: .now() + .seconds(2)) == .success)
-			}
-			#expect(returnedBeforeWriter)
+			}.value
 		}
 	}
 

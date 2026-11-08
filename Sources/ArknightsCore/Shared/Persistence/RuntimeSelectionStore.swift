@@ -15,9 +15,10 @@ package struct RuntimeSelectionStore: Sendable {
 		self.fileURL = fileURL
 	}
 
-	/// Returns the persisted selection, or the x86 default when no file exists.
-	package func load() throws -> RuntimeSelection {
-		try files.read(RuntimeSelection.self, at: fileURL) ?? RuntimeSelection()
+	/// Returns the persisted selection, or the OS default when no file exists.
+	package func load(access: RuntimeAccess = RuntimeAccess()) throws -> RuntimeSelection {
+		try files.read(RuntimeSelection.self, at: fileURL)
+			?? RuntimeSelection(selected: access.defaultLane)
 	}
 
 	package func save(_ selection: RuntimeSelection) throws {

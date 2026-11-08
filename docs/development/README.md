@@ -7,6 +7,19 @@ audience: developers
 
 # Development
 
+## Guides
+
+| Topic                           | Page                                                                                                                                                              |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Targets, ownership, boundaries  | [Architecture](architecture/README.md#targets)                                                                                                                    |
+| Install, launch, prefix, data   | [Installation](architecture/installation.md), [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md), [Wine prefix](architecture/wine-prefix.md), [Data and persistence](architecture/data-and-persistence.md) |
+| Remote sources, announcements   | [Communication and boundaries](architecture/communication-and-boundaries.md)                                                                                      |
+| Support codes, recovery         | [Error recovery](error-recovery.md)                                                                                                                               |
+| UI                              | [Design](design.md)                                                                                                                                               |
+| Tests                           | [Testing](testing.md)                                                                                                                                             |
+| Releases, Sparkle, runtime pins | [Releases and updates](releases-and-updates.md)                                                                                                                   |
+| Licenses, wallpapers, benchmarks | [License automation](license-automation.md), [Wallpaper tagging](wallpaper-tagging.md), [Performance comparison](performance-comparison.md)                      |
+
 ## Before handing off a change
 
 1. Run the narrowest focused check while you iterate. Add regression coverage where behavior changed.

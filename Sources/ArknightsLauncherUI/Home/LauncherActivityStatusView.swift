@@ -15,7 +15,7 @@ struct LauncherActivityStatusView: View {
 	var body: some View {
 		Group {
 			if runtimeSelection.isInstalling {
-				RuntimeSetupStatusLabel(controller: runtimeSelection)
+				RuntimeProgressLabel(controller: runtimeSelection)
 			} else if lifecycle.activity == .idle, !installation.isDownloading,
 				!runtimeSelection.isSelectedLaneInstalled,
 				let failure = runtimeSelection.failure
@@ -263,54 +263,6 @@ private struct DownloadStatusLabel: View {
 				.lineLimit(1)
 				.accessibilityElement(children: .combine)
 		}
-	}
-}
-
-// Only this leaf reads the per-tick runtime progress, so the HUD does not re-render on every update.
-private struct RuntimeSetupStatusLabel: View {
-	let controller: RuntimeSelectionController
-	@Environment(\.launcherTheme) private var theme
-
-	var body: some View {
-		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
-			Text(title)
-				.font(LauncherTokens.Typography.statusTitle)
-			if let fraction = controller.installFraction {
-				ProgressView(value: fraction)
-					.tint(theme.accentFill)
-					.accessibilityHidden(true)
-			} else {
-				ProgressView()
-					.controlSize(.small)
-					.accessibilityHidden(true)
-			}
-			if let detail {
-				Text(detail)
-					.font(.caption.monospacedDigit())
-					.foregroundStyle(theme.textSecondary)
-			}
-		}
-		.accessibilityElement(children: .combine)
-		.accessibilityLabel(Text(title))
-		.accessibilityValue(Text(detail ?? ""))
-	}
-
-	private var title: String {
-		guard let progress = controller.installProgress else { return "Preparing runtime…" }
-		return switch progress.phase {
-		case .downloading: "Downloading runtime…"
-		case .extracting: "Extracting runtime…"
-		case .validating: "Verifying runtime…"
-		case .installing: "Installing runtime…"
-		}
-	}
-
-	private var detail: String? {
-		guard let progress = controller.installProgress, progress.phase == .downloading,
-			progress.totalBytes > 0
-		else { return nil }
-		return
-			"\(ByteCountFormatter.string(fromByteCount: progress.downloadedBytes, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: progress.totalBytes, countStyle: .file))"
 	}
 }
 

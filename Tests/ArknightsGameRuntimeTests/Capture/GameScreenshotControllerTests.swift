@@ -44,7 +44,7 @@ private struct Fixture {
 	let temporary: TemporaryDirectory
 	let suiteName: String
 	let defaults: UserDefaults
-	let lifecycle = makeLifecycleStore()
+	let lifecycle: LauncherLifecycleStore
 	let scheduler = RecordingScheduler()
 	let paths: AppPaths
 	let controller: GameScreenshotController
@@ -52,7 +52,9 @@ private struct Fixture {
 	let sessionID = UUID()
 
 	init(endSessionDuringCapture: Bool) throws {
-		temporary = try TemporaryDirectory("GameScreenshotControllerTests")
+		let storage = try TemporaryDirectory("GameScreenshotControllerTests")
+		temporary = storage
+		lifecycle = makeLifecycleStore(in: storage)
 		(defaults, suiteName) = makeIsolatedDefaults("GameScreenshotControllerTests")
 		paths = AppPaths(
 			applicationSupportDirectory: temporary.url.appending(path: "Support"),
@@ -86,8 +88,11 @@ private struct Fixture {
 	}
 
 	var savedFiles: [String] {
-		(try? FileManager.default.contentsOfDirectory(atPath: paths.screenshotsDirectory.path))
-			?? []
+		get throws {
+			let path = paths.screenshotsDirectory.path
+			guard FileManager.default.fileExists(atPath: path) else { return [] }
+			return try FileManager.default.contentsOfDirectory(atPath: path)
+		}
 	}
 }
 
@@ -102,10 +107,10 @@ private func aGameSessionThatEndsDuringCaptureLeavesNoFileAndNoFailure(
 	await fixture.controller.takeScreenshot()?.value
 
 	if sessionEnds {
-		#expect(fixture.savedFiles.isEmpty)
+		#expect(try fixture.savedFiles.isEmpty)
 		#expect(fixture.scheduler.notifications.isEmpty)
 	} else {
-		#expect(fixture.savedFiles.count == 1)
+		#expect(try fixture.savedFiles.count == 1)
 		#expect(fixture.scheduler.notifications.count == 1)
 	}
 }

@@ -38,7 +38,8 @@ struct PresetAvatarGrid: View {
 							.clipShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel))
 							if isApplying {
 								ZStack {
-									Color.black.opacity(0.65)
+									LauncherVisuals.opaqueDim.opacity(
+										LauncherVisuals.Shade.loadingScrimOpacity)
 									ProgressView()
 										.controlSize(.small)
 										.tint(theme.accentFill)
@@ -55,7 +56,10 @@ struct PresetAvatarGrid: View {
 									lineWidth: LauncherTokens.Control.borderWidth
 								)
 						}
-						.shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+						.shadow(
+							color: LauncherVisuals.opaqueDim.opacity(
+								LauncherVisuals.Shade.artworkShadowOpacity),
+							radius: 4, x: 0, y: 2)
 						Text(avatar.name)
 							.font(.caption.weight(.medium))
 							.lineLimit(2)
@@ -128,7 +132,8 @@ struct PresetWallpaperGrid: View {
 							.clipShape(RoundedRectangle(cornerRadius: thumbnailRadius))
 							if isApplying {
 								ZStack {
-									Color.black.opacity(0.65)
+									LauncherVisuals.opaqueDim.opacity(
+										LauncherVisuals.Shade.loadingScrimOpacity)
 									VStack(spacing: LauncherTokens.Spacing.control) {
 										ProgressView()
 											.controlSize(.regular)

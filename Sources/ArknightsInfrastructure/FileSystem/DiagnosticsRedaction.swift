@@ -18,7 +18,7 @@ package struct DiagnosticsRedaction: Sendable {
 	func redact(_ text: String) -> String {
 		var result = text
 		if homeDirectory.count > 1 {
-			result = result.replacing(homeDirectory, with: "~")
+			result = replaceHomeDirectory(in: result)
 		}
 		result = redactUserName(in: result)
 		if result.contains("?") {
@@ -26,6 +26,21 @@ package struct DiagnosticsRedaction: Sendable {
 			let urlQuery = /(https?:\/\/[^\s?#"'<>]*)\?[^\s"'<>#]*/
 			result = result.replacing(urlQuery) { String($0.output.1) }
 		}
+		return result
+	}
+
+	/// Replaces the home path only at a path boundary, so `/Users/lu` leaves `/Users/lucy` intact.
+	private func replaceHomeDirectory(in text: String) -> String {
+		var result = ""
+		var cursor = text.startIndex
+		for match in text.ranges(of: homeDirectory) {
+			let atBoundary = match.upperBound == text.endIndex || text[match.upperBound] == "/"
+			guard atBoundary else { continue }
+			result += text[cursor..<match.lowerBound]
+			result += "~"
+			cursor = match.upperBound
+		}
+		result += text[cursor...]
 		return result
 	}
 

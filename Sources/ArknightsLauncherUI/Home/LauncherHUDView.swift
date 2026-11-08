@@ -19,7 +19,7 @@ struct LauncherHUDView: View {
 	let homeColorScheme: ColorScheme
 	let musicController: BackgroundMusicController
 	let actions: LauncherHUDActions
-	let developerExpandedPill: String?
+	let developerExpandedPill: ExpandedPill?
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var expandedPill: ExpandedPill?
 
@@ -93,16 +93,18 @@ struct LauncherHUDView: View {
 				}
 
 				LauncherPrimaryActionView(
-					installation: installation,
-					gameSession: gameSession,
-					intelTranslation: intelTranslation,
-					runtimeSelection: runtimeSelection,
-					lifecycle: lifecycle,
-					installOrUpdate: actions.installOrUpdate,
-					cancelDownload: actions.cancelDownload,
-					installRuntime: actions.installRuntime,
-					launch: actions.launch,
-					stopGame: actions.stopGame
+					presentation: LauncherPrimaryActionPresentation(
+						installation: installation,
+						gameSession: gameSession,
+						intelTranslation: intelTranslation,
+						runtimeSelection: runtimeSelection,
+						lifecycle: lifecycle,
+						installOrUpdate: actions.installOrUpdate,
+						cancelDownload: actions.cancelDownload,
+						installRuntime: actions.installRuntime,
+						launch: actions.launch,
+						stopGame: actions.stopGame
+					)
 				)
 				.disabled(lifecycle.state.presentation.failure?.blocksGameLaunch == true)
 			}
@@ -110,8 +112,8 @@ struct LauncherHUDView: View {
 		.padding(LauncherTokens.Spacing.panel)
 	}
 
-	// Takes the 12pt VStack spacing above `controlBar` only when a pill has content, mirroring the
-	// pill visibility checks.
+	// Takes the `LauncherTokens.Spacing.content` VStack spacing above `controlBar` only when a
+	// pill has content, mirroring the pill visibility checks.
 	@ViewBuilder
 	private var hudPillRow: some View {
 		if hasMusicPill || hasVersionPill || hasStatusPill {
@@ -249,18 +251,7 @@ struct LauncherHUDView: View {
 	}
 
 	private func syncDeveloperExpandedPill() {
-		switch developerExpandedPill {
-		case "music": expandedPill = .music
-		case "version": expandedPill = .version
-		case "status": expandedPill = .status
-		default: expandedPill = nil
-		}
-	}
-
-	private enum ExpandedPill {
-		case music
-		case version
-		case status
+		expandedPill = developerExpandedPill
 	}
 }
 
@@ -273,4 +264,11 @@ private struct HUDSiblingFocus: ViewModifier {
 			.opacity(isReceded ? 0.62 : 1)
 			.animation(LauncherMotion.fade(reduceMotion: reduceMotion), value: isReceded)
 	}
+}
+
+/// The HUD pill a developer preview asks the launcher to expand.
+enum ExpandedPill: Equatable {
+	case music
+	case version
+	case status
 }

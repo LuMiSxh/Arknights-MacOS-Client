@@ -214,8 +214,9 @@ extension GameSessionController {
 			forceDisabled: request.forceDisableRetina,
 			metalFXSupported: features.metalFXSpatialUpscaling
 		)
-		let environment = Self.runtimeEnvironmentOverrides(
+		let environment = RuntimePatchEnvironment.environment(
 			for: request.region,
+			lane: context.runtime.lane,
 			usesHardwareCursor: request.usesHardwareCursor,
 			displayMode: request.options.displayMode,
 			features: features

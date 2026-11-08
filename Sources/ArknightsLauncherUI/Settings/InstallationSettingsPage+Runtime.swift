@@ -9,12 +9,12 @@ extension InstallationSettingsPage {
 		SettingsPanel(title: "Runtime") {
 			SettingsActionRow(
 				title: "Architecture",
-				detail: runtimeLaneTitle(runtimeSelection.selectedLane)
+				detail: runtimeSelection.selectedLane.title
 			) {
 				EmptyView()
 			}
 
-			runtimeLaneRow(.x86)
+			runtimeX86Content
 			runtimeARMContent
 
 			SettingsActionRow(
@@ -35,7 +35,7 @@ extension InstallationSettingsPage {
 			}
 
 			if runtimeSelection.isInstalling {
-				RuntimeInstallStatusView(controller: runtimeSelection)
+				RuntimeProgressLabel(controller: runtimeSelection)
 			}
 
 			if let failure = runtimeSelection.failure {
@@ -45,6 +45,9 @@ extension InstallationSettingsPage {
 			if runtimeSelection.requiresRelaunch {
 				runtimeRelaunchNote
 			}
+
+			QuietLink(title: "About game runtimes", destination: SupportLinks.runtimeGuide)
+				.font(.caption)
 		}
 	}
 
@@ -52,7 +55,7 @@ extension InstallationSettingsPage {
 
 	private func runtimeLaneRow(_ lane: RuntimeLane) -> some View {
 		SettingsActionRow(
-			title: runtimeLaneTitle(lane),
+			title: lane.title,
 			detail: runtimeLaneDetail(lane)
 		) {
 			if runtimeSelection.selectedLane == lane {
@@ -61,7 +64,7 @@ extension InstallationSettingsPage {
 					.accessibilityLabel("Selected")
 			} else if runtimeSelection.availableLanes.contains(lane) {
 				CapsuleActionButton(
-					title: "Switch to \(runtimeLaneShortLabel(lane))",
+					title: "Switch to \(lane.shortLabel)",
 					systemImage: "arrow.triangle.swap",
 					tone: .neutral,
 					presentation: .compact
@@ -73,17 +76,26 @@ extension InstallationSettingsPage {
 		}
 	}
 
+	@ViewBuilder private var runtimeX86Content: some View {
+		let showsLane =
+			runtimeSelection.installedVersion(for: .x86) != nil
+			|| (runtimeSelection.allowsX86 && runtimeSelection.availableLanes.contains(.x86))
+		if showsLane { runtimeLaneRow(.x86) }
+		if !runtimeSelection.allowsX86 {
+			runtimeNote("x86_64 requires macOS 27 or earlier.")
+		} else if !showsLane {
+			runtimeNote("x86_64 is not available in this launcher release.")
+		}
+	}
+
 	@ViewBuilder private var runtimeARMContent: some View {
-		if runtimeSelection.installedVersion(for: .arm) != nil {
-			runtimeLaneRow(.arm)
-			if !runtimeSelection.allowsARM64 {
-				runtimeNote("ARM64 requires macOS 26 or later.")
-			}
-		} else if !runtimeSelection.allowsARM64 {
+		let showsLane =
+			runtimeSelection.installedVersion(for: .arm) != nil
+			|| (runtimeSelection.allowsARM64 && runtimeSelection.availableLanes.contains(.arm))
+		if showsLane { runtimeLaneRow(.arm) }
+		if !runtimeSelection.allowsARM64 {
 			runtimeNote("ARM64 requires macOS 26 or later.")
-		} else if runtimeSelection.availableLanes.contains(.arm) {
-			runtimeLaneRow(.arm)
-		} else {
+		} else if !showsLane {
 			runtimeNote("ARM64 is not available in this launcher release.")
 		}
 	}
@@ -120,7 +132,7 @@ extension InstallationSettingsPage {
 
 	private var runtimeRelaunchNote: some View {
 		Text(
-			"Quit and reopen the launcher to use \(runtimeLaneShortLabel(runtimeSelection.selectedLane))."
+			"Quit and reopen the launcher to use \(runtimeSelection.selectedLane.shortLabel)."
 		)
 		.font(.caption)
 		.foregroundStyle(theme.textSecondary)
@@ -181,15 +193,7 @@ extension InstallationSettingsPage {
 			return "Quit and reopen the launcher before you remove the runtime this session uses."
 		}
 		return
-			"Remove the \(runtimeLaneShortLabel(runtimeOtherLane)) runtime. Its game environment stays on disk."
-	}
-
-	private func runtimeLaneTitle(_ lane: RuntimeLane) -> String {
-		lane == .x86 ? "x86_64 (recommended)" : "ARM64 (Apple Silicon)"
-	}
-
-	private func runtimeLaneShortLabel(_ lane: RuntimeLane) -> String {
-		lane == .x86 ? "x86_64" : "ARM64"
+			"Remove the \(runtimeOtherLane.shortLabel) runtime. Its game environment stays on disk."
 	}
 
 	private func runtimeLaneDetail(_ lane: RuntimeLane) -> String {
@@ -215,50 +219,5 @@ extension InstallationSettingsPage {
 		version.minorVersion == 0
 			? "macOS \(version.majorVersion)"
 			: "macOS \(version.majorVersion).\(version.minorVersion)"
-	}
-}
-
-// Only this leaf reads the per-tick runtime progress, so the Settings page does not re-render
-// on every update.
-private struct RuntimeInstallStatusView: View {
-	let controller: RuntimeSelectionController
-	@Environment(\.launcherTheme) private var theme
-
-	var body: some View {
-		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
-			Text(title)
-				.fontWeight(.medium)
-			if let fraction = controller.installFraction {
-				ProgressView(value: fraction)
-					.tint(theme.accentFill)
-			} else {
-				ProgressView()
-					.controlSize(.small)
-			}
-			if let detail {
-				Text(detail)
-					.font(.caption.monospacedDigit())
-					.foregroundStyle(theme.textSecondary)
-			}
-		}
-		.padding(.vertical, LauncherTokens.Spacing.compact)
-	}
-
-	private var title: String {
-		guard let progress = controller.installProgress else { return "Preparing runtime…" }
-		return switch progress.phase {
-		case .downloading: "Downloading runtime…"
-		case .extracting: "Extracting runtime…"
-		case .validating: "Verifying runtime…"
-		case .installing: "Installing runtime…"
-		}
-	}
-
-	private var detail: String? {
-		guard let progress = controller.installProgress, progress.phase == .downloading,
-			progress.totalBytes > 0
-		else { return nil }
-		return
-			"\(ByteCountFormatter.string(fromByteCount: progress.downloadedBytes, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: progress.totalBytes, countStyle: .file))"
 	}
 }

@@ -82,7 +82,7 @@ The repository does not keep a copy of the file. A runtime archive before 0.7.0 
 Two scripts write generated blocks in `docs/legal/`. Each block sits between a marker pair on its own lines.
 
 - `scripts/licenses.py` owns `<!-- licenses:begin NAME -->` and `<!-- licenses:end NAME -->`.
-- `scripts/update_runtime.py` owns `<!-- runtime:begin NAME -->` and `<!-- runtime:end NAME -->`. See [Runtime updates](runtime-updates.md).
+- `scripts/update_runtime.py` owns `<!-- runtime:begin NAME -->` and `<!-- runtime:end NAME -->`. See [Runtime updates](releases-and-updates.md#runtime-updates).
 
 Each script ignores the markers of the other script. Do not edit the lines between markers by hand. Do not put a marker inside a table.
 

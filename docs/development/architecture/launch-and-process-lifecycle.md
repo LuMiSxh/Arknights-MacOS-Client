@@ -29,7 +29,7 @@ recovery message. It is separate from the per-prefix Wine and DXMT migration. Se
 > The selected runtime is x86_64 or ARM64. The x86_64 lane runs through Rosetta 2; the ARM64 lane runs natively on macOS 26 or later. The launcher gives Wine an isolated
 > prefix and an allowlisted environment, mounts the game directory as `G:`, installs the pinned DXMT
 > libraries, and starts `G:\Arknights.exe`. DXMT translates Direct3D to Metal. See
-> [Runtime compatibility](../../help/runtime-compatibility.md) and
+> [Game runtime](../../help/runtime.md) and
 > [Environment isolation](wine-prefix.md#environment-isolation).
 
 Sign-in differs per client:
@@ -367,9 +367,15 @@ state that a newer launch owns. See [Troubleshooting](../../help/troubleshooting
   legacy games is unconfirmed.
 - **Window wait:** After Wine starts the executable, the launcher waits up to 90 seconds for a visible
   game window. Then it stops the timed-out runtime and reports `GM-WIN`.
-- **Compatibility profiles:** `GameRegion.clientProfile` sets the per-region runtime flags. Every
-  launch sets `LMISXH_AKMOCL=1`, the master switch for the Arknights compatibility patches.
-  China (Bilibili) also sets `LMISXH_AKMOCL_CEF=1` and `LMISXH_AKMOCL_CN=1` for its login window.
+- **Compatibility profiles:** `RuntimePatchEnvironment` builds the `LMISXH_AKMOCL_*` environment
+  for every launch. Each compatibility patch has one gate: `_ACE_IMPORTS`, `_APPCONTAINER`,
+  `_WINSOCK`, `_CEF`, `_CN`, `_FULLSCREEN`, `_CURSOR`, `_MENU`, `_AUDIO`, `_ACE_TIMING`,
+  `_ACE_DISPATCHER`, and `_ACE_ROSETTA`. The launch sends every gate as `1` or `0`; there is no
+  master switch. Both lanes receive every gate, and the ARM runtime ignores the x86-only ones. The
+  runtime is built once with all patches compiled in, so the gates only choose behavior at launch.
+  China and China (Bilibili) set `_CEF` and `_CN` to `1` for the embedded login window. The cursor
+  gate follows the runtime capability and the **Cursor** setting. The fullscreen gate follows the
+  runtime capability and the display mode. The other gates are always `1`.
 - **Backups:** Game directories and prefixes set `isExcludedFromBackup`.
 
 ## Diagnostics

@@ -115,7 +115,6 @@ class RuntimeConfiguration:
     raw: dict[str, Any]
     lanes: Mapping[str, RuntimeLaneConfiguration]
     architecture: str
-    prefix_revision: int
 
     def lane(self, architecture: str) -> RuntimeLaneConfiguration:
         """Return the configuration of one explicitly named lane."""
@@ -129,31 +128,10 @@ class RuntimeConfiguration:
             fail(f"runtime configuration has no {architecture} lane")
         return lane
 
-    def for_architecture(self, architecture: str) -> RuntimeLayout:
-        """Return the interface a local runtime of one architecture must match."""
-        return self.lane(architecture).layout
-
     @property
     def selected(self) -> RuntimeLaneConfiguration:
         """Return the lane that the bridge fallback names."""
         return self.lane(self.architecture)
-
-    @property
-    def selected_layout(self) -> RuntimeLayout:
-        """Return the interface of the bridge fallback lane."""
-        return self.selected.layout
-
-    @property
-    def runtime_url(self) -> str:
-        return self.selected.runtime.url
-
-    @property
-    def runtime_sha256(self) -> str:
-        return self.selected.runtime.sha256
-
-    @property
-    def runtime_size_bytes(self) -> int:
-        return self.selected.runtime.size_bytes
 
 
 def runtime_is_valid(directory: Path, layout: RuntimeLayout) -> bool:
@@ -229,7 +207,11 @@ def nested_value(config: dict[str, Any], key: str) -> Any:
 
 
 def _optional_mapping(config: dict[str, Any], key: str) -> dict[str, Any]:
-    value = nested_value(config, key)
+    value: Any = config
+    for component in key.split("."):
+        if not isinstance(value, dict) or component not in value:
+            return {}
+        value = value[component]
     if value is None:
         return {}
     if not isinstance(value, dict):
@@ -251,17 +233,13 @@ def _string(config: dict[str, Any], key: str, *, allow_empty: bool = False) -> s
     return value
 
 
-def _positive_integer(config: dict[str, Any], key: str) -> int:
+def _integer(config: dict[str, Any], key: str, minimum: int) -> int:
     value = nested_value(config, key)
-    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
-        fail(f"runtime configuration value must be a positive integer: {key}")
-    return value
-
-
-def _non_negative_integer(config: dict[str, Any], key: str) -> int:
-    value = nested_value(config, key)
-    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
-        fail(f"runtime configuration value must be a non-negative integer: {key}")
+    if not isinstance(value, int) or isinstance(value, bool) or value < minimum:
+        fail(
+            f"runtime configuration value must be an integer of at least "
+            f"{minimum}: {key}"
+        )
     return value
 
 
@@ -304,7 +282,7 @@ def _read_pin(config: dict[str, Any], key: str) -> PinnedRuntime:
     version = _string(config, f"{key}.version")
     url = _string(config, f"{key}.url", allow_empty=True)
     checksum = _string(config, f"{key}.sha256", allow_empty=True)
-    size_bytes = _non_negative_integer(config, f"{key}.sizeBytes")
+    size_bytes = _integer(config, f"{key}.sizeBytes", 0)
     if not _safe_component(version):
         fail(f"runtime configuration version must be a path component: {key}.version")
     if url and not url.startswith("https://"):
@@ -435,7 +413,7 @@ def _read_lane(config: dict[str, Any], name: str) -> RuntimeLaneConfiguration:
     return RuntimeLaneConfiguration(
         name=name,
         minimum_macos=minimum_macos,
-        prefix_revision=_positive_integer(config, f"{prefix}.prefixRevision"),
+        prefix_revision=_integer(config, f"{prefix}.prefixRevision", 1),
         runtime=_read_pin(config, f"{prefix}.runtime"),
         layout=_read_layout(config, f"{prefix}.interface"),
         components=components,
@@ -448,7 +426,6 @@ def load_runtime_config(config_path: Path) -> RuntimeConfiguration:
     schema_version = nested_value(config, "schemaVersion")
     if schema_version != SCHEMA_VERSION:
         fail(f"runtime configuration schemaVersion must be {SCHEMA_VERSION}")
-    prefix_revision = _positive_integer(config, "prefixRevision")
     architecture = _string(config, "architecture")
     if architecture not in RUNTIME_ARCHITECTURES:
         fail("runtime configuration architecture must be x86 or arm")
@@ -469,9 +446,4 @@ def load_runtime_config(config_path: Path) -> RuntimeConfiguration:
     }
     if architecture not in lanes:
         fail(f"runtime configuration architecture names a missing lane: {architecture}")
-    return RuntimeConfiguration(
-        raw=config,
-        lanes=lanes,
-        architecture=architecture,
-        prefix_revision=prefix_revision,
-    )
+    return RuntimeConfiguration(raw=config, lanes=lanes, architecture=architecture)

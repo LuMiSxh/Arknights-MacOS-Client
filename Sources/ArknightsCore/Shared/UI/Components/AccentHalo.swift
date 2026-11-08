@@ -46,7 +46,9 @@ private struct AccentHalo<S: Shape>: View {
 				content
 					.scaleEffect(0.94 + 0.08 * intensity)
 					.blur(radius: 4.8 + 3.2 * intensity)
-					.opacity(0.1125 + 0.1375 * intensity)
+					.opacity(
+						LauncherVisuals.Halo.restingOpacity
+							+ LauncherVisuals.Halo.pulseOpacityGain * intensity)
 			} keyframes: { _ in
 				CubicKeyframe(1, duration: cycle / 2)
 				CubicKeyframe(Self.restingIntensity, duration: cycle / 2)

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
-package struct IconActionButton: View {
+struct IconActionButton: View {
 	let title: String
 	let systemImage: String
 	let tone: CapsuleActionTone
@@ -17,7 +18,7 @@ package struct IconActionButton: View {
 	let action: () -> Void
 	@Environment(\.colorSchemeContrast) private var contrast
 
-	package init(
+	init(
 		title: String,
 		systemImage: String,
 		tone: CapsuleActionTone = .neutral,
@@ -41,7 +42,7 @@ package struct IconActionButton: View {
 		self.action = action
 	}
 
-	package var body: some View {
+	var body: some View {
 		Button(role: role, action: action) {
 			Image(systemName: systemImage)
 				.font(
@@ -91,7 +92,9 @@ private struct IconActionChrome: ViewModifier {
 
 	/// Dark HUD glass keeps a smoked tint; light HUD glass uses the theme group fill.
 	private var hudSurfaceTint: Color {
-		colorScheme == .dark ? theme.sheetSolid.opacity(0.52) : theme.groupFill
+		colorScheme == .dark
+			? theme.sheetSolid.opacity(LauncherVisuals.Control.hudSurfaceOpacity)
+			: theme.groupFill
 	}
 
 	@ViewBuilder

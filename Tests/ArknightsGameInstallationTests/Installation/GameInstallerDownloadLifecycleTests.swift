@@ -104,14 +104,12 @@ private final class LifecycleURLProtocol: URLProtocol, @unchecked Sendable {
 			headerFields: nil
 		)!
 		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-		DispatchQueue.global().asyncAfter(deadline: .now() + 1.3) { [weak self] in
-			guard let self, !self.isStopped else { return }
-			self.client?.urlProtocol(
-				self,
-				didLoad: Data(repeating: 0xFF, count: 8)
-			)
-			self.client?.urlProtocolDidFinishLoading(self)
-		}
+		guard !isStopped else { return }
+		client?.urlProtocol(
+			self,
+			didLoad: Data(repeating: 0xFF, count: 8)
+		)
+		client?.urlProtocolDidFinishLoading(self)
 	}
 
 	override func stopLoading() {

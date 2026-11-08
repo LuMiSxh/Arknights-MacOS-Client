@@ -73,7 +73,7 @@ enum ResetReminderPlan {
 	/// Absolute UTC components, so the trigger fires at one instant wherever the Mac is.
 	private static func utcComponents(for date: Date) -> DateComponents {
 		var calendar = Calendar(identifier: .gregorian)
-		let utc = TimeZone(secondsFromGMT: 0)!
+		let utc = TimeZone.gmt
 		calendar.timeZone = utc
 		var components = calendar.dateComponents(
 			[.year, .month, .day, .hour, .minute, .second], from: date)

@@ -12,7 +12,7 @@ struct WineProcessSpawnGateNotSealed: Error, Sendable {}
 // Serializes Wine process creation with shutdown and retains children until they exit.
 // States: open (spawns allowed) -> sealed (no spawns; waiters resume once the last child retires).
 // Each child retires through its own `terminationHandler`; nothing polls.
-final class WineProcessSpawnGate: ProcessSpawnGating, @unchecked Sendable {
+final class WineProcessSpawnGate: ProcessSpawnGating {
 	private struct State {
 		var allowsSpawn = true
 		var processes: [ObjectIdentifier: Process] = [:]

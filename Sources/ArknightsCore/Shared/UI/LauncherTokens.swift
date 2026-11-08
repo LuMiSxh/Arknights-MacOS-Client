@@ -17,6 +17,30 @@ package enum LauncherTokens {
 	package enum Layout {
 		/// Shared by the Settings and Onboarding navigation rails.
 		package static let railWidth: CGFloat = 192
+		/// Square app icon in the About settings header.
+		package static let aboutIconSize: CGFloat = 76
+		/// Width of the bundled document sheet.
+		package static let documentModalWidth: CGFloat = 760
+		/// Height of the bundled document sheet.
+		package static let documentModalHeight: CGFloat = 600
+		/// Failure sheet size without a support code.
+		package static let failureSheetWidth: CGFloat = 620
+		package static let failureSheetHeight: CGFloat = 432
+		/// Failure sheet size with a support code.
+		package static let failureSheetWidthWithCode: CGFloat = 720
+		package static let failureSheetHeightWithCode: CGFloat = 600
+		/// Width of a navigation rail row's leading icon.
+		static let railIconWidth: CGFloat = 20
+		static let railSelectionTickWidth: CGFloat = 3
+		static let railSelectionTickHeight: CGFloat = 14
+		static let railSelectionTickLeading: CGFloat = 2
+		/// Accent length of the rule under a settings page header.
+		static let sectionAccentRuleWidth: CGFloat = 72
+		static let sectionAccentRuleHeight: CGFloat = 3
+		/// Fixed width of the selected-region checkmark in the status HUD pill.
+		package static let hudCheckmarkWidth: CGFloat = 16
+		/// Horizontal inset of an expanded HUD pill's header.
+		static let hudExpandedHorizontalPadding: CGFloat = 14
 	}
 
 	package enum Radius {
@@ -25,6 +49,10 @@ package enum LauncherTokens {
 		static let hudPill: CGFloat = 22
 		package static let modal: CGFloat = 24
 		package static let railRow: CGFloat = 8
+		/// Default corner radius for the modal surface kind.
+		static let glassModal: CGFloat = 20
+		/// Default corner radius for the grouped surface kind.
+		static let glassGroup: CGFloat = 12
 	}
 
 	/// Button and field insets. Buttons and text fields share the standard horizontal and
@@ -36,6 +64,8 @@ package enum LauncherTokens {
 		package static let segmentTrack: CGFloat = 4
 		package static let segmentHorizontal: CGFloat = 10
 		package static let segmentVertical: CGFloat = 4
+		/// Vertical inset inside a settings panel row.
+		static let settingsRowVertical: CGFloat = 10
 	}
 
 	package enum Control {
@@ -62,9 +92,9 @@ package enum LauncherTokens {
 
 		package static let hudHorizontalPadding: CGFloat = 12
 		package static let hudVerticalPadding: CGFloat = 6
-		static let iconButtonSize: CGFloat = 36
-		static let iconButtonGlyphSize: CGFloat = 17
-		/// Matches GlassCapsuleMenu: a 16 pt chevron chip plus 2 x 6 pt padding.
+		package static let iconButtonSize: CGFloat = 36
+		package static let iconButtonGlyphSize: CGFloat = 17
+		/// Matches GlassCapsuleMenu at the default control size: a 16 pt chevron chip plus 2 x 6 pt padding.
 		static let fieldHeight: CGFloat = 28
 	}
 

@@ -151,7 +151,7 @@ enum StorageSizeCalculator {
 		at url: URL,
 		fileManager: FileManager
 	) throws -> Int64 {
-		guard !isSymbolicLink(url, fileManager: fileManager) else { return 0 }
+		guard !(try isSymbolicLink(url, fileManager: fileManager)) else { return 0 }
 		guard
 			let enumerator = fileManager.enumerator(
 				at: url,
@@ -173,8 +173,8 @@ enum StorageSizeCalculator {
 		return total
 	}
 
-	private static func isSymbolicLink(_ url: URL, fileManager: FileManager) -> Bool {
+	private static func isSymbolicLink(_ url: URL, fileManager: FileManager) throws -> Bool {
 		guard fileManager.fileExists(atPath: url.path) else { return false }
-		return (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == true
+		return try url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink == true
 	}
 }

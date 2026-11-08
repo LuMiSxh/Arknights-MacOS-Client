@@ -53,7 +53,8 @@ package struct AppPaths: Sendable {
 		libraryDirectory: URL? = nil,
 		downloadsDirectory: URL? = nil,
 		picturesDirectory: URL? = nil,
-		runtimeSelection: RuntimeSelection? = nil
+		runtimeSelection: RuntimeSelection? = nil,
+		runtimeAccess: RuntimeAccess = RuntimeAccess()
 	) {
 		let supportDirectory =
 			applicationSupportDirectory
@@ -106,19 +107,21 @@ package struct AppPaths: Sendable {
 		runtimeSelectionFile = selectionFile
 
 		let selection: RuntimeSelection
+		var diagnostic: String?
 		if let runtimeSelection {
 			selection = runtimeSelection
-			runtimeLaneDiagnostic = nil
 		} else {
 			do {
-				selection = try RuntimeSelectionStore(fileURL: selectionFile).load()
-				runtimeLaneDiagnostic = nil
+				selection = try RuntimeSelectionStore(fileURL: selectionFile).load(
+					access: runtimeAccess)
 			} catch {
-				selection = RuntimeSelection()
-				runtimeLaneDiagnostic =
-					"Could not read the runtime selection at \(selectionFile.path): \(error.localizedDescription); using the x86 lane"
+				selection = RuntimeSelection(selected: runtimeAccess.defaultLane)
+				diagnostic =
+					"Could not read the runtime selection at \(selectionFile.path): "
+					+ "\(error.localizedDescription); using the \(runtimeAccess.defaultLane.rawValue) lane"
 			}
 		}
+		runtimeLaneDiagnostic = diagnostic
 		runtimeLane = selection.selected
 		let prefixName = selection.selected.prefixDirectoryName
 		winePrefix = applicationSupportRoot.appending(

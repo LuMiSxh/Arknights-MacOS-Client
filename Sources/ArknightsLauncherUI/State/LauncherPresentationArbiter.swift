@@ -85,6 +85,17 @@ struct LauncherPresentationArbiter {
 		if case .failure = queued { queued = nil }
 	}
 
+	/// True when a failure must not present its own sheet. Onboarding owns the Rosetta
+	/// failure presentation while it runs, so a second sheet would fight it.
+	func suppressesFailure(
+		_ failure: LauncherFailurePresentation?, isOnboardingPresented: Bool
+	) -> Bool {
+		guard isOnboardingPresented, let operation = failure?.context.operation else {
+			return false
+		}
+		return operation == .intelTranslationPreflight || operation == .rosettaInstallation
+	}
+
 	mutating func removeRosettaPreflightFailures() {
 		if case .failure(let failure) = current,
 			failure.context.operation == .intelTranslationPreflight

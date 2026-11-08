@@ -23,20 +23,20 @@ struct ScreenshotShortcutRecorder: View {
 		.onAppear {
 			monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
 				handle(event)
+				return nil
 			}
 		}
 		.onDisappear(perform: removeMonitor)
 	}
 
 	/// Consumes every key press. A combination that cannot be used keeps the recorder open.
-	private func handle(_ event: NSEvent) -> NSEvent? {
+	private func handle(_ event: NSEvent) {
 		if Int(event.keyCode) == kVK_Escape {
 			cancel()
 		} else if let shortcut = Self.shortcut(for: event) {
 			removeMonitor()
 			onRecord(shortcut)
 		}
-		return nil
 	}
 
 	private func cancel() {

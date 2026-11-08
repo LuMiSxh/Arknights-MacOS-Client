@@ -5,21 +5,11 @@ import ArknightsGameInstallation
 import SwiftUI
 
 enum LauncherUpdateOverlayPresentation {
-	enum Motion: Equatable {
-		case immediate
-		case animated(initialDialogScale: CGFloat)
-	}
-
 	static func isPresented(
 		destination: LauncherPresentationDestination?,
 		driverIsPresented: Bool
 	) -> Bool {
 		destination == .update && driverIsPresented
-	}
-
-	static func motion(reduceMotion: Bool) -> Motion {
-		guard !reduceMotion else { return .immediate }
-		return .animated(initialDialogScale: LauncherMotion.overlayEntranceScale)
 	}
 }
 
@@ -45,7 +35,7 @@ struct LauncherUpdateOverlay: View {
 	}
 
 	private var backgroundDim: some View {
-		(reduceTransparency ? Color.black : theme.modalDim)
+		(reduceTransparency ? LauncherVisuals.opaqueDim : theme.modalDim)
 			.ignoresSafeArea()
 			.opacity(isVisible ? 1 : 0)
 			.animation(backgroundAnimation, value: isVisible)
@@ -65,13 +55,8 @@ struct LauncherUpdateOverlay: View {
 		.accessibilityAddTraits(.isModal)
 	}
 
-	private var motion: LauncherUpdateOverlayPresentation.Motion {
-		LauncherUpdateOverlayPresentation.motion(reduceMotion: reduceMotion)
-	}
-
 	private var initialDialogScale: CGFloat {
-		if case .animated(let scale) = motion { return scale }
-		return 1
+		reduceMotion ? 1 : LauncherMotion.overlayEntranceScale
 	}
 
 	private var backgroundAnimation: Animation? {

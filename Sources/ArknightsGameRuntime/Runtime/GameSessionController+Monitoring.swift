@@ -213,8 +213,9 @@ extension GameSessionController {
 		sessionID: UUID
 	) {
 		session?.monitorTask?.cancel()
-		let prefixDirectory = paths.winePrefix(for: session?.region ?? installation.region)
-		session?.monitorTask = Task { [weak self, log, prefixDirectory] in
+		let region = session?.region ?? installation.region
+		let prefixDirectory = paths.winePrefix(for: region)
+		session?.monitorTask = Task { [weak self, log, prefixDirectory, region] in
 			do {
 				try await runtime.waitUntilStopped(prefixDirectory: prefixDirectory)
 			} catch {
@@ -228,7 +229,7 @@ extension GameSessionController {
 					using: runtime,
 					sessionID: sessionID,
 					processIdentifier: lifecycle.activity.gameProcessIdentifier,
-					region: session?.region ?? installation.region
+					region: region
 				)
 				return
 			}
@@ -238,6 +239,7 @@ extension GameSessionController {
 			}
 			guard !Task.isCancelled, activeGameSessionID == sessionID else { return }
 			finishGameSession(sessionID)
+			await SDKLogCollector.collect(publisher: region.publisher, paths: paths, log: log)
 		}
 	}
 
@@ -280,6 +282,7 @@ extension GameSessionController {
 		}
 		guard activeGameSessionID == sessionID else { return }
 		finishGameSession(sessionID)
+		await SDKLogCollector.collect(publisher: region.publisher, paths: paths, log: log)
 	}
 
 	func finishGameSession(_ sessionID: UUID) {
@@ -304,10 +307,6 @@ extension GameSessionController {
 			)
 		}
 		log.info("Game process stopped")
-		Task { [log, paths] in
-			await SDKLogCollector.collect(
-				publisher: sessionRegion.publisher, paths: paths, log: log)
-		}
 	}
 
 	private func markGameSessionStopping(_ sessionID: UUID, processIdentifier: Int32?) {

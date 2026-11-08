@@ -11,8 +11,12 @@ import Testing
 @MainActor
 struct LauncherLifecycleStoreTests {
 	@Test(arguments: LauncherUpdateStartScenario.allCases)
-	func launcherUpdateWaitsForAnActiveGameToFinish(scenario: LauncherUpdateStartScenario) {
-		let lifecycle = makeLifecycleStore()
+	func launcherUpdateWaitsForAnActiveGameToFinish(
+		scenario: LauncherUpdateStartScenario
+	) throws {
+		let storage = try TemporaryDirectory("LauncherLifecycleStoreTests")
+		defer { storage.remove() }
+		let lifecycle = makeLifecycleStore(in: storage)
 		let sessionID = UUID()
 		let gameActivity = LauncherActivity.runningGame(
 			sessionID: sessionID, processIdentifier: 42)

@@ -9,8 +9,10 @@ Wallpapers with at least one tag go into `WallpaperTags.json` on a dated branch.
 Wallpapers without tags are listed as needing manual tags. A maintainer reviews
 the pull request and merges it.
 
-`--dry-run` prints the pull request body without any write. `--evaluate N` scores
-the suggestions against N already-tagged wallpapers and writes nothing.
+`--tag-only PATH` writes the suggestions for a later `--publish PATH` run, so the
+model call and the repository writes can run in separate jobs. `--dry-run` prints
+the pull request body without any write. `--evaluate N` scores the suggestions
+against N already-tagged wallpapers and writes nothing.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,6 +36,7 @@ from lib.wallpaper_manifest import (
 )
 from lib.wallpaper_tagger import (
     GEMINI_KEY_ENVIRONMENT,
+    SuggestedTag,
     WallpaperSuggestion,
     WallpaperTagger,
     api_key_from_environment,
@@ -54,15 +58,12 @@ TAGGING_LABEL_DESCRIPTION = (
 WALLPAPER_ID_MARKER = re.compile(r"<!--\s*wallpaper-id:\s*(\S+?)\s*-->")
 BASE_BRANCH = "main"
 BRANCH_PREFIX = "chore/wallpaper-tags-"
+SUGGESTION_SCHEMA_VERSION = 1
 PREVIEW_WIDTH = 240
 KNOWN_TAG_LEGEND = (
     "Known tags exist in the manifest or the Global operator list. "
     "Verify new tags before merging."
 )
-
-
-def load_tagged_ids(manifest_path: Path) -> set[str]:
-    return set(read_manifest(manifest_path))
 
 
 def filed_ids_from_bodies(bodies: Iterable[str | None]) -> set[str]:
@@ -105,8 +106,13 @@ def ensure_labels_exist() -> None:
             )
 
 
-def issue_title(count: int, today: str) -> str:
-    return f"[Wallpaper Tagging] {count} new wallpapers ({today})"
+def title(count: int, today: str, *, action: str = "") -> str:
+    lead = f"{action} " if action else ""
+    return f"[Wallpaper Tagging] {lead}{count} new wallpapers ({today})"
+
+
+def tagging_branch(today: str) -> str:
+    return f"{BRANCH_PREFIX}{today}-{uuid.uuid4().hex[:8]}"
 
 
 def issue_body(wallpapers: Sequence[GalleryWallpaper]) -> str:
@@ -132,7 +138,7 @@ def file_issue(wallpapers: Sequence[GalleryWallpaper], today: str) -> int:
             "issue",
             "create",
             "--title",
-            issue_title(len(wallpapers), today),
+            title(len(wallpapers), today),
             "--label",
             AUTOMATED_LABEL,
             "--label",
@@ -155,6 +161,61 @@ def find_untagged(
         for wallpaper in wallpapers
         if wallpaper.id not in tagged_ids and wallpaper.id not in filed_ids
     ]
+
+
+def suggestion_document(
+    wallpapers: Sequence[GalleryWallpaper],
+    suggestions: Mapping[str, WallpaperSuggestion],
+) -> dict[str, object]:
+    entries: dict[str, object] = {}
+    for wallpaper in wallpapers:
+        suggestion = suggestions.get(wallpaper.id)
+        entries[wallpaper.id] = {
+            "tags": [
+                {"name": tag.name, "known": tag.known}
+                for tag in (suggestion.tags if suggestion else ())
+            ],
+            "error": suggestion.error if suggestion else None,
+        }
+    return {
+        "schemaVersion": SUGGESTION_SCHEMA_VERSION,
+        "wallpapers": [
+            {
+                "id": wallpaper.id,
+                "title": wallpaper.title,
+                "image_url": wallpaper.image_url,
+            }
+            for wallpaper in wallpapers
+        ],
+        "suggestions": entries,
+    }
+
+
+def read_suggestion_document(
+    path: Path,
+) -> tuple[list[GalleryWallpaper], dict[str, WallpaperSuggestion]]:
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if document.get("schemaVersion") != SUGGESTION_SCHEMA_VERSION:
+        fail(f"{path} is not a version {SUGGESTION_SCHEMA_VERSION} suggestion document")
+    wallpapers = [
+        GalleryWallpaper(
+            id=entry["id"], title=entry["title"], image_url=entry["image_url"]
+        )
+        for entry in document.get("wallpapers", [])
+    ]
+    raw_suggestions = document.get("suggestions", {})
+    suggestions: dict[str, WallpaperSuggestion] = {}
+    for wallpaper in wallpapers:
+        entry = raw_suggestions.get(wallpaper.id, {})
+        suggestions[wallpaper.id] = WallpaperSuggestion(
+            wallpaper.id,
+            tuple(
+                SuggestedTag(tag["name"], bool(tag["known"]))
+                for tag in entry.get("tags", [])
+            ),
+            entry.get("error"),
+        )
+    return wallpapers, suggestions
 
 
 def table_text(text: str) -> str:
@@ -296,6 +357,67 @@ def open_tagging_pull_request(
     run(["gh", "workflow", "run", "ci.yml", "--ref", branch])
 
 
+def tag_only(output_path: Path) -> None:
+    info("Fetching the official Fankit gallery…")
+    wallpapers = fetch_gallery_wallpapers()
+    manifest = read_manifest(manifest_location())
+    untagged = find_untagged(wallpapers, set(manifest), set())
+    suggestions: dict[str, WallpaperSuggestion] = {}
+    if not untagged:
+        success(f"All {len(wallpapers)} wallpapers are tagged.")
+    else:
+        info(f"Found {len(untagged)} untagged wallpaper(s) out of {len(wallpapers)}.")
+        api_key = api_key_from_environment()
+        if not api_key:
+            warning(f"{GEMINI_KEY_ENVIRONMENT} is not set; no tags are suggested.")
+        suggestions = suggest_tags(untagged, manifest_vocabulary(manifest), api_key)
+    output_path.write_text(
+        json.dumps(suggestion_document(untagged, suggestions), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    success(f"Wrote tag suggestions to {output_path}.")
+
+
+def publish(path: Path) -> None:
+    require_command("gh")
+    require_command("git")
+    wallpapers, suggestions = read_suggestion_document(path)
+    manifest_path = manifest_location()
+    manifest = read_manifest(manifest_path)
+    untagged = find_untagged(wallpapers, set(manifest), already_filed_ids())
+    if not untagged:
+        success("All scanned wallpapers are tagged or already filed.")
+        return
+
+    info(f"Publishing {len(untagged)} new wallpaper(s).")
+    tagged = [w for w in untagged if suggestions.get(w.id) and suggestions[w.id].tags]
+    tagged_ids = {w.id for w in tagged}
+    manual = [w for w in untagged if w.id not in tagged_ids]
+    additions = {
+        wallpaper.id: [tag.name for tag in suggestions[wallpaper.id].tags]
+        for wallpaper in tagged
+    }
+    today = datetime.now(UTC).date().isoformat()
+
+    ensure_labels_exist()
+    issue_number = file_issue(untagged, today)
+    success(f"Filed issue #{issue_number} for {len(untagged)} new wallpapers.")
+    if not tagged:
+        warning("No wallpaper got tags; add them by hand. No pull request opened.")
+        return
+
+    open_tagging_pull_request(
+        branch=tagging_branch(today),
+        manifest_path=manifest_path,
+        manifest=manifest,
+        additions=additions,
+        title=title(len(tagged), today, action="Tag"),
+        body=pull_request_body(f"#{issue_number}", tagged, suggestions, manual),
+        count=len(tagged),
+    )
+    success(f"Opened a pull request with tags for {len(tagged)} wallpapers.")
+
+
 def evaluate(count: int) -> None:
     api_key = api_key_from_environment()
     if not api_key:
@@ -334,16 +456,29 @@ def evaluate(count: int) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--dry-run",
         action="store_true",
         help="suggest tags and print the pull request body without any write",
     )
-    parser.add_argument(
+    mode.add_argument(
         "--evaluate",
         type=int,
         metavar="N",
         help="score suggestions against N already-tagged wallpapers; writes nothing",
+    )
+    mode.add_argument(
+        "--tag-only",
+        type=Path,
+        metavar="PATH",
+        help="write tag suggestions for a later --publish run; no repository writes",
+    )
+    mode.add_argument(
+        "--publish",
+        type=Path,
+        metavar="PATH",
+        help="file the issue and pull request from a --tag-only result",
     )
     arguments = parser.parse_args()
 
@@ -352,20 +487,22 @@ def main() -> None:
             fail("--evaluate needs a positive count")
         evaluate(arguments.evaluate)
         return
-
+    if arguments.tag_only is not None:
+        tag_only(arguments.tag_only)
+        return
+    if arguments.publish is not None:
+        publish(arguments.publish)
+        return
     if not arguments.dry_run:
-        require_command("gh")
-        require_command("git")
+        fail("choose --dry-run, --evaluate, --tag-only, or --publish")
 
     info("Fetching the official Fankit gallery…")
     wallpapers = fetch_gallery_wallpapers()
-    manifest_path = manifest_location()
-    manifest = read_manifest(manifest_path)
-    filed_ids = set() if arguments.dry_run else already_filed_ids()
-    untagged = find_untagged(wallpapers, set(manifest), filed_ids)
+    manifest = read_manifest(manifest_location())
+    untagged = find_untagged(wallpapers, set(manifest), set())
 
     if not untagged:
-        success(f"All {len(wallpapers)} wallpapers are tagged or already filed.")
+        success(f"All {len(wallpapers)} wallpapers are tagged.")
         return
 
     info(f"Found {len(untagged)} untagged wallpaper(s) out of {len(wallpapers)}.")
@@ -374,38 +511,12 @@ def main() -> None:
         warning(f"{GEMINI_KEY_ENVIRONMENT} is not set; no tags are suggested.")
     suggestions = suggest_tags(untagged, manifest_vocabulary(manifest), api_key)
     tagged = [w for w in untagged if suggestions.get(w.id) and suggestions[w.id].tags]
-    manual = [w for w in untagged if w not in tagged]
-    additions = {
-        wallpaper.id: [tag.name for tag in suggestions[wallpaper.id].tags]
-        for wallpaper in tagged
-    }
-    today = datetime.now(UTC).date().isoformat()
-    pr_title = f"[Wallpaper Tagging] Tag {len(tagged)} new wallpapers ({today})"
-
-    if arguments.dry_run:
-        if not tagged:
-            info("No wallpaper got tags; no pull request would be opened.")
-            return
-        print(pull_request_body("#<issue>", tagged, suggestions, manual))
-        return
-
-    ensure_labels_exist()
-    issue_number = file_issue(untagged, today)
-    success(f"Filed issue #{issue_number} for {len(untagged)} new wallpapers.")
     if not tagged:
-        warning("No wallpaper got tags; add them by hand. No pull request opened.")
+        info("No wallpaper got tags; no pull request would be opened.")
         return
-
-    open_tagging_pull_request(
-        branch=f"{BRANCH_PREFIX}{today}",
-        manifest_path=manifest_path,
-        manifest=manifest,
-        additions=additions,
-        title=pr_title,
-        body=pull_request_body(f"#{issue_number}", tagged, suggestions, manual),
-        count=len(tagged),
-    )
-    success(f"Opened a pull request with tags for {len(tagged)} wallpapers.")
+    tagged_ids = {w.id for w in tagged}
+    manual = [w for w in untagged if w.id not in tagged_ids]
+    print(pull_request_body("#<issue>", tagged, suggestions, manual))
 
 
 if __name__ == "__main__":

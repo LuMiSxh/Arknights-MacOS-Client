@@ -74,7 +74,6 @@ def valid_config() -> dict[str, object]:
     return {
         "schemaVersion": 3,
         "architecture": "x86",
-        "prefixRevision": 2,
         "lanes": {
             "x86": lane(
                 "x86_64",
@@ -107,13 +106,12 @@ def test_validates_complete_configuration(tmp_path: Path) -> None:
     loaded = runtime_config.load_runtime_config(config)
 
     assert loaded.architecture == "x86"
-    assert loaded.prefix_revision == 2
     assert set(loaded.lanes) == {"x86", "arm"}
     assert loaded.selected.name == "x86"
     assert loaded.selected.runtime.version == "0.8.0"
     assert loaded.selected.runtime.size_bytes == 400_000_000
     assert loaded.selected.minimum_macos == "15.0"
-    assert loaded.selected_layout == loaded.for_architecture("x86")
+    assert loaded.selected.layout == loaded.lane("x86").layout
     assert loaded.lane("arm").prefix_revision == 1
     assert loaded.lane("arm").minimum_macos == "26.0"
 
@@ -123,8 +121,8 @@ def test_selects_each_lane_explicitly(tmp_path: Path) -> None:
     write_config(config, valid_config())
     loaded = runtime_config.load_runtime_config(config)
 
-    x86 = loaded.for_architecture("x86")
-    arm = loaded.for_architecture("arm")
+    x86 = loaded.lane("x86").layout
+    arm = loaded.lane("arm").layout
 
     assert all("x86_64" not in str(path) for path in arm.required_files)
     assert "aarch64-unix" in str(arm.mac_driver)
@@ -142,8 +140,8 @@ def test_top_level_architecture_selects_the_bridge_fallback(tmp_path: Path) -> N
     loaded = runtime_config.load_runtime_config(config)
 
     assert loaded.architecture == "arm"
-    assert loaded.selected_layout == loaded.for_architecture("arm")
-    assert "aarch64-unix" in str(loaded.selected_layout.mac_driver)
+    assert loaded.selected.layout == loaded.lane("arm").layout
+    assert "aarch64-unix" in str(loaded.selected.layout.mac_driver)
 
 
 def test_reads_runtime_features(tmp_path: Path) -> None:
@@ -152,10 +150,40 @@ def test_reads_runtime_features(tmp_path: Path) -> None:
 
     loaded = runtime_config.load_runtime_config(config)
 
-    features = loaded.selected_layout.features
+    features = loaded.selected.layout.features
     assert features.hardware_cursor is True
     assert features.metal_fx_spatial_upscaling is True
     assert features.native_fullscreen_space is True
+
+
+@pytest.mark.parametrize(
+    ("features", "message"),
+    [
+        ({}, "features must name the three known features"),
+        (
+            {"hardwareCursor": True, "metalFXSpatialUpscaling": True},
+            "features must name the three known features",
+        ),
+        (
+            {
+                "hardwareCursor": True,
+                "metalFXSpatialUpscaling": True,
+                "nativeFullscreenSpace": "yes",
+            },
+            "feature must be a boolean",
+        ),
+    ],
+)
+def test_rejects_incomplete_or_non_boolean_features(
+    tmp_path: Path, features: dict[str, object], message: str
+) -> None:
+    config = tmp_path / "runtime.json"
+    value = valid_config()
+    value["lanes"]["x86"]["interface"]["features"] = features
+    write_config(config, value)
+
+    with pytest.raises(RuntimeError, match=message):
+        runtime_config.load_runtime_config(config)
 
 
 @pytest.mark.parametrize(
@@ -182,7 +210,7 @@ def test_reads_runtime_features(tmp_path: Path) -> None:
         ),
         (
             lambda value: value["lanes"]["x86"].update(prefixRevision=0),
-            "positive integer",
+            "integer of at least 1",
         ),
     ],
 )
@@ -227,6 +255,19 @@ def test_accepts_an_unpublished_lane(tmp_path: Path) -> None:
 
     assert not loaded.lane("arm").runtime.is_available
     assert loaded.lane("arm").layout.mac_driver.parts[-1] == "winemac.so"
+
+
+def test_missing_components_and_provenance_are_empty(tmp_path: Path) -> None:
+    config = tmp_path / "runtime.json"
+    value = valid_config()
+    del value["lanes"]["arm"]["components"]
+    del value["lanes"]["arm"]["provenance"]
+    write_config(config, value)
+
+    loaded = runtime_config.load_runtime_config(config)
+
+    assert loaded.lane("arm").components == {}
+    assert loaded.lane("arm").provenance == {}
 
 
 def test_rejects_a_partial_unpublished_pin(tmp_path: Path) -> None:

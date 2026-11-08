@@ -6,8 +6,6 @@
 # Rules: raw-color, raw-hue, raw-black, raw-white-foreground, numeric-radius, raw-animation,
 # raw-glass, system-font, font-weight, detached-task, off-grid-spacing.
 
-# Preset gallery: scrims and shadows that sit on artwork stay dark in both appearances.
-Sources/ArknightsCustomization/Presets/UI/PresetGalleryGrids.swift:raw-color:3
 
 # Launcher home: artwork scrims, readability gradients, and HUD shadows; not yet on theme tokens.
 Sources/ArknightsLauncherUI/Home/LauncherArtworkView.swift:raw-color:1
@@ -16,10 +14,6 @@ Sources/ArknightsLauncherUI/Home/LauncherReadabilityField.swift:raw-color:2
 
 # Shared controls: HUD shadow and bottom fade over artwork; no theme role matches the alpha.
 Sources/ArknightsCore/Shared/UI/Components/ExpandableHUDPill.swift:raw-color:1
-Sources/ArknightsCore/Shared/UI/Components/FloatingActionBar.swift:raw-color:1
-# Home backdrop and update overlay: opaque black behind artwork or under Reduce Transparency.
-Sources/ArknightsLauncherUI/Home/ContentView.swift:raw-black:2
-Sources/ArknightsLauncherUI/Updates/LauncherUpdateOverlay.swift:raw-black:1
 # Preset gallery applying state: white text on a fixed dark scrim in both appearances.
 Sources/ArknightsCustomization/Presets/UI/PresetGalleryGrids.swift:raw-white-foreground:1
 # LauncherMotion defines the curves, so its spring and ease literals are the motion source.
@@ -30,7 +24,6 @@ Sources/ArknightsCustomization/Artwork/WallpaperColorExtractor.swift:raw-hue:1
 # Off-grid spacing: each value stays on purpose. Each reason says why the value is not on the 4 pt grid.
 # Segment label: a 6 pt icon gap in a small segmented control, which may use the 2 pt step.
 Sources/ArknightsCore/Shared/UI/Components/AdaptiveSegmentedControl.swift:off-grid-spacing:1
-# Settings panel: a 10 pt row inset sets every settings row height; change it only with a design review.
-Sources/ArknightsCore/Shared/UI/Components/Settings/SettingsComponents.swift:off-grid-spacing:1
+
 # Playtime metrics: a 10 pt vertical inset on each metric; not in the audit's fix list, so it waits for a design review.
 Sources/ArknightsGameRuntime/Playtime/PlaytimeStatisticsPage.swift:off-grid-spacing:1

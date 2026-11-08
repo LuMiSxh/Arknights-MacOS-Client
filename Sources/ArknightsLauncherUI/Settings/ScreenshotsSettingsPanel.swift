@@ -32,11 +32,8 @@ struct ScreenshotsSettingsPanel: View {
 						options: shortcutOptions,
 						listTitle: { $0 == .standard ? "⌃⌥S (Default)" : nil },
 						trailingMenuItems: {
-							AnyView(
-								Group {
-									Divider()
-									Button("Record Shortcut…") { isRecordingShortcut = true }
-								})
+							Divider()
+							Button("Record Shortcut…") { isRecordingShortcut = true }
 						})
 				}
 			}

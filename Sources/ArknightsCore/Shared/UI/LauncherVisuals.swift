@@ -6,6 +6,9 @@ package enum LauncherVisuals {
 	/// Fallback accent used only when artwork cannot provide a dynamic theme color.
 	package static let cyan = Color(red: 0.094, green: 0.82, blue: 1)
 
+	/// Opaque black for surfaces that must fully hide whatever sits behind them.
+	package static let opaqueDim = Color.black
+
 	package static let overlayDim = 0.55
 
 	package static func selectedNavigationFill(for accent: Color) -> Color {
@@ -23,6 +26,9 @@ package enum LauncherVisuals {
 		static let disabledForegroundHighContrastOpacity = 0.52
 		static let hudBorderOpacity = 0.16
 		static let hudDisabledSurfaceOpacity = 0.68
+		package static let hudSurfaceOpacity = 0.52
+		static let chromaticHoverOpacity = 0.05
+		package static let inactiveSelectionOpacity = 0.45
 
 		package static func disabledForegroundOpacity(for contrast: ColorSchemeContrast) -> Double {
 			contrast == .increased
@@ -30,6 +36,41 @@ package enum LauncherVisuals {
 				: disabledForegroundOpacity
 		}
 	}
+
+	/// Fixed shades and scrims outside the theme roles.
+	package enum Shade {
+		/// Dark footer gradient behind floating controls.
+		static let footerDarkOpacity = 0.45
+		/// Black scrim over artwork while a preset applies.
+		package static let loadingScrimOpacity = 0.65
+		/// Shadow under preset artwork tiles.
+		package static let artworkShadowOpacity = 0.3
+	}
+
+	/// Shadow opacities for the shared surface kinds.
+	enum Shadow {
+		static let modalDarkOpacity = 0.45
+		static let modalLightOpacity = 0.14
+		static let groupLightOpacity = 0.04
+		static let footerDarkOpacity = 0.35
+		static let footerLightOpacity = 0.12
+	}
+
+	/// Accent halo pulse opacities.
+	enum Halo {
+		static let restingOpacity = 0.1125
+		static let pulseOpacityGain = 0.1375
+	}
+
+	/// Indeterminate progress outline opacities.
+	enum Progress {
+		static let trackRestOpacity = 0.35
+		static let trackBreathOpacity = 0.15
+		static let glintOpacity = 0.65
+	}
+
+	/// Accent focus ring around the focused control.
+	static let focusStrokeOpacity = 0.9
 
 	// Raises the contrast of a chromatic foreground while retaining its hue. macOS 27's
 	// Liquid Glass can blend a tint into the surface until the original accent is too close

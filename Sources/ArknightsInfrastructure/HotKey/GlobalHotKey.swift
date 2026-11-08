@@ -40,7 +40,7 @@ package final class GlobalHotKey: Sendable {
 		let box: Unmanaged<HotKeyBox>
 	}
 
-	private static let signature: OSType = 0x4152_4B48  // "ARKH"
+	fileprivate static let signature: OSType = 0x4152_4B48  // "ARKH"
 	private static let nextID = Mutex<UInt32>(1)
 
 	private let registration: Mutex<Registration?>
@@ -116,7 +116,9 @@ private func hotKeyPressed(
 		event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil,
 		MemoryLayout<EventHotKeyID>.size, nil, &pressed)
 	let box = Unmanaged<HotKeyBox>.fromOpaque(userData).takeUnretainedValue()
-	guard status == noErr, pressed.id == box.id else { return OSStatus(eventNotHandledErr) }
+	guard
+		status == noErr, pressed.signature == GlobalHotKey.signature, pressed.id == box.id
+	else { return OSStatus(eventNotHandledErr) }
 	box.handler()
 	return noErr
 }

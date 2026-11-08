@@ -27,10 +27,6 @@ enum BundledDocument: String, Identifiable {
 		}
 	}
 
-	func load(bundle: Bundle? = nil) throws -> String {
-		try resource.text(in: bundle)
-	}
-
 	func loadAndParse(bundle: Bundle? = nil) async throws -> ParsedMarkdownDocument {
 		try await Self.readAndParse(resource, bundle: bundle)
 	}
@@ -83,7 +79,7 @@ nonisolated struct ParsedMarkdownDocument: Sendable {
 private enum BundledDocumentLoadState {
 	case loading
 	case loaded(ParsedMarkdownDocument)
-	case failed(BundledResourceError)
+	case failed
 }
 
 struct BundledDocumentView: View {
@@ -97,8 +93,8 @@ struct BundledDocumentView: View {
 		ThemedModalView(
 			title: document.title,
 
-			width: 760,
-			height: 600
+			width: LauncherTokens.Layout.documentModalWidth,
+			height: LauncherTokens.Layout.documentModalHeight
 		) {
 			switch loadState {
 			case .loading:
@@ -109,8 +105,8 @@ struct BundledDocumentView: View {
 			case .loaded(let parsedDocument):
 				MarkdownDocument(parsed: parsedDocument)
 					.textSelection(.enabled)
-			case .failed(let error):
-				DocumentLoadErrorView(error: error)
+			case .failed:
+				DocumentLoadErrorView()
 			}
 		} actions: {
 			FloatingDoneButton {
@@ -127,22 +123,15 @@ struct BundledDocumentView: View {
 				loadState = .loaded(parsedDocument)
 			} catch is CancellationError {
 				return
-			} catch let error as BundledResourceError {
-				guard !Task.isCancelled else { return }
-				loadState = .failed(error)
 			} catch {
 				guard !Task.isCancelled else { return }
-				loadState = .failed(
-					.unreadable(path: document.resource.path, reason: error.localizedDescription)
-				)
+				loadState = .failed
 			}
 		}
 	}
 }
 
 private struct DocumentLoadErrorView: View {
-	let error: BundledResourceError
-
 	var body: some View {
 		ContentUnavailableView {
 			Label(

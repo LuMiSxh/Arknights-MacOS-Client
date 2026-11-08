@@ -21,7 +21,12 @@ func sdkLogsAreCopiedForNonYostarPublishersOnly(publisher: GamePublisher, copies
 	try SDKLogCollector.collect(
 		publisher: publisher, source: source, destination: destination, maximumBytes: 4)
 
-	let copied = (try? FileManager.default.contentsOfDirectory(atPath: destination.path)) ?? []
+	let copied: [String]
+	if FileManager.default.fileExists(atPath: destination.path) {
+		copied = try FileManager.default.contentsOfDirectory(atPath: destination.path)
+	} else {
+		copied = []
+	}
 	#expect(Set(copied) == (copies ? ["u8sdk_pc.log", "HGWebview.log"] : []))
 	if copies {
 		#expect(

@@ -55,14 +55,16 @@ struct PlaytimeStatisticsStore: Sendable {
 	}
 
 	private func write(_ statistics: PlaytimeStatistics, sealing: Bool) {
-		gate.isSealed.withLock { isSealed in
-			guard sealing || !isSealed else { return }
+		let shouldWrite = gate.isSealed.withLock { isSealed in
+			guard sealing || !isSealed else { return false }
 			isSealed = isSealed || sealing
-			do {
-				try files.write(statistics, to: fileURL, createParentDirectory: true)
-			} catch {
-				logFailure(error, operation: "save")
-			}
+			return true
+		}
+		guard shouldWrite else { return }
+		do {
+			try files.write(statistics, to: fileURL, createParentDirectory: true)
+		} catch {
+			logFailure(error, operation: "save")
 		}
 	}
 

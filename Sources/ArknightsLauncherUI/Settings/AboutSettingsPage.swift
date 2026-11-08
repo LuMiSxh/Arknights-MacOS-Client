@@ -4,6 +4,7 @@ import AppKit
 import ArknightsCore
 import ArknightsCustomization
 import ArknightsGameRuntime
+import Foundation
 import SwiftUI
 
 struct AboutSettingsPage: View {
@@ -15,6 +16,7 @@ struct AboutSettingsPage: View {
 	@Binding var presentedDocument: BundledDocument?
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isShowingTechnicalDetails = false
+	private static let commitPrefixLength = 12
 
 	var body: some View {
 		SettingsPage(
@@ -78,10 +80,7 @@ struct AboutSettingsPage: View {
 							.foregroundStyle(theme.textSecondary)
 						QuietLink(
 							title: "Learn more",
-							destination: URL(
-								string:
-									"https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/docs/ai-assistance.md"
-							)!
+							destination: SupportLinks.aiAssistance
 						)
 					}
 					.font(.caption)
@@ -129,14 +128,18 @@ struct AboutSettingsPage: View {
 					SettingsHairline()
 					SettingsActionRow(
 						title: "Wine",
-						detail: runtime.wineCommit.map { "Commit \($0.prefix(12))" }
+						detail: runtime.wineCommit.map {
+							"Commit \($0.prefix(Self.commitPrefixLength))"
+						}
 					) {
 						valueText(runtime.wineVersion ?? "—")
 					}
 					SettingsHairline()
 					SettingsActionRow(
 						title: "DXMT",
-						detail: runtime.dxmtCommit.map { "Commit \($0.prefix(12))" }
+						detail: runtime.dxmtCommit.map {
+							"Commit \($0.prefix(Self.commitPrefixLength))"
+						}
 					) {
 						valueText(runtime.dxmtVersion ?? "—")
 					}
@@ -173,13 +176,19 @@ struct AboutSettingsPage: View {
 		HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
 			Image(nsImage: launcherIconManager.currentIcon)
 				.resizable()
-				.frame(width: 76, height: 76)
+				.frame(
+					width: LauncherTokens.Layout.aboutIconSize,
+					height: LauncherTokens.Layout.aboutIconSize
+				)
 				.accessibilityHidden(true)
 			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 				Text("Unofficial macOS launcher")
 					.foregroundStyle(theme.textSecondary)
-				QuietLink(title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!)
-					.font(.callout.weight(.medium))
+				QuietLink(
+					title: "LuMiSxh",
+					destination: SupportLinks.maintainerProfile
+				)
+				.font(.callout.weight(.medium))
 			}
 		}
 	}
@@ -196,9 +205,7 @@ struct AboutSettingsPage: View {
 			CapsuleActionButton(
 				title: "GitHub", tone: .neutral
 			) {
-				NSWorkspace.shared.open(
-					URL(string: "https://github.com/LuMiSxh/Arknights-MacOS-Client")!
-				)
+				NSWorkspace.shared.open(SupportLinks.sourceRepository)
 			}
 			.help("Open project repository")
 			CapsuleActionButton(
@@ -215,11 +222,10 @@ struct AboutSettingsPage: View {
 	@ViewBuilder
 	private func documentLink(
 		_ document: BundledDocument,
-		title: String,
 		systemImage: String
 	) -> some View {
 		DocumentLinkRow(
-			title: title,
+			title: document.title,
 			systemImage: systemImage
 		) {
 			presentedDocument = document
@@ -228,24 +234,22 @@ struct AboutSettingsPage: View {
 
 	/// Lists the documents once for both layouts. The inline row fills its width; the
 	/// stacked list separates rows with hairlines.
-	/// Lists the documents once for both layouts. The inline row fills its width; the
-	/// stacked list separates rows with hairlines.
 	@ViewBuilder
 	private func documentLinks(isInline: Bool) -> some View {
 		documentLink(
-			.changelog, title: "Changelog",
+			.changelog,
 			systemImage: "clock.arrow.circlepath"
 		)
 		.frame(maxWidth: isInline ? .infinity : nil)
 		if !isInline { SettingsHairline() }
 		documentLink(
-			.projectLicense, title: "MPL-2.0 License",
+			.projectLicense,
 			systemImage: "checkmark.seal"
 		)
 		.frame(maxWidth: isInline ? .infinity : nil)
 		if !isInline { SettingsHairline() }
 		documentLink(
-			.thirdPartyNotices, title: "Third-Party Notices",
+			.thirdPartyNotices,
 			systemImage: "doc.on.doc"
 		)
 		.frame(maxWidth: isInline ? .infinity : nil)

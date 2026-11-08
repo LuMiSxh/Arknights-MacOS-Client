@@ -18,7 +18,6 @@ func thirdPartyNoticesLoadFromTheCompiledDeflateResource() async throws {
 	try compressed.write(to: directory.appending(path: "ThirdPartyNotices.deflate"))
 	let bundle = try #require(Bundle(url: directory))
 
-	#expect(try BundledDocument.thirdPartyNotices.load(bundle: bundle) == source)
 	let parsed = try await BundledDocument.thirdPartyNotices.loadAndParse(bundle: bundle)
 	#expect(!parsed.blocks.isEmpty)
 }

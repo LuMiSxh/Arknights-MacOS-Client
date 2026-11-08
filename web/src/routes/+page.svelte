@@ -27,7 +27,7 @@
 	] as const;
 	const route = [
 		'Apple Silicon',
-		'Rosetta 2',
+		'Rosetta 2 or ARM64',
 		'Wine + DXMT',
 		'Official PC client'
 	];

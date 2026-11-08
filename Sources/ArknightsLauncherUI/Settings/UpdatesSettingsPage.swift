@@ -11,7 +11,7 @@ struct UpdatesSettingsPage: View {
 	let lifecycle: LauncherLifecycleStore
 	let appVersion: String
 	private static let announcementsTitle = "Announcements"
-	let actions: any LauncherActions
+	let actions: any LauncherUpdateActions
 	let checkLauncherUpdates: () -> Void
 
 	var body: some View {

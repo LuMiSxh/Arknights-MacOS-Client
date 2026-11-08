@@ -19,7 +19,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 from lib.console import warning
-from lib.http import fetch
+from lib.http import Response, fetch
 from lib.wallpapers import GalleryWallpaper
 
 GEMINI_MODEL = "gemini-3.5-flash"
@@ -35,6 +35,7 @@ CHARACTER_TABLE_URL = (
 CHARACTER_TABLE_PREFIX = "char_"
 IMAGE_TIMEOUT_SECONDS = 30
 MAXIMUM_IMAGE_BYTES = 20 * 1024 * 1024
+MAXIMUM_GEMINI_RESPONSE_BYTES = 1024 * 1024
 FALLBACK_IMAGE_TYPE = "image/jpeg"
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
 JSON_ARRAY_START = re.compile(r"\[")
@@ -101,7 +102,7 @@ def operator_names_from_table(raw: bytes) -> set[str]:
 def fetch_operator_names() -> frozenset[str]:
     """Return English operator names, or an empty set when the table is unreachable."""
     try:
-        return frozenset(operator_names_from_table(download(CHARACTER_TABLE_URL)))
+        return frozenset(operator_names_from_table(download(CHARACTER_TABLE_URL).body))
     except (OSError, ValueError, TypeError) as error:
         warning(
             f"Could not load operator names; labelling uses manifest tags only: {error}"
@@ -109,28 +110,13 @@ def fetch_operator_names() -> frozenset[str]:
         return frozenset()
 
 
-def download(url: str) -> bytes:
+def download(url: str) -> Response:
     return fetch(
         url,
         user_agent=USER_AGENT,
         timeout=IMAGE_TIMEOUT_SECONDS,
         max_bytes=MAXIMUM_IMAGE_BYTES,
-    ).body
-
-
-def download_image(url: str) -> tuple[bytes, str]:
-    response = fetch(
-        url,
-        user_agent=USER_AGENT,
-        timeout=IMAGE_TIMEOUT_SECONDS,
-        max_bytes=MAXIMUM_IMAGE_BYTES,
     )
-    mime_type = (
-        response.content_type
-        if response.content_type.startswith("image/")
-        else FALLBACK_IMAGE_TYPE
-    )
-    return response.body, mime_type
 
 
 def build_prompt(title: str, vocabulary: Sequence[str]) -> str:
@@ -184,8 +170,21 @@ def build_gemini_request(
 
 
 def generate_content(request: urllib.request.Request) -> object:
-    with urllib.request.urlopen(request, timeout=GEMINI_TIMEOUT_SECONDS) as response:
-        return json.load(response)
+    headers = {
+        key: value
+        for key, value in request.header_items()
+        if key.lower() != "user-agent"
+    }
+    response = fetch(
+        request.full_url,
+        user_agent=USER_AGENT,
+        timeout=GEMINI_TIMEOUT_SECONDS,
+        max_bytes=MAXIMUM_GEMINI_RESPONSE_BYTES,
+        headers=headers,
+        data=request.data,
+        method=request.get_method(),
+    )
+    return json.loads(response.body)
 
 
 def response_text(payload: object) -> str:
@@ -215,10 +214,15 @@ class WallpaperTagger:
 
     def suggest(self, wallpaper: GalleryWallpaper) -> WallpaperSuggestion:
         try:
-            image, mime_type = download_image(wallpaper.image_url)
+            response = download(wallpaper.image_url)
+            mime_type = (
+                response.content_type
+                if response.content_type.startswith("image/")
+                else FALLBACK_IMAGE_TYPE
+            )
             request = build_gemini_request(
                 self.api_key,
-                image,
+                response.body,
                 mime_type,
                 build_prompt(wallpaper.title, self.vocabulary),
             )

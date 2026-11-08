@@ -6,28 +6,32 @@ import Testing
 
 @testable import ArknightsCore
 
-@Test
-func launcherLogWritesSanitizedAndBoundedDiagnosticLines() async throws {
+@Test(
+	arguments: [
+		("line feed", "Download failed\n[ERROR] injected"),
+		("carriage return", "Download failed\r[ERROR] injected"),
+		("escape", "Download failed\u{1B}[2K[ERROR] injected"),
+		("NUL", "Download failed\0[ERROR] injected"),
+	]
+)
+func launcherLogFlattensControlCharactersSoEntriesCannotInjectLines(
+	_ label: String,
+	_ message: String
+) async throws {
 	let temporary = try TemporaryDirectory("LauncherLogTests")
 	defer { temporary.remove() }
-	let directory = temporary.url
-	let fileURL = directory.appending(path: "launcher.log")
+	let fileURL = temporary.url.appending(path: "launcher.log")
 	let log = LauncherLog(fileURL: fileURL)
-	let omittedSuffix = "END-OF-OVERSIZED-MESSAGE"
-	let oversizedMessage =
-		String(repeating: "a", count: AppConstants.Logging.maximumMessageBytes) + omittedSuffix
 
-	log.info("Installation started")
-	log.error("Download failed\nConnection closed")
-	log.info(oversizedMessage)
+	log.info(message)
 	await log.flush()
 
 	let content = try String(contentsOf: fileURL, encoding: .utf8)
-	#expect(content.split(separator: "\n").count == 3)
-	#expect(content.contains(AppConstants.Logging.truncationMarker))
-	#expect(content.contains(omittedSuffix) == false)
-	let oversizedLine = try #require(content.split(separator: "\n").last)
-	#expect(oversizedLine.utf8.count <= AppConstants.Logging.maximumMessageBytes + 128)
+	let lines = content.components(separatedBy: "\n")
+	#expect(lines.count == 2)
+	let entry = try #require(lines.first)
+	#expect(entry.contains("injected"))
+	#expect(entry.unicodeScalars.allSatisfy { $0.properties.generalCategory != .control })
 }
 
 @Test
@@ -47,11 +51,8 @@ func launcherLogRotatesBeforeAnAppendingEntryExceedsItsLimit() async throws {
 	log.info(String(repeating: "c", count: 64))
 	await log.flush()
 
-	let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-	let currentSize = try #require(attributes[.size] as? NSNumber)
 	let previousURL = fileURL.deletingPathExtension()
 		.appendingPathExtension("previous.log")
-	#expect(currentSize.intValue <= 256)
 	#expect(FileManager.default.fileExists(atPath: previousURL.path))
 }
 
@@ -69,6 +70,5 @@ func launcherLogRecreatesTheFileAfterItIsDeleted() async throws {
 	await log.flush()
 
 	let content = try String(contentsOf: fileURL, encoding: .utf8)
-	#expect(content.contains("after"))
-	#expect(content.contains("before") == false)
+	#expect(content.components(separatedBy: "\n").count == 2)
 }

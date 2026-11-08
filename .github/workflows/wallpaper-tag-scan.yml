@@ -14,8 +14,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  scan:
-    name: Scan wallpapers
+  tag:
+    name: Suggest wallpaper tags
+    runs-on: xcode-27
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          prune-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Suggest wallpaper tags
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: uv run --locked --no-dev scripts/scan_untagged_wallpapers.py --tag-only wallpaper-suggestions.json
+
+      - name: Upload tag suggestions
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wallpaper-suggestions
+          path: wallpaper-suggestions.json
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: File wallpaper tagging results
+    needs: tag
     runs-on: xcode-27
     timeout-minutes: 15
     permissions:
@@ -39,12 +72,16 @@ jobs:
           prune-cache: true
           cache-dependency-glob: uv.lock
 
+      - name: Download tag suggestions
+        env:
+          RUN_ID: ${{ github.run_id }}
+          ARTIFACT_NAME: wallpaper-suggestions
+        run: gh run download "$RUN_ID" --name "$ARTIFACT_NAME" --dir .
+
       - name: Configure git identity
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
 
-      - name: Scan for untagged wallpapers
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: uv run --locked --no-dev scripts/scan_untagged_wallpapers.py
+      - name: File issue and pull request
+        run: uv run --locked --no-dev scripts/scan_untagged_wallpapers.py --publish wallpaper-suggestions.json

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
-package struct ThemedTextField: View {
+struct ThemedTextField: View {
 	let title: String
 	let prompt: String?
-	@Binding package var text: String
+	@Binding var text: String
 	var systemImage: String?
 	var leadingText: String?
 
@@ -13,7 +14,7 @@ package struct ThemedTextField: View {
 	@Environment(\.isEnabled) private var isEnabled
 	@FocusState private var isFocused: Bool
 
-	package init(
+	init(
 		_ title: String,
 		prompt: String? = nil,
 		text: Binding<String>,
@@ -27,7 +28,7 @@ package struct ThemedTextField: View {
 		self.leadingText = leadingText
 	}
 
-	package var body: some View {
+	var body: some View {
 		HStack(spacing: LauncherTokens.Spacing.control) {
 			if let leadingText {
 				Text(leadingText)

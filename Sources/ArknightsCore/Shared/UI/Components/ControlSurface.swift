@@ -182,7 +182,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 		if presentation == .hud {
 			return theme.hoverTint
 		}
-		if chromatic { return tint.opacity(0.05) }
+		if chromatic { return tint.opacity(LauncherVisuals.Control.chromaticHoverOpacity) }
 		return theme.hoverTint
 	}
 

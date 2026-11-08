@@ -7,7 +7,7 @@
 **Play Arknights PC on Apple Silicon Macs.** This free, unofficial launcher sets up the game. It runs the publisher's Windows game through a downloaded Wine and DXMT runtime.
 
 [![Release](https://img.shields.io/github/v/release/LuMiSxh/Arknights-MacOS-Client?style=flat-square&labelColor=23252a&color=477acc)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases)
-[![macOS 15–27](https://img.shields.io/badge/macOS-15%E2%80%9327-477acc?style=flat-square&labelColor=23252a)](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/)
+[![macOS 15+](https://img.shields.io/badge/macOS-15%2B-477acc?style=flat-square&labelColor=23252a)](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime/)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-required-477acc?style=flat-square&labelColor=23252a)](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements)
 [![MPL-2.0 license](https://img.shields.io/badge/license-MPL--2.0-477acc?style=flat-square&labelColor=23252a)](LICENSE)
 
@@ -19,7 +19,7 @@
 
 ## Get started
 
-1. Use an Apple silicon Mac (M-series, or the A18 Pro in MacBook Neo) with macOS 15–27, Rosetta 2 (the setup assistant can install it), and free space for the game. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements) and [runtime compatibility](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/).
+1. Use an Apple silicon Mac (M-series, or the A18 Pro in MacBook Neo) with macOS 15 or later, and free space for the game. The x86_64 runtime needs Rosetta 2 (the setup assistant can install it). The ARM64 runtime needs macOS 26 or later. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements) and [game runtime](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime/).
 2. Download **Arknights.Client.dmg** from the [latest release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest). Drag the app to **Applications**.
 3. Open the app. Releases are not notarized, so macOS can block it. The [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) shows how to allow it.
 4. Choose your server. The setup assistant downloads the official game files.

@@ -32,6 +32,7 @@ struct LauncherSettingsView: View {
 	let actions: any LauncherActions
 	let restartOnboarding: () -> Void
 	let requestLauncherUpdateCheck: () -> Void
+	let openProblemReport: () -> Void
 	let developerSimulation: DeveloperSimulationBinding?
 	let windowSize: CGSize
 	@Environment(\.dismiss) private var dismiss
@@ -103,7 +104,8 @@ struct LauncherSettingsView: View {
 							gameSession: gameSession,
 							runtimeSelection: runtimeSelection,
 							lifecycle: lifecycle,
-							actions: actions
+							actions: actions,
+							maintenance: actions
 						)
 					case .storage:
 						StorageOverviewPage(
@@ -125,8 +127,9 @@ struct LauncherSettingsView: View {
 					case .help:
 						HelpSettingsPage(
 							region: installation.region,
-							runtimeName: lifecycle.state.readiness.runtimeName,
 							actions: actions,
+							maintenance: actions,
+							openProblemReport: openProblemReport,
 							installation: installation,
 							gameSession: gameSession,
 							lifecycle: lifecycle,

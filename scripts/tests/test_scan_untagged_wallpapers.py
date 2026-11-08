@@ -22,24 +22,6 @@ def test_parse_image_field_supported_shapes(value: object, expected: object) -> 
     assert parse_image_field(value) == expected
 
 
-def test_load_tagged_ids_from_manifest(tmp_path: Path) -> None:
-    manifest_path = tmp_path / "WallpaperTags.json"
-    manifest_path.write_text(
-        json.dumps(
-            {
-                "schemaVersion": 1,
-                "tags": {"global-1": ["amiya"], "global-2": []},
-            }
-        ),
-        encoding="utf-8",
-    )
-    assert scan.load_tagged_ids(manifest_path) == {"global-1", "global-2"}
-
-
-def test_load_tagged_ids_missing_file_is_empty() -> None:
-    assert scan.load_tagged_ids(Path("/nonexistent/WallpaperTags.json")) == set()
-
-
 def test_find_untagged_excludes_tagged_and_filed() -> None:
     wallpapers = [
         GalleryWallpaper(id="global-1", title="A", image_url="https://a"),
@@ -50,6 +32,39 @@ def test_find_untagged_excludes_tagged_and_filed() -> None:
         wallpapers, tagged_ids={"global-1"}, filed_ids={"global-2"}
     )
     assert [wallpaper.id for wallpaper in untagged] == ["global-3"]
+
+
+def test_suggestion_document_round_trips(tmp_path: Path) -> None:
+    wallpapers = [
+        GalleryWallpaper(id="global-1", title="A", image_url="https://a"),
+        GalleryWallpaper(id="global-2", title="B", image_url="https://b"),
+    ]
+    suggestions = {
+        "global-1": WallpaperSuggestion(
+            "global-1",
+            (
+                SuggestedTag("amiya", known=True),
+                SuggestedTag("made up event", known=False),
+            ),
+        )
+    }
+    path = tmp_path / "suggestions.json"
+    path.write_text(
+        json.dumps(scan.suggestion_document(wallpapers, suggestions)), encoding="utf-8"
+    )
+
+    read_wallpapers, read_suggestions = scan.read_suggestion_document(path)
+
+    assert read_wallpapers == wallpapers
+    assert read_suggestions["global-1"].tags == suggestions["global-1"].tags
+    assert read_suggestions["global-2"].tags == ()
+
+
+def test_tagging_branch_is_unique_per_run() -> None:
+    first = scan.tagging_branch("2026-11-08")
+    second = scan.tagging_branch("2026-11-08")
+    assert first != second
+    assert first.startswith("chore/wallpaper-tags-2026-11-08-")
 
 
 def test_issue_body_has_one_marker_per_wallpaper() -> None:

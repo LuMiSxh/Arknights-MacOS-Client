@@ -9,30 +9,39 @@ package final class LauncherPreferencesController {
 	private let log: LauncherLog?
 	package var launchOptions: GameLaunchOptions = .default {
 		didSet {
-			guard isLoaded else { return }
-			do {
-				try store.setLaunchOptions(launchOptions)
-			} catch {
-				log?.error("Could not save game launch options: \(error.localizedDescription)")
+			persist {
+				do {
+					try store.setLaunchOptions(launchOptions)
+				} catch {
+					log?.error(
+						"Could not save game launch options: \(error.localizedDescription)")
+				}
 			}
 		}
 	}
 	package var automaticallyChecksLauncherUpdates = Key.automaticLauncherUpdates.defaultValue {
 		didSet {
-			persist(automaticallyChecksLauncherUpdates, for: Key.automaticLauncherUpdates)
-			if automaticallyChecksLauncherUpdates { onLauncherUpdateCheckRequested?() }
+			persist(automaticallyChecksLauncherUpdates, for: Key.automaticLauncherUpdates) {
+				if !isReloading, automaticallyChecksLauncherUpdates {
+					onLauncherUpdateCheckRequested?()
+				}
+			}
 		}
 	}
 	package var automaticallyChecksGameUpdates = Key.automaticGameUpdates.defaultValue {
 		didSet {
-			persist(automaticallyChecksGameUpdates, for: Key.automaticGameUpdates)
-			if automaticallyChecksGameUpdates { onGameUpdateCheckRequested?() }
+			persist(automaticallyChecksGameUpdates, for: Key.automaticGameUpdates) {
+				if !isReloading, automaticallyChecksGameUpdates {
+					onGameUpdateCheckRequested?()
+				}
+			}
 		}
 	}
 	package var announcementsEnabled = Key.announcementsEnabled.defaultValue {
 		didSet {
-			persist(announcementsEnabled, for: Key.announcementsEnabled)
-			if announcementsEnabled { onAnnouncementCheckRequested?() }
+			persist(announcementsEnabled, for: Key.announcementsEnabled) {
+				if !isReloading, announcementsEnabled { onAnnouncementCheckRequested?() }
+			}
 		}
 	}
 	package var showsServerResetCountdown = Key.showsServerResetCountdown.defaultValue {
@@ -55,8 +64,9 @@ package final class LauncherPreferencesController {
 	}
 	package var showsDiscordPresence = Key.showsDiscordPresence.defaultValue {
 		didSet {
-			persist(showsDiscordPresence, for: Key.showsDiscordPresence)
-			onDiscordPresenceChanged?()
+			persist(showsDiscordPresence, for: Key.showsDiscordPresence) {
+				onDiscordPresenceChanged?()
+			}
 		}
 	}
 	package var launcherMusicVolume = Key.launcherMusicVolume.defaultValue {
@@ -67,48 +77,43 @@ package final class LauncherPreferencesController {
 	}
 	package var usesDynamicTheme = Key.usesDynamicTheme.defaultValue {
 		didSet {
-			persist(usesDynamicTheme, for: Key.usesDynamicTheme)
-			onDynamicThemeChanged?()
+			persist(usesDynamicTheme, for: Key.usesDynamicTheme) {
+				onDynamicThemeChanged?()
+			}
 		}
 	}
 	package var launcherAppearance: LauncherAppearance = .system {
-		didSet {
-			guard isLoaded else { return }
-			store.setLauncherAppearance(launcherAppearance)
-		}
+		didSet { persist { store.setLauncherAppearance(launcherAppearance) } }
 	}
 	package var homeTheme: HomeTheme = .automatic {
-		didSet {
-			guard isLoaded else { return }
-			store.setHomeTheme(homeTheme)
-		}
+		didSet { persist { store.setHomeTheme(homeTheme) } }
 	}
 	package var brandingTheme: HomeTheme = .automatic {
-		didSet {
-			guard isLoaded else { return }
-			store.setBrandingTheme(brandingTheme)
-		}
+		didSet { persist { store.setBrandingTheme(brandingTheme) } }
 	}
 
 	package var resetReminderTiming: ResetReminderTiming = .off {
 		didSet {
-			guard isLoaded else { return }
-			store.setResetReminderTiming(resetReminderTiming)
-			onResetReminderChanged?()
+			persist {
+				store.setResetReminderTiming(resetReminderTiming)
+				onResetReminderChanged?()
+			}
 		}
 	}
 
 	package var resetReminderRegions: [GameRegion] = [] {
 		didSet {
-			guard isLoaded else { return }
-			store.setResetReminderRegions(resetReminderRegions)
-			onResetReminderChanged?()
+			persist {
+				store.setResetReminderRegions(resetReminderRegions)
+				onResetReminderChanged?()
+			}
 		}
 	}
 	package var canaryFeaturesEnabled = Key.canaryFeaturesEnabled.defaultValue {
 		didSet {
-			persist(canaryFeaturesEnabled, for: Key.canaryFeaturesEnabled)
-			onCanaryFeaturesChanged?(canaryFeaturesEnabled)
+			persist(canaryFeaturesEnabled, for: Key.canaryFeaturesEnabled) {
+				onCanaryFeaturesChanged?(canaryFeaturesEnabled)
+			}
 		}
 	}
 	package var usesHardwareCursor = Key.usesHardwareCursor.defaultValue {
@@ -121,27 +126,23 @@ package final class LauncherPreferencesController {
 		didSet { persist(batterySaverEnabled, for: Key.batterySaverEnabled) }
 	}
 	package var batterySaverFrameRateLimit: GameFrameRateLimit = .fps30 {
-		didSet {
-			guard isLoaded else { return }
-			store.setBatterySaverFrameRateLimit(batterySaverFrameRateLimit)
-		}
+		didSet { persist { store.setBatterySaverFrameRateLimit(batterySaverFrameRateLimit) } }
 	}
 	package var screenshotShortcut: ScreenshotShortcut = .off {
 		didSet {
-			guard isLoaded else { return }
-			store.setScreenshotShortcut(screenshotShortcut)
-			onScreenshotShortcutChanged?(oldValue)
+			persist {
+				store.setScreenshotShortcut(screenshotShortcut)
+				onScreenshotShortcutChanged?(oldValue)
+			}
 		}
 	}
 	package var screenshotNotifies = Key.screenshotNotifies.defaultValue {
 		didSet { persist(screenshotNotifies, for: Key.screenshotNotifies) }
 	}
 	/// The folder the user chose for screenshots, or `nil` for the default folder.
+	/// The folder the user chose for screenshots, or `nil` for the default folder.
 	package var screenshotDirectory: URL? {
-		didSet {
-			guard isLoaded else { return }
-			store.setScreenshotDirectory(screenshotDirectory)
-		}
+		didSet { persist { store.setScreenshotDirectory(screenshotDirectory) } }
 	}
 	package var regionAccess: RegionAccess {
 		RegionAccess(
@@ -162,6 +163,8 @@ package final class LauncherPreferencesController {
 	private let store: LauncherPreferencesStore
 	// `init` loads without writing defaults back; later changes persist.
 	@ObservationIgnored private var isLoaded = false
+	// True while `resetToDefaults` reloads, so a default value does not start a network check.
+	@ObservationIgnored private var isReloading = false
 
 	package init(store: LauncherPreferencesStore, log: LauncherLog? = nil) {
 		self.store = store
@@ -171,11 +174,13 @@ package final class LauncherPreferencesController {
 	}
 
 	/// Keeps region and installation locations intact because they point to user files.
+	/// Keeps region and installation locations intact because they point to user files.
 	package func resetToDefaults(canModifyLaunchOptions: Bool) -> Bool {
 		guard canModifyLaunchOptions else { return false }
+		isReloading = true
 		store.removeResettablePreferences()
-		// Reloading runs each property's change handlers with the defaults.
 		reload()
+		isReloading = false
 		return true
 	}
 
@@ -185,7 +190,7 @@ package final class LauncherPreferencesController {
 		automaticallyChecksLauncherUpdates = store.value(Key.automaticLauncherUpdates)
 		automaticallyChecksGameUpdates = store.value(Key.automaticGameUpdates)
 		announcementsEnabled = store.value(Key.announcementsEnabled)
-		launchOptions = store.launchOptions()
+		launchOptions = store.launchOptions(log: log)
 		showsServerResetCountdown = store.value(Key.showsServerResetCountdown)
 		showsGameVersion = store.value(Key.showsGameVersion)
 		showsBranding = store.value(Key.showsBranding)
@@ -213,9 +218,19 @@ package final class LauncherPreferencesController {
 
 	private func persist<Value: Sendable>(
 		_ value: Value,
-		for key: LauncherPreferencesStore.ScalarKey<Value>
+		for key: LauncherPreferencesStore.ScalarKey<Value>,
+		then effect: () -> Void = {}
 	) {
+		persist {
+			store.set(value, for: key)
+			effect()
+		}
+	}
+
+	/// Runs a preference write only after `init` has loaded the stored values. Reloading then
+	/// never writes defaults back or fires change handlers.
+	private func persist(_ write: () -> Void) {
 		guard isLoaded else { return }
-		store.set(value, for: key)
+		write()
 	}
 }

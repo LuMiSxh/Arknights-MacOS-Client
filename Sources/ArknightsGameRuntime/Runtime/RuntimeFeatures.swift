@@ -33,12 +33,11 @@ package struct RuntimeFeatures: Equatable, Sendable, Codable {
 
 	package init(from decoder: any Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
-		hardwareCursor =
-			try container.decodeIfPresent(Bool.self, forKey: .hardwareCursor) ?? false
+		hardwareCursor = try container.decode(Bool.self, forKey: .hardwareCursor)
 		metalFXSpatialUpscaling =
-			try container.decodeIfPresent(Bool.self, forKey: .metalFXSpatialUpscaling) ?? false
+			try container.decode(Bool.self, forKey: .metalFXSpatialUpscaling)
 		nativeFullscreenSpace =
-			try container.decodeIfPresent(Bool.self, forKey: .nativeFullscreenSpace) ?? false
+			try container.decode(Bool.self, forKey: .nativeFullscreenSpace)
 	}
 
 	/// Only fullscreen windows move into a native Space; windowed modes keep the normal window.
@@ -46,17 +45,4 @@ package struct RuntimeFeatures: Equatable, Sendable, Codable {
 		nativeFullscreenSpace && displayMode == .fullscreen
 	}
 
-	package func environmentOverrides(
-		usesHardwareCursor: Bool,
-		displayMode: GameDisplayMode
-	) -> [String: String] {
-		var overrides: [String: String] = [:]
-		if hardwareCursor && usesHardwareCursor {
-			overrides[AppConstants.Runtime.hardwareCursorEnvironmentKey] = "1"
-		}
-		if usesNativeFullscreenSpace(for: displayMode) {
-			overrides[AppConstants.Runtime.nativeFullscreenSpaceEnvironmentKey] = "1"
-		}
-		return overrides
-	}
 }

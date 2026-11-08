@@ -411,8 +411,10 @@ struct WineRuntime: Sendable {
 			do {
 				try spawnGate.runIfAllowed(process: controller) { try controller.run() }
 			} catch is CancellationError {
+				process.terminate()
 				throw CancellationError()
 			} catch {
+				process.terminate()
 				logHandle.appendLaunchLogLine(
 					"Arknights Client: Bilibili window controller failed: \(error)\n", log: log)
 				throw GameRuntimeError.bilibiliControllerFailed(String(describing: error))
@@ -443,10 +445,9 @@ struct WineRuntime: Sendable {
 		controllerEnvironment.removeValue(forKey: "DYLD_INSERT_LIBRARIES")
 		controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_GAME_ICON_PATH")
 		controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_LAUNCHER_PID")
-		controllerEnvironment.removeValue(
-			forKey: AppConstants.Runtime.hardwareCursorEnvironmentKey)
-		controllerEnvironment.removeValue(
-			forKey: AppConstants.Runtime.metalFXSpatialUpscalingEnvironmentKey)
+		// The controller is a helper window, so it never uses the game's cursor or MetalFX path.
+		controllerEnvironment[AppConstants.Runtime.hardwareCursorEnvironmentKey] = "0"
+		controllerEnvironment[AppConstants.Runtime.metalFXSpatialUpscalingEnvironmentKey] = "0"
 		return controllerEnvironment
 	}
 

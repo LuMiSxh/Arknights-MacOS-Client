@@ -46,7 +46,10 @@ package struct SectionPageHeader: View {
 				.foregroundStyle(theme.textSecondary)
 				.fixedSize(horizontal: false, vertical: fixesSubtitleHeight)
 			HStack(spacing: LauncherTokens.Spacing.control) {
-				Rectangle().fill(theme.accentFill).frame(width: 72, height: 3)
+				Rectangle().fill(theme.accentFill)
+					.frame(
+						width: LauncherTokens.Layout.sectionAccentRuleWidth,
+						height: LauncherTokens.Layout.sectionAccentRuleHeight)
 				Rectangle().fill(theme.hairline)
 					.frame(height: 1)
 					.frame(maxWidth: .infinity)
@@ -180,7 +183,8 @@ package struct SettingsPanel<Content: View>: View {
 							rows[index]
 								.frame(maxWidth: .infinity, alignment: .leading)
 								.padding(.horizontal, LauncherTokens.Spacing.content)
-								.padding(.vertical, 10)
+								.padding(
+									.vertical, LauncherTokens.ControlPadding.settingsRowVertical)
 						}
 					}
 				}

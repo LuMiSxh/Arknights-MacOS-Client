@@ -8,8 +8,9 @@ import SwiftUI
 
 struct HelpSettingsPage: View {
 	let region: GameRegion
-	let runtimeName: String?
-	let actions: any LauncherActions
+	let actions: any LauncherDiagnosticsActions
+	let maintenance: any LauncherSettingsActions
+	let openProblemReport: () -> Void
 	let installation: InstallationController
 	let gameSession: GameSessionController
 	let lifecycle: LauncherLifecycleStore
@@ -112,7 +113,7 @@ struct HelpSettingsPage: View {
 					title: "Rebuild game environment",
 					detail: InstallationConfirmation.rebuildDetail,
 					help:
-						"Recreates the Wine prefix with its graphics layer and registry overrides. Your game files stay installed.",
+						"Recreates the game environment. Your game files stay installed.",
 					buttonTitle: "Rebuild…",
 					systemImage: "arrow.triangle.2.circlepath",
 					isDisabled: !installation.canModifyGameFiles,
@@ -122,9 +123,9 @@ struct HelpSettingsPage: View {
 				SettingsHairline()
 				InstallationDestructiveRow(
 					title: "Delete game environment",
-					detail: "Signs you out of Yostar, Google, Apple and Facebook. Game files stay.",
+					detail: "Signs you out of every sign-in provider. Game files stay.",
 					help:
-						"Deletes the Wine prefix folder shared by this publisher’s servers.",
+						"Deletes the game environment shared by this publisher’s servers.",
 					buttonTitle: "Delete Environment…",
 					systemImage: "trash",
 					isDisabled: !installation.canModifyGameFiles,
@@ -143,11 +144,11 @@ struct HelpSettingsPage: View {
 				)
 			}
 		}
-		.installationConfirmation($confirmation, gameSession: gameSession, actions: actions)
+		.installationConfirmation($confirmation, gameSession: gameSession, actions: maintenance)
 	}
 
 	private func reportLauncherProblem() {
-		NSWorkspace.shared.open(IssueReportURL.build(runtimeName: runtimeName, source: .settings))
+		openProblemReport()
 	}
 
 	private func contactPublisher() {

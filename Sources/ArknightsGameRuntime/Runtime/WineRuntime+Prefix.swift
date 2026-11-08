@@ -131,7 +131,7 @@ extension WineRuntime {
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
 		let dxmtPayload = runtimeRoot.appending(
 			path: dxmtPayloadDirectory, directoryHint: .isDirectory)
-		let dxmtCurrent = Self.dxmtIsCurrent(
+		let dxmtCurrent = try Self.dxmtIsCurrent(
 			from: dxmtPayload,
 			in: prefixDirectory,
 			fileManager: fileManager,
@@ -382,8 +382,8 @@ extension WineRuntime {
 					.appending(path: destination.architecture)
 					.appending(path: library)
 				let destination = destinationDirectory.appending(path: library)
-				if filesMatch(source, destination, fileManager: fileManager) { continue }
 				if fileManager.fileExists(atPath: destination.path) {
+					if try filesMatch(source, destination, fileManager: fileManager) { continue }
 					try fileManager.removeItem(at: destination)
 				}
 				try fileManager.copyItem(at: source, to: destination)
@@ -397,7 +397,7 @@ extension WineRuntime {
 		fileManager: FileManager = .default,
 		destinations: [DXMTDestination] = dxmtDestinations,
 		libraries: [String] = dxmtLibraryNames
-	) -> Bool {
+	) throws -> Bool {
 		for destination in destinations {
 			for library in libraries {
 				let source =
@@ -409,7 +409,9 @@ extension WineRuntime {
 					.appending(path: "drive_c/windows", directoryHint: .isDirectory)
 					.appending(path: destination.windowsDirectory, directoryHint: .isDirectory)
 					.appending(path: library)
-				guard filesMatch(source, destination, fileManager: fileManager) else {
+				guard fileManager.fileExists(atPath: destination.path),
+					try filesMatch(source, destination, fileManager: fileManager)
+				else {
 					return false
 				}
 			}
@@ -417,17 +419,14 @@ extension WineRuntime {
 		return true
 	}
 
-	private static func filesMatch(_ lhs: URL, _ rhs: URL, fileManager: FileManager) -> Bool {
-		guard
-			let lhsValues = try? lhs.resourceValues(forKeys: [
-				.fileSizeKey, .contentModificationDateKey,
-			]),
-			let rhsValues = try? rhs.resourceValues(forKeys: [
-				.fileSizeKey, .contentModificationDateKey,
-			])
-		else {
-			return false
-		}
+	private static func filesMatch(_ lhs: URL, _ rhs: URL, fileManager: FileManager) throws -> Bool
+	{
+		let lhsValues = try lhs.resourceValues(forKeys: [
+			.fileSizeKey, .contentModificationDateKey,
+		])
+		let rhsValues = try rhs.resourceValues(forKeys: [
+			.fileSizeKey, .contentModificationDateKey,
+		])
 		return lhsValues.fileSize == rhsValues.fileSize
 			&& lhsValues.contentModificationDate == rhsValues.contentModificationDate
 	}

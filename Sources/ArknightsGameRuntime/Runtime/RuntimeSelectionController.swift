@@ -156,6 +156,7 @@ package final class RuntimeSelectionController {
 	package var isSelectedLaneInstalled: Bool { installedVersions[selectedLane] != nil }
 	/// True after `select` persists a lane that this process cannot use until it starts again.
 	package var requiresRelaunch: Bool { selectedLane != paths.runtimeLane }
+	package var allowsX86: Bool { access.allows(.x86) }
 	package var allowsARM64: Bool { access.allows(.arm) }
 
 	package var installFraction: Double? {
@@ -208,7 +209,7 @@ package final class RuntimeSelectionController {
 				"Runtime selection failed; code=\(self.failure?.code?.rawValue ?? "none"); \(configurationFailure.diagnosticDescription)"
 			)
 		} else if self.availableLanes.isEmpty {
-			let error = RuntimeSelectionError.unavailablePin(.x86)
+			let error = RuntimeSelectionError.unavailablePin(access.defaultLane)
 			self.failure = Self.failure(for: error)
 			log?.error(
 				"Runtime selection failed; code=\(self.failure?.code?.rawValue ?? "none"); \(error.diagnosticDescription)"
@@ -240,8 +241,9 @@ package final class RuntimeSelectionController {
 		installedVersions = Self.installedVersions(in: store)
 		availableLanes = Self.offeredLanes(in: configuration, access: access)
 		do {
-			selectedLane = try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load()
-				.selected
+			selectedLane = try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load(
+				access: access
+			).selected
 		} catch {
 			log?.error(
 				"Runtime selection could not be read; \(launcherDiagnosticDescription(for: error))")

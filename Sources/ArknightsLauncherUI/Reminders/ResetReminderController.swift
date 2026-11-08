@@ -120,8 +120,10 @@ final class ResetReminderController {
 				do {
 					granted = try await scheduler.requestAuthorization()
 				} catch {
+					// A failed request never answers the permission question, so the user's
+					// setting stays and the status remains `.notDetermined`.
 					log?.error("Notification permission request failed: \(error)")
-					granted = false
+					return
 				}
 				guard slot.owns(token) else {
 					// A newer pass may have read "not determined" while the prompt was open.

@@ -56,9 +56,7 @@ package enum IssueReportURL {
 	}
 
 	/// The macOS, chip, and memory line that a report carries. The diagnostics bundle shares it.
-	package static var diagnosticsEnvironment: String { environment }
-
-	private static var environment: String {
+	package static var environment: String {
 		let os = ProcessInfo.processInfo.operatingSystemVersion
 		let memoryGB = ProcessInfo.processInfo.physicalMemory / 1_073_741_824
 		return "macOS \(os.majorVersion).\(os.minorVersion); \(chipName); \(memoryGB) GB"

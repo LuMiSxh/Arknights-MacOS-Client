@@ -1,22 +1,23 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
-package struct ThemedModalView<Content: View, Actions: View>: View {
+struct ThemedModalView<Content: View, Actions: View>: View {
 	let title: String
 	let subtitle: String?
 
-	package let width: CGFloat
-	package let height: CGFloat
+	let width: CGFloat
+	let height: CGFloat
 	let minimumWidth: CGFloat
 	let minimumHeight: CGFloat
-	@ViewBuilder package let content: Content
-	@ViewBuilder package let actions: Actions
+	@ViewBuilder let content: Content
+	@ViewBuilder let actions: Actions
 	@Environment(\.launcherWindowSize) private var launcherWindowSize
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var hasEntered = false
 
-	package init(
+	init(
 		title: String,
 		subtitle: String? = nil,
 
@@ -40,7 +41,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 
 	@Environment(\.launcherTheme) private var theme
 
-	package var body: some View {
+	var body: some View {
 		VStack(spacing: 0) {
 			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 				Text(title)

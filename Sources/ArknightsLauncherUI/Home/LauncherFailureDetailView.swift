@@ -12,7 +12,7 @@ struct LauncherFailureDetailView: View {
 	let isSavingDiagnostics: Bool
 	let saveDiagnostics: () -> Void
 	let onDismiss: () -> Void
-	private let troubleshootingMarkdown: String?
+	@State private var troubleshootingMarkdown: String?
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var didCopySupportCode = false
@@ -29,14 +29,14 @@ struct LauncherFailureDetailView: View {
 		self.isSavingDiagnostics = isSavingDiagnostics
 		self.saveDiagnostics = saveDiagnostics
 		self.onDismiss = onDismiss
-		troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
-			.map(Self.recoveryMarkdown)
 	}
+
+	private static let reportSectionMarker = "\n## Report the problem"
 
 	/// The footer owns Report a Problem and Save Diagnostics now, so keep only the recovery
 	/// section from the bundled article.
 	private static func recoveryMarkdown(_ markdown: String) -> String {
-		guard let range = markdown.range(of: "\n## Report the problem") else {
+		guard let range = markdown.range(of: Self.reportSectionMarker) else {
 			return markdown
 		}
 		return String(markdown[..<range.lowerBound])
@@ -55,9 +55,13 @@ struct LauncherFailureDetailView: View {
 		ThemedModalView(
 			title: "Needs attention",
 			subtitle: failure.message,
-			width: failure.code == nil ? 620 : 720,
-			height: failure.code == nil ? 432 : 600,
-			minimumHeight: 432
+			width: failure.code == nil
+				? LauncherTokens.Layout.failureSheetWidth
+				: LauncherTokens.Layout.failureSheetWidthWithCode,
+			height: failure.code == nil
+				? LauncherTokens.Layout.failureSheetHeight
+				: LauncherTokens.Layout.failureSheetHeightWithCode,
+			minimumHeight: LauncherTokens.Layout.failureSheetHeight
 		) {
 			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.section) {
 				if let code = failure.code {
@@ -96,6 +100,10 @@ struct LauncherFailureDetailView: View {
 			.textSelection(.enabled)
 		} actions: {
 			footerActions
+		}
+		.task {
+			troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
+				.map(Self.recoveryMarkdown)
 		}
 		.onExitCommand(perform: dismissFailure)
 	}

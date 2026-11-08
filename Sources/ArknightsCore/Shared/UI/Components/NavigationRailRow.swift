@@ -63,7 +63,7 @@ package struct NavigationRailRow: View {
 	private var content: some View {
 		HStack(spacing: LauncherTokens.Spacing.control) {
 			Image(systemName: systemImage)
-				.frame(width: 20)
+				.frame(width: LauncherTokens.Layout.railIconWidth)
 				.symbolRenderingMode(.monochrome)
 				.foregroundStyle(isSelected ? theme.accentInk : theme.textSecondary)
 				.launcherAnimation(.state, value: isSelected)
@@ -86,9 +86,12 @@ package struct NavigationRailRow: View {
 		.overlay(alignment: .leading) {
 			Capsule()
 				.fill(theme.accentFill)
-				.frame(width: 3, height: 14)
+				.frame(
+					width: LauncherTokens.Layout.railSelectionTickWidth,
+					height: LauncherTokens.Layout.railSelectionTickHeight
+				)
 				.selectionIndicator(.tick, isSelected: isSelected, in: slidingNamespace)
-				.padding(.leading, 2)
+				.padding(.leading, LauncherTokens.Layout.railSelectionTickLeading)
 				.accessibilityHidden(true)
 		}
 		.contentShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.railRow))

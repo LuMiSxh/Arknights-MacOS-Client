@@ -222,7 +222,7 @@ client build against an old dataset, because the runtime moves with it.
 
 ## References
 
-- [Runtime compatibility](../help/runtime-compatibility.md)
+- [Game runtime](../help/runtime.md)
 - [Testing architecture](testing.md)
 - [DXMT](https://github.com/3Shain/dxmt)
 - [PlayCover](https://github.com/PlayCover/PlayCover)

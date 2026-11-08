@@ -208,7 +208,7 @@ package final class IntelTranslationController {
 		case .unavailable:
 			"macOS could not start an Intel test process. Check Rosetta, restart your Mac, then check again."
 		case .unsupportedOS:
-			"The launcher currently blocks this macOS version. Apple retains Rosetta only for certain legacy games, and whether this Wine and game setup qualifies is unconfirmed."
+			"Rosetta 2 is not available on macOS 28 and later. Switch to the ARM64 runtime in Settings → Installation → Runtime, then quit and reopen the launcher."
 		}
 	}
 

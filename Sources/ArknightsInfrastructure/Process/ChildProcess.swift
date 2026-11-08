@@ -230,7 +230,7 @@ package final class ChildProcess: @unchecked Sendable {
 			state.hasRequestedTermination = true
 			return true
 		}
-		if shouldTerminate, process.isRunning { process.terminate() }
+		if shouldTerminate { process.terminate() }
 		if outputPipe == nil { settle { _ in .failure(error) } }
 	}
 
@@ -242,7 +242,7 @@ package final class ChildProcess: @unchecked Sendable {
 			state.hasRequestedTermination = true
 			return true
 		}
-		if shouldTerminate, process.isRunning { process.terminate() }
+		if shouldTerminate { process.terminate() }
 	}
 
 	private func readAvailableData(from handle: FileHandle) {

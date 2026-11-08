@@ -15,6 +15,15 @@ class HttpError(OSError):
     """A request that failed, left HTTPS, or returned more than the allowed bytes."""
 
 
+class HttpsOnlyRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Refuse a redirect to a non-HTTPS target before the request follows it."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if urllib.parse.urlparse(newurl).scheme != "https":
+            raise HttpError(f"request redirected to a non-HTTPS URL: {newurl}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 @dataclass(frozen=True)
 class Response:
     body: bytes
@@ -28,17 +37,21 @@ def fetch(
     timeout: float,
     max_bytes: int,
     headers: Mapping[str, str] | None = None,
+    data: bytes | None = None,
+    method: str | None = None,
 ) -> Response:
-    """Return the body of an HTTPS GET, following redirects only to HTTPS URLs."""
+    """Return the body of an HTTPS request, following redirects only to HTTPS URLs."""
     if urllib.parse.urlparse(url).scheme != "https":
         raise HttpError(f"remote URL must use HTTPS: {url}")
     request = urllib.request.Request(
-        url, headers={"User-Agent": user_agent, **(headers or {})}
+        url,
+        data=data,
+        headers={"User-Agent": user_agent, **(headers or {})},
+        method=method,
     )
+    opener = urllib.request.build_opener(HttpsOnlyRedirectHandler())
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            if urllib.parse.urlparse(response.geturl()).scheme != "https":
-                raise HttpError(f"request redirected to a non-HTTPS URL: {url}")
+        with opener.open(request, timeout=timeout) as response:
             content_type = (
                 response.headers.get("Content-Type", "").split(";")[0].strip()
             )

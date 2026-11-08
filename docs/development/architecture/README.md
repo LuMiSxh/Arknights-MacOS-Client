@@ -164,7 +164,7 @@ Before launch, the launcher verifies that macOS can run an Intel process through
 
 The Wine prefix is not a macOS security sandbox. See
 [Directory and drive contract](wine-prefix.md#directory-and-drive-contract) and
-[Runtime compatibility](../../help/runtime-compatibility.md).
+[Game runtime](../../help/runtime.md).
 
 ## Change guide
 
@@ -173,7 +173,7 @@ Before you change behavior, find its owner and external contract:
 | Change                                   | Start here                                                     | Also update or verify                                                                                                         |
 | ---------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Game files, manifests, paths             | `ArknightsGameInstallation/Installation`                       | [Installation architecture](installation.md), installer tests                                                                 |
-| Wine startup, prefix, process, display   | `ArknightsGameRuntime/Runtime`                                 | [Launch and process lifecycle](launch-and-process-lifecycle.md), [Runtime compatibility](../../help/runtime-compatibility.md) |
+| Wine startup, prefix, process, display   | `ArknightsGameRuntime/Runtime`                                 | [Launch and process lifecycle](launch-and-process-lifecycle.md), [Game runtime](../../help/runtime.md) |
 | Compatibility component or native bridge | `ArknightsGameInstallation/Compatibility` and `RuntimeSupport` | restore/update behavior, runtime notices, release validation                                                                  |
 | Publisher endpoint, refresh              | `LauncherAPI` and `LauncherRefreshController`                  | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
 | Persisted setting, app-owned path        | `LauncherPreferencesStore` or `AppPaths`                       | [Data and persistence](data-and-persistence.md), storage tests                                                                |

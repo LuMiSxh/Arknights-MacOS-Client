@@ -22,10 +22,6 @@ enum LauncherUpdatePhase: Equatable {
 @Observable
 final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	static let errorDetail = "The update could not be completed."
-	/// Receives each failure before the overlay shows it. Returns true when the failure sheet
-	/// presents it, so the overlay stays idle. The controller sets this after init.
-	var reportFailure: (any Error) -> Bool = { _ in false }
-
 	var phase: LauncherUpdatePhase = .hidden
 	var version: String?
 	private(set) var releaseNotes: String?
@@ -39,7 +35,6 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	private(set) var applicationTerminated = false
 	private(set) var gameIsRunning = false
 	private(set) var terminationBlocked = false
-	private(set) var relaunched = false
 	var message: String?
 
 	enum PendingReply {
@@ -57,6 +52,9 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	private let activateApplication: () -> Void
 	private let canRetryTermination: () -> Bool
 	private let gameRunningProvider: () -> Bool
+	/// Receives each failure before the overlay shows it. Returns true when the failure sheet
+	/// presents it, so the overlay stays idle.
+	private let reportFailure: (any Error) -> Bool
 	private let automaticRetryScheduler: (@escaping @MainActor () -> Void) -> Task<Void, Never>
 
 	static func activateApplicationInFront() {
@@ -69,6 +67,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 			{ LauncherUpdateUserDriver.activateApplicationInFront() },
 		canRetryTermination: @escaping () -> Bool = { true },
 		isGameRunning: @escaping () -> Bool = { false },
+		reportFailure: @escaping (any Error) -> Bool = { _ in false },
 		automaticRetryScheduler: @escaping (@escaping @MainActor () -> Void) -> Task<Void, Never> =
 			{
 				action in
@@ -82,6 +81,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		self.activateApplication = activateApplication
 		self.canRetryTermination = canRetryTermination
 		self.gameRunningProvider = isGameRunning
+		self.reportFailure = reportFailure
 		self.automaticRetryScheduler = automaticRetryScheduler
 		super.init()
 	}
@@ -135,7 +135,6 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func showUpdateNotFoundWithError(_ error: Error, acknowledgement: @escaping () -> Void) {
 		resetCallbacks()
 		phase = .noUpdate
-		message = LauncherUpdateUserDriver.errorDetail
 		pendingReply = .acknowledgement(acknowledgement)
 	}
 	func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
@@ -195,7 +194,6 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 			return
 		}
 		phase = .installed
-		self.relaunched = relaunched
 		pendingReply = .acknowledgement(acknowledgement)
 	}
 	func dismissUpdateInstallation() {
@@ -305,7 +303,6 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	}
 	func recordNoUpdate(_ error: Error) {
 		if phase == .hidden || phase == .checking { phase = .noUpdate }
-		message = LauncherUpdateUserDriver.errorDetail
 	}
 	func recordAvailabilityError(_ error: Error) {
 		if phase == .hidden || phase == .checking { showError(error) }

@@ -60,7 +60,7 @@ Each code has its own page. The page title starts with the code.
 | Code | Problem | What to do |
 | --- | --- | --- |
 | [RT-BIL](rt-bil.md) | Bilibili login unavailable | Quit other Wine apps, then restart the Mac. |
-| [RT-BLK](rt-blk.md) | Intel translation blocked | Turn off Legacy Game Test Mode on a macOS 27 beta, or wait for an update. |
+| [RT-BLK](rt-blk.md) | Intel translation blocked | Use the ARM64 runtime on macOS 28 or later. On a macOS 27 beta, turn off Legacy Game Test Mode. |
 | [RT-BND](rt-bnd.md) | Runtime information missing or damaged | Replace the launcher with a complete copy from the release DMG. |
 | [RT-CMP](rt-cmp.md) | Game compatibility setup failed | Quit the official updater. Then choose Repair. |
 | [RT-MIS](rt-mis.md) | Runtime not installed | Set up the runtime, then start the game. |

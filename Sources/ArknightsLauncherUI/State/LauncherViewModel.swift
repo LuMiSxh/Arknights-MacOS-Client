@@ -48,6 +48,17 @@ package final class LauncherViewModel {
 	@ObservationIgnored var storageMigrationFailureID: UUID?
 	@ObservationIgnored private var deferredCanaryRefreshTask: Task<Void, Never>?
 	@ObservationIgnored private var canaryRefreshPending = false
+	@ObservationIgnored let runtimeInstallSlot = TaskSlot()
+
+	/// True when no activity and no refresh is in flight. Shared by the real and simulated actions.
+	package var canRequestDockLaunch: Bool {
+		lifecycle.activity == .idle && !lifecycle.state.refresh.isChecking
+	}
+
+	/// True while a storage migration owns the launcher; checks and downloads wait.
+	var isMigratingStorage: Bool {
+		lifecycle.activity == .maintaining(.migratingStorage)
+	}
 	init(
 		api: any LauncherAPIProviding = LauncherAPI(),
 		installer: (any GameInstalling)? = nil,
@@ -176,9 +187,6 @@ package final class LauncherViewModel {
 			regionProvider: { [weak installation] in installation?.region ?? .global }
 		)
 		self.storageOverview = storageOverview
-		storage.onStorageOverviewChanged = { [weak storageOverview] in
-			storageOverview?.refreshNow()
-		}
 		let gameSession = GameSessionController(
 			lifecycle: lifecycle,
 			installation: installation,
@@ -208,12 +216,6 @@ package final class LauncherViewModel {
 			log: launcherLog
 		)
 		self.reminders = reminders
-		settings.onResetReminderChanged = { [weak reminders] in
-			reminders?.preferencesDidChange()
-		}
-		installation.onInstalledRegionsChanged = { [weak reminders] in
-			reminders?.installedRegionsDidChange()
-		}
 		screenshots = GameScreenshotController(
 			lifecycle: lifecycle,
 			settings: settings,
@@ -225,38 +227,7 @@ package final class LauncherViewModel {
 			log: launcherLog
 		)
 
-		settings.onLauncherUpdateCheckRequested = { [weak self] in
-			self?.actions.checkLauncherUpdates()
-		}
-		settings.onGameUpdateCheckRequested = { [weak self] in
-			self?.actions.checkGameUpdates()
-		}
-		settings.onAnnouncementCheckRequested = { [weak self] in
-			self?.actions.checkAnnouncements()
-		}
-		settings.onDynamicThemeChanged = { [weak customization] in
-			customization?.updateThemeColor()
-		}
-		settings.onCanaryFeaturesChanged = { [weak self] _ in
-			self?.refreshInstalledRegionsAfterCanaryChange()
-		}
-		settings.onDiscordPresenceChanged = { [weak self] in
-			self?.discordPresence.activityDidChange()
-		}
-		_ = lifecycle.observeActivityChanges { [weak self] in
-			self?.scheduleCanaryRefreshIfIdle()
-		}
-		_ = lifecycle.observeActivityChanges { [weak self] in
-			self?.discordPresence.activityDidChange()
-		}
-		installation.onMetadataRefreshCancellationRequested = { [weak refreshController] in
-			refreshController?.cancelForInstallationStart()
-		}
-		installation.onLaunchRequested = { [weak gameSession] in gameSession?.launch() }
-		gameSession.customGameIconURL = { [weak customization, paths] in
-			customization?.hasCustomGameIcon == true ? paths.customGameIcon : nil
-		}
-		discordPresence.activityDidChange()
+		wireCallbacks()
 
 		#if DEBUG
 			developerSimulation =
@@ -285,7 +256,7 @@ package final class LauncherViewModel {
 		log.info("Launcher \(appVersion) started")
 	}
 
-	private func refreshInstalledRegionsAfterCanaryChange() {
+	func refreshInstalledRegionsAfterCanaryChange() {
 		#if DEBUG
 			guard !isDeveloperMode else { return }
 		#endif
@@ -293,7 +264,7 @@ package final class LauncherViewModel {
 		scheduleCanaryRefreshIfIdle()
 	}
 
-	private func scheduleCanaryRefreshIfIdle() {
+	func scheduleCanaryRefreshIfIdle() {
 		guard
 			canaryRefreshPending, lifecycle.activity == .idle,
 			deferredCanaryRefreshTask == nil

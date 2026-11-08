@@ -51,7 +51,7 @@ private final class Fixture {
 	let temporary: TemporaryDirectory
 	let suiteName: String
 	let defaults: UserDefaults
-	let lifecycle = makeLifecycleStore()
+	let lifecycle: LauncherLifecycleStore
 	let settings: LauncherPreferencesController
 	let controller: GameScreenshotController
 	let registrations = Registrations()
@@ -60,7 +60,9 @@ private final class Fixture {
 	var lease: ActivityLease?
 
 	init(granted: Bool, shortcut: ScreenshotShortcut) throws {
-		temporary = try TemporaryDirectory("ScreenshotHotKeyLifecycleTests")
+		let storage = try TemporaryDirectory("ScreenshotHotKeyLifecycleTests")
+		temporary = storage
+		lifecycle = makeLifecycleStore(in: storage)
 		(defaults, suiteName) = makeIsolatedDefaults("ScreenshotHotKeyLifecycleTests")
 		settings = LauncherPreferencesController(
 			store: LauncherPreferencesStore(defaults: defaults))

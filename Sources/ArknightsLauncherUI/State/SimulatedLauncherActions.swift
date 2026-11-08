@@ -13,12 +13,8 @@ import ArknightsCore
 
 		private var simulation: DeveloperSimulationState? { model.developerSimulation }
 
-		private var isMigratingStorage: Bool {
-			model.lifecycle.activity == .maintaining(.migratingStorage)
-		}
-
 		var canRequestDockLaunch: Bool {
-			model.lifecycle.activity == .idle && !model.lifecycle.state.refresh.isChecking
+			model.canRequestDockLaunch
 		}
 
 		/// A preview never writes to disk.
@@ -54,7 +50,7 @@ import ArknightsCore
 		}
 
 		func checkGameUpdates() {
-			guard !isMigratingStorage else { return }
+			guard !model.isMigratingStorage else { return }
 			model.updateDeveloperSimulation {
 				$0.failure = .none
 				$0.lifecycle = .ready
@@ -63,7 +59,7 @@ import ArknightsCore
 		}
 
 		func checkLauncherUpdates() {
-			guard !isMigratingStorage else { return }
+			guard !model.isMigratingStorage else { return }
 			model.updateDeveloperSimulation {
 				$0.failure = .none
 				$0.launcherUpdate = .available
@@ -71,7 +67,7 @@ import ArknightsCore
 		}
 
 		func checkAnnouncements() {
-			guard !isMigratingStorage else { return }
+			guard !model.isMigratingStorage else { return }
 			model.updateDeveloperSimulation { $0.announcement = true }
 		}
 

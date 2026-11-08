@@ -34,17 +34,29 @@ package enum AppConstants {
 		package static let applicationName = "Arknights"
 		/// Set to `arm` only when the native ARM64 runtime launches the game.
 		package static let runtimeLaneEnvironmentKey = "ARKNIGHTS_CLIENT_RUNTIME_LANE"
-		package static let masterEnvironmentKey = "LMISXH_AKMOCL"
+		// One key per compatibility patch gate. Every launch sends each key as "1" or "0",
+		// so the runtime's own defaults never decide behavior for our launches.
+		package static let aceImportsEnvironmentKey = "LMISXH_AKMOCL_ACE_IMPORTS"
+		package static let appContainerEnvironmentKey = "LMISXH_AKMOCL_APPCONTAINER"
+		package static let winsockEnvironmentKey = "LMISXH_AKMOCL_WINSOCK"
 		package static let cefCompatEnvironmentKey = "LMISXH_AKMOCL_CEF"
 		package static let cnCompatEnvironmentKey = "LMISXH_AKMOCL_CN"
+		package static let fullscreenEnvironmentKey = "LMISXH_AKMOCL_FULLSCREEN"
 		package static let hardwareCursorEnvironmentKey = "LMISXH_AKMOCL_CURSOR"
-		package static let nativeFullscreenSpaceEnvironmentKey =
-			"LMISXH_AKMOCL_FULLSCREEN"
+		package static let menuEnvironmentKey = "LMISXH_AKMOCL_MENU"
+		package static let audioEnvironmentKey = "LMISXH_AKMOCL_AUDIO"
+		package static let aceTimingEnvironmentKey = "LMISXH_AKMOCL_ACE_TIMING"
+		package static let aceDispatcherEnvironmentKey = "LMISXH_AKMOCL_ACE_DISPATCHER"
+		package static let aceRosettaEnvironmentKey = "LMISXH_AKMOCL_ACE_ROSETTA"
 		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
 		package static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
 		/// The only persisted runtime choice. It names the lane, not a version.
 		package static let runtimeSelectionFilename = "runtime-selection.json"
 		package static let runtimeSelectionMaximumBytes = 4 * 1_024
+		/// The first macOS major version that can run the native ARM64 lane.
+		package static let armLaneMinimumMacOSMajorVersion = 26
+		/// The last macOS major version with general Rosetta 2 support, so the x86_64 lane can run.
+		package static let x86LaneLastSupportedMacOSMajorVersion = 27
 	}
 
 	package enum Icon {
@@ -93,6 +105,11 @@ package enum AppConstants {
 		/// macOS keeps at most 64 pending local notifications per app. Stay well under it.
 		package static let maximumPendingRequests = 48
 		package static let identifierPrefix = "reset."
+	}
+
+	package enum Announcements {
+		/// The most recently seen announcement IDs kept in the local history.
+		package static let seenHistoryLimit = 100
 	}
 
 	package enum Screenshots {
@@ -215,8 +232,8 @@ package enum AppConstants {
 		package static let iconPairCacheMaximumBytes = 48 * 1_024 * 1_024
 		package static let imageDownloadAttempts = 2
 		// Shares the artwork limits so the gallery never offers an image that cannot be applied.
-		package static let imageMaximumDimension = AppConstants.Artwork.maximumDimension
-		package static let imageMaximumPixels = AppConstants.Artwork.maximumPixels
+		package static let imageMaximumDimension = Artwork.maximumDimension
+		package static let imageMaximumPixels = Artwork.maximumPixels
 		// Matches the exact percentage the live Fankit gallery page itself requests, since
 		// the CDN only ever serves a resized response for a URL something has already
 		// requested with this precise query value — see syntheticThumbnailURL(for:).
@@ -271,8 +288,8 @@ package enum AppConstants {
 		package static let runtimeShutdown: Duration = .seconds(20)
 		package static let windowReadiness: Duration = .seconds(90)
 		package static let windowPollInterval: Duration = .milliseconds(250)
-		package static let quitSheetDetachPollInterval: TimeInterval = 0.05
-		package static let quitSheetDetachPollLimit = 20
+		/// Bound on waiting for AppKit to detach a sheet before the quit path proceeds anyway.
+		package static let quitSheetDetachTimeout: Duration = .seconds(3)
 	}
 
 	package enum Theme {

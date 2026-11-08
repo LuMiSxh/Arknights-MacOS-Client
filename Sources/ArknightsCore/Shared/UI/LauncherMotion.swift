@@ -93,7 +93,7 @@ package enum LauncherMotion {
 
 	static let staggerStep = 0.045
 	static let expandedContentDelay: TimeInterval = 0.06
-	static let modalEntranceDelay: TimeInterval = 0.08
+	package static let modalEntranceDelay: TimeInterval = 0.08
 	package static let overlayEntranceScale: CGFloat = 0.96
 	package static let pressedScale: CGFloat = 0.95
 	package static let subtlePressedScale: CGFloat = 0.97

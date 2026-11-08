@@ -82,8 +82,8 @@ launcher variable. It:
   `<prefix>/home/tmp`;
 - restricts `PATH` to the selected runtime, `/usr/bin`, and `/bin`;
 - points the dynamic-library fallback path at the selected runtime libraries;
-- adds only launcher-owned synchronization, frame-rate, diagnostics, icon, audio, and cursor
-  overrides for the current launch.
+- adds only launcher-owned synchronization, frame-rate, diagnostics, icon, audio, cursor, and
+  compatibility overrides for the current launch.
 
 Launch-scoped options (MSYNC or ESYNC, Mac pointer, frame rate limit) change only the next process
 environment, not migrations. A frame rate cap sets `DXMT_CONFIG=d3d11.preferredMaxFrameRate=N`,
@@ -175,7 +175,7 @@ When you change the prefix contract:
 3. Preserve the migration order and atomic state write.
 4. Keep the selected prefix and session UUID captured across every suspension and callback.
 5. Preserve the private homes, the `G:` and `L:` mappings, and the removal of `Z:`.
-6. Update [Runtime compatibility](../../help/runtime-compatibility.md), [Storage](../../help/storage.md),
+6. Update [Game runtime](../../help/runtime.md), [Storage](../../help/storage.md),
    and [Data and persistence](data-and-persistence.md) when a user-visible path, reset consequence, or
    persistence rule changes.
 

@@ -10,5 +10,5 @@ hidden: true
 
 Open the page for the code that matches your error:
 
-- [RT-BLK](rt-blk.md): Intel translation is blocked or not supported on this macOS version.
+- [RT-BLK](rt-blk.md): Rosetta 2 is not available on macOS 28 and later, or translation is disabled on a macOS 27 beta.
 - [RT-ROS](rt-ros.md): Rosetta is missing or disabled.

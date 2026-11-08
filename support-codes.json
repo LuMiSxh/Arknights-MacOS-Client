@@ -266,20 +266,20 @@
       "domain": "runtime",
       "title": "Intel translation blocked",
       "status": "active",
-      "summary": "Intel translation is blocked or not supported on this macOS version.",
-      "action": "Turn off Legacy Game Test Mode on a macOS 27 beta, or wait for an update.",
+      "summary": "Rosetta 2 is not available on macOS 28 and later, or translation is disabled on a macOS 27 beta.",
+      "action": "Use the ARM64 runtime on macOS 28 or later. On a macOS 27 beta, turn off Legacy Game Test Mode.",
       "allowsRetry": false,
       "allowsRepair": false,
       "causes": [
-        "The macOS version does not support the translation that the game needs.",
+        "Rosetta 2 is not available on macOS 28 and later.",
         "Legacy Game Test Mode turned off translation on a macOS 27 beta."
       ],
       "steps": [
-        "On a macOS 27 beta, turn off Legacy Game Test Mode. Then restart the Mac. See [macOS compatibility](../runtime-compatibility.md#legacy-game-test-mode-on-macos-27-beta).",
-        "Install pending macOS updates and launcher updates.",
-        "Wait for a macOS or launcher update that supports this Mac. Then open the launcher again."
+        "On macOS 28 or later, choose **ARM64 (Apple Silicon)** in **Settings → Installation → Runtime**, then quit and reopen the launcher. See [Game runtime](../runtime.md#macos-support).",
+        "On a macOS 27 beta, turn off Legacy Game Test Mode. Then restart the Mac. See [Game runtime](../runtime.md#legacy-game-test-mode-on-macos-27-beta).",
+        "Install pending macOS updates and launcher updates."
       ],
-      "report": "In the report, say whether you run a macOS 27 beta and whether Legacy Game Test Mode was on.",
+      "report": "In the report, say which runtime you use, whether you run a macOS 27 beta, and whether Legacy Game Test Mode was on.",
       "legacy": ["LIMPET"]
     },
     {

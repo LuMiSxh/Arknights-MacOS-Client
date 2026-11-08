@@ -7,17 +7,6 @@ import Testing
 @testable import ArknightsCore
 @testable import ArknightsGameRuntime
 
-private func makeInstalledRuntime(
-	version: String,
-	lane: RuntimeLane,
-	paths: AppPaths
-) throws {
-	let directory = paths.runtimeVersionDirectory(for: lane, version: version)
-	try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-	try Data(#"{"architecture":"\#(lane.rawValue)"}"#.utf8).write(
-		to: directory.appending(path: "RUNTIME.json"))
-}
-
 struct RuntimeStoreTests {
 	@Test
 	func findsTheInstalledVersionPerLane() throws {
@@ -35,15 +24,18 @@ struct RuntimeStoreTests {
 	func selectionIsPersistedAndDefaultsToX86() throws {
 		let temporary = try TemporaryDirectory("RuntimeStoreSelectionTests")
 		defer { temporary.remove() }
-		let paths = AppPaths(applicationSupportDirectory: temporary.url)
-		let store = RuntimeStore(paths: paths)
-
-		let initialSelection = try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load()
-		#expect(initialSelection.selected == .x86)
-
 		let access = RuntimeAccess(
 			macOSVersion: OperatingSystemVersion(
 				majorVersion: 26, minorVersion: 0, patchVersion: 0))
+		let paths = AppPaths(
+			applicationSupportDirectory: temporary.url, runtimeAccess: access)
+		let store = RuntimeStore(paths: paths)
+
+		let initialSelection = try RuntimeSelectionStore(
+			fileURL: paths.runtimeSelectionFile
+		).load(access: access)
+		#expect(initialSelection.selected == .x86)
+
 		try store.select(lane: .arm, access: access)
 
 		let reloaded = AppPaths(applicationSupportDirectory: temporary.url)
@@ -55,16 +47,19 @@ struct RuntimeStoreTests {
 	func armSelectionIsRefusedBeforeMacOS26() throws {
 		let temporary = try TemporaryDirectory("RuntimeStoreLaneGateTests")
 		defer { temporary.remove() }
-		let paths = AppPaths(applicationSupportDirectory: temporary.url)
-		let store = RuntimeStore(paths: paths)
 		let access = RuntimeAccess(
 			macOSVersion: OperatingSystemVersion(
 				majorVersion: 25, minorVersion: 0, patchVersion: 0))
+		let paths = AppPaths(
+			applicationSupportDirectory: temporary.url, runtimeAccess: access)
+		let store = RuntimeStore(paths: paths)
 
 		#expect(throws: RuntimeStoreError.laneNotAllowed(.arm)) {
 			try store.select(lane: .arm, access: access)
 		}
-		let selection = try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load()
+		let selection = try RuntimeSelectionStore(
+			fileURL: paths.runtimeSelectionFile
+		).load(access: access)
 		#expect(selection.selected == .x86)
 	}
 

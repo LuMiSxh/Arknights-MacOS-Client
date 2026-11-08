@@ -8,7 +8,6 @@ import SwiftUI
 enum InstallationConfirmation {
 	case rebuildEnvironment, resetSettings, deleteEnvironment, uninstallGame
 
-	static let cancelTitle = "Cancel"
 	static let rebuildDetail = "Next launch takes longer. Game files and logins stay."
 	static let settingsResetDetail =
 		"Puts every launcher setting back to its default. Game files, the install location, and the server stay."
@@ -41,7 +40,7 @@ enum InstallationConfirmation {
 		}
 	}
 
-	func perform(gameSession: GameSessionController, actions: any LauncherActions) {
+	func perform(gameSession: GameSessionController, actions: any LauncherSettingsActions) {
 		switch self {
 		case .rebuildEnvironment: gameSession.forcePrefixMigration()
 		case .resetSettings: actions.resetAllLauncherSettings()
@@ -83,7 +82,7 @@ extension View {
 	func installationConfirmation(
 		_ confirmation: Binding<InstallationConfirmation?>,
 		gameSession: GameSessionController,
-		actions: any LauncherActions
+		actions: any LauncherSettingsActions
 	) -> some View {
 		confirmationDialog(
 			confirmation.wrappedValue?.title ?? "",
@@ -100,7 +99,7 @@ extension View {
 					request.perform(gameSession: gameSession, actions: actions)
 				}
 			}
-			Button(InstallationConfirmation.cancelTitle, role: .cancel) {}
+			Button("Cancel", role: .cancel) {}
 		} message: {
 			Text(confirmation.wrappedValue?.message ?? "")
 		}
