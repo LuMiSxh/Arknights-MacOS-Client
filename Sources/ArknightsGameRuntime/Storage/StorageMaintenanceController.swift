@@ -99,6 +99,15 @@ package final class StorageMaintenanceController {
 		NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
 	}
 
+	/// Opens the application support folder, which holds settings, runtimes, and game environments.
+	package func revealApplicationSupport() {
+		let url = paths.applicationSupportRoot
+		log.attempt("Create the application support folder") {
+			try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+		}
+		NSWorkspace.shared.open(url)
+	}
+
 	nonisolated static func logURLs(for paths: AppPaths) -> [URL] {
 		[
 			paths.launcherLogFile,

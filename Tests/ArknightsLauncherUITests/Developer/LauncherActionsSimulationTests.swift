@@ -53,6 +53,8 @@ import Testing
 			actions.resetAllLauncherSettings()
 			actions.uninstallGame()
 			actions.resetArtwork()
+			_ = await actions.removeOtherRuntime()
+			_ = await actions.removeSelectedRuntime()
 			_ = await actions.installRosetta()
 
 			#expect(await installer.installationCount() == 0)

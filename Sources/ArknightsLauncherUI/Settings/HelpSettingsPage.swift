@@ -15,6 +15,7 @@ struct HelpSettingsPage: View {
 	let gameSession: GameSessionController
 	let lifecycle: LauncherLifecycleStore
 	let restartOnboarding: () -> Void
+	let revealApplicationSupport: () -> Void
 	@State private var confirmation: InstallationConfirmation?
 
 	var body: some View {
@@ -107,6 +108,17 @@ struct HelpSettingsPage: View {
 						action: restartOnboarding
 					)
 					.disabled(gameSession.isGameActive)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "App Data Folder",
+					detail: "Settings, logs, runtimes, and game environments."
+				) {
+					CapsuleActionButton(
+						title: "Show in Finder", systemImage: "folder",
+						tone: .neutral, presentation: .compact,
+						action: revealApplicationSupport
+					)
 				}
 				SettingsHairline()
 				InstallationDestructiveRow(

@@ -40,7 +40,10 @@ package protocol LauncherInstallationActions {
 	func selectRuntimeLane(_ lane: RuntimeLane) -> Bool
 	/// Removes the runtime of the lane that is not selected.
 	@discardableResult
-	func removeOtherRuntime() -> Bool
+	func removeOtherRuntime() async -> Bool
+	/// Removes the selected lane's runtime. The game environment and the selection stay.
+	@discardableResult
+	func removeSelectedRuntime() async -> Bool
 }
 
 /// Actions that run launcher and game update checks.

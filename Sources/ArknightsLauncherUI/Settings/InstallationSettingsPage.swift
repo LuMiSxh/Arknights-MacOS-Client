@@ -18,6 +18,7 @@ struct InstallationSettingsPage: View {
 	@State private var confirmation: InstallationConfirmation?
 	@State var pendingRuntimeLane: RuntimeLane?
 	@State var isRemoveRuntimeConfirmationPresented = false
+	@State var isRemoveSelectedRuntimeConfirmationPresented = false
 
 	var body: some View {
 		SettingsPage(
@@ -152,13 +153,25 @@ struct InstallationSettingsPage: View {
 			titleVisibility: .visible
 		) {
 			Button("Remove Runtime", role: .destructive) {
-				_ = actions.removeOtherRuntime()
+				Task { _ = await actions.removeOtherRuntime() }
 			}
 			Button("Cancel", role: .cancel) {}
 		} message: {
 			Text(
 				"The other architecture's runtime files are deleted. Its game environment stays on disk. You can download the runtime again later."
 			)
+		}
+		.confirmationDialog(
+			"Remove the \(runtimeSelection.selectedLane.shortLabel) runtime?",
+			isPresented: $isRemoveSelectedRuntimeConfirmationPresented,
+			titleVisibility: .visible
+		) {
+			Button("Remove Runtime", role: .destructive) {
+				Task { _ = await actions.removeSelectedRuntime() }
+			}
+			Button("Cancel", role: .cancel) {}
+		} message: {
+			Text("The game environment stays. Set up the runtime again before you play.")
 		}
 	}
 

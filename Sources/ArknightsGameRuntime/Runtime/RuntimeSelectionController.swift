@@ -28,6 +28,7 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 	case configurationUnavailable(String)
 	case verificationFailed(RuntimeLane)
 	case installFailed(RuntimeLane, String)
+	case removeFailed(RuntimeLane, String)
 
 	package var errorDescription: String? {
 		switch self {
@@ -45,6 +46,8 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 			"The downloaded runtime did not pass verification. Download it again."
 		case .installFailed:
 			"The runtime could not be installed. Check your connection and free disk space, then try again."
+		case .removeFailed:
+			"The runtime could not be removed. Close apps that use its files, then try again."
 		}
 	}
 
@@ -64,6 +67,8 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 			"Runtime lane \(lane.rawValue) failed verification."
 		case .installFailed(let lane, let detail):
 			"Runtime lane \(lane.rawValue) install failed: \(detail)"
+		case .removeFailed(let lane, let detail):
+			"Runtime lane \(lane.rawValue) removal failed: \(detail)"
 		}
 	}
 
@@ -79,6 +84,8 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 			.runtimeVerificationFailed
 		case .installFailed:
 			.runtimeSetupFailed
+		case .removeFailed:
+			.localFileFailed
 		}
 	}
 
@@ -342,24 +349,47 @@ package final class RuntimeSelectionController {
 	}
 
 	/// Removes the lane that is not selected. The selected lane is never touched.
-	package func removeOtherLane() throws {
-		guard lifecycle.activity == .idle, installingLane == nil else {
-			throw RuntimeSelectionError.busy
-		}
+	package func removeOtherLane() async throws {
 		guard let other = RuntimeLane.allCases.first(where: { $0 != selectedLane }) else { return }
-		do {
-			try store.remove(lane: other)
-		} catch {
-			let error = RuntimeSelectionError.installFailed(
-				other, launcherDiagnosticDescription(for: error))
-			present(error)
-			throw error
-		}
-		refresh()
-		log?.info("Runtime removed; lane=\(other.rawValue)")
+		try await removeRuntime(lane: other, allowSelected: false)
+	}
+
+	/// Removes the selected lane's runtime. Its game environment and the selection stay.
+	package func removeSelectedLane() async throws {
+		try await removeRuntime(lane: selectedLane, allowSelected: true)
 	}
 
 	// MARK: - Private
+
+	@concurrent
+	private static func removeRuntime(
+		lane: RuntimeLane, allowSelected: Bool, store: RuntimeStore
+	) async throws {
+		try store.remove(lane: lane, allowSelected: allowSelected)
+	}
+
+	/// Holds the maintenance lease for the whole removal, so no game session, install, or other
+	/// maintenance runs while the lane directory goes.
+	private func removeRuntime(lane: RuntimeLane, allowSelected: Bool) async throws {
+		guard installingLane == nil, !requiresRelaunch,
+			let lease = lifecycle.begin(.maintaining(.removingRuntime))
+		else {
+			throw RuntimeSelectionError.busy
+		}
+		defer { lifecycle.end(lease) }
+		failure = nil
+		do {
+			try await Self.removeRuntime(lane: lane, allowSelected: allowSelected, store: store)
+		} catch {
+			let error = RuntimeSelectionError.removeFailed(
+				lane, launcherDiagnosticDescription(for: error))
+			present(error)
+			refresh()
+			throw error
+		}
+		refresh()
+		log?.info("Runtime removed; lane=\(lane.rawValue)")
+	}
 
 	private func present(_ error: RuntimeSelectionError) {
 		let failure = Self.failure(for: error)

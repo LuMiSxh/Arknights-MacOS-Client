@@ -65,6 +65,7 @@ package enum MaintenanceActivity: Equatable, Sendable {
 	case clearingCache
 	case deletingWinePrefix
 	case uninstalling
+	case removingRuntime
 	case updatingLauncher
 	case migratingStorage
 }

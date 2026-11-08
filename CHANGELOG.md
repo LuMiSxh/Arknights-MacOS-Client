@@ -31,6 +31,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version, the pinned Wine and DXMT versions and commits, and the capabilities the runtime advertises.
 - Added runtime architecture selection under **Settings → Installation → Runtime**. The launcher downloads the runtime for the chosen architecture instead of shipping it inside the app bundle.
 - Added an ARM64 runtime option for macOS 26 or later. Switching architectures uses a separate game environment and may look like a fresh install.
+- Added **Show in Finder** for the app data folder under **Settings → Help → Troubleshooting**. The folder holds settings, logs, runtimes, and game environments.
+- Added **Remove Runtime…** under **Settings → Installation → Runtime**. It deletes the runtime you use and keeps the game environment. Set up the runtime again before you play. **Remove Other Runtime** now reports a failure with a support code.
 - Added the **Game runtime** help page. It explains **x86_64** and **ARM64 (Apple Silicon)**, how to switch in **Settings → Installation → Runtime**, and what a switch changes. The **Runtime** setup step and Runtime panel link to it with **About game runtimes**.
 
 ### Changed

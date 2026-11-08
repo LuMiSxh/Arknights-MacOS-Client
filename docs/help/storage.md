@@ -28,6 +28,8 @@ Paths start with `~/Library/Application Support/com.lumisxh.arknights-client/` u
 
 A custom installation location replaces only the game folder of that server. **Settings → Storage** shows the space each part uses. macOS backups exclude game folders and game environments.
 
+To open the app data folder, choose **Show in Finder** under **Settings → Help → Troubleshooting**.
+
 > [!WARNING]
 > The game can see everything in its installation folder. For a custom location, use a folder with only the game.
 
@@ -55,6 +57,7 @@ Logs can contain private paths, URLs, account IDs, or access keys. Do not attach
 | **Reset All Settings…** | Settings → Help → Troubleshooting | Launcher preferences and launch options                         | Server, installation locations, game files |
 | **Reset Statistics…**   | Settings → Playtime               | Playtime totals                                                 | Everything else                            |
 | **Uninstall Game…**     | Settings → Installation           | The game folder of the selected server (moved to the Trash)     | Other servers, game environment, launcher  |
+| **Remove Runtime…**     | Settings → Installation → Runtime | The runtime you use (set it up again before you play)           | Game files, game environments, launcher    |
 
 Try **Clear Caches** and **Rebuild…** before **Delete Environment…**.
 
@@ -62,8 +65,9 @@ Try **Clear Caches** and **Rebuild…** before **Delete Environment…**.
 
 1. Choose **Uninstall Game…** for each installed server.
 2. Choose **Delete Environment…** for each publisher you used.
-3. Quit the launcher and move **Arknights Client.app** to the Trash.
-4. Optional: Delete the folders in [Where files live](#where-files-live).
+3. Choose **Remove Runtime…** and **Remove Other Runtime** in **Settings → Installation → Runtime**.
+4. Quit the launcher and move **Arknights Client.app** to the Trash.
+5. Optional: Delete the folders in [Where files live](#where-files-live). **Show in Finder** opens the app data folder.
 
 Removing only the app keeps game files, game environments, caches, and logs.
 

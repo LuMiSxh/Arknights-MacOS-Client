@@ -114,6 +114,25 @@ struct RuntimeStoreTests {
 	}
 
 	@Test
+	func removingTheSelectedLaneWorksOnlyWhenAllowedAndKeepsTheSelection() throws {
+		let temporary = try TemporaryDirectory("RuntimeStoreRemoveSelectedTests")
+		defer { temporary.remove() }
+		let paths = AppPaths(
+			applicationSupportDirectory: temporary.url,
+			runtimeSelection: RuntimeSelection(selected: .x86)
+		)
+		let store = RuntimeStore(paths: paths)
+		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
+
+		try store.remove(lane: .x86, allowSelected: true)
+
+		#expect(store.installedVersion(for: .x86) == nil)
+		#expect(!FileManager.default.fileExists(atPath: paths.runtimeDirectory(for: .x86).path))
+		#expect(
+			try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load().selected == .x86)
+	}
+
+	@Test
 	func removingAnotherLaneDeletesItsInstalledRuntime() throws {
 		let temporary = try TemporaryDirectory("RuntimeStoreRemoveOtherTests")
 		defer { temporary.remove() }

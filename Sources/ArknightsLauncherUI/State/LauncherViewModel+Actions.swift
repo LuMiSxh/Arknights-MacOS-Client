@@ -221,13 +221,26 @@ extension LauncherViewModel: LauncherActions {
 	}
 
 	@discardableResult
-	package func removeOtherRuntime() -> Bool {
+	package func removeOtherRuntime() async -> Bool {
 		do {
-			try runtimeSelection.removeOtherLane()
+			try await runtimeSelection.removeOtherLane()
 			return true
 		} catch {
 			log.error(
 				"Other runtime removal failed: \(launcherDiagnosticDescription(for: error))")
+			return false
+		}
+	}
+
+	@discardableResult
+	package func removeSelectedRuntime() async -> Bool {
+		do {
+			try await runtimeSelection.removeSelectedLane()
+			gameSession.refreshRuntime()
+			return true
+		} catch {
+			log.error(
+				"Runtime removal failed: \(launcherDiagnosticDescription(for: error))")
 			return false
 		}
 	}

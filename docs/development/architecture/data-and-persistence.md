@@ -23,7 +23,8 @@ guide lists the paths. Update it in the same change as `AppPaths`.
 | Installed manifest state    | `GameInstaller`                            | Written atomically after all files pass validation and checksums            |
 | Wine prefixes               | `GameSessionController` / `WineRuntime`    | One per publisher family and lane. Deleting a prefix reruns its migration plan |
 | Runtime migration state     | `RuntimeMigrationStore`                    | Runtime revision and completed setup steps. It is not game-save data        |
-| Downloaded runtime          | `RuntimeSelectionController`               | One archive per lane in `Runtimes/`. A launcher update replaces a stale pin |
+| Downloaded runtime          | `RuntimeSelectionController`               | One archive per lane in `Runtimes/`. A launcher update replaces a stale pin. **Remove Runtime…** deletes only the lane directory under a maintenance lease. The game environment and selection stay |
+| Application Support folder  | `StorageMaintenanceController`             | **Show in Finder** under Settings → Help → Troubleshooting opens `applicationSupportRoot` |
 | Downloaded official artwork | `CustomizationController` / `ArtworkCache` | Recreated when missing                                                      |
 | Preset gallery cache        | `PresetCatalogService`                     | Targeted cleanup in Settings. Recreated on demand                           |
 | Playtime statistics         | `PlaytimeStatisticsController`             | Versioned totals plus 31 daily buckets. Only a confirmed reset removes them |

@@ -72,6 +72,33 @@ private func makeController(
 @MainActor
 struct RuntimeSelectionControllerTests {
 	@Test
+	func removalIsRefusedWhileAnotherActivityHoldsTheLeaseAndEndsItsOwnLease() async throws {
+		let temporary = try TemporaryDirectory("RuntimeSelectionRemoveTests")
+		defer { temporary.remove() }
+		let paths = makePaths(temporary)
+		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
+		let controller = makeController(
+			paths: paths,
+			storage: temporary,
+			configuration: try configuration(),
+			access: access(macOS: 26),
+			installOperation: makeInstallOperation(paths: paths)
+		)
+		let held = try #require(controller.lifecycle.begin(.maintaining(.clearingCache)))
+
+		await #expect(throws: RuntimeSelectionError.busy) {
+			try await controller.removeSelectedLane()
+		}
+		#expect(controller.installedVersion(for: .x86) == "1.0.0")
+		controller.lifecycle.end(held)
+
+		try await controller.removeSelectedLane()
+
+		#expect(controller.installedVersion(for: .x86) == nil)
+		#expect(controller.lifecycle.activity == .idle)
+	}
+
+	@Test
 	func offersX86AndARMOnMacOS26() throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
 		defer { temporary.remove() }

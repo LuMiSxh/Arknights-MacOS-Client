@@ -133,7 +133,8 @@ struct LauncherSettingsView: View {
 							installation: installation,
 							gameSession: gameSession,
 							lifecycle: lifecycle,
-							restartOnboarding: restartOnboarding
+							restartOnboarding: restartOnboarding,
+							revealApplicationSupport: storage.revealApplicationSupport
 						)
 					case .about:
 						AboutSettingsPage(

@@ -39,11 +39,14 @@ package struct RuntimeStore: Sendable {
 		try selectionStore.save(RuntimeSelection(selected: lane))
 	}
 
-	/// Removes the whole lane directory. The selected lane cannot be removed.
-	package func remove(lane: RuntimeLane) throws {
-		let selection = try selectionStore.load()
-		guard selection.selected != lane else {
-			throw RuntimeStoreError.cannotRemoveSelectedLane(lane)
+	/// Removes the whole lane directory. The selected lane is refused unless `allowSelected` is
+	/// set; the selection itself stays either way.
+	package func remove(lane: RuntimeLane, allowSelected: Bool = false) throws {
+		if !allowSelected {
+			let selection = try selectionStore.load()
+			guard selection.selected != lane else {
+				throw RuntimeStoreError.cannotRemoveSelectedLane(lane)
+			}
 		}
 		try withInstallLease(at: paths.runtimeDirectory(for: lane)) { _ in
 			try removeItem(at: paths.runtimeDirectory(for: lane))

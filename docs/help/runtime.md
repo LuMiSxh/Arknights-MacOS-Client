@@ -83,6 +83,7 @@ The warning title names the target, such as **Switch to ARM64?**. **Switch and D
 - The launcher downloads the runtime for the selected architecture. The **Runtime** panel shows its download size.
 - The other runtime stays on disk. The panel shows the installed version for each architecture.
 - **Remove Other Runtime** deletes the runtime you are not using. Its game environment stays on disk.
+- **Remove Runtime…** deletes the runtime you are using. Its game environment stays on disk. Set up the runtime again before you play.
 - Each architecture keeps its own game environment.
 - A switch keeps both game environments. It does not copy sign-ins, settings, or resources.
 

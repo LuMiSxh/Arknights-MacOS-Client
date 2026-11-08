@@ -34,6 +34,25 @@ extension InstallationSettingsPage {
 						|| runtimeSelection.requiresRelaunch)
 			}
 
+			SettingsActionRow(
+				title: "Remove Runtime",
+				detail:
+					"Delete the \(runtimeSelection.selectedLane.shortLabel) runtime. The game environment stays."
+			) {
+				CapsuleActionButton(
+					title: "Remove Runtime…",
+					systemImage: "trash",
+					tone: .danger,
+					presentation: .compact,
+					role: .destructive
+				) {
+					isRemoveSelectedRuntimeConfirmationPresented = true
+				}
+				.disabled(
+					runtimeChangesDisabled || !runtimeSelection.isSelectedLaneInstalled
+						|| runtimeSelection.requiresRelaunch)
+			}
+
 			if runtimeSelection.isInstalling {
 				RuntimeProgressLabel(controller: runtimeSelection)
 			}

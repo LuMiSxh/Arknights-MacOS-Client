@@ -173,7 +173,9 @@ import ArknightsCore
 
 		func selectRuntimeLane(_ lane: RuntimeLane) -> Bool { true }
 
-		func removeOtherRuntime() -> Bool { true }
+		func removeOtherRuntime() async -> Bool { true }
+
+		func removeSelectedRuntime() async -> Bool { true }
 
 		func installRosetta() async -> IntelTranslationState {
 			guard simulation?.rosettaMissing == true else {
