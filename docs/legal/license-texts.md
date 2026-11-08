@@ -435,7 +435,7 @@ These entries describe the runtimes that the launcher can download. Each runtime
 
 ### WineCX / Wine
 
-Version 11.17. `LGPL-2.1-or-later`. [Source](https://github.com/dappermint/winecx/tree/e0aa380780b73e20fabcfe78fd42713b94929a53).
+Version 11.17. `LGPL-2.1-or-later`. [Source](https://github.com/dappermint/winecx/tree/a54b8240683e92bf4c15cb1ba6bf92a9539bd768).
 
 Text: `lgpl-2.1.txt`
 

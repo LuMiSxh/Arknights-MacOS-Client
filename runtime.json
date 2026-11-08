@@ -7,11 +7,11 @@
       "minimumMacOS": "15.0",
       "prefixRevision": 2,
       "runtime": {
-        "name": "Arknights macOS Runtime 0.8.0-rc6",
-        "version": "0.8.0-rc6",
-        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc6/Arknights-MacOS-Runtime-v0.8.0-rc6.tar.gz",
-        "sha256": "7b35b658ff99f90bf795748ecceecc0144f2a0c5b011791d4c31acf013d50ec6",
-        "sizeBytes": 119311707
+        "name": "Arknights macOS Runtime 0.8.0-rc7+x86",
+        "version": "0.8.0-rc7+x86",
+        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc7+x86/Arknights-MacOS-Runtime-v0.8.0-rc7+x86.tar.gz",
+        "sha256": "428f69821dac948a13cef65ab89b92b5bca8f95d922f14476e42e2cb373d4b5e",
+        "sizeBytes": 119320594
       },
       "interface": {
         "archive": {
@@ -39,7 +39,12 @@
           "destinations": {
             "x64": "system32"
           },
-          "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
+          "libraries": [
+            "d3d10core.dll",
+            "d3d11.dll",
+            "dxgi.dll",
+            "winemetal.dll"
+          ]
         }
       },
       "components": {
@@ -49,9 +54,9 @@
       },
       "provenance": {
         "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-        "buildCommit": "01662c99e21594d6a3836c8c6886da5c192fb8a4",
+        "buildCommit": "98f0749e42730bf3f4348321380afa739b9b3991",
         "wineRepository": "https://github.com/dappermint/winecx",
-        "wineCommit": "e0aa380780b73e20fabcfe78fd42713b94929a53",
+        "wineCommit": "a54b8240683e92bf4c15cb1ba6bf92a9539bd768",
         "dxmtRepository": "https://github.com/3Shain/dxmt",
         "dxmtCommit": "9839e55f98d4aca103957ee4132d6395a325a9ed",
         "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
@@ -103,8 +108,12 @@
           "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll"]
         }
       },
-      "components": {},
-      "provenance": {}
+      "components": {
+
+      },
+      "provenance": {
+
+      }
     }
   }
 }
