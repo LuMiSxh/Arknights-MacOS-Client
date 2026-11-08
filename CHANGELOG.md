@@ -16,51 +16,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added the runtime download. The launcher no longer ships the runtime inside the app. Choose the architecture under **Settings → Installation → Runtime**. The launcher downloads, verifies, and installs that runtime. Runtime downloads show progress with the game download.
+- Added an **ARM64 (Apple Silicon)** runtime for macOS 26 or later. It uses a separate game environment, so the game may look like a fresh install after a switch.
+- Added **Remove Runtime…** under **Settings → Installation → Runtime**. It deletes the runtime you use and keeps the game environment. **Remove Other Runtime** now reports a failure with a support code.
+- Added the **Game runtime** help page. It explains **x86_64** and **ARM64 (Apple Silicon)**, how to switch, and what a switch changes. The **Runtime** setup step and **Runtime** panel link to it with **About game runtimes**.
 - Added a light mode. Choose System, Light, or Dark under **Settings → Appearance**. The choice applies to Settings, setup, and dialogs.
 - Added **Home controls** and **Branding** under **Settings → Appearance → Dynamic Theme**. Each one can follow the brightness of the artwork, or stay dark or light. In light mode, the logo is black and the backdrop is white.
 - Added **Custom…** to the game **Window size** menu. Enter a width and height in points, or use **Measure With a Window…** to read the size of a resizable window. A size too large for the screen scales down when the game starts.
-- Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS.
+- Added **Frame rate limit** to **Settings → Game → Performance**. Use the slider to set 30, 60, or 120 FPS.
 - Added **Battery Saver** to **Settings → Game → Performance**. At the next launch it caps the frame rate at 30 or 60 FPS, lowers **Rendering** from Retina, and turns off **Game Mode**.
 - Added an optional **Daily reset reminder** under **Settings → Integration → Notifications**. macOS shows a notification at the reset or 15 minutes, 30 minutes, 1 hour, or 2 hours before it. Choose the servers under **Servers**. Setup asks this question too. If macOS blocks notifications, **Open System Settings** opens the notification settings.
-- Added **Screenshots** to **Settings → Integration**. Choose a **Shortcut** to save a PNG of the game window while the game runs. The default is **⌃⌥S**. Choose **Record Shortcut…** to use your own keys. **Game → Take Screenshot** and the Dock menu do the same. **Save to** picks the folder, which is **Pictures/Arknights** by default. **Notify when saved** shows a banner with **Show in Finder**. macOS asks for Screen Recording the first time. If it is off, **Open System Settings** opens the right page. If notifications are off, **Open System Settings** opens the notification settings for Arknights Client.
+- Added **Screenshots** to **Settings → Integration**. Choose a **Shortcut** to save a PNG of the game window while the game runs. The default is **⌃⌥S**. Choose **Record Shortcut…** to use your own keys. **Game → Take Screenshot** and the Dock menu do the same. **Save to** picks the folder, which is **Pictures/Arknights** by default. **Notify when saved** shows a banner with **Show in Finder**. macOS asks for Screen Recording the first time. If it is off, **Open System Settings** opens the right page.
 - Added optional **Discord presence**. It shows **Playing Arknights**, your server, and the session time on your Discord profile while the game runs.
 - Added a **Help** section to **Settings** and a **Help** menu. They hold **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support. **Report a Problem…** is also in the Dock menu.
 - Added **Save Diagnostics…**. It saves a zip file to your Downloads folder. The zip holds the logs, the SDK logs, and environment details such as display settings, installed regions, macOS, chip, and memory. The logs redact your home folder, your user name, and URL queries. SDK logs can still contain account IDs and access keys, so review the zip before you share it. Nothing is uploaded. The launcher now collects the SDK logs for China, China (Bilibili), and Taiwan. Use **Show Logs** in **Settings → Storage** to see them in the `sdklogs` folder.
 - Added **Contact the developer** to **Settings → Help** for private messages, feedback, and testing offers. Use **Contact…** to get in touch.
-- The failure sheet can copy the support code.
-- Added a **Runtime** group to **Settings → About**. It shows the runtime version, the pinned Wine and DXMT versions and commits, and the capabilities the runtime advertises.
-- Added runtime architecture selection under **Settings → Installation → Runtime**. The launcher downloads the runtime for the chosen architecture instead of shipping it inside the app bundle.
-- Added an ARM64 runtime option for macOS 26 or later. Switching architectures uses a separate game environment and may look like a fresh install.
-- Added **Show in Finder** for the app data folder under **Settings → Help → Troubleshooting**. The folder holds settings, logs, runtimes, and game environments.
-- Added **Remove Runtime…** under **Settings → Installation → Runtime**. It deletes the runtime you use and keeps the game environment. Set up the runtime again before you play. **Remove Other Runtime** now reports a failure with a support code.
-- Added the **Game runtime** help page. It explains **x86_64** and **ARM64 (Apple Silicon)**, how to switch in **Settings → Installation → Runtime**, and what a switch changes. The **Runtime** setup step and Runtime panel link to it with **About game runtimes**.
+- Added **App Data Folder** to **Settings → Help → Troubleshooting**. **Show in Finder** opens the folder that holds settings, logs, runtimes, and game environments.
+- Added a **Runtime** group to **Settings → About**. It shows the runtime version and architecture, the Wine and DXMT versions, and the capabilities the runtime advertises.
+- The failure dialog can copy the support code.
 
 ### Changed
 
-- On macOS 28 and later, setup now selects **ARM64 (Apple Silicon)** by default and no longer offers **x86_64**. If you still use x86_64 after upgrading macOS, **System Check** and the **RT-BLK** error ask you to switch to the ARM64 runtime.
-- Aligned a few spacing values to the 4 pt grid.
-- The help now has one **Game runtime** page for supported macOS versions, Rosetta 2, and the x86_64 and ARM64 runtimes. Display settings and **Battery Saver** moved to **Display and performance**.
-- The first and last setup pages now use the same panels and rows as the other setup steps. The last page shows where to find help in the **Help** menu and in **Settings → Help**.
-- Gryphline Taiwan is now a stable server. It no longer needs **Canary Features**.
+- A launcher update can now require a newer runtime. Home then shows **Runtime update required** and **Update Runtime** instead of **Play**. The launcher never downloads a runtime on its own.
+- On macOS 28 and later, setup selects **ARM64 (Apple Silicon)** by default and no longer offers **x86_64**. If you still use x86_64 after upgrading macOS, **System Check** and the **RT-BLK** error ask you to switch to ARM64.
+- Updated the runtime to 0.8.0.
 - Rebuilt the launcher design on one color theme for dark and light. Glow effects, hover zoom, and bouncy motion are gone. Text uses lighter weights, and spacing follows one grid in every window.
-- Secondary buttons in Settings, setup, and the update window use quiet neutral colors. Links use the runtime accent color for their text. Destructive buttons use a red tint in dark and light.
-- The failure dialog groups the support code and recovery steps like the Settings panels, uses smaller section headings, and moves support actions into a **Get Help** menu.
+- Secondary buttons in Settings, setup, and the update window use quiet neutral colors. Links use the accent color. Destructive buttons use a red tint in dark and light.
+- The failure dialog groups the support code and recovery steps like the Settings panels and moves support actions into a **Get Help** menu.
 - The selection in the Settings sidebar now slides between rows.
 - Setup has a new **Look** step for artwork, Dynamic Theme, Home controls, Branding, appearance, and Dock icons. Setup keeps a custom window size. Setup runs once more after this update so you can review the new options.
+- The first and last setup pages use the same panels and rows as the other setup steps. The last page shows where to find help.
 - Renamed **Settings → Audio** to **Settings → Integration**. It holds the daily reset reminder, launcher music, and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates & Integrations**.
 - Reorganized **Settings**: recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
 - **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.
-- Onboarding answer cards use quieter hover and press effects.
-- Dialogs and help texts use plain words instead of technical terms such as partial files. Repair and reset actions still name the Wine prefix they change.
-- All report actions use the name **Report a Problem**. **Settings → Help** separates problems on this Mac from account and payment problems.
-- Support codes now use a short, readable format, for example **IN-DSK** for low disk space. Old codes such as **BASALT** link to their new pages.
-- The problem report form asks for logs only when a maintainer requests them.
+- Gryphline Taiwan is now a stable server. It no longer needs **Canary Features**.
 - Fullscreen mode now opens the game in its own macOS Space, so you can switch apps and Spaces normally.
 - **Rendering** marks MetalFX as unavailable when the installed runtime cannot use it. The launcher names the fallback that it uses instead.
-- Runtime versions now ship with the app version. The launcher replaces a stale pinned runtime when the app updates.
-- Updated the pinned runtime to 0.8.0 (DXMT 0.80-361, macOS 27 SDK). It includes the upstream fixes for the display query leaks.
-- The launcher now sends every compatibility patch flag to the runtime on each launch. There is no master switch, and no label or setting changed.
+- Support codes now use a short, readable format, for example **IN-DSK** for low disk space. Old codes such as **BASALT** link to their new pages.
+- All report actions use the name **Report a Problem**. **Settings → Help** separates problems on this Mac from account and payment problems. The report form asks for logs only when a maintainer requests them.
+- Dialogs and help texts use plain words instead of technical terms such as partial files. Repair and reset actions still name the Wine prefix they change.
 - The launcher now remembers when you mute the music.
 - Playlists now start on a random track without playing the first track briefly.
 
@@ -69,27 +64,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The Notices backdrop shows the blurred game again instead of solid black, also with the MetalFX rendering mode (Thanks to @darkwebdev, #119).
 - Clicking the Notices window brings the game to the front when another app is active (Thanks to @darkwebdev, #120).
 - The Notices window no longer stays above all other Mac windows (Thanks to @darkwebdev, #118).
-- Launcher music now plays until the game window appears. It then fades out once, without stuttering.
-- The music controls no longer dim for a moment when you fade or change a track.
-- The launcher no longer changes the music track after the game window appears.
-- Changing the music volume during a fade-in now keeps the new volume.
-- Music fades now follow a smoother volume curve.
-- The launcher now skips music tracks that YouTube cannot play. It shows when music is unavailable.
-- Muting the music during a fade-out no longer leaves the music playing. The fade-out now ends and pauses the music.
-- The music title now updates on every track change. **Next** and **Previous** no longer stay on "Changing track…".
-- The launcher no longer starts music while the game starts.
-- A failed launcher update now shows support code **UP-ERR**.
-- When the Bilibili sign-in helper cannot start, the launcher stops the launch and shows **RT-BIL** instead of waiting 90 seconds.
-- Download verification uses less memory and CPU for each file.
-- A slow Game Mode helper can no longer stop the launcher from quitting.
-- Diagnostics no longer replace parts of other words when your account name is short.
-- Diagnostic archives no longer contain broken characters when they copy a large log file.
-- The **RT-BLK** failure no longer offers a **Retry** that cannot succeed.
-- Warning, success, and danger text is now readable in the light appearance.
-- With **Reduce transparency** on, buttons and menus use the theme colors instead of a black fill.
-- Retrying the launcher update check during setup no longer lets an older result win.
+- Launcher music now plays until the game window appears. It then fades out once, without stuttering, and the launcher no longer starts music or changes the track while the game starts.
+- Music fades follow a smoother volume curve. Changing the volume during a fade-in keeps the new volume, and muting during a fade-out pauses the music.
+- The music title updates on every track change, and **Next** and **Previous** no longer stay on "Changing track…". The launcher skips tracks that YouTube cannot play and shows when music is unavailable.
 - Wallpapers larger than 8,192 pixels, such as "The Masses' Travels", now apply. An image that cannot be used shows support code **UI-IMG**.
 - **Done**, **Esc**, and **Report a Problem** now respond in the **Needs attention** dialog after an error appears while Settings is open.
+- Download verification uses less memory and CPU for each file.
+- A slow Game Mode helper can no longer stop the launcher from quitting.
 
 ## [0.7.1] - 2026-10-19
 
