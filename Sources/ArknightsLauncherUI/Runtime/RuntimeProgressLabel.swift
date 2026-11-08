@@ -56,7 +56,7 @@ struct RuntimeProgressLabel: View {
 extension RuntimeLane {
 	/// Full lane name for headings and rows.
 	var title: String {
-		self == .x86 ? "x86_64 (recommended)" : "ARM64 (Apple Silicon)"
+		self == .x86 ? "x86_64" : "ARM64 (Apple Silicon)"
 	}
 
 	/// Short lane name for sentences.

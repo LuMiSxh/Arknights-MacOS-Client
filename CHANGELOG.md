@@ -31,11 +31,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version, the pinned Wine and DXMT versions and commits, and the capabilities the runtime advertises.
 - Added runtime architecture selection under **Settings → Installation → Runtime**. The launcher downloads the runtime for the chosen architecture instead of shipping it inside the app bundle.
 - Added an ARM64 runtime option for macOS 26 or later. Switching architectures uses a separate game environment and may look like a fresh install.
-- Added the **Game runtime** help page. It explains **x86_64 (recommended)** and **ARM64 (Apple Silicon)**, how to switch in **Settings → Installation → Runtime**, and what a switch changes. The **Runtime** setup step and Runtime panel link to it with **About game runtimes**.
+- Added the **Game runtime** help page. It explains **x86_64** and **ARM64 (Apple Silicon)**, how to switch in **Settings → Installation → Runtime**, and what a switch changes. The **Runtime** setup step and Runtime panel link to it with **About game runtimes**.
 
 ### Changed
 
-- On macOS 28 and later, setup now selects **ARM64 (Apple Silicon)** by default and no longer offers **x86_64 (recommended)**. If you still use x86_64 after upgrading macOS, **System Check** and the **RT-BLK** error ask you to switch to the ARM64 runtime.
+- On macOS 28 and later, setup now selects **ARM64 (Apple Silicon)** by default and no longer offers **x86_64**. If you still use x86_64 after upgrading macOS, **System Check** and the **RT-BLK** error ask you to switch to the ARM64 runtime.
 - Aligned a few spacing values to the 4 pt grid.
 - The help now has one **Game runtime** page for supported macOS versions, Rosetta 2, and the x86_64 and ARM64 runtimes. Display settings and **Battery Saver** moved to **Display and performance**.
 - The first and last setup pages now use the same panels and rows as the other setup steps. The last page shows where to find help in the **Help** menu and in **Settings → Help**.

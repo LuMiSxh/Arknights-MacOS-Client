@@ -47,7 +47,7 @@ The setup assistant opens on the first start. Change any choice later in **Setti
 
    Choose **Install & Continue** to start the game download. It continues in the background while you finish setup.
 
-3. **Runtime** — Choose **x86_64 (recommended)** or **ARM64 (Apple Silicon)**. Choose **Download and Continue**, **Switch & Continue**, or **Continue Setup**. See [Game runtime](help/runtime.md).
+3. **Runtime** — Choose **x86_64** or **ARM64 (Apple Silicon)**. Choose **Download and Continue**, **Switch & Continue**, or **Continue Setup**. See [Game runtime](help/runtime.md).
 4. **Display** — Choose display mode, window size, rendering, and cursor. Pick an exact size later in **Settings → Game**.
 5. **Look** — Choose artwork, colors, the Dock operator, and launcher display options.
 6. **Updates & Integrations** — Choose update behavior, Discord presence, the daily reset reminder, and music.

@@ -14,22 +14,22 @@ Only Apple silicon Macs work: M-series Macs and the MacBook Neo (A18 Pro).
 
 | Architecture              | How it runs               | macOS             |
 | ------------------------- | ------------------------- | ----------------- |
-| **x86_64 (recommended)**  | Through Rosetta 2         | macOS 15 to 27    |
+| **x86_64**                | Through Rosetta 2         | macOS 15 to 27    |
 | **ARM64 (Apple Silicon)** | Natively on Apple silicon | macOS 26 or later |
 
-Use **x86_64 (recommended)** if you are not sure and your Mac runs macOS 15 to 27. On macOS 28 or later, setup selects **ARM64 (Apple Silicon)**.
+Use **x86_64** if you are not sure and your Mac runs macOS 15 to 27. On macOS 28 or later, setup selects **ARM64 (Apple Silicon)**.
 
 ## macOS support
 
-| macOS          | Runtime you can use                                                    |
-| -------------- | ---------------------------------------------------------------------- |
-| macOS 15 to 25 | **x86_64 (recommended)** only. Setup states that ARM64 needs macOS 26. |
-| macOS 26 to 27 | **x86_64 (recommended)** or **ARM64 (Apple Silicon)**                  |
-| macOS 28+      | **ARM64 (Apple Silicon)** only                                         |
+| macOS          | Runtime you can use                                      |
+| -------------- | -------------------------------------------------------- |
+| macOS 15 to 26 | **x86_64** only. Setup states that ARM64 needs macOS 26. |
+| macOS 26 to 27 | **x86_64** or **ARM64 (Apple Silicon)**                  |
+| macOS 28+      | **ARM64 (Apple Silicon)** only                           |
 
 Apple says macOS 27 is the last release with general Rosetta support. From macOS 28, the launcher blocks the x86_64 runtime. The launcher does not rely on Rosetta for ARM64. See Apple's [Rosetta details](https://support.apple.com/en-au/102527) and [developer notice](https://developer.apple.com/news/?id=w5ngl9k2).
 
-On macOS 28 or later, setup selects **ARM64 (Apple Silicon)** by default, and the **Runtime** step does not offer **x86_64 (recommended)**. If you selected x86_64 on an earlier macOS and then upgraded, **System Check** asks you to switch to the ARM64 runtime. Continue setup, choose **ARM64 (Apple Silicon)** in the **Runtime** step, then quit and reopen the launcher.
+On macOS 28 or later, setup selects **ARM64 (Apple Silicon)** by default, and the **Runtime** step does not offer **x86_64**. If you selected x86_64 on an earlier macOS and then upgraded, **System Check** asks you to switch to the ARM64 runtime. Continue setup, choose **ARM64 (Apple Silicon)** in the **Runtime** step, then quit and reopen the launcher.
 
 ## Rosetta 2
 
@@ -60,7 +60,7 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 
 ## Choose a runtime during setup
 
-1. In the **Runtime** step, choose **x86_64 (recommended)** or **ARM64 (Apple Silicon)**. On macOS 28 or later, only **ARM64 (Apple Silicon)** is offered.
+1. In the **Runtime** step, choose **x86_64** or **ARM64 (Apple Silicon)**. On macOS 28 or later, only **ARM64 (Apple Silicon)** is offered.
 2. Choose **Download and Continue**, **Switch & Continue**, or **Continue Setup**.
 3. Wait for the download if one starts.
 
@@ -74,7 +74,7 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 4. Choose **Switch and Download** or **Switch**.
 5. Quit and reopen the launcher.
 
-The warning title names the target, such as **Switch to ARM64?**. **Switch and Download** also downloads the runtime. **Switch** uses an installed runtime. On macOS 28 or later, the **Runtime** panel does not offer **x86_64 (recommended)**.
+The warning title names the target, such as **Switch to ARM64?**. **Switch and Download** also downloads the runtime. **Switch** uses an installed runtime. On macOS 28 or later, the **Runtime** panel does not offer **x86_64**.
 
 ## What a switch changes
 

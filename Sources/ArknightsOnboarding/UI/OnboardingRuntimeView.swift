@@ -53,7 +53,7 @@ struct OnboardingRuntimeView: View {
 		runtimeSelection.availableLanes.map { lane in
 			OnboardingAnswer(
 				value: lane,
-				title: lane == .x86 ? "x86_64 (recommended)" : "ARM64 (Apple Silicon)",
+				title: lane == .x86 ? "x86_64" : "ARM64 (Apple Silicon)",
 				detail: laneDetail(lane),
 				systemImage: lane == .x86 ? "cpu" : "apple.logo"
 			)
