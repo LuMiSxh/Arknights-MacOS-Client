@@ -89,6 +89,16 @@ The warning title names the target, such as **Switch to ARM64?**. **Switch and D
 
 The game may treat the new environment as a fresh install. It can ask you to sign in and download resources again. See [Storage](storage.md#where-files-live) for the folders.
 
+## Update the runtime after a launcher update
+
+A launcher update can require a newer runtime. Home then shows **Runtime update required** and **Update Runtime** instead of **Play**.
+
+1. Choose **Update Runtime** on Home or in **Settings → Installation → Runtime**.
+2. Wait for the download to finish.
+3. Choose **Play** when the button returns.
+
+The **Runtime** panel shows **Update available**, the required version, and the installed version. The launcher removes the old runtime after the update. The launcher never downloads a runtime on its own.
+
 ## If a runtime fails
 
 The **Runtime** panel and the **Runtime** setup step show a message and a support code. Match the code to the list below.

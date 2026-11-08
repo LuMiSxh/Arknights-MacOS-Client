@@ -57,6 +57,7 @@ struct LauncherPrimaryActionPresentation {
 	private let canStopGame: Bool
 	private let canInstall: Bool
 	private let runtimeIsInstalling: Bool
+	private let runtimeState: RuntimeLaneState
 	private let isIdle: Bool
 	private let canLaunch: Bool
 	private let requiresRelaunch: Bool
@@ -89,6 +90,7 @@ struct LauncherPrimaryActionPresentation {
 		self.canStopGame = gameSession.canStopGame
 		self.canInstall = installation.canInstall
 		self.runtimeIsInstalling = runtimeSelection.isInstalling
+		self.runtimeState = runtimeSelection.selectedLaneState
 		self.isIdle = lifecycle.activity == .idle
 		self.canLaunch = gameSession.canLaunch
 		self.requiresRelaunch = runtimeSelection.requiresRelaunch
@@ -110,7 +112,11 @@ struct LauncherPrimaryActionPresentation {
 		case .pause: "Pause"
 		case .install: hasPartialDownload ? "Resume" : "Install"
 		case .update: "Update"
-		case .runtime: "Set Up Runtime"
+		case .runtime:
+			switch runtimeState {
+			case .outdated: "Update Runtime"
+			case .notInstalled, .current: "Set Up Runtime"
+			}
 		case .play: "Play"
 		}
 	}
@@ -121,7 +127,11 @@ struct LauncherPrimaryActionPresentation {
 		case .pause: "pause.fill"
 		case .install: hasPartialDownload ? "arrow.clockwise" : "arrow.down"
 		case .update: "arrow.down"
-		case .runtime: "shippingbox"
+		case .runtime:
+			switch runtimeState {
+			case .outdated: "arrow.down"
+			case .notInstalled, .current: "shippingbox"
+			}
 		case .play: "play.fill"
 		}
 	}
@@ -153,7 +163,13 @@ struct LauncherPrimaryActionPresentation {
 			}
 			return "Download and verify the official \(regionDisplayName) PC files"
 		case .update: return "Download the changed game files"
-		case .runtime: return "Download the runtime for this Mac. Arknights needs it to start."
+		case .runtime:
+			switch runtimeState {
+			case .outdated:
+				return "Download the runtime update this launcher release requires."
+			case .notInstalled, .current:
+				return "Download the runtime for this Mac. Arknights needs it to start."
+			}
 		case .play: return intelTranslationDetail ?? "Start Arknights"
 		}
 	}

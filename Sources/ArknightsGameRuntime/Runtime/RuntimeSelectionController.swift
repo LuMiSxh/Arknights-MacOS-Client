@@ -4,6 +4,13 @@ import ArknightsCore
 import Foundation
 import Observation
 
+/// How a lane's installed runtime compares with the version this launcher release pins.
+package enum RuntimeLaneState: Equatable, Sendable {
+	case notInstalled
+	case outdated(installed: String)
+	case current
+}
+
 /// A runtime operation failure the UI shows inline, with the code the help page uses.
 package struct RuntimeSelectionFailure: Equatable, Sendable {
 	package let message: String
@@ -160,7 +167,8 @@ package final class RuntimeSelectionController {
 	@ObservationIgnored private var lastProgressUpdate: ContinuousClock.Instant?
 
 	package var isInstalling: Bool { installingLane != nil }
-	package var isSelectedLaneInstalled: Bool { installedVersions[selectedLane] != nil }
+	package var isSelectedLaneInstalled: Bool { selectedLaneState == .current }
+	package var selectedLaneState: RuntimeLaneState { state(for: selectedLane) }
 	/// True after `select` persists a lane that this process cannot use until it starts again.
 	package var requiresRelaunch: Bool { selectedLane != paths.runtimeLane }
 	package var allowsX86: Bool { access.allows(.x86) }
@@ -228,6 +236,16 @@ package final class RuntimeSelectionController {
 
 	package func installedVersion(for lane: RuntimeLane) -> String? {
 		installedVersions[lane]
+	}
+
+	/// An installed version counts as usable only when it matches the bundled pin. An install that
+	/// lags behind the pin must update before the lane can launch.
+	package func state(for lane: RuntimeLane) -> RuntimeLaneState {
+		guard let installed = installedVersions[lane] else { return .notInstalled }
+		guard let pin = pinnedRuntime(for: lane), pin.version != installed else {
+			return .current
+		}
+		return .outdated(installed: installed)
 	}
 
 	/// The pin used for size, version, and macOS requirement copy. A lane with an empty URL,
@@ -329,7 +347,7 @@ package final class RuntimeSelectionController {
 			present(error)
 			throw error
 		}
-		guard installedVersions[lane] != nil else {
+		guard state(for: lane) == .current else {
 			let error = RuntimeSelectionError.notInstalled(lane)
 			present(error)
 			throw error

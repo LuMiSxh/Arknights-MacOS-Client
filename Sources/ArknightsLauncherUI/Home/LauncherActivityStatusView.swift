@@ -21,6 +21,10 @@ struct LauncherActivityStatusView: View {
 				let failure = runtimeSelection.failure
 			{
 				RuntimeFailureStatusLabel(failure: failure)
+			} else if lifecycle.activity == .idle, !installation.isDownloading,
+				case .outdated = runtimeSelection.selectedLaneState
+			{
+				PlainStatusText(title: "Runtime update required")
 			} else if runtimeSelection.requiresRelaunch {
 				PlainStatusText(title: "Relaunch to use \(runtimeLaneName)")
 			} else if let completionFeedback, showsCompletionFeedback {

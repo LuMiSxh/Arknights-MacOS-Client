@@ -208,6 +208,45 @@ struct RuntimeSelectionControllerTests {
 	}
 
 	@Test
+	func anInstalledVersionThatDiffersFromThePinIsOutdated() throws {
+		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
+		defer { temporary.remove() }
+		let paths = makePaths(temporary)
+		try makeInstalledRuntime(version: "0.8.0", lane: .x86, paths: paths)
+		let controller = makeController(
+			paths: paths,
+			storage: temporary,
+			configuration: try configuration(),
+			access: access(macOS: 26),
+			installOperation: makeInstallOperation(paths: paths)
+		)
+
+		#expect(controller.state(for: .x86) == .outdated(installed: "0.8.0"))
+		#expect(controller.state(for: .arm) == .notInstalled)
+		#expect(!controller.isSelectedLaneInstalled)
+	}
+
+	@Test
+	func selectingAnOutdatedLaneIsRefused() throws {
+		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
+		defer { temporary.remove() }
+		let paths = makePaths(temporary)
+		try makeInstalledRuntime(version: "0.8.0", lane: .arm, paths: paths)
+		let controller = makeController(
+			paths: paths,
+			storage: temporary,
+			configuration: try configuration(),
+			access: access(macOS: 26),
+			installOperation: makeInstallOperation(paths: paths)
+		)
+
+		#expect(controller.state(for: .arm) == .outdated(installed: "0.8.0"))
+		#expect(throws: RuntimeSelectionError.notInstalled(.arm)) {
+			try controller.select(lane: .arm)
+		}
+	}
+
+	@Test
 	func selectingAnUninstalledLaneIsRefused() throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
 		defer { temporary.remove() }

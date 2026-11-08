@@ -16,6 +16,7 @@ extension InstallationSettingsPage {
 
 			runtimeX86Content
 			runtimeARMContent
+			runtimeUpdateContent
 
 			SettingsActionRow(
 				title: "Other runtime",
@@ -49,7 +50,9 @@ extension InstallationSettingsPage {
 					isRemoveSelectedRuntimeConfirmationPresented = true
 				}
 				.disabled(
-					runtimeChangesDisabled || !runtimeSelection.isSelectedLaneInstalled
+					runtimeChangesDisabled
+						|| runtimeSelection.installedVersion(
+							for: runtimeSelection.selectedLane) == nil
 						|| runtimeSelection.requiresRelaunch)
 			}
 
@@ -119,6 +122,27 @@ extension InstallationSettingsPage {
 		}
 	}
 
+	@ViewBuilder private var runtimeUpdateContent: some View {
+		if case .outdated(let installed) = runtimeSelection.selectedLaneState,
+			let pin = runtimeSelection.pinnedRuntime(for: runtimeSelection.selectedLane)
+		{
+			SettingsActionRow(
+				title: "Update Runtime",
+				detail: "Update available: \(pin.version) (installed \(installed))"
+			) {
+				CapsuleActionButton(
+					title: "Update Runtime",
+					systemImage: "arrow.down",
+					tone: .accent,
+					presentation: .compact
+				) {
+					Task { _ = await actions.installRuntime(runtimeSelection.selectedLane) }
+				}
+				.disabled(runtimeChangesDisabled)
+			}
+		}
+	}
+
 	private func runtimeNote(_ text: String) -> some View {
 		Text(text)
 			.font(.caption)
@@ -167,8 +191,8 @@ extension InstallationSettingsPage {
 
 	var runtimeSwitchButtonTitle: String {
 		guard let lane = pendingRuntimeLane else { return "Switch" }
-		return runtimeSelection.installedVersion(for: lane) == nil
-			? "Switch and Download" : "Switch"
+		return runtimeSelection.state(for: lane) == .current
+			? "Switch" : "Switch and Download"
 	}
 
 	var runtimeSwitchMessage: String {
@@ -176,17 +200,17 @@ extension InstallationSettingsPage {
 		else { return RuntimeSwitchWarning.message }
 		return RuntimeSwitchWarning.message(
 			for: pin,
-			isInstalled: runtimeSelection.installedVersion(for: lane) != nil
+			isInstalled: runtimeSelection.state(for: lane) == .current
 		)
 	}
 
 	func confirmRuntimeSwitch() {
 		guard let lane = pendingRuntimeLane else { return }
 		pendingRuntimeLane = nil
-		if runtimeSelection.installedVersion(for: lane) == nil {
-			Task { _ = await actions.installRuntime(lane) }
-		} else {
+		if runtimeSelection.state(for: lane) == .current {
 			_ = actions.selectRuntimeLane(lane)
+		} else {
+			Task { _ = await actions.installRuntime(lane) }
 		}
 	}
 
@@ -217,12 +241,23 @@ extension InstallationSettingsPage {
 
 	private func runtimeLaneDetail(_ lane: RuntimeLane) -> String {
 		var parts: [String] = []
-		if let version = runtimeSelection.installedVersion(for: lane) {
-			parts.append("Installed, version \(version)")
-		} else if let pin = runtimeSelection.pinnedRuntime(for: lane) {
-			parts.append("Not installed · Version \(pin.version)")
-		} else {
-			parts.append("Not installed")
+		switch runtimeSelection.state(for: lane) {
+		case .notInstalled:
+			if let pin = runtimeSelection.pinnedRuntime(for: lane) {
+				parts.append("Not installed · Version \(pin.version)")
+			} else {
+				parts.append("Not installed")
+			}
+		case .outdated(let installed):
+			if let pin = runtimeSelection.pinnedRuntime(for: lane) {
+				parts.append("Update available: \(pin.version) (installed \(installed))")
+			} else {
+				parts.append("Installed, version \(installed)")
+			}
+		case .current:
+			if let installed = runtimeSelection.installedVersion(for: lane) {
+				parts.append("Installed, version \(installed)")
+			}
 		}
 		guard let pin = runtimeSelection.pinnedRuntime(for: lane) else {
 			return parts.joined(separator: " · ")

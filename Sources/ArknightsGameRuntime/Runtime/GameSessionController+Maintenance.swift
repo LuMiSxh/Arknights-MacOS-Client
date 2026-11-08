@@ -105,14 +105,39 @@ extension GameSessionController {
 		paths: AppPaths,
 		compatibilityManager: GameCompatibilityManager
 	) throws -> WineRuntime {
-		guard let configurationURL = paths.activeRuntimeConfigurationURL() else {
-			throw WineRuntimeDiscoveryError.missingRuntime(
-				paths.runtimeDirectory(for: paths.runtimeLane))
+		try discoverRuntime(
+			paths: paths,
+			configuration: RuntimeConfiguration.bundled(),
+			compatibilityManager: compatibilityManager
+		)
+	}
+
+	nonisolated static func discoverRuntime(
+		paths: AppPaths,
+		configuration: RuntimeConfiguration,
+		compatibilityManager: GameCompatibilityManager
+	) throws -> WineRuntime {
+		let versionDirectory = try pinnedRuntimeVersionDirectory(
+			paths: paths, configuration: configuration)
+		let configurationURL = versionDirectory.appending(path: "RUNTIME.json")
+		guard FileManager.default.fileExists(atPath: configurationURL.path) else {
+			throw WineRuntimeDiscoveryError.missingRuntime(versionDirectory)
 		}
 		return try WineRuntime.discover(
-			runtimeRoot: configurationURL.deletingLastPathComponent(),
+			runtimeRoot: versionDirectory,
 			configurationURL: configurationURL,
 			compatibilityManager: compatibilityManager
 		)
+	}
+
+	/// Launch uses only the pinned version directory. Falling back to another installed version
+	/// would run a runtime that the launcher release does not support.
+	nonisolated static func pinnedRuntimeVersionDirectory(
+		paths: AppPaths,
+		configuration: RuntimeConfiguration
+	) throws -> URL {
+		let lane = paths.runtimeLane
+		let pin = try configuration.pinnedRuntime(for: lane)
+		return paths.runtimeVersionDirectory(for: lane, version: pin.version)
 	}
 }
