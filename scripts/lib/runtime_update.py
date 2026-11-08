@@ -55,6 +55,9 @@ BUILD_METADATA = "+"
 MAXIMUM_ASSET_BYTES = 8 * 1_024 * 1_024
 PRETTIER_WIDTH = 80
 LANE_TARGETS = {"x86": "rosetta-x86_64", "arm": "native-arm64"}
+# Wine and DXMT are the components a lane can carry from `runtimeLock.contents.sources`;
+# MoltenVK comes only from `baseProvenance`.
+RUNTIME_COMPONENTS = ("wine", "dxmt")
 ASSET_URL_PATTERN = re.compile(
     rf"^{re.escape(REPOSITORY_URL)}/releases/download/(?P<tag>[^/]+)/(?P<name>[^/]+)$"
 )
@@ -281,7 +284,14 @@ def _update_provenance(
                 external["revision"], "external build"
             )
     if isinstance(sources, dict):
-        for name in lane["components"]:
+        names = list(lane["components"])
+        if not names:
+            names = [
+                name
+                for name in RUNTIME_COMPONENTS
+                if isinstance(sources.get(name), dict)
+            ]
+        for name in names:
             source = sources.get(name)
             if not isinstance(source, dict):
                 continue

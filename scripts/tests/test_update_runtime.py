@@ -230,6 +230,48 @@ def test_update_pins_the_arm_lane_without_touching_x86(project: Path) -> None:
     runtime_update.check(project)
 
 
+def test_update_seeds_an_empty_arm_lane_from_arm_provenance(project: Path) -> None:
+    manifest = manifest_of(project)
+    manifest["lanes"]["arm"]["components"] = {}
+    manifest["lanes"]["arm"]["provenance"] = {}
+    (project / "runtime.json").write_text(json.dumps(manifest), encoding="utf-8")
+    provenance = release_provenance(ARM_TAG, architecture="arm")
+    sources = provenance["runtimeLock"]["contents"]["sources"]
+    sources["wine"] = {
+        "repository": "https://gitlab.winehq.org/wine/wine.git",
+        "commit": "7b3fff76fa5178f6ce0141b2c776afa2a822f101",
+        "version": "11.18",
+    }
+    provenance["externalBuild"] = {
+        "repository": "https://github.com/riverfog7/wine-build-new",
+        "revision": "3" * 40,
+    }
+    provenance["externalArtifact"] = {
+        "id": "wine-11-18-arm64-v5",
+        "sha256": "c" * 64,
+        "size": 105_582_608,
+    }
+
+    runtime_update.update(
+        project, ARM_TAG, release_fetch(ARM_TAG, provenance), architecture="arm"
+    )
+
+    lane = manifest_of(project)["lanes"]["arm"]
+    assert lane["components"] == {"wine": "11.18", "dxmt": "0.81"}
+    assert lane["provenance"]["wineRepository"] == "https://gitlab.winehq.org/wine/wine"
+    assert lane["provenance"]["wineCommit"] == (
+        "7b3fff76fa5178f6ce0141b2c776afa2a822f101"
+    )
+    assert lane["provenance"]["dxmtRepository"] == "https://github.com/3Shain/dxmt"
+    assert lane["provenance"]["buildRepository"] == runtime_update.REPOSITORY_URL
+    assert lane["provenance"]["buildCommit"] == NEW_SOURCE_COMMIT
+    assert lane["provenance"]["externalBuildRepository"] == (
+        "https://github.com/riverfog7/wine-build-new"
+    )
+    assert lane["provenance"]["externalBuildCommit"] == "3" * 40
+    runtime_update.check(project)
+
+
 def test_update_rejects_a_release_from_another_lane(project: Path) -> None:
     before = (project / "runtime.json").read_text(encoding="utf-8")
 
