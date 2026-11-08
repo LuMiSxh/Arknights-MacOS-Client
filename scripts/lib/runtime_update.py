@@ -270,7 +270,13 @@ def _update_provenance(
     lock = provenance.get("runtimeLock")
     contents = lock.get("contents") if isinstance(lock, dict) else None
     sources = contents.get("sources") if isinstance(contents, dict) else None
-    base = contents.get("baseProvenance") if isinstance(contents, dict) else None
+    # `baseProvenance` describes the base archive; a lane built without one (the external
+    # ARM64 tree) inherits the lock's top-level entry but does not ship that MoltenVK.
+    base = (
+        contents.get("baseProvenance")
+        if isinstance(contents, dict) and contents.get("baseArtifact") is not None
+        else None
+    )
     previous = lane["provenance"]
     previous["buildRepository"] = REPOSITORY_URL
     if isinstance(provenance.get("sourceCommit"), str):

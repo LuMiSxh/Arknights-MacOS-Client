@@ -97,6 +97,10 @@ def release_provenance(
         },
     }
     if architecture == "x86":
+        contents["baseArtifact"] = {
+            "url": "https://github.com/dappermint/Whisky/releases/download/v4.7.3/Libraries.tar.gz",
+            "sha256": "a" * 64,
+        }
         contents["baseProvenance"] = {
             "moltenvk": {
                 "commit": overrides.get(
@@ -250,6 +254,14 @@ def test_update_seeds_an_empty_arm_lane_from_arm_provenance(project: Path) -> No
         "id": "wine-11-18-arm64-v5",
         "sha256": "c" * 64,
         "size": 105_582_608,
+    }
+    contents = provenance["runtimeLock"]["contents"]
+    contents["baseArtifact"] = None
+    contents["baseProvenance"] = {
+        "moltenvk": {
+            "repository": "https://github.com/KhronosGroup/MoltenVK.git",
+            "commit": "4" * 40,
+        }
     }
 
     runtime_update.update(

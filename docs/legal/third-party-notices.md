@@ -21,6 +21,8 @@ The app bundles one compact file with the notices of its own components. This we
 | x86 | WineCX / Wine | 11.17, `a54b8240683e92bf4c15cb1ba6bf92a9539bd768` | LGPL-2.1-or-later | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/a54b8240683e92bf4c15cb1ba6bf92a9539bd768) |
 | x86 | DXMT | 0.80-361-g9839e55, `9839e55f98d4aca103957ee4132d6395a325a9ed` | LGPL-2.1-or-later | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/9839e55f98d4aca103957ee4132d6395a325a9ed) |
 | x86 | MoltenVK | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf` | Apache-2.0 | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
+| arm | WineCX / Wine | 11.18, `7b3fff76fa5178f6ce0141b2c776afa2a822f101` | LGPL-2.1-or-later | [wine/wine commit](https://gitlab.winehq.org/wine/wine/-/tree/7b3fff76fa5178f6ce0141b2c776afa2a822f101) |
+| arm | DXMT | 0.80, `647b0020ba5764e5593b12407afd76964fa11e20` | LGPL-2.1-or-later | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/647b0020ba5764e5593b12407afd76964fa11e20) |
 <!-- runtime:end components -->
 
 The x86_64 runtime contains WineCX, DXMT, and MoltenVK. The ARM64 runtime contains Wine, FEX, Mesa, and DXMT. Each runtime archive carries its own license index, license texts, and `NOTICE.md`. The launcher shows those notices for the installed runtime under **Settings → About**.
@@ -35,7 +37,7 @@ The client pins one runtime archive per architecture. The launcher downloads the
 | Runtime | Release | Archive SHA-256 | Archive size |
 | --- | --- | --- | --- |
 | x86 | [v0.8.0-rc7+x86](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.8.0-rc7+x86) | `428f69821dac948a13cef65ab89b92b5bca8f95d922f14476e42e2cb373d4b5e` | 119320594 bytes |
-| arm | Not pinned yet | | |
+| arm | [v0.8.0-rc7+arm](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.8.0-rc7+arm) | `b4e42e0158ba6922d26be4bc819e4be5513e6696eb9a1ce154e16d9a51249b7f` | 237448753 bytes |
 <!-- runtime:end build -->
 
 > [!IMPORTANT]
