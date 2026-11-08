@@ -24,11 +24,18 @@ package enum DownloadProgressFormatting {
 		let bytes = Int64(rounded)
 		return bytes.formatted(byteCountStyle) + "/s"
 	}
+
+	package static func transferSummary(downloadedBytes: Int64, totalBytes: Int64) -> String {
+		"\(byteCount(downloadedBytes)) of \(byteCount(totalBytes))"
+	}
 }
 
 extension DownloadProgress {
 	/// The "downloaded of total" text shared by the HUD and onboarding progress rows.
 	package var transferSummary: String {
-		"\(DownloadProgressFormatting.byteCount(downloadedBytes)) of \(DownloadProgressFormatting.byteCount(totalBytes))"
+		DownloadProgressFormatting.transferSummary(
+			downloadedBytes: downloadedBytes,
+			totalBytes: totalBytes
+		)
 	}
 }

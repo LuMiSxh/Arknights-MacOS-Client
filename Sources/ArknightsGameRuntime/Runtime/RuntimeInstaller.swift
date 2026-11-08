@@ -32,6 +32,22 @@ package struct RuntimeInstallProgress: Equatable, Sendable {
 	package let downloadedBytes: Int64
 	package let totalBytes: Int64
 	package let phase: Phase
+	package let transferRateBytesPerSecond: Double?
+	package let isTransferStalled: Bool
+
+	init(
+		downloadedBytes: Int64,
+		totalBytes: Int64,
+		phase: Phase,
+		transferRateBytesPerSecond: Double? = nil,
+		isTransferStalled: Bool = false
+	) {
+		self.downloadedBytes = downloadedBytes
+		self.totalBytes = totalBytes
+		self.phase = phase
+		self.transferRateBytesPerSecond = transferRateBytesPerSecond
+		self.isTransferStalled = isTransferStalled
+	}
 }
 
 /// The runtime that `install(pin:progress:)` produced.
@@ -220,6 +236,7 @@ package struct RuntimeInstaller: Sendable {
 
 		let stream = chunkSession.stream(for: request)
 		defer { stream.cancel() }
+		var estimator = TransferRateEstimator()
 		var offset = existingBytes
 		var receivedResponse = false
 		do {
@@ -241,11 +258,15 @@ package struct RuntimeInstaller: Sendable {
 					try handle.write(contentsOf: data)
 					stream.acknowledge(data.count)
 					offset = next
+					estimator.add(bytes: Int64(data.count))
+					let transfer = estimator.snapshot()
 					await progress(
 						RuntimeInstallProgress(
 							downloadedBytes: offset,
 							totalBytes: Int64(pin.sizeBytes),
-							phase: .downloading
+							phase: .downloading,
+							transferRateBytesPerSecond: transfer.bytesPerSecond,
+							isTransferStalled: transfer.isStalled
 						))
 				}
 			}

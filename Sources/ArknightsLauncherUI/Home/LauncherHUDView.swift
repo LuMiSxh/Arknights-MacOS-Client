@@ -45,7 +45,8 @@ struct LauncherHUDView: View {
 	private var controlBar: some View {
 		HUDProgressSurface(
 			lifecycle: lifecycle,
-			installation: installation
+			installation: installation,
+			runtimeSelection: runtimeSelection
 		) {
 			controlBarContent
 		}

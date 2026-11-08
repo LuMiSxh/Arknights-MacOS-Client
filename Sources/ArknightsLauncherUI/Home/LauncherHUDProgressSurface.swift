@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsGameInstallation
+import ArknightsGameRuntime
 import SwiftUI
 
 // The surface and `content` read only state that changes on transitions. The outline overlay
@@ -10,24 +11,58 @@ import SwiftUI
 struct HUDProgressSurface<Content: View>: View {
 	let lifecycle: LauncherLifecycleStore
 	let installation: InstallationController
+	let runtimeSelection: RuntimeSelectionController
 	@ViewBuilder let content: () -> Content
 
 	var body: some View {
-		let supportsOutline = LauncherDownloadProgressPresentation.supportsOutline(
-			status: lifecycle.state.presentation.status,
-			hasPartialDownload: installation.hasPartialDownload,
-			hasFailure: lifecycle.state.presentation.failure != nil
-		)
+		let supportsOutline =
+			runtimeSelection.isInstalling
+			|| LauncherDownloadProgressPresentation.supportsOutline(
+				status: lifecycle.state.presentation.status,
+				hasPartialDownload: installation.hasPartialDownload,
+				hasFailure: lifecycle.state.presentation.failure != nil
+			)
 		content()
 			.hudPillSurface(showsBorder: !supportsOutline)
 			.overlay {
 				if supportsOutline {
-					HUDDownloadOutline(
+					HUDProgressOutline(
 						lifecycle: lifecycle,
-						installation: installation
+						installation: installation,
+						runtimeSelection: runtimeSelection
 					)
 				}
 			}
+	}
+}
+
+private struct HUDProgressOutline: View {
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
+	let runtimeSelection: RuntimeSelectionController
+
+	var body: some View {
+		if runtimeSelection.isInstalling {
+			HUDRuntimeOutline(runtimeSelection: runtimeSelection)
+		} else {
+			HUDDownloadOutline(lifecycle: lifecycle, installation: installation)
+		}
+	}
+}
+
+// Only this leaf reads the per-tick runtime progress.
+private struct HUDRuntimeOutline: View {
+	let runtimeSelection: RuntimeSelectionController
+
+	var body: some View {
+		HUDPillProgressOutline(
+			progress: RuntimeInstallPresentation.outlineFraction(
+				for: runtimeSelection.installProgress
+			),
+			isActive: RuntimeInstallPresentation.showsActiveProgressEffect(
+				for: runtimeSelection.installProgress
+			)
+		)
 	}
 }
 

@@ -15,7 +15,7 @@ struct LauncherActivityStatusView: View {
 	var body: some View {
 		Group {
 			if runtimeSelection.isInstalling {
-				RuntimeProgressLabel(controller: runtimeSelection)
+				RuntimeDownloadStatusLabel(controller: runtimeSelection)
 			} else if lifecycle.activity == .idle, !installation.isDownloading,
 				!runtimeSelection.isSelectedLaneInstalled,
 				let failure = runtimeSelection.failure
@@ -134,33 +134,22 @@ private struct DownloadStatusLabel: View {
 	let lifecycle: LauncherLifecycleStore
 	let installation: InstallationController
 	let isPausedDownload: Bool
-	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
 		if showsDownloadSnapshot {
-			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
-				ViewThatFits(in: .horizontal) {
-					HStack(
-						alignment: .firstTextBaseline, spacing: LauncherTokens.Spacing.content
-					) {
-						percentageLabel
-						downloadProgressDetail
-						transferDetails
-					}
-					VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
-						percentageLabel
-						HStack(
-							alignment: .firstTextBaseline, spacing: LauncherTokens.Spacing.control
-						) {
-							downloadProgressDetail
-							transferDetails
-						}
-					}
-				}
-			}
-			.accessibilityElement(children: .ignore)
-			.accessibilityLabel(Text(statusTitle))
-			.accessibilityValue(Text(accessibilityProgressValue))
+			DownloadStatusLine(
+				title: statusTitle,
+				widestTitle: LauncherDownloadProgressPresentation.widestTitle(
+					isVerifying: installation.progress?.isVerifying == true,
+					isPaused: isPausedDownload
+				),
+				detail: statusDetail,
+				rate: LauncherDownloadProgressPresentation.transferDetail(
+					for: installation.progress,
+					isPaused: isPausedDownload
+				),
+				accessibilityValue: accessibilityProgressValue
+			)
 		} else {
 			PlainStatusText(title: statusTitle)
 		}
@@ -205,65 +194,6 @@ private struct DownloadStatusLabel: View {
 				) != nil)
 	}
 
-	private var downloadProgressDetail: some View {
-		Text(statusDetail ?? "")
-			.font(.caption)
-			.foregroundStyle(.secondary)
-			.monospacedDigit()
-			.frame(
-				minWidth: AppConstants.HUD.downloadProgressDetailMinWidth,
-				alignment: .leading
-			)
-			.fixedSize(horizontal: false, vertical: true)
-			.layoutPriority(1)
-			.accessibilityLabel(Text(statusDetail ?? ""))
-	}
-
-	private var percentageLabel: some View {
-		ZStack(alignment: .leading) {
-			Text(
-				LauncherDownloadProgressPresentation.widestTitle(
-					isVerifying: installation.progress?.isVerifying == true,
-					isPaused: isPausedDownload
-				)
-			)
-			.font(LauncherTokens.Typography.statusPercent)
-			.monospacedDigit()
-			.hidden()
-			.accessibilityHidden(true)
-			Text(statusTitle)
-				.font(LauncherTokens.Typography.statusPercent)
-				.monospacedDigit()
-				.contentTransition(reduceMotion ? .identity : .numericText())
-				.animation(
-					LauncherMotion.animation(.state, reduceMotion: reduceMotion),
-					value: statusTitle
-				)
-				.fixedSize(horizontal: true, vertical: false)
-		}
-		.fixedSize(horizontal: true, vertical: false)
-	}
-
-	@ViewBuilder
-	private var transferDetails: some View {
-		if showsDownloadSnapshot,
-			let transferDetail = LauncherDownloadProgressPresentation.transferDetail(
-				for: installation.progress,
-				isPaused: isPausedDownload
-			)
-		{
-			Text(transferDetail)
-				.monospacedDigit()
-				.frame(
-					minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
-					alignment: .leading
-				)
-				.font(.caption)
-				.foregroundStyle(.secondary)
-				.lineLimit(1)
-				.accessibilityElement(children: .combine)
-		}
-	}
 }
 
 private struct RuntimeFailureStatusLabel: View {

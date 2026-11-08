@@ -66,6 +66,8 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 
 **Download and Continue** downloads and installs the runtime. **Switch & Continue** selects a runtime that is already installed. **Continue Setup** keeps the current runtime.
 
+While the runtime downloads, the progress line shows the percentage, download size, and speed.
+
 ## Switch architectures in Settings
 
 1. Open **Settings → Installation**.

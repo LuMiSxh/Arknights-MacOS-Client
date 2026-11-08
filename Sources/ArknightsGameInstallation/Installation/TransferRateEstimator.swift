@@ -20,16 +20,16 @@ struct ElapsedTime {
 	var now: Duration { read() }
 }
 
-struct TransferRateSnapshot: Sendable, Equatable {
-	let bytesPerSecond: Double?
-	let isStalled: Bool
+package struct TransferRateSnapshot: Sendable, Equatable {
+	package let bytesPerSecond: Double?
+	package let isStalled: Bool
 }
 
 // The estimator intentionally knows nothing about manifest bytes, resumed files, checksums,
 // or file moves. Its caller supplies only bytes received from the current network stream;
 // resetting it at a retry or failed validation prevents invalid samples from contaminating
 // the next display rate.
-struct TransferRateEstimator {
+package struct TransferRateEstimator {
 	private let clock: ElapsedTime
 	private let sampleInterval: Duration
 	private let stallTimeout: Duration
@@ -40,7 +40,7 @@ struct TransferRateEstimator {
 	private var smoothedRate: Double?
 	private var isStalledState = false
 
-	init(
+	package init(
 		clock: any Clock<Duration> = ContinuousClock(),
 		sampleInterval: Duration = AppConstants.Network.transferRateSampleInterval,
 		stallTimeout: Duration = AppConstants.Network.transferRateStallTimeout,
@@ -56,7 +56,7 @@ struct TransferRateEstimator {
 		self.lastNetworkActivityAt = operationStartedAt
 	}
 
-	mutating func add(bytes: Int64) {
+	package mutating func add(bytes: Int64) {
 		guard bytes > 0 else { return }
 		let now = clock.now
 		let timedOut =
@@ -96,13 +96,13 @@ struct TransferRateEstimator {
 		}
 	}
 
-	mutating func reset() {
+	package mutating func reset() {
 		clearRateState()
 		lastNetworkActivityAt = clock.now
 		isStalledState = false
 	}
 
-	mutating func snapshot() -> TransferRateSnapshot {
+	package mutating func snapshot() -> TransferRateSnapshot {
 		let now = clock.now
 		let isStalled =
 			if let lastNetworkActivityAt {

@@ -16,6 +16,7 @@ The launcher must feel like a current macOS app. It must feel like an Arknights 
 - Show one compact control bar at the bottom. Make it a capsule. When the HUD expands, use a rounded rectangle with a fixed radius.
 - Show only the current state, the version, and one primary action.
 - Show download progress in the same bar. Draw the progress rail along the outer edge of the bar, with an inner inset. Use crisp strokes only. Do not add a blurred glow or glint. In the compact state, show the percentage first. Then show transfer size, speed, and remaining time.
+- Show a runtime download with the same status line and progress rail as a game download.
 - Give each Home surface its own Home theme. Home controls and Branding each take Automatic, Dark, or Light. Home ignores the Appearance setting.
 
 ## Visual language
