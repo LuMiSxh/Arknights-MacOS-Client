@@ -63,13 +63,34 @@ test('share charts reject shares outside 0 to 1', () => {
 	);
 });
 
+test('share chart pie renders a donut with a legend', () => {
+	const html = markdown(
+		'```share-chart\ntitle: Fixture\ntype: pie\nitems:\n  - label: A\n    share: 0.6\n  - label: B\n    share: 0.4\n```'
+	);
+	assert.match(html, /<figure class="share-chart share-chart-pie">/);
+	assert.match(html, /<svg class="share-chart-donut"[^>]*aria-hidden="true"/);
+	assert.match(html, /<ol class="share-chart-legend">/);
+});
+
+test('share chart pie shares must add up to between 0.98 and 1.02', () => {
+	assert.throws(
+		() =>
+			markdown(
+				'```share-chart\ntitle: Fixture\ntype: pie\nitems:\n  - label: A\n    share: 0.5\n  - label: B\n    share: 0.4\n```'
+			),
+		(error) =>
+			error instanceof ContentError &&
+			error.message.includes('must add up to between 0.98 and 1.02')
+	);
+});
+
 // prettier-ignore
 test('contact callouts accept only simple topics and escape every field', () => {
 	assert.throws(() => markdown('```contact\ntitle: Fixture\ntext: Body\ntopic: Testing\n```'), (error) => error instanceof ContentError && error.message.includes('contact.topic must be one of'));
 	const html = markdown('```contact\ntitle: <b>Fixture</b>\ntext: A & B\ntopic: testing\n```');
 	assert.match(
 		html,
-		/href="https:\/\/tally\.so\/r\/gbbPYd\?a85cb047-b902-46f2-86f1-c0bbdbe9d16e=Testing&amp;topic=testing"/
+		/href="https:\/\/tally\.so\/r\/gbbPYd\?topic=Testing"/
 	);
 	assert.match(html, /&lt;b&gt;Fixture&lt;\/b&gt;/);
 	assert.match(html, /A &amp; B/);

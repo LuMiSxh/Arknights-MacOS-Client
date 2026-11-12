@@ -98,6 +98,8 @@ export interface BenchmarkSummaryMetric {
 
 export interface BenchmarkRun {
 	label: string;
+	/** Palette slot from the export, so a run keeps its color when a chart shows a subset. */
+	slot?: number;
 	target?: string;
 	case?: string;
 	note?: string;

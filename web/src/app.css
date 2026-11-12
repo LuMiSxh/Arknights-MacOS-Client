@@ -573,6 +573,14 @@ p {
 }
 
 .content-copy .share-chart {
+	/* Categorical series in order. The first is the site accent. Each slot is at least 4.7:1 against the panel. */
+	--share-chart-1: var(--site-signal-text);
+	--share-chart-2: #a88cdb;
+	--share-chart-3: #5fc3b8;
+	--share-chart-4: #d9a25f;
+	--share-chart-5: #e58fb3;
+	--share-chart-6: #a8c96a;
+	--share-chart-7: #7d838c;
 	margin: 1.25rem 0;
 	border: 1px solid var(--site-border);
 	border-radius: var(--site-radius-panel);
@@ -597,7 +605,7 @@ p {
 .content-copy .share-chart li,
 .content-copy .share-chart li + li {
 	display: grid;
-	grid-template-columns: minmax(5rem, 9rem) minmax(0, 1fr);
+	grid-template-columns: minmax(5rem, 9rem) minmax(0, 1fr) 3rem;
 	align-items: center;
 	gap: var(--site-space-3);
 	margin-top: 0;
@@ -620,7 +628,7 @@ p {
 	display: block;
 	height: 100%;
 	border-radius: inherit;
-	background: color-mix(in srgb, var(--site-text) 45%, transparent);
+	background: var(--share-chart-1);
 }
 
 /* The verbal share is for screen readers only, so the chart shows no visible numbers or words. */
@@ -631,6 +639,41 @@ p {
 	overflow: hidden;
 	clip-path: inset(50%);
 	white-space: nowrap;
+}
+
+.content-copy .share-chart-value {
+	color: var(--site-text);
+	font-size: 0.9rem;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+.content-copy .share-chart-pie-body {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--site-space-5);
+}
+
+.content-copy .share-chart-donut {
+	flex: none;
+	width: 9rem;
+	height: 9rem;
+}
+
+.content-copy .share-chart-legend {
+	flex: 1 1 12rem;
+}
+
+.content-copy .share-chart-legend li,
+.content-copy .share-chart-legend li + li {
+	grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.content-copy .share-chart-swatch {
+	width: 0.75rem;
+	height: 0.75rem;
+	border-radius: 3px;
 }
 
 .content-copy pre {
