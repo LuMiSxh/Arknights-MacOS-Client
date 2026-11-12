@@ -73,11 +73,11 @@
       "minimumMacOS": "26.0",
       "prefixRevision": 2,
       "runtime": {
-        "name": "Arknights macOS Runtime 0.8.0-rc7+arm",
-        "version": "0.8.0-rc7+arm",
-        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc7+arm/Arknights-MacOS-Runtime-v0.8.0-rc7+arm.tar.gz",
-        "sha256": "b4e42e0158ba6922d26be4bc819e4be5513e6696eb9a1ce154e16d9a51249b7f",
-        "sizeBytes": 237448753
+        "name": "Arknights macOS Runtime 0.8.0-rc8+arm",
+        "version": "0.8.0-rc8+arm",
+        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc8+arm/Arknights-MacOS-Runtime-v0.8.0-rc8+arm.tar.gz",
+        "sha256": "6812c6950dcd29521c7c5efac81d0473f4ea107229e34fcadc1b682946a2dcd6",
+        "sizeBytes": 237377785
       },
       "interface": {
         "archive": {
@@ -114,7 +114,7 @@
       },
       "provenance": {
         "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-        "buildCommit": "120f9f759dd3be29fc60a9296fd2ace8e3037b09",
+        "buildCommit": "deab847f7129a1f0f3e50ad03356e9b9bf5728f2",
         "externalBuildRepository": "https://github.com/riverfog7/wine-build-new",
         "externalBuildCommit": "7b3fff76fa5178f6ce0141b2c776afa2a822f101",
         "wineRepository": "https://gitlab.winehq.org/wine/wine",
