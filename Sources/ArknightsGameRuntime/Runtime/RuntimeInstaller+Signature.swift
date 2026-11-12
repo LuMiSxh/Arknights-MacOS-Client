@@ -4,9 +4,9 @@ import Foundation
 import Security
 
 extension RuntimeInstaller {
-	/// The ARM runtime ships an externally signed loader. Its Developer ID identity and
+	/// The ARM runtime ships an externally signed loader bundle. Its Developer ID identity and
 	/// designated requirement are part of the pin: the client verifies them and never re-signs
-	/// `wine.app`. x86 and wrapper-added files may carry an ad-hoc signature or none.
+	/// the bundle. x86 and wrapper-added files may carry an ad-hoc signature or none.
 	static let armTeamIdentifier = "QNY65H4MK6"
 	static let armIdentifier = "com.riverfog7.wine"
 	static let armDesignatedRequirement =
@@ -14,11 +14,13 @@ extension RuntimeInstaller {
 
 	func verifySignatures(pin: PinnedRuntime, at runtimeRoot: URL) throws {
 		guard pin.lane == .arm else { return }
-		guard let loaderPath = pin.interface.loaderPath else {
-			throw RuntimeInstallError.invalidInterface("the ARM interface has no wine.app loader")
+		let loaderURLs = pin.interface.loaderPaths.map { runtimeRoot.appending(path: $0) }
+		let existingLoader = loaderURLs.first { FileManager.default.fileExists(atPath: $0.path) }
+		guard let loaderURL = existingLoader else {
+			throw RuntimeInstallError.invalidInterface("the ARM interface has no loader bundle")
 		}
 		try verifyDeveloperID(
-			url: runtimeRoot.appending(path: loaderPath),
+			url: loaderURL,
 			requirement: Self.armDesignatedRequirement,
 			teamIdentifier: Self.armTeamIdentifier,
 			identifier: Self.armIdentifier
