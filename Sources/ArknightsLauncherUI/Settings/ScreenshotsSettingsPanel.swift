@@ -50,19 +50,6 @@ struct ScreenshotsSettingsPanel: View {
 					)
 				}
 			}
-			if settings.screenshotNotifies, screenshots.isNotificationAccessDenied {
-				SettingsHairline()
-				SettingsActionRow(
-					title: "Notifications are off for Arknights Client."
-				) {
-					CapsuleActionButton(
-						title: "Open System Settings",
-						systemImage: "gearshape",
-						tone: .neutral,
-						action: openNotificationSettings
-					)
-				}
-			}
 			SettingsHairline()
 			SettingsActionRow(
 				title: "Save to",
@@ -82,6 +69,19 @@ struct ScreenshotsSettingsPanel: View {
 				detail: "Shows a banner with a Show in Finder button."
 			) {
 				SettingsToggle("Notify when saved", isOn: $settings.screenshotNotifies)
+			}
+			if settings.screenshotNotifies, screenshots.isNotificationAccessDenied {
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Notifications are off for Arknights Client."
+				) {
+					CapsuleActionButton(
+						title: "Open System Settings",
+						systemImage: "gearshape",
+						tone: .neutral,
+						action: openNotificationSettings
+					)
+				}
 			}
 		}
 		.onAppear {

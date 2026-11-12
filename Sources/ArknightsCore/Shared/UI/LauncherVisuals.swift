@@ -39,8 +39,6 @@ package enum LauncherVisuals {
 
 	/// Fixed shades and scrims outside the theme roles.
 	package enum Shade {
-		/// Dark footer gradient behind floating controls.
-		static let footerDarkOpacity = 0.45
 		/// Black scrim over artwork while a preset applies.
 		package static let loadingScrimOpacity = 0.65
 		/// Shadow under preset artwork tiles.

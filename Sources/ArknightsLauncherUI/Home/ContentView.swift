@@ -139,7 +139,15 @@ package struct ContentView: View {
 				.launcherTheme(accent: model.customization.accentColor)
 			}
 		}
-		.onGeometryChange(for: CGSize.self, of: \.size) { windowSize = $0 }
+		// Artwork layers ignore the top safe area and inflate `size`; the sheet fits inside it.
+		.onGeometryChange(for: CGSize.self) { proxy in
+			let insets = proxy.safeAreaInsets
+			return CGSize(
+				width: proxy.size.width - insets.leading - insets.trailing,
+				height: proxy.size.height - insets.top - insets.bottom)
+		} action: {
+			windowSize = $0
+		}
 		.environment(\.launcherWindowSize, windowSize)
 		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) {
 			sheetContent(for: $0)

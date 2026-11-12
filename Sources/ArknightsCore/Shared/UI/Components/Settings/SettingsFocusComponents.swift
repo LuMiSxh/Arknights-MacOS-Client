@@ -8,6 +8,7 @@ package struct SettingsToggle: View {
 	/// Semantic override, such as `warning` for experimental switches.
 	let tint: Color?
 	@Environment(\.launcherTheme) private var theme
+	@Environment(\.isEnabled) private var isEnabled
 
 	package init(_ title: String, isOn: Binding<Bool>, tint: Color? = nil) {
 		self.title = title
@@ -20,7 +21,9 @@ package struct SettingsToggle: View {
 			.labelsHidden()
 			.toggleStyle(.switch)
 			.controlSize(.regular)
-			.tint(tint ?? theme.accentFill)
+			.tint(
+				(tint ?? theme.accentFill).opacity(
+					isEnabled ? 1 : LauncherVisuals.Control.disabledForegroundOpacity))
 	}
 }
 
@@ -29,6 +32,7 @@ package struct SettingsSlider: View {
 	let range: ClosedRange<Double>
 	let step: Double
 	@Environment(\.launcherTheme) private var theme
+	@Environment(\.isEnabled) private var isEnabled
 	package let width: CGFloat
 
 	package init(
@@ -45,7 +49,10 @@ package struct SettingsSlider: View {
 
 	package var body: some View {
 		Slider(value: $value, in: range, step: step)
-			.tint(theme.accentFill)
+			.tint(
+				theme.accentFill.opacity(
+					isEnabled ? 1 : LauncherVisuals.Control.disabledForegroundOpacity)
+			)
 			.frame(width: width)
 			.keyboardFocusIndicator(in: Capsule())
 	}

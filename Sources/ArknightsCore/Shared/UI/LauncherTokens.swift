@@ -17,6 +17,8 @@ package enum LauncherTokens {
 	package enum Layout {
 		/// Shared by the Settings and Onboarding navigation rails.
 		package static let railWidth: CGFloat = 192
+		/// Height of the fade behind the Settings floating footer.
+		package static let settingsFooterFade: CGFloat = 94
 		/// Square app icon in the About settings header.
 		package static let aboutIconSize: CGFloat = 76
 		/// Width of the bundled document sheet.

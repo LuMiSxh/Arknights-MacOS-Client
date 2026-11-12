@@ -174,7 +174,8 @@ package enum AppConstants {
 
 	package enum Settings {
 		package static let minWidth: Double = 760
-		package static let minHeight: Double = 520
+		/// Fits the window's 560 pt minimum content height minus the top inset and margins.
+		package static let minHeight: Double = 480
 		package static let maxWidth: Double = 820
 		package static let maxHeight: Double = 570
 		package static let windowMargin: Double = 24

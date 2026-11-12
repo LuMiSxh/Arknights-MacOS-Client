@@ -184,7 +184,8 @@ struct LauncherSettingsView: View {
 				.padding(.top, LauncherTokens.Spacing.control)
 				.padding(.bottom, LauncherTokens.Spacing.panel)
 				.background {
-					FloatingActionFooterFade(height: 94)
+					FloatingActionFooterFade(
+						height: LauncherTokens.Layout.settingsFooterFade)
 				}
 			}
 		}
@@ -195,7 +196,14 @@ struct LauncherSettingsView: View {
 			value: customization.dynamicThemeHue
 		)
 		.onExitCommand(perform: dismiss.callAsFunction)
-		.frame(width: sheetSize.width, height: sheetSize.height)
+		.frame(
+			minWidth: AppConstants.Settings.minWidth,
+			idealWidth: sheetSize.width,
+			maxWidth: AppConstants.Settings.maxWidth,
+			minHeight: AppConstants.Settings.minHeight,
+			idealHeight: sheetSize.height,
+			maxHeight: AppConstants.Settings.maxHeight
+		)
 		.presentationSizing(.fitted)
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(

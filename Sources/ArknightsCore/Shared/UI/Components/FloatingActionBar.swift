@@ -6,11 +6,7 @@ import SwiftUI
 package struct FloatingActionFooterFade: View {
 	package let height: CGFloat?
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-	@Environment(\.colorScheme) private var colorScheme
 	@Environment(\.launcherTheme) private var theme
-
-	/// Light mode fades into the light sheet; a black fade greys the bottom edge.
-	private var isDark: Bool { colorScheme == .dark }
 
 	package init(height: CGFloat? = nil) {
 		self.height = height
@@ -22,13 +18,12 @@ package struct FloatingActionFooterFade: View {
 				// Opaque in this mode, so the footer matches the sheet instead of a black strip.
 				theme.sheetTint
 			} else {
+				// Fades into the sheet itself. A black fade stays see-through on a dark sheet
+				// and lets scrolled rows show behind the floating controls.
 				LinearGradient(
-					colors: [
-						.clear,
-						isDark
-							? LauncherVisuals.opaqueDim.opacity(
-								LauncherVisuals.Shade.footerDarkOpacity)
-							: theme.sheetTint,
+					stops: [
+						.init(color: .clear, location: 0),
+						.init(color: theme.sheetTint, location: 0.6),
 					],
 					startPoint: .top,
 					endPoint: .bottom
