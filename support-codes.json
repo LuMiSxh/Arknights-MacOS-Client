@@ -393,7 +393,7 @@
       "steps": [
         "Quit Arknights and any official updater.",
         "Do not delete or rename these items: the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, and the launcher's temporary files.",
-        "If the code returns after Repair, restart the Mac. Then choose **Repair…** in **Settings → Installation** again."
+        "If the code returns after Repair, restart the Mac. Then choose **Repair** in **Settings → Installation** again."
       ],
       "report": "In the report, say whether the second Repair failed. Attach no helper binaries.",
       "legacy": ["ANEMONE"]

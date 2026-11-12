@@ -75,6 +75,22 @@ private func makeController(
 @MainActor
 struct RuntimeSelectionControllerTests {
 	@Test
+	func laneWithoutGameEnvironmentNeedsNoSwitchWarning() throws {
+		let temporary = try TemporaryDirectory("RuntimeSelectionWarningTests")
+		defer { temporary.remove() }
+		let paths = makePaths(temporary)
+		let controller = makeController(
+			paths: paths,
+			storage: temporary,
+			configuration: try configuration(),
+			access: access(macOS: 26),
+			installOperation: makeInstallOperation(paths: paths)
+		)
+
+		#expect(!controller.switchRequiresWarning)
+	}
+
+	@Test
 	func removalIsRefusedWhileAnotherActivityHoldsTheLeaseAndEndsItsOwnLease() async throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionRemoveTests")
 		defer { temporary.remove() }

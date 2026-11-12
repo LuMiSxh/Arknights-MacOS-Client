@@ -101,7 +101,7 @@ The first start is slower. The window can stay blank for up to one minute the fi
 ## More servers and existing installations
 
 - **Add a server:** Select it in **Settings → Installation** and start its download.
-- **Use existing files:** Choose **Settings → Installation → Location → Change… → Locate Existing Installation…**. Select the game folder. If it shows **Not installed**, run **Repair…**.
+- **Use existing files:** Choose **Settings → Installation → Location → Change… → Locate Existing Installation…**. Select the game folder. If it shows **Not installed**, run **Repair**.
 - **Use another location:** Choose **Choose New Location…** before the download. Use a folder that contains only the game. The game can see its contents.
 
 ## Update the launcher
@@ -119,4 +119,4 @@ If the launcher needs a newer runtime, Home shows **Runtime update required**. C
 
 The launcher never downloads game updates without your choice. To update the game, choose **Update** in the main window.
 
-If the game is damaged, choose **Settings → Installation → Repair…**. Repair downloads only missing or broken files. If something fails, see [Troubleshooting](help/troubleshooting.md).
+If the game is damaged, choose **Settings → Installation → Repair**. Repair downloads only missing or broken files. If something fails, see [Troubleshooting](help/troubleshooting.md).

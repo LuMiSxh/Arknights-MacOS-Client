@@ -90,7 +90,11 @@ extension InstallationSettingsPage {
 					tone: .neutral,
 					presentation: .compact
 				) {
-					pendingRuntimeLane = lane
+					if runtimeSelection.switchRequiresWarning {
+						pendingRuntimeLane = lane
+					} else {
+						performRuntimeSwitch(to: lane)
+					}
 				}
 				.disabled(runtimeChangesDisabled)
 			}
@@ -197,6 +201,10 @@ extension InstallationSettingsPage {
 	func confirmRuntimeSwitch() {
 		guard let lane = pendingRuntimeLane else { return }
 		pendingRuntimeLane = nil
+		performRuntimeSwitch(to: lane)
+	}
+
+	private func performRuntimeSwitch(to lane: RuntimeLane) {
 		if runtimeSelection.state(for: lane) == .current {
 			_ = actions.selectRuntimeLane(lane)
 		} else {

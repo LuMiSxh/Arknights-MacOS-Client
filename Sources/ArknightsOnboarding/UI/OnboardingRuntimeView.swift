@@ -29,17 +29,6 @@ struct OnboardingRuntimeView: View {
 				.font(.callout)
 				.padding(.horizontal, LauncherTokens.Spacing.panel)
 
-			if let lane = selectedLane, lane != runtimeSelection.selectedLane,
-				runtimeSelection.installedVersion(for: lane) != nil
-			{
-				Text(
-					"A different runtime uses its own game environment. You may need to sign in again."
-				)
-				.font(.callout)
-				.foregroundStyle(theme.textSecondary)
-				.padding(.horizontal, LauncherTokens.Spacing.panel)
-			}
-
 			if runtimeSelection.isInstalling {
 				RuntimeProgressPanel(controller: runtimeSelection)
 			}

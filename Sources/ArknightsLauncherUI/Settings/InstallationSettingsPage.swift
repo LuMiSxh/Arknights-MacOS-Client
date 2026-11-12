@@ -92,7 +92,7 @@ struct InstallationSettingsPage: View {
 					detail: "Check the game files and download anything missing or damaged again."
 				) {
 					CapsuleActionButton(
-						title: "Repair…",
+						title: "Repair",
 						systemImage: "wrench.and.screwdriver",
 						tone: .neutral, presentation: .compact,
 						action: actions.repairGame

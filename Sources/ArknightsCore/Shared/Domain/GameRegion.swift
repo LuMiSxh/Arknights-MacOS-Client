@@ -2,7 +2,7 @@
 
 import Foundation
 
-package enum GamePublisher: String, Codable, Sendable {
+package enum GamePublisher: String, CaseIterable, Codable, Sendable {
 	case yostar
 	case hypergryph
 	case gryphline

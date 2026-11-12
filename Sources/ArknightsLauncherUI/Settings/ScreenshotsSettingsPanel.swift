@@ -49,18 +49,18 @@ struct ScreenshotsSettingsPanel: View {
 						action: screenshots.openSystemScreenRecordingSettings
 					)
 				}
-				if settings.screenshotNotifies, screenshots.isNotificationAccessDenied {
-					SettingsHairline()
-					SettingsActionRow(
-						title: "Notifications are off for Arknights Client."
-					) {
-						CapsuleActionButton(
-							title: "Open System Settings",
-							systemImage: "gearshape",
-							tone: .neutral,
-							action: openNotificationSettings
-						)
-					}
+			}
+			if settings.screenshotNotifies, screenshots.isNotificationAccessDenied {
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Notifications are off for Arknights Client."
+				) {
+					CapsuleActionButton(
+						title: "Open System Settings",
+						systemImage: "gearshape",
+						tone: .neutral,
+						action: openNotificationSettings
+					)
 				}
 			}
 			SettingsHairline()

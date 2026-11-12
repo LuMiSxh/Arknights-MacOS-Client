@@ -348,7 +348,9 @@ package struct OnboardingView: View {
 			get: { runtimeLane },
 			set: { newLane in
 				guard let newLane, newLane != runtimeLane else { return }
-				if newLane == .arm || runtimeLane == .arm {
+				if runtimeSelection.switchRequiresWarning,
+					newLane == .arm || runtimeLane == .arm
+				{
 					pendingRuntimeLane = newLane
 					isRuntimeWarningPresented = true
 				} else {

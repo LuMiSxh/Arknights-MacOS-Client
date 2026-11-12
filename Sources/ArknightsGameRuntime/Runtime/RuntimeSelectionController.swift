@@ -174,6 +174,15 @@ package final class RuntimeSelectionController {
 	package var allowsX86: Bool { access.allows(.x86) }
 	package var allowsARM64: Bool { access.allows(.arm) }
 
+	/// Whether switching away from the selected lane needs the confirmation. A lane without a game
+	/// environment loses no sign-in, so its switch runs without the warning.
+	package var switchRequiresWarning: Bool {
+		GamePublisher.allCases.contains { publisher in
+			FileManager.default.fileExists(
+				atPath: paths.winePrefix(for: publisher, lane: selectedLane).path)
+		}
+	}
+
 	package var installFraction: Double? {
 		guard let progress = installProgress, progress.totalBytes > 0 else { return nil }
 		return min(max(Double(progress.downloadedBytes) / Double(progress.totalBytes), 0), 1)
