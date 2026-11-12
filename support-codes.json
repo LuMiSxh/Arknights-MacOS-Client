@@ -254,10 +254,10 @@
       "allowsRepair": false,
       "causes": ["Rosetta is not installed on this Mac.", "The Rosetta installation failed or was canceled."],
       "steps": [
-        "If the launcher offers **Install Rosetta…**, choose it. Confirm the macOS prompt, then wait.",
+        "If the launcher offers **Install Rosetta 2…**, choose it. Confirm the macOS prompt, then wait.",
         "Install pending macOS updates, restart the Mac, then open the launcher again."
       ],
-      "report": "In the report, say whether the launcher offered Install Rosetta and whether other Intel apps run.",
+      "report": "In the report, say whether the launcher offered Install Rosetta 2 and whether other Intel apps run.",
       "legacy": ["LIMPET"]
     },
     {

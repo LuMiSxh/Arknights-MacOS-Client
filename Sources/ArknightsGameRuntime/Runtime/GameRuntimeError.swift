@@ -25,7 +25,7 @@ package enum GameRuntimeError: LocalizedError, LauncherDiagnosticError, Sendable
 		case .wineRuntimeMissing:
 			"No compatible Windows runtime found. Use a build that bundles Wine + DXMT."
 		case .rosettaMissing:
-			"Rosetta 2 is required to run the bundled Wine runtime. Install it by running \"softwareupdate --install-rosetta --agree-to-license\" in Terminal, then check again."
+			"Rosetta 2 is required to run the x86_64 runtime. Choose Install Rosetta 2…, then check again."
 		case .rosettaDisabledByGameTestMode:
 			"On macOS 27 beta, Legacy Game Test Mode disables the Rosetta translation required by Wine. Run \"sudo game-test-tool disable\" in Terminal, restart your Mac, then check again."
 		case .intelTranslationUnavailable:

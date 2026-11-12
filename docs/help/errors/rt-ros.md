@@ -20,7 +20,7 @@ Possible causes:
 
 ## What you can do
 
-1. If the launcher offers **Install Rosetta…**, choose it. Confirm the macOS prompt, then wait.
+1. If the launcher offers **Install Rosetta 2…**, choose it. Confirm the macOS prompt, then wait.
 2. Install pending macOS updates, restart the Mac, then open the launcher again.
 
 Select **Retry** after you finish these steps. Retry repeats the failed operation. It keeps valid downloads and game files.
@@ -29,6 +29,6 @@ Select **Retry** after you finish these steps. Retry repeats the failed operatio
 
 Choose **Help → Report a Problem…** if these steps do not solve the problem. The report adds the code, the launcher version, and your Mac details.
 
-In the report, say whether the launcher offered Install Rosetta and whether other Intel apps run.
+In the report, say whether the launcher offered Install Rosetta 2 and whether other Intel apps run.
 
 A maintainer can ask for a diagnostics file. Then choose **Help → Save Diagnostics…**

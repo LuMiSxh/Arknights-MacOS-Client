@@ -147,7 +147,7 @@ struct LauncherFailureDetailView: View {
 		if failure.actions.contains(.installRosetta) {
 			recoveryButton(
 				action: .installRosetta,
-				title: "Install Rosetta 2",
+				title: "Install Rosetta 2…",
 				systemImage: "arrow.down.circle",
 				tone: .accent
 			)

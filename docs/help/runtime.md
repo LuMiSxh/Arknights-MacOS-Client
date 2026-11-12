@@ -72,12 +72,11 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 ## Choose a runtime during setup
 
 1. In the **Runtime** step, choose **ARM64 (Apple Silicon)** or **x86_64**. **ARM64 (Apple Silicon)** is recommended. On macOS 28 or later, only **ARM64 (Apple Silicon)** is offered.
-2. Choose **Download and Continue**, **Switch and Continue**, or **Continue Setup**.
+2. Choose **Download and Continue** or **Continue**.
 3. Wait for the download if one starts.
 
 - **Download and Continue** downloads and installs the runtime.
-- **Switch and Continue** selects a runtime that is already installed.
-- **Continue Setup** keeps the current runtime.
+- **Continue** uses the installed runtime you chose. It keeps the current runtime if you did not switch.
 
 The launcher shows a note when the game may ask you to sign in again.
 
@@ -125,7 +124,7 @@ The **Runtime** panel and the **Runtime** setup step show a message and a suppor
 If a download fails:
 
 1. Check the connection and free disk space.
-2. Choose **Download and Continue** or **Switch and Download** again.
+2. Choose **Download and Continue** again.
 3. If the failure stays, open the page for the code:
 
 - [`RT-MIS`](errors/rt-mis.md): runtime not installed

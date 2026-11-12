@@ -154,14 +154,14 @@ package struct OnboardingView: View {
 							"Skip setup?",
 							isPresented: $isSkipConfirmationPresented
 						) {
-							Button("Continue Setup", role: .cancel) {}
+							Button("Cancel", role: .cancel) {}
 								.keyboardShortcut(.defaultAction)
-							Button("Skip Anyway", role: .destructive) {
+							Button("Skip Anyway") {
 								coordinator.skip()
 							}
 						} message: {
 							Text(
-								"Setup picks your server, how the game looks on your screen, and how the launcher behaves. You can run it again from Settings → Help."
+								"Setup picks your server, how the game looks on your screen, and how the launcher behaves. You can run it again from Settings → Help → Troubleshooting."
 							)
 						}
 					}
@@ -245,16 +245,14 @@ package struct OnboardingView: View {
 		}
 		if coordinator.step == .region {
 			if installation.isInstalled || installation.isDownloading {
-				return "Continue Setup"
+				return "Continue"
 			}
-			return installation.hasPartialDownload
-				? "Resume & Continue" : "Install & Continue"
+			return "Download and Continue"
 		}
 		if coordinator.step == .runtime {
 			guard let runtimeLane, runtimeSelection.installedVersion(for: runtimeLane) != nil
 			else { return "Download and Continue" }
-			return runtimeLane == runtimeSelection.selectedLane
-				? "Continue Setup" : "Switch and Continue"
+			return "Continue"
 		}
 		if coordinator.step == .finish { return "Finish Setup" }
 		return "Continue"

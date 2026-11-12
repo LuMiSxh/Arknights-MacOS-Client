@@ -71,7 +71,7 @@ struct OnboardingRosettaRecoveryView: View {
 	}
 
 	private var recoveryIntroduction: some View {
-		Text("Rosetta 2 is missing. Install Apple’s compatibility layer so the game can start.")
+		Text("Install Apple’s compatibility layer so the game can start.")
 			.foregroundStyle(theme.textSecondary)
 			.fixedSize(horizontal: false, vertical: true)
 	}

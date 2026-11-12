@@ -68,13 +68,13 @@ The setup assistant opens on the first start. Change any choice later in **Setti
    | **China**            | Hypergryph | Always       |
    | **China (Bilibili)** | Hypergryph | Always       |
 
-   Choose **Install & Continue** to start the game download.
+   Choose **Download and Continue** to start the game download.
 
    The download continues in the background while you finish setup.
 
 3. **Runtime** — Choose **ARM64 (Apple Silicon)** on macOS 26 or later. This is the recommended runtime.
    - On macOS 15, choose **x86_64**. It is the only runtime. On macOS 26 and 27, **x86_64** is a fallback.
-   - Choose **Download and Continue**, **Switch and Continue**, or **Continue Setup**.
+   - Choose **Download and Continue** to install the runtime, or **Continue** to use an installed one.
    - See [Game runtime](help/runtime.md).
 4. **Display** — Choose display mode, window size, rendering, and cursor. Pick an exact size later in **Settings → Game**.
 5. **Look** — Choose artwork, colors, the Dock operator, and launcher display options.
