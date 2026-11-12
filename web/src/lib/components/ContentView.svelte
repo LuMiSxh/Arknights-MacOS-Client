@@ -75,9 +75,21 @@
 		if (activeHeading === current) return;
 		activeHeading = current;
 		requestAnimationFrame(() => {
-			tocNavigation
-				?.querySelector('[aria-current="location"]')
-				?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+			const link = tocNavigation?.querySelector<HTMLElement>(
+				'[aria-current="location"]'
+			);
+			if (!tocNavigation || !link) return;
+			// scrollIntoView would also scroll the window. Below 1100px the list sits in the page
+			// flow and is not a scroll container, so only move the list when it overflows.
+			if (tocNavigation.scrollHeight <= tocNavigation.clientHeight)
+				return;
+			const navBox = tocNavigation.getBoundingClientRect();
+			const linkBox = link.getBoundingClientRect();
+			if (linkBox.top < navBox.top) {
+				tocNavigation.scrollTop += linkBox.top - navBox.top;
+			} else if (linkBox.bottom > navBox.bottom) {
+				tocNavigation.scrollTop += linkBox.bottom - navBox.bottom;
+			}
 		});
 	}
 

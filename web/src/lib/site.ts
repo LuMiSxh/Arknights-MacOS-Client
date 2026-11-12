@@ -2,8 +2,7 @@ export const repositoryUrl =
 	'https://github.com/LuMiSxh/Arknights-MacOS-Client';
 export const releaseUrl = `${repositoryUrl}/releases/latest`;
 export const contactFormUrl = 'https://tally.so/r/gbbPYd';
-// Tally pre-fills a choice from its question ID and the exact option text.
-export const contactTopicQuestionId = 'a85cb047-b902-46f2-86f1-c0bbdbe9d16e';
+// The form reads these values from its hidden `topic` field (`?topic=<topic>`).
 export const contactTopics: Readonly<Record<string, string>> = {
 	testing: 'Testing',
 	translation: 'Translation'

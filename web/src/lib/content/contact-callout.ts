@@ -1,9 +1,5 @@
 import { parse as parseYaml } from 'yaml';
-import {
-	contactFormUrl,
-	contactTopicQuestionId,
-	contactTopics
-} from '../site.js';
+import { contactFormUrl, contactTopics } from '../site.js';
 import { ContentError } from './frontmatter.js';
 import { escapeHtml } from './html.js';
 import { mapping, rejectUnknownKeys } from './fenced-yaml.js';
@@ -65,12 +61,7 @@ export function parseContactCallout(
 
 export function contactHref(topic: string | undefined): string {
 	if (!topic) return contactFormUrl;
-	// The hidden topic field only records where a message came from.
-	const query = new URLSearchParams({
-		[contactTopicQuestionId]: contactTopics[topic],
-		topic
-	});
-	return `${contactFormUrl}?${query.toString()}`;
+	return `${contactFormUrl}?${new URLSearchParams({ topic: contactTopics[topic] }).toString()}`;
 }
 
 export function renderContactCallout(callout: ContactCallout): string {
