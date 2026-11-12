@@ -2,6 +2,18 @@
 	"schemaVersion": 1,
 	"announcements": [
 		{
+			"id": "survey-results-2026-11",
+			"enabled": true,
+			"title": "Thank you for the survey",
+			"body": "Thank you to everyone who answered the survey.\n\nThe post covers:\n\n- What you told me about your Mac, your problems, and your wishes\n- What changes in version 1.0.0, such as the resizable game window and the battery saver\n- The new ARM64 runtime by riverfog7, which used about 43% less CPU in my tests\n- Where I need help: guides, translations, and testing\n\nVersion 1.0.0 is not out yet.",
+			"actionTitle": "Read the post",
+			"actionURL": "https://lumisxh.github.io/Arknights-MacOS-Client/blog/survey-results/",
+			"minimumVersion": null,
+			"maximumVersion": null,
+			"startsAt": null,
+			"endsAt": "2026-12-12T00:00:00Z"
+		},
+		{
 			"id": "survey-2026-10",
 			"enabled": true,
 			"title": "Help shape the future of Arknights Client",
