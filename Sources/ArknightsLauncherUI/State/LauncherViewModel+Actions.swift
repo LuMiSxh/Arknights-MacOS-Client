@@ -112,7 +112,6 @@ extension LauncherViewModel: LauncherActions {
 	// MARK: - Launching and stopping
 
 	package func launch() {
-		guard !runtimeSelection.requiresRelaunch else { return }
 		let region = installation.region
 		if Self.shouldPresentACEWarning(
 			for: region,
@@ -148,7 +147,7 @@ extension LauncherViewModel: LauncherActions {
 	}
 
 	package func launchFromDock(region: GameRegion) async -> Bool {
-		guard canRequestDockLaunch, !runtimeSelection.requiresRelaunch else { return false }
+		guard canRequestDockLaunch else { return false }
 		await installation.updateInstalledState().value
 		guard canRequestDockLaunch, installation.isRegionInstalled(region) else { return false }
 		if installation.region != region {
@@ -199,12 +198,18 @@ extension LauncherViewModel: LauncherActions {
 
 	// MARK: - Runtime
 
-	/// Downloads the pinned runtime for `lane`, selects it, and refreshes discovery. A lane that
-	/// differs from the one this process started with takes effect at the next launch.
+	/// Downloads the pinned runtime for `lane`, selects it, and refreshes discovery and the
+	/// Intel translation preflight so the next launch uses it.
 	@discardableResult
 	package func installRuntime(_ lane: RuntimeLane) async -> Bool {
 		let installed = await runtimeSelection.install(lane: lane)
-		if installed { gameSession.refreshRuntime() }
+		if installed {
+			gameSession.refreshRuntime()
+			if runtimeSelection.selectedLane == lane {
+				intelTranslation.runtimeLaneDidChange()
+				_ = await intelTranslation.refreshAvailability(force: true)
+			}
+		}
 		return installed
 	}
 
@@ -212,6 +217,11 @@ extension LauncherViewModel: LauncherActions {
 	package func selectRuntimeLane(_ lane: RuntimeLane) -> Bool {
 		do {
 			try runtimeSelection.select(lane: lane)
+			gameSession.refreshRuntime()
+			intelTranslation.runtimeLaneDidChange()
+			Task { [weak self] in
+				_ = await self?.intelTranslation.refreshAvailability(force: true)
+			}
 			return true
 		} catch {
 			log.error(

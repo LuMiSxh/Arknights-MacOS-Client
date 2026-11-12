@@ -35,7 +35,7 @@ package protocol LauncherInstallationActions {
 	/// Installs the pinned runtime for `lane` and selects it after a successful install.
 	@discardableResult
 	func installRuntime(_ lane: RuntimeLane) async -> Bool
-	/// Switches to an already installed lane. The change applies at the next launch.
+	/// Switches to an already installed lane. The next game launch uses it.
 	@discardableResult
 	func selectRuntimeLane(_ lane: RuntimeLane) -> Bool
 	/// Removes the runtime of the lane that is not selected.

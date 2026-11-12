@@ -102,9 +102,11 @@ extension GameSessionController {
 			playtimeStatistics.finish(sessionID: activeGameSessionID)
 		}
 		disableActiveGameMode(blocking: true)
+		let lane = session?.lane ?? currentRuntimeLane()
 		let runtime: WineRuntime
 		do {
-			runtime = try discoverRuntime()
+			runtime = try Self.discoverRuntime(
+				paths: paths, lane: lane, compatibilityManager: gameCompatibilityManager)
 		} catch {
 			log.error(
 				"Could not stop Wine during app termination: \(launcherDiagnosticDescription(for: error))"
@@ -112,7 +114,8 @@ extension GameSessionController {
 			return
 		}
 		runtime.stopSynchronously(
-			prefixDirectory: paths.winePrefix(for: session?.region ?? installation.region),
+			prefixDirectory: paths.winePrefix(
+				for: session?.region ?? installation.region, lane: lane),
 			log: log
 		)
 	}
@@ -214,8 +217,9 @@ extension GameSessionController {
 	) {
 		session?.monitorTask?.cancel()
 		let region = session?.region ?? installation.region
-		let prefixDirectory = paths.winePrefix(for: region)
-		session?.monitorTask = Task { [weak self, log, prefixDirectory, region] in
+		let lane = session?.lane ?? currentRuntimeLane()
+		let prefixDirectory = paths.winePrefix(for: region, lane: lane)
+		session?.monitorTask = Task { [weak self, log, prefixDirectory, region, lane] in
 			do {
 				try await runtime.waitUntilStopped(prefixDirectory: prefixDirectory)
 			} catch {
@@ -239,7 +243,8 @@ extension GameSessionController {
 			}
 			guard !Task.isCancelled, activeGameSessionID == sessionID else { return }
 			finishGameSession(sessionID)
-			await SDKLogCollector.collect(publisher: region.publisher, paths: paths, log: log)
+			await SDKLogCollector.collect(
+				publisher: region.publisher, paths: paths, lane: lane, log: log)
 		}
 	}
 
@@ -262,8 +267,9 @@ extension GameSessionController {
 		spawnGate?.denyFurtherSpawns()
 		rememberTerminalFailure(terminalFailure, for: sessionID)
 		markGameSessionStopping(sessionID, processIdentifier: processIdentifier)
+		let lane = session?.lane ?? currentRuntimeLane()
 		do {
-			let prefixDirectory = paths.winePrefix(for: region)
+			let prefixDirectory = paths.winePrefix(for: region, lane: lane)
 			// Cancelling the owning task must not skip prefix shutdown; the wineserver wait runs inside stop.
 			// An unstructured task does not inherit cancellation, and `withTaskCancellationShield` needs macOS 27.
 			try await Task {
@@ -282,7 +288,8 @@ extension GameSessionController {
 		}
 		guard activeGameSessionID == sessionID else { return }
 		finishGameSession(sessionID)
-		await SDKLogCollector.collect(publisher: region.publisher, paths: paths, log: log)
+		await SDKLogCollector.collect(
+			publisher: region.publisher, paths: paths, lane: lane, log: log)
 	}
 
 	func finishGameSession(_ sessionID: UUID) {

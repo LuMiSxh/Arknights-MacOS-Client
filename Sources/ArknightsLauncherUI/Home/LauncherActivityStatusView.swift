@@ -25,8 +25,6 @@ struct LauncherActivityStatusView: View {
 				case .outdated = runtimeSelection.selectedLaneState
 			{
 				PlainStatusText(title: "Runtime update required")
-			} else if runtimeSelection.requiresRelaunch {
-				PlainStatusText(title: "Relaunch to use \(runtimeLaneName)")
 			} else if let completionFeedback, showsCompletionFeedback {
 				HStack(spacing: LauncherTokens.Spacing.control) {
 					LauncherCompletionFeedbackView(feedbackID: completionFeedback.id)
@@ -100,10 +98,6 @@ struct LauncherActivityStatusView: View {
 			return "Needs attention"
 		}
 		return lifecycle.state.presentation.status.message
-	}
-
-	private var runtimeLaneName: String {
-		runtimeSelection.selectedLane == .arm ? "ARM64" : "x86_64"
 	}
 
 	private var isPausedDownload: Bool {

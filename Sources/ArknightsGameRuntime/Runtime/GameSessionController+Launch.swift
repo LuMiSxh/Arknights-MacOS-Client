@@ -9,14 +9,16 @@ extension GameSessionController {
 			pendingLaunchID == nil
 		else { return }
 		let region = installation.region
+		let lane = currentRuntimeLane()
 		let usesBatterySaver = settings.batterySaverEnabled
 		let request = LaunchRequest(
 			id: UUID(),
 			region: region,
+			lane: lane,
 			executable: installation.installDirectory.appending(
 				path: installation.configuration?.executableName ?? "Arknights.exe"
 			),
-			prefixDirectory: paths.winePrefix(for: region),
+			prefixDirectory: paths.winePrefix(for: region, lane: lane),
 			options: usesBatterySaver
 				? settings.launchOptions.applyingBatterySaver(
 					frameRateLimit: settings.batterySaverFrameRateLimit,

@@ -169,8 +169,8 @@ package final class RuntimeSelectionController {
 	package var isInstalling: Bool { installingLane != nil }
 	package var isSelectedLaneInstalled: Bool { selectedLaneState == .current }
 	package var selectedLaneState: RuntimeLaneState { state(for: selectedLane) }
-	/// True after `select` persists a lane that this process cannot use until it starts again.
-	package var requiresRelaunch: Bool { selectedLane != paths.runtimeLane }
+	/// True while a game launch is pending or a session owns the runtime. Set by the composition root.
+	@ObservationIgnored package var isLaunchInProgress: () -> Bool = { false }
 	package var allowsX86: Bool { access.allows(.x86) }
 	package var allowsARM64: Bool { access.allows(.arm) }
 
@@ -324,6 +324,13 @@ package final class RuntimeSelectionController {
 				}
 			}
 			log?.info("Runtime installed; lane=\(lane.rawValue) version=\(installed.version)")
+			// A game may have started during the download. Keep the installed files but leave the
+			// selection alone so the running session keeps the lane it launched with.
+			if isLaunchInProgress() {
+				log?.info("Runtime installed; lane=\(lane.rawValue); selection unchanged")
+				refresh()
+				return true
+			}
 			try store.select(lane: lane, access: access)
 			selectedLane = lane
 			refresh()
@@ -339,7 +346,7 @@ package final class RuntimeSelectionController {
 	}
 
 	package func select(lane: RuntimeLane) throws {
-		guard lifecycle.activity == .idle, installingLane == nil else {
+		guard lifecycle.activity == .idle, installingLane == nil, !isLaunchInProgress() else {
 			throw RuntimeSelectionError.busy
 		}
 		guard availableLanes.contains(lane) else {
@@ -362,8 +369,7 @@ package final class RuntimeSelectionController {
 		}
 		selectedLane = lane
 		failure = nil
-		log?.info(
-			"Runtime lane selected; lane=\(lane.rawValue); relaunch=\(requiresRelaunch)")
+		log?.info("Runtime lane selected; lane=\(lane.rawValue)")
 	}
 
 	/// Removes the lane that is not selected. The selected lane is never touched.
@@ -389,7 +395,7 @@ package final class RuntimeSelectionController {
 	/// Holds the maintenance lease for the whole removal, so no game session, install, or other
 	/// maintenance runs while the lane directory goes.
 	private func removeRuntime(lane: RuntimeLane, allowSelected: Bool) async throws {
-		guard installingLane == nil, !requiresRelaunch,
+		guard installingLane == nil,
 			let lease = lifecycle.begin(.maintaining(.removingRuntime))
 		else {
 			throw RuntimeSelectionError.busy

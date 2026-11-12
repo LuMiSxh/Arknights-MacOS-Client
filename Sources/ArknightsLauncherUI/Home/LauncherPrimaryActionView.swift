@@ -60,7 +60,6 @@ struct LauncherPrimaryActionPresentation {
 	private let runtimeState: RuntimeLaneState
 	private let isIdle: Bool
 	private let canLaunch: Bool
-	private let requiresRelaunch: Bool
 
 	init(
 		installation: InstallationController,
@@ -93,7 +92,6 @@ struct LauncherPrimaryActionPresentation {
 		self.runtimeState = runtimeSelection.selectedLaneState
 		self.isIdle = lifecycle.activity == .idle
 		self.canLaunch = gameSession.canLaunch
-		self.requiresRelaunch = runtimeSelection.requiresRelaunch
 	}
 
 	var action: () -> Void {
@@ -149,7 +147,7 @@ struct LauncherPrimaryActionPresentation {
 		case .pause: false
 		case .install, .update: !canInstall
 		case .runtime: runtimeIsInstalling || !isIdle
-		case .play: !canLaunch || requiresRelaunch
+		case .play: !canLaunch
 		}
 	}
 

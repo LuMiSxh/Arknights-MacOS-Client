@@ -94,11 +94,12 @@ package final class LauncherViewModel {
 		self.playtimeStatistics = playtimeStatistics
 		let lifecycle = LauncherLifecycleStore(log: launcherLog)
 		self.lifecycle = lifecycle
-		runtimeSelection = RuntimeSelectionController(
+		let runtimeSelection = RuntimeSelectionController(
 			paths: paths,
 			lifecycle: lifecycle,
 			log: launcherLog
 		)
+		self.runtimeSelection = runtimeSelection
 		let settings = LauncherPreferencesController(store: preferences, log: launcherLog)
 		self.settings = settings
 		let iconManager = launcherIconManager ?? LauncherIconManager()
@@ -137,7 +138,9 @@ package final class LauncherViewModel {
 		self.installation = installation
 		let intelTranslation = IntelTranslationController(
 			lifecycle: lifecycle,
-			runtimeLane: paths.runtimeLane,
+			runtimeLane: { [weak runtimeSelection] in
+				runtimeSelection?.selectedLane ?? paths.runtimeLane
+			},
 			checkIntelTranslation: checkIntelTranslation,
 			installRosettaSystemSoftware: installRosettaSystemSoftware,
 			log: launcherLog
@@ -176,7 +179,10 @@ package final class LauncherViewModel {
 			paths: paths,
 			clearGalleryCache: { try await catalog.clearCaches() },
 			log: launcherLog,
-			regionProvider: { [weak installation] in installation?.region ?? .global }
+			regionProvider: { [weak installation] in installation?.region ?? .global },
+			laneProvider: { [weak runtimeSelection] in
+				runtimeSelection?.selectedLane ?? paths.runtimeLane
+			}
 		)
 		self.storage = storage
 		let storageOverview = StorageOverviewController(
@@ -197,9 +203,15 @@ package final class LauncherViewModel {
 			log: launcherLog,
 			gameCompatibilityManager: resolvedCompatibilityManager,
 			playtimeStatistics: playtimeStatistics,
-			graphicsDiagnosticsEnabled: arguments.contains("--graphics-diagnostics")
+			graphicsDiagnosticsEnabled: arguments.contains("--graphics-diagnostics"),
+			runtimeLane: { [weak runtimeSelection] in
+				runtimeSelection?.selectedLane ?? paths.runtimeLane
+			}
 		)
 		self.gameSession = gameSession
+		runtimeSelection.isLaunchInProgress = { [weak gameSession] in
+			gameSession?.isLaunchPendingOrActive ?? false
+		}
 		discordPresence = DiscordPresenceController(
 			lifecycle: lifecycle,
 			preferences: settings,

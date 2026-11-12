@@ -29,7 +29,7 @@ Use **x86_64** if you are not sure and your Mac runs macOS 15 to 27. On macOS 28
 
 Apple says macOS 27 is the last release with general Rosetta support. From macOS 28, the launcher blocks the x86_64 runtime. The launcher does not rely on Rosetta for ARM64. See Apple's [Rosetta details](https://support.apple.com/en-au/102527) and [developer notice](https://developer.apple.com/news/?id=w5ngl9k2).
 
-On macOS 28 or later, setup selects **ARM64 (Apple Silicon)** by default, and the **Runtime** step does not offer **x86_64**. If you selected x86_64 on an earlier macOS and then upgraded, **System Check** asks you to switch to the ARM64 runtime. Continue setup, choose **ARM64 (Apple Silicon)** in the **Runtime** step, then quit and reopen the launcher.
+On macOS 28 or later, setup selects **ARM64 (Apple Silicon)** by default, and the **Runtime** step does not offer **x86_64**. If you selected x86_64 on an earlier macOS and then upgraded, **System Check** asks you to switch to the ARM64 runtime. Continue setup and choose **ARM64 (Apple Silicon)** in the **Runtime** step. The next game launch uses it.
 
 ## Rosetta 2
 
@@ -74,9 +74,8 @@ While the runtime downloads, the progress line shows the percentage, download si
 2. In the **Runtime** panel, choose **Switch to x86_64** or **Switch to ARM64**.
 3. Read the warning about the separate game environment (Wine prefix).
 4. Choose **Switch and Download** or **Switch**.
-5. Quit and reopen the launcher.
 
-The warning title names the target, such as **Switch to ARM64?**. **Switch and Download** also downloads the runtime. **Switch** uses an installed runtime. On macOS 28 or later, the **Runtime** panel does not offer **x86_64**.
+The warning title names the target, such as **Switch to ARM64?**. **Switch and Download** also downloads the runtime. **Switch** uses an installed runtime. The next game launch uses the new architecture. On macOS 28 or later, the **Runtime** panel does not offer **x86_64**.
 
 ## What a switch changes
 

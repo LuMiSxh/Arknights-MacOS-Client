@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -13,6 +14,7 @@ extension LauncherViewModel {
 	func beginTestGameSession(
 		_ activity: LauncherActivity,
 		region: GameRegion = .global,
+		lane: RuntimeLane? = nil,
 		spawnGate: WineProcessSpawnGate = WineProcessSpawnGate(),
 		launchTask: Task<Void, Never>? = nil
 	) -> ActiveGameSession? {
@@ -25,6 +27,7 @@ extension LauncherViewModel {
 			id: sessionID,
 			lease: lease,
 			region: region,
+			lane: lane ?? paths.runtimeLane,
 			spawnGate: spawnGate,
 			usesGameMode: false
 		)
@@ -74,6 +77,29 @@ struct ActiveGameSessionTests {
 
 		#expect(runtime.spawnWasDeniedAtStop == true)
 		#expect(model.lifecycle.activity == .idle)
+		await api.resolveBranding()
+	}
+
+	@Test
+	func changingTheProviderLaneResolvesTheNewRuntimeAndPrefix() async throws {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		let configuration = try makeRuntimeConfiguration(
+			x86: makeRuntimeLane(version: "1.0.0"),
+			arm: makeRuntimeLane(version: "2.0.0", minimumMacOS: "26.0"))
+		model.gameSession.currentRuntimeLane = { .arm }
+
+		let lane = model.gameSession.currentRuntimeLane()
+		let directory = try GameSessionController.pinnedRuntimeVersionDirectory(
+			paths: model.gameSession.paths, lane: lane, configuration: configuration)
+
+		#expect(model.paths.runtimeLane == .x86)
+		#expect(lane == .arm)
+		#expect(directory == model.paths.runtimeVersionDirectory(for: .arm, version: "2.0.0"))
+		#expect(
+			model.paths.winePrefix(for: .global, lane: lane)
+				!= model.paths.winePrefix(for: .global, lane: .x86))
 		await api.resolveBranding()
 	}
 }

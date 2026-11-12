@@ -165,7 +165,6 @@ struct RuntimeSelectionControllerTests {
 		#expect(await controller.install(lane: .arm))
 		#expect(controller.selectedLane == .arm)
 		#expect(controller.installedVersion(for: .arm) == "0.9.0+arm")
-		#expect(controller.requiresRelaunch)
 		let selection = try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load()
 		#expect(selection.selected == .arm)
 	}

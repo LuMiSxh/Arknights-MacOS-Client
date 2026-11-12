@@ -17,7 +17,7 @@ struct IntelTranslationControllerTests {
 		let lifecycle = makeLifecycleStore(in: storage)
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
-			runtimeLane: .arm,
+			runtimeLane: { .arm },
 			checkIntelTranslation: {
 				IntelTranslationCheck(state: .rosettaMissing, diagnostics: "probe")
 			}
@@ -38,7 +38,7 @@ struct IntelTranslationControllerTests {
 		lifecycle.state.readiness.intelTranslation = .rosettaMissing
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
-			runtimeLane: .x86,
+			runtimeLane: { .x86 },
 			checkIntelTranslation: {
 				IntelTranslationCheck(state: .rosettaMissing, diagnostics: "test")
 			},

@@ -104,6 +104,38 @@ struct GameSessionTerminationTests {
 		#expect(await fixture.runtime.stopAttemptCount() == 2)
 		await fixture.api.resolveBranding()
 	}
+
+	@Test(.timeLimit(.minutes(1)))
+	func stopUsesTheSessionLaneAfterTheProviderChanges() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		let sessionID = UUID()
+		model.beginTestGameSession(
+			.runningGame(sessionID: sessionID, processIdentifier: 42),
+			region: .global,
+			lane: .x86
+		)
+		model.gameSession.currentRuntimeLane = { .arm }
+		let runtime = BlockingSessionRuntime()
+		let cleanup = Task {
+			await model.gameSession.stopAndFinishGameSession(
+				using: runtime,
+				sessionID: sessionID,
+				processIdentifier: 42,
+				region: .global
+			)
+		}
+
+		await runtime.waitForStop(attempt: 1)
+		#expect(
+			await runtime.stopDirectories()
+				== [model.paths.winePrefix(for: .global, lane: .x86)])
+		await runtime.succeedStop(attempt: 1)
+		await cleanup.value
+		#expect(model.lifecycle.activity == .idle)
+		await api.resolveBranding()
+	}
 }
 
 @MainActor

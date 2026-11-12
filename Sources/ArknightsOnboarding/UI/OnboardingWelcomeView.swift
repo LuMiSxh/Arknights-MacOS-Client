@@ -139,7 +139,7 @@ struct OnboardingWelcomeView: View {
 		case .unavailable:
 			"The check could not finish. Restart your Mac, then check again. If it keeps failing, include the launcher log in a bug report."
 		case .unsupportedOS:
-			"macOS 28 and later cannot run the x86_64 runtime. Choose ARM64 (Apple Silicon) in the Runtime step, then quit and reopen the launcher."
+			"macOS 28 and later cannot run the x86_64 runtime. Choose ARM64 (Apple Silicon) in the Runtime step."
 		}
 	}
 

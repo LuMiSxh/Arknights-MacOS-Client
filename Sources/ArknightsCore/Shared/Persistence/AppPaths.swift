@@ -157,8 +157,12 @@ package struct AppPaths: Sendable {
 	}
 
 	/// The selected lane's installed `RUNTIME.json`, or `nil` when no runtime is installed.
-	package func activeRuntimeConfigurationURL(fileManager: FileManager = .default) -> URL? {
-		installedRuntimeConfigurationURL(for: runtimeLane, fileManager: fileManager)
+	package func activeRuntimeConfigurationURL(
+		for lane: RuntimeLane? = nil,
+		fileManager: FileManager = .default
+	) -> URL? {
+		installedRuntimeConfigurationURL(
+			for: lane ?? runtimeLane, fileManager: fileManager)
 	}
 
 	package func installedRuntimeConfigurationURL(
@@ -270,7 +274,11 @@ package struct AppPaths: Sendable {
 
 	/// Where the publisher SDK writes its logs inside the publisher's Wine prefix.
 	package func sdkLogDirectory(for publisher: GamePublisher) -> URL {
-		winePrefix(for: publisher).appending(
+		sdkLogDirectory(for: publisher, lane: runtimeLane)
+	}
+
+	package func sdkLogDirectory(for publisher: GamePublisher, lane: RuntimeLane) -> URL {
+		winePrefix(for: publisher, lane: lane).appending(
 			path: "drive_c/users/crossover/AppData/LocalLow/HyperGryph/Arknights/sdklogs",
 			directoryHint: .isDirectory
 		)

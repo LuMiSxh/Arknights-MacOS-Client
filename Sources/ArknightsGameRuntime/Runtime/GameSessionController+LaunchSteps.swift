@@ -8,6 +8,7 @@ import Foundation
 struct LaunchRequest {
 	let id: UUID
 	let region: GameRegion
+	let lane: RuntimeLane
 	let executable: URL
 	let prefixDirectory: URL
 	let options: GameLaunchOptions
@@ -43,6 +44,7 @@ extension GameSessionController {
 	static func preflight(
 		executable: URL,
 		prefixDirectory: URL,
+		lane: RuntimeLane,
 		paths: AppPaths,
 		compatibilityManager: GameCompatibilityManager
 	) async -> LaunchPreflight {
@@ -50,7 +52,8 @@ extension GameSessionController {
 			return LaunchPreflight(executableExists: false, runtime: nil, pendingMigration: nil)
 		}
 		let runtime = Result {
-			try Self.discoverRuntime(paths: paths, compatibilityManager: compatibilityManager)
+			try Self.discoverRuntime(
+				paths: paths, lane: lane, compatibilityManager: compatibilityManager)
 		}
 		guard case .success(let discovered) = runtime else {
 			return LaunchPreflight(executableExists: true, runtime: runtime, pendingMigration: nil)
@@ -72,6 +75,7 @@ extension GameSessionController {
 		let preflight = await Self.preflight(
 			executable: request.executable,
 			prefixDirectory: request.prefixDirectory,
+			lane: request.lane,
 			paths: paths,
 			compatibilityManager: gameCompatibilityManager
 		)
@@ -136,6 +140,7 @@ extension GameSessionController {
 			id: request.id,
 			lease: lease,
 			region: request.region,
+			lane: request.lane,
 			spawnGate: WineProcessSpawnGate(),
 			usesGameMode: request.options.usesGameMode
 		)

@@ -44,7 +44,8 @@ extension LauncherViewModel {
 					homeDirectory: NSHomeDirectory(), userName: NSUserName()),
 				log: log,
 				runtimeRoot: paths.runtimeRoot,
-				runtimeConfigurationURL: paths.activeRuntimeConfigurationURL()
+				runtimeConfigurationURL: paths.activeRuntimeConfigurationURL(
+					for: runtimeSelection.selectedLane)
 			).write()
 			log.info("Diagnostics archive written: \(archive.lastPathComponent)")
 			NSWorkspace.shared.activateFileViewerSelecting([archive])

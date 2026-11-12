@@ -20,7 +20,7 @@ struct RuntimeDiscoveryTests {
 		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
 
 		let directory = try GameSessionController.pinnedRuntimeVersionDirectory(
-			paths: paths, configuration: configuration)
+			paths: paths, lane: .x86, configuration: configuration)
 
 		#expect(directory == paths.runtimeVersionDirectory(for: .x86, version: "2.0.0"))
 	}
@@ -38,6 +38,7 @@ struct RuntimeDiscoveryTests {
 		do {
 			_ = try GameSessionController.discoverRuntime(
 				paths: paths,
+				lane: .x86,
 				configuration: configuration,
 				compatibilityManager: GameCompatibilityManager())
 			Issue.record("Runtime discovery should refuse an outdated runtime")
@@ -49,4 +50,5 @@ struct RuntimeDiscoveryTests {
 			#expect(url == paths.runtimeVersionDirectory(for: .x86, version: "2.0.0"))
 		}
 	}
+
 }

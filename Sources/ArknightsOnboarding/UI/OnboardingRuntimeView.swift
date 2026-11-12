@@ -37,15 +37,6 @@ struct OnboardingRuntimeView: View {
 				failurePanel(failure)
 			}
 
-			if runtimeSelection.requiresRelaunch {
-				Text(
-					"Quit and reopen the launcher after setup to use \(laneLabel(runtimeSelection.selectedLane))."
-				)
-				.font(.callout)
-				.foregroundStyle(theme.textSecondary)
-				.fixedSize(horizontal: false, vertical: true)
-				.padding(.horizontal, LauncherTokens.Spacing.panel)
-			}
 		}
 	}
 
@@ -114,10 +105,6 @@ struct OnboardingRuntimeView: View {
 		)
 		parts.append("Requires \(macOSVersion(pin.minimumMacOS)) or later")
 		return parts.joined(separator: " · ")
-	}
-
-	private func laneLabel(_ lane: RuntimeLane) -> String {
-		lane == .x86 ? "x86_64" : "ARM64"
 	}
 
 	private func macOSVersion(_ version: OperatingSystemVersion) -> String {

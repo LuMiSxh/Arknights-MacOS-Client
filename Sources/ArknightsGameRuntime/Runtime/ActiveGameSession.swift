@@ -10,6 +10,7 @@ struct ActiveGameSession {
 	// Ends only after prefix-wide shutdown completes.
 	let lease: ActivityLease
 	let region: GameRegion
+	let lane: RuntimeLane
 	let spawnGate: WineProcessSpawnGate
 
 	var usesGameMode: Bool
@@ -23,12 +24,14 @@ struct ActiveGameSession {
 		id: UUID,
 		lease: ActivityLease,
 		region: GameRegion,
+		lane: RuntimeLane,
 		spawnGate: WineProcessSpawnGate,
 		usesGameMode: Bool
 	) {
 		self.id = id
 		self.lease = lease
 		self.region = region
+		self.lane = lane
 		self.spawnGate = spawnGate
 		self.usesGameMode = usesGameMode
 	}

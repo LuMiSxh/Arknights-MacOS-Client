@@ -33,6 +33,10 @@ package final class GameSessionController {
 	var isGameProcessRunning: Bool { lifecycle.activity.isGameProcessRunning }
 	var activeGameSessionID: UUID? { lifecycle.activity.activeGameSessionID }
 	package var canStopGame: Bool { Self.canStopGame(for: lifecycle.activity) }
+	/// True while a launch has claimed a click but has no session yet, or a session owns the runtime.
+	package var isLaunchPendingOrActive: Bool {
+		pendingLaunchID != nil || lifecycle.activity.isGameActive
+	}
 	package var canLaunch: Bool {
 		!applicationTerminationRequested
 			&& installation.isInstalled && runtimeName != nil
@@ -53,6 +57,9 @@ package final class GameSessionController {
 	@ObservationIgnored package var customGameIconURL: () -> URL? = { nil }
 	@ObservationIgnored var runtimeSessionControllerProvider:
 		@MainActor () throws -> any WineRuntimeSessionControlling
+	/// Resolves the selected lane when an operation starts. Callers capture the result so one
+	/// launch never switches runtimes midway.
+	@ObservationIgnored var currentRuntimeLane: @MainActor () -> RuntimeLane
 	@ObservationIgnored var session: ActiveGameSession?
 	@ObservationIgnored var applicationTerminationRequested = false
 	/// Orders Game Mode requests: each one awaits the previous one, so `off` never overtakes `on`.
@@ -73,7 +80,8 @@ package final class GameSessionController {
 		log: LauncherLog,
 		gameCompatibilityManager: GameCompatibilityManager,
 		playtimeStatistics: PlaytimeStatisticsController,
-		graphicsDiagnosticsEnabled: Bool
+		graphicsDiagnosticsEnabled: Bool,
+		runtimeLane: (@MainActor () -> RuntimeLane)? = nil
 	) {
 		self.lifecycle = lifecycle
 		self.installation = installation
@@ -85,9 +93,13 @@ package final class GameSessionController {
 		self.gameCompatibilityManager = gameCompatibilityManager
 		let runtimePaths = paths
 		let runtimeCompatibility = gameCompatibilityManager
+		let laneProvider: @MainActor () -> RuntimeLane = runtimeLane ?? { paths.runtimeLane }
+		self.currentRuntimeLane = laneProvider
 		runtimeSessionControllerProvider = {
 			try Self.discoverRuntime(
-				paths: runtimePaths, compatibilityManager: runtimeCompatibility)
+				paths: runtimePaths,
+				lane: laneProvider(),
+				compatibilityManager: runtimeCompatibility)
 		}
 		self.playtimeStatistics = playtimeStatistics
 		self.graphicsDiagnosticsEnabled = graphicsDiagnosticsEnabled

@@ -19,12 +19,13 @@ enum SDKLogCollector {
 	static func collect(
 		publisher: GamePublisher,
 		paths: AppPaths,
+		lane: RuntimeLane,
 		log: LauncherLog
 	) async {
 		log.attempt("Collecting SDK logs") {
 			try collect(
 				publisher: publisher,
-				source: paths.sdkLogDirectory(for: publisher),
+				source: paths.sdkLogDirectory(for: publisher, lane: lane),
 				destination: paths.collectedSDKLogDirectory(for: publisher)
 			)
 		}

@@ -31,7 +31,7 @@ extension GameSessionController {
 		guard lifecycle.activity == .idle else { return }
 		let operationID = UUID()
 		let region = installation.region
-		let prefixDirectory = paths.winePrefix(for: region)
+		let prefixDirectory = paths.winePrefix(for: region, lane: currentRuntimeLane())
 		do {
 			try RuntimeMigrationStore().reset(prefixDirectory: prefixDirectory)
 			lifecycle.setStatus(.winePrefixResetScheduled)
@@ -54,7 +54,7 @@ extension GameSessionController {
 	package func deleteWinePrefix() {
 		guard lifecycle.activity == .idle else { return }
 		let region = installation.region
-		let prefixDirectory = paths.winePrefix(for: region)
+		let prefixDirectory = paths.winePrefix(for: region, lane: currentRuntimeLane())
 		guard FileManager.default.fileExists(atPath: prefixDirectory.path) else { return }
 		let operationID = UUID()
 		guard let lease = lifecycle.begin(.maintaining(.deletingWinePrefix)) else { return }
@@ -98,15 +98,20 @@ extension GameSessionController {
 	}
 
 	func discoverRuntime() throws -> WineRuntime {
-		try Self.discoverRuntime(paths: paths, compatibilityManager: gameCompatibilityManager)
+		try Self.discoverRuntime(
+			paths: paths,
+			lane: currentRuntimeLane(),
+			compatibilityManager: gameCompatibilityManager)
 	}
 
 	nonisolated static func discoverRuntime(
 		paths: AppPaths,
+		lane: RuntimeLane,
 		compatibilityManager: GameCompatibilityManager
 	) throws -> WineRuntime {
 		try discoverRuntime(
 			paths: paths,
+			lane: lane,
 			configuration: RuntimeConfiguration.bundled(),
 			compatibilityManager: compatibilityManager
 		)
@@ -114,11 +119,12 @@ extension GameSessionController {
 
 	nonisolated static func discoverRuntime(
 		paths: AppPaths,
+		lane: RuntimeLane,
 		configuration: RuntimeConfiguration,
 		compatibilityManager: GameCompatibilityManager
 	) throws -> WineRuntime {
 		let versionDirectory = try pinnedRuntimeVersionDirectory(
-			paths: paths, configuration: configuration)
+			paths: paths, lane: lane, configuration: configuration)
 		let configurationURL = versionDirectory.appending(path: "RUNTIME.json")
 		guard FileManager.default.fileExists(atPath: configurationURL.path) else {
 			throw WineRuntimeDiscoveryError.missingRuntime(versionDirectory)
@@ -134,9 +140,9 @@ extension GameSessionController {
 	/// would run a runtime that the launcher release does not support.
 	nonisolated static func pinnedRuntimeVersionDirectory(
 		paths: AppPaths,
+		lane: RuntimeLane,
 		configuration: RuntimeConfiguration
 	) throws -> URL {
-		let lane = paths.runtimeLane
 		let pin = try configuration.pinnedRuntime(for: lane)
 		return paths.runtimeVersionDirectory(for: lane, version: pin.version)
 	}

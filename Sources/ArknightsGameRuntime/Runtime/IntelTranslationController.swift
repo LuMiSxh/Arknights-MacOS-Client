@@ -10,7 +10,7 @@ import Observation
 @Observable
 package final class IntelTranslationController {
 	private let lifecycle: LauncherLifecycleStore
-	private let runtimeLane: RuntimeLane
+	private let runtimeLane: @MainActor () -> RuntimeLane
 	private let checkIntelTranslation: @Sendable () async -> IntelTranslationCheck
 	private let installRosettaSystemSoftware:
 		@Sendable () async throws -> IntelTranslationProcessResult
@@ -18,14 +18,14 @@ package final class IntelTranslationController {
 
 	// The task handles are deliberately unobserved: they only deduplicate in-flight work and are
 	// cancelled on teardown. The user-visible state remains in the lifecycle store.
-	@ObservationIgnored private var checkTask: Task<IntelTranslationCheck, Never>?
+	@ObservationIgnored private let checkSlot = TaskSlot()
 	@ObservationIgnored private var installationTask:
 		Task<IntelTranslationProcessResult, any Error>?
 	@ObservationIgnored private var installationID: UUID?
 
 	package init(
 		lifecycle: LauncherLifecycleStore,
-		runtimeLane: RuntimeLane,
+		runtimeLane: @escaping @MainActor () -> RuntimeLane,
 		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 			await RosettaAvailability.check()
 		},
@@ -43,7 +43,6 @@ package final class IntelTranslationController {
 	}
 
 	deinit {
-		checkTask?.cancel()
 		installationTask?.cancel()
 	}
 
@@ -56,7 +55,8 @@ package final class IntelTranslationController {
 	package func refreshAvailability(force: Bool = false) async -> IntelTranslationState {
 		// The native ARM64 runtime has no Intel translation step, so Rosetta must not
 		// block launch. `.available` is the existing state that allows Wine to start.
-		if runtimeLane == .arm {
+		if runtimeLane() == .arm {
+			checkSlot.invalidate()
 			lifecycle.state.readiness.intelTranslation = .available
 			lifecycle.state.readiness.rosettaInstallation = .idle
 			updatePreflightFailure(
@@ -73,18 +73,20 @@ package final class IntelTranslationController {
 		}
 
 		lifecycle.state.readiness.intelTranslation = .checking
-		let task: Task<IntelTranslationCheck, Never>
-		if let checkTask {
-			task = checkTask
-		} else {
-			task = Task { [checkIntelTranslation] in await checkIntelTranslation() }
-			checkTask = task
+		let running = checkSlot.replace { [weak self] token in
+			guard let self else { return }
+			let check = await checkIntelTranslation()
+			guard !Task.isCancelled, checkSlot.owns(token) else { return }
+			applyAvailabilityCheck(check)
 		}
+		await running.value
+		return lifecycle.state.readiness.intelTranslation
+	}
 
-		let check = await task.value
-		checkTask = nil
-		applyAvailabilityCheck(check)
-		return check.state
+	/// Invalidates a probe for the old lane and clears its result before the new probe runs.
+	package func runtimeLaneDidChange() {
+		checkSlot.invalidate()
+		lifecycle.state.readiness.intelTranslation = .checking
 	}
 
 	/// Applies real and simulated probe results through the same recovery presentation.
@@ -208,7 +210,7 @@ package final class IntelTranslationController {
 		case .unavailable:
 			"macOS could not start an Intel test process. Check Rosetta, restart your Mac, then check again."
 		case .unsupportedOS:
-			"Rosetta 2 is not available on macOS 28 and later. Switch to the ARM64 runtime in Settings → Installation → Runtime, then quit and reopen the launcher."
+			"Rosetta 2 is not available on macOS 28 and later. Switch to the ARM64 runtime in Settings → Installation → Runtime."
 		}
 	}
 

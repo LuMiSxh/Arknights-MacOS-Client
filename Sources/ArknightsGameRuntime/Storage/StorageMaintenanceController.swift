@@ -14,19 +14,22 @@ package final class StorageMaintenanceController {
 	private let clearGalleryCache: @Sendable () async throws -> Void
 	private let log: LauncherLog
 	private let regionProvider: @MainActor () -> GameRegion
+	private let laneProvider: @MainActor () -> RuntimeLane
 
 	package init(
 		lifecycle: LauncherLifecycleStore,
 		paths: AppPaths,
 		clearGalleryCache: @escaping @Sendable () async throws -> Void,
 		log: LauncherLog,
-		regionProvider: @escaping @MainActor () -> GameRegion = { .global }
+		regionProvider: @escaping @MainActor () -> GameRegion = { .global },
+		laneProvider: (@MainActor () -> RuntimeLane)? = nil
 	) {
 		self.lifecycle = lifecycle
 		self.paths = paths
 		self.clearGalleryCache = clearGalleryCache
 		self.log = log
 		self.regionProvider = regionProvider
+		self.laneProvider = laneProvider ?? { paths.runtimeLane }
 	}
 
 	@concurrent
@@ -121,8 +124,10 @@ package final class StorageMaintenanceController {
 
 	package func revealLogs() {
 		let publisher = regionProvider().publisher
+		let lane = laneProvider()
 		Task { [log, paths] in
-			await SDKLogCollector.collect(publisher: publisher, paths: paths, log: log)
+			await SDKLogCollector.collect(
+				publisher: publisher, paths: paths, lane: lane, log: log)
 			await log.prepare()
 			NSWorkspace.shared.activateFileViewerSelecting(Self.logURLs(for: paths))
 		}
@@ -130,7 +135,8 @@ package final class StorageMaintenanceController {
 
 	/// Refreshes the collected publisher SDK logs before a diagnostics archive reads them.
 	package func refreshSDKLogs() async {
-		await SDKLogCollector.collect(publisher: regionProvider().publisher, paths: paths, log: log)
+		await SDKLogCollector.collect(
+			publisher: regionProvider().publisher, paths: paths, lane: laneProvider(), log: log)
 	}
 
 	private func presentCacheFailure(_ error: any Error, id: UUID, region: GameRegion) {

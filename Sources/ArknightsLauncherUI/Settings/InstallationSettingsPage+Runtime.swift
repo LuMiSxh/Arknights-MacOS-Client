@@ -31,8 +31,7 @@ extension InstallationSettingsPage {
 					isRemoveRuntimeConfirmationPresented = true
 				}
 				.disabled(
-					runtimeChangesDisabled || !runtimeOtherInstalled
-						|| runtimeSelection.requiresRelaunch)
+					runtimeChangesDisabled || !runtimeOtherInstalled)
 			}
 
 			SettingsActionRow(
@@ -53,7 +52,7 @@ extension InstallationSettingsPage {
 					runtimeChangesDisabled
 						|| runtimeSelection.installedVersion(
 							for: runtimeSelection.selectedLane) == nil
-						|| runtimeSelection.requiresRelaunch)
+				)
 			}
 
 			if runtimeSelection.isInstalling {
@@ -62,10 +61,6 @@ extension InstallationSettingsPage {
 
 			if let failure = runtimeSelection.failure {
 				runtimeFailure(failure)
-			}
-
-			if runtimeSelection.requiresRelaunch {
-				runtimeRelaunchNote
 			}
 
 			QuietLink(title: "About game runtimes", destination: SupportLinks.runtimeGuide)
@@ -173,15 +168,6 @@ extension InstallationSettingsPage {
 		.padding(.vertical, LauncherTokens.Spacing.compact)
 	}
 
-	private var runtimeRelaunchNote: some View {
-		Text(
-			"Quit and reopen the launcher to use \(runtimeSelection.selectedLane.shortLabel)."
-		)
-		.font(.caption)
-		.foregroundStyle(theme.textSecondary)
-		.fixedSize(horizontal: false, vertical: true)
-	}
-
 	// MARK: - Switch confirmation
 
 	var runtimeSwitchDialogTitle: String {
@@ -231,9 +217,6 @@ extension InstallationSettingsPage {
 	private var runtimeOtherDetail: String {
 		guard runtimeOtherInstalled else {
 			return "No runtime is installed for the other architecture."
-		}
-		if runtimeSelection.requiresRelaunch {
-			return "Quit and reopen the launcher before you remove the runtime this session uses."
 		}
 		return
 			"Remove the \(runtimeOtherLane.shortLabel) runtime. Its game environment stays on disk."

@@ -20,7 +20,7 @@ Possible causes:
 
 ## What you can do
 
-1. On macOS 28 or later, choose **ARM64 (Apple Silicon)** in **Settings → Installation → Runtime**, then quit and reopen the launcher. See [Game runtime](../runtime.md#macos-support).
+1. On macOS 28 or later, choose **ARM64 (Apple Silicon)** in **Settings → Installation → Runtime**. See [Game runtime](../runtime.md#macos-support).
 2. On a macOS 27 beta, turn off Legacy Game Test Mode. Then restart the Mac. See [Game runtime](../runtime.md#legacy-game-test-mode-on-macos-27-beta).
 3. Install pending macOS updates and launcher updates.
 
