@@ -127,6 +127,25 @@ func migrationStateWrittenBeforeLibrarySharingDecodesAndRunsOnlyThatStep(
 	#expect(plan.pending == expectedPending)
 }
 
+private let winePrefixStampCases: [(String, String?, Bool)] = [
+	("matching timestamp", "1700000000\n", false),
+	("mismatched timestamp", "1690000000\n", true),
+	("missing stamp file", nil, true),
+	("disabled updates", "disable", false),
+]
+
+@Test(arguments: winePrefixStampCases)
+func winePrefixUpdateStampStalenessDecidesWhetherWineWouldRewriteThePrefix(
+	caseName: String,
+	contents: String?,
+	expectedStale: Bool
+) {
+	let stale = WinePrefixUpdateStamp.isStale(
+		contents: contents, wineInfModificationTime: 1_700_000_000)
+
+	#expect(stale == expectedStale, Comment(rawValue: caseName))
+}
+
 @Test
 func migrationStoreRoundTripsImportsLegacyMarkersAndSurfacesCorruptPersistedState() throws {
 	let fileManager = FileManager.default

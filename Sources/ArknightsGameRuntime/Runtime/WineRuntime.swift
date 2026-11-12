@@ -76,6 +76,7 @@ struct WineRuntime: Sendable {
 
 	static let dllOverrides =
 		"d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
+	static let winebootDLLOverride = "winemac.drv=d"
 	static let debugChannels = "-all,err+all"
 	static func synchronizationEnvironment(
 		for mode: WineSynchronizationMode

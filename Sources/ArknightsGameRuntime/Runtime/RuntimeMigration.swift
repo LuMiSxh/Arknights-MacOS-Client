@@ -77,6 +77,25 @@ struct RuntimeMigrationPlan: Sendable {
 	}
 }
 
+// Wine's `wineboot` rewrites a prefix whose `.update-timestamp` differs from the mtime of the
+// runtime's `wine.inf`. A rebuilt runtime changes that mtime, so the prefix needs the same
+// update that `initializePrefix` replays with the Mac driver disabled.
+enum WinePrefixUpdateStamp {
+	static let fileName = ".update-timestamp"
+	static let wineInfRelativePath = "share/wine/wine.inf"
+	// Wine skips the update when the stamp file starts with this text.
+	private static let disabledMarker = "disable"
+
+	/// `contents` is nil when the stamp file is missing. Parses like wineboot's `strtoul`:
+	/// leading ASCII digits, or 0 when there are none.
+	static func isStale(contents: String?, wineInfModificationTime: Int) -> Bool {
+		guard let contents else { return true }
+		if contents.hasPrefix(disabledMarker) { return false }
+		let recorded = Int(contents.prefix { $0.isASCII && $0.isNumber }) ?? 0
+		return recorded != wineInfModificationTime
+	}
+}
+
 // Reads and writes `RuntimeMigrationState` inside the Wine prefix, importing the legacy
 // single-file revision/configuration markers older builds used before this schema existed.
 struct RuntimeMigrationStore {

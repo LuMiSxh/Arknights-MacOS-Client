@@ -61,6 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- The "Wine configuration is being updated" window no longer appears when the game starts after a runtime update.
 - The Notices backdrop shows the blurred game again instead of solid black, also with the MetalFX rendering mode (Thanks to @darkwebdev, #119).
 - Clicking the Notices window brings the game to the front when another app is active (Thanks to @darkwebdev, #120).
 - The Notices window no longer stays above all other Mac windows (Thanks to @darkwebdev, #118).

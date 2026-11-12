@@ -112,6 +112,31 @@ extension WineRuntime {
 		let dxmtCurrent: Bool
 	}
 
+	// Reads the runtime's `wine.inf` mtime and the prefix's stamp file. Returns false when the
+	// runtime has no `wine.inf`, so a runtime without one never replays the prefix update.
+	private static func winePrefixUpdateIsStale(
+		prefixDirectory: URL,
+		runtimeRoot: URL,
+		fileManager: FileManager
+	) throws -> Bool {
+		let wineInf = runtimeRoot.appending(path: WinePrefixUpdateStamp.wineInfRelativePath)
+		guard fileManager.fileExists(atPath: wineInf.path),
+			let modified = try fileManager.attributesOfItem(atPath: wineInf.path)[.modificationDate]
+				as? Date
+		else { return false }
+		let stampURL = prefixDirectory.appending(path: WinePrefixUpdateStamp.fileName)
+		let contents: String?
+		if fileManager.fileExists(atPath: stampURL.path) {
+			contents = String(decoding: try Data(contentsOf: stampURL), as: UTF8.self)
+		} else {
+			contents = nil
+		}
+		return WinePrefixUpdateStamp.isStale(
+			contents: contents,
+			wineInfModificationTime: Int(modified.timeIntervalSince1970)
+		)
+	}
+
 	private func migrationPlanContext(prefixDirectory: URL) throws -> MigrationPlanContext {
 		let fileManager = FileManager.default
 		let systemRegistry = prefixDirectory.appending(path: "system.reg")
@@ -138,8 +163,15 @@ extension WineRuntime {
 			destinations: dxmtPayloadDestinations,
 			libraries: dxmtPayloadLibraries
 		)
-		let invalidatedMigrations: Set<RuntimeMigration> =
+		var invalidatedMigrations: Set<RuntimeMigration> =
 			dxmtCurrent ? [] : [.installDXMT]
+		if try Self.winePrefixUpdateIsStale(
+			prefixDirectory: prefixDirectory,
+			runtimeRoot: runtimeRoot,
+			fileManager: fileManager
+		) {
+			invalidatedMigrations.insert(.initializeWinePrefix)
+		}
 		let plan = RuntimeMigrationPlan(
 			expectedRevision: revision,
 			installedState: installedState,
@@ -182,6 +214,7 @@ extension WineRuntime {
 			switch migration {
 			case .initializeWinePrefix:
 				try await initializePrefix(
+					prefixDirectory: prefixDirectory,
 					environment: environment,
 					logHandle: logHandle,
 					spawnGate: spawnGate
@@ -298,14 +331,20 @@ extension WineRuntime {
 	}
 
 	private func initializePrefix(
+		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle,
 		spawnGate: WineProcessSpawnGate?
 	) async throws {
+		var winebootEnvironment = environment
+		// wineboot always opens a wait dialog; without the mac driver it has no window to show.
+		winebootEnvironment["WINEDLLOVERRIDES"] = [
+			winebootEnvironment["WINEDLLOVERRIDES"], Self.winebootDLLOverride,
+		].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ";")
 		let exitStatus = try await runAndWait(
 			executable: executableURL,
 			arguments: ["wineboot.exe", "-u"],
-			environment: environment,
+			environment: winebootEnvironment,
 			output: logHandle,
 			spawnGate: spawnGate
 		)
@@ -314,6 +353,11 @@ extension WineRuntime {
 				"Wine could not initialize its prefix (status \(exitStatus))."
 			)
 		}
+		// End wineboot's headless desktop before the game runs under the mac driver.
+		// The shared spawn gate stays open for the steps that follow.
+		try await Task {
+			try await stop(prefixDirectory: prefixDirectory, spawnGate: nil)
+		}.value
 	}
 
 	private func configureCompatibilityOverrides(
