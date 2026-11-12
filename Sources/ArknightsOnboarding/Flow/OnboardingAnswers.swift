@@ -166,12 +166,12 @@ extension LauncherInfoAnswer {
 				systemImage: "number.square")
 		case .serverTime:
 			OnboardingAnswer(
-				value: self, title: "Server time & reset countdown",
+				value: self, title: "Server time and reset countdown",
 				detail: "Shows how long until your server’s next daily reset.",
 				systemImage: "clock")
 		case .branding:
 			OnboardingAnswer(
-				value: self, title: "Show branding",
+				value: self, title: "Branding",
 				detail: "Shows the server logo in the top left corner.",
 				systemImage: "textformat")
 		}

@@ -52,11 +52,11 @@ struct OnboardingLookView: View {
 				answers: HomeTheme.allCases.map(\.answer),
 				selection: answerBinding(\.homeTheme),
 				footnote:
-					"Sub-pills, music, and the settings button. Automatic follows the artwork."
+					"The music, version, and status buttons, and the settings button. Automatic follows the artwork."
 			)
 
 			OnboardingQuestion(
-				question: "Branding",
+				question: "Branding colors",
 				answers: HomeTheme.allCases.map(\.brandingAnswer),
 				selection: answerBinding(\.brandingTheme),
 				footnote: "Logo and backdrop in the top left corner."

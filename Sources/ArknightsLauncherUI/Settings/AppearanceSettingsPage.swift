@@ -28,47 +28,20 @@ struct AppearanceSettingsPage: View {
 			SettingsPanel(title: "Artwork") {
 				artworkRow
 			}
-			SettingsPanel(title: "Dynamic Theme") {
+			SettingsPanel(title: "Theme") {
 				SettingsActionRow(
-					title: "Follow the artwork",
+					title: "Dynamic Theme",
 					detail:
 						"The launcher accent and the generated Dock icons use the colors of the current artwork.",
 					help:
 						"Dynamic Theme: derives the launcher accent and the generated Dock icon pair from the selected artwork."
 				) {
 					SettingsToggle(
-						"Follow the artwork",
+						"Dynamic Theme",
 						isOn: $settings.usesDynamicTheme,
 					)
 				}
 				SettingsHairline()
-				SettingsActionRow(
-					title: "Home controls",
-					detail:
-						"Sub-pills, music, and the settings button. Automatic follows the artwork."
-				) {
-					AdaptiveSegmentedControl(
-						selection: $settings.homeTheme,
-						options: HomeTheme.allCases
-					) { homeTheme in
-						Text(themeTitle(homeTheme))
-					}
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: "Branding",
-					detail:
-						"Logo and backdrop in the top left corner. Automatic follows Home controls."
-				) {
-					AdaptiveSegmentedControl(
-						selection: $settings.brandingTheme,
-						options: HomeTheme.allCases
-					) { brandingTheme in
-						Text(themeTitle(brandingTheme))
-					}
-				}
-			}
-			SettingsPanel(title: "Appearance") {
 				SettingsActionRow(
 					title: "Appearance",
 					detail: "Settings, setup, and dialogs. Home keeps its own controls."
@@ -81,14 +54,40 @@ struct AppearanceSettingsPage: View {
 						Text(appearanceTitle(appearance))
 					}
 				}
-			}
-			SettingsPanel(title: "Launcher shows") {
+				SettingsHairline()
 				SettingsActionRow(
-					title: "Show branding",
+					title: "Home controls",
+					detail:
+						"The music, version, and status buttons, and the settings button. Automatic follows the artwork."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $settings.homeTheme,
+						options: HomeTheme.allCases
+					) { homeTheme in
+						Text(themeTitle(homeTheme))
+					}
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Branding colors",
+					detail:
+						"Logo and backdrop in the top left corner. Automatic follows Home controls."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $settings.brandingTheme,
+						options: HomeTheme.allCases
+					) { brandingTheme in
+						Text(themeTitle(brandingTheme))
+					}
+				}
+			}
+			SettingsPanel(title: "Home screen") {
+				SettingsActionRow(
+					title: "Branding",
 					detail: "Shows the server logo and its backdrop in the top left corner."
 				) {
 					SettingsToggle(
-						"Show branding",
+						"Branding",
 						isOn: $settings.showsBranding,
 					)
 				}
@@ -104,11 +103,11 @@ struct AppearanceSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Server time & reset countdown",
+					title: "Server time and reset countdown",
 					detail: "Shows the server clock and the time until its next daily reset."
 				) {
 					SettingsToggle(
-						"Server time & reset countdown",
+						"Server time and reset countdown",
 						isOn: $settings.showsServerResetCountdown,
 					)
 				}
@@ -203,7 +202,8 @@ struct AppearanceSettingsPage: View {
 	private var customIconRow: some View {
 		SettingsActionRow(
 			title: "Custom icons",
-			detail: "Launcher and game Dock icons."
+			detail:
+				"Launcher and game Dock icons. Each new image or operator replaces the one before."
 		) {
 			GlassActionMenu(
 				title: "Launcher",
