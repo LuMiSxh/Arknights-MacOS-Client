@@ -8,7 +8,7 @@ order: 42
 
 ## Display
 
-**Settings → Game → Display** changes apply at the next launch.
+Change these settings in **Settings → Game → Display**. They apply at the next launch.
 
 **Rendering** sets how the game reaches a Retina display. It has no effect on other displays.
 
@@ -18,9 +18,6 @@ order: 42
 | **MetalFX**  | Draws one pixel per macOS point. DXMT upscales each frame 2× with MetalFX spatial scaling. Softer text. A runtime without MetalFX uses Standard. |
 | **Standard** | Draws one pixel per macOS point. macOS stretches the window. Blurry on Retina displays.                                                          |
 
-**Frame rate limit** caps the frames per second the game draws. Use the slider to choose **30 FPS**,
-**60 FPS**, or **120 FPS**. Lower values save battery.
-
 **Window size** uses the "Looks like" sizes of **System Settings → Displays**. **Fill screen** fills the usable screen area with the title bar visible. **Compact** picks a smaller 16:9 window. The menu also lists exact sizes.
 
 **Resolution** sets the fullscreen resolution. With MetalFX or Standard rendering, the game draws one pixel per macOS point, then scales up.
@@ -28,11 +25,15 @@ order: 42
 - **Native** matches the display pixel for pixel, with the menu bar. Setup picks it. It follows display changes.
 - The list also holds the sizes of the official client and sizes in the display shape between 4K and the native resolution.
 
-Lower resolutions scale to fill the screen and look grainy on larger or differently shaped displays. Sizes larger than the display are hidden.
+Lower resolutions scale to fill the screen. They look grainy on larger or differently shaped displays. Sizes larger than the display are hidden.
 
-**Cursor** set to **macOS** shows the macOS cursor instead of the PRTS cursor, so the cursor follows the mouse without delay. It needs runtime support. The launcher sends this choice to the runtime at every launch.
+**Cursor** set to **macOS** shows the macOS cursor instead of the PRTS cursor. The cursor then follows the mouse without delay. It needs runtime support. The launcher sends this choice to the runtime at every launch.
 
-**Settings → Game → Display** shows the exact size the game draws. **Override in-game display settings** is on by default. Keep it on: the launcher converts the window size into the game resolution, so the picture stays sharp. When it is off, the display settings of Arknights decide and count drawn pixels. Example: with Retina rendering on a 2× display, 2560×1440 opens a 1280×720 window.
+**Settings → Game → Display** shows the exact size the game draws. **Override in-game display settings** is on by default. Keep it on: the launcher converts the window size into the game resolution, so the picture stays sharp. When it is off, the display settings of Arknights decide. They count drawn pixels. Example: with Retina rendering on a 2× display, 2560×1440 opens a 1280×720 window.
+
+## Performance
+
+**Frame rate limit** in **Settings → Game → Performance** caps the frames per second the game draws. Use the slider to choose **30 FPS**, **60 FPS**, or **120 FPS**. Lower values save battery.
 
 ## Battery Saver
 

@@ -6,6 +6,8 @@ order: 20
 
 # Help
 
+Find the page for your task or problem.
+
 - Something does not work → [Troubleshooting](troubleshooting.md)
 - The launcher shows a code such as `IN-DLD` → [Error codes](errors/README.md)
 - File locations and cleanup → [Storage](storage.md)
@@ -30,9 +32,17 @@ For an unexpected charge, first contact the payment provider on the transaction.
 
 ## Report a problem
 
-Choose **Help → Report a Problem…** in the menu bar. You can also choose **Report a Problem** next to an error, or **Settings → Help → Report a Problem…**. The launcher opens a GitHub issue with the error code, server, launcher version, macOS version, chip, and memory size. Add what you did and what happened.
+To report a problem, use one of these options:
 
-You do not need logs at first. If a maintainer asks for logs, choose **Help → Save Diagnostics…** or **Settings → Help → Diagnostics → Save…**. The launcher saves a zip file to Downloads. The file includes the SDK logs for China, China (Bilibili), and Taiwan, and the runtime pin. Nothing is uploaded. Review the file before you attach it to the issue. It can contain account IDs and access keys.
+- Choose **Help → Report a Problem…** in the menu bar.
+- Choose **Report a Problem** next to an error.
+- Choose **Settings → Help → Report a Problem…**.
+
+The launcher opens a GitHub issue with the error code, server, launcher version, macOS version, chip, and memory size. Add what you did and what happened.
+
+You do not need logs at first. If a maintainer asks for logs, choose **Help → Save Diagnostics…** or **Settings → Help → Diagnostics → Save…**. The launcher saves a zip file to Downloads.
+
+The file includes the SDK logs for China, China (Bilibili), and Taiwan, and the pinned runtime version. Nothing is uploaded. Review the file before you attach it to the issue. It can contain account IDs and access keys.
 
 > [!WARNING]
 > GitHub issues are public. Never post passwords, tokens, or payment details.

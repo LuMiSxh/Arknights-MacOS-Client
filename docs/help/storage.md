@@ -6,7 +6,9 @@ order: 30
 
 # Storage
 
-Each server keeps its own game files. Servers of one publisher share one **game environment** (Wine prefix) for the selected runtime architecture. Each architecture keeps its own environment: the x86_64 runtime uses `Prefix`, and the ARM64 runtime uses `Prefix-ARM64` in the same publisher folder. A switch keeps both.
+Each server keeps its own game files. Servers from the same publisher share one **game environment** (Wine prefix) for the selected runtime. Each runtime keeps its own game environment.
+
+The x86_64 runtime uses `Prefix`. The ARM64 runtime uses `Prefix-ARM64`. Both folders sit in the same publisher folder. A switch keeps both game environments.
 
 The launcher downloads one runtime for the selected architecture. To choose, switch, or remove a runtime, see [Game runtime](runtime.md).
 
@@ -45,9 +47,17 @@ To open the app data folder, choose **Show in Finder** under **Settings → Help
 | `chromium.log`                                                                | The sign-in window                     |
 | `sdklogs/<publisher>/`                                                        | Publisher SDK logs (see below)         |
 
-Logs can contain private paths, URLs, account IDs, or access keys. Do not attach them directly. If a maintainer asks for logs, choose **Help → Save Diagnostics…**. It saves launcher and game logs, the SDK logs for China, China (Bilibili), and Taiwan, and the runtime pin, to Downloads. The launcher redacts your home folder, user name, and URL queries. It does not remove account IDs or access keys. Review the file before you attach it.
+Logs can contain private paths, URLs, account IDs, or access keys. Do not attach them directly. If a maintainer asks for logs, choose **Help → Save Diagnostics…**. The launcher saves the file to Downloads. The file includes:
+
+- Launcher and game logs.
+- The SDK logs for China, China (Bilibili), and Taiwan.
+- The pinned runtime version.
+
+The launcher redacts your home folder, user name, and URL queries. It does not remove account IDs or access keys. Review the file before you attach it.
 
 ## What cleanup removes
+
+Try **Clear Caches** and **Rebuild…** before **Delete Environment…**.
 
 | Action                  | Where                             | Removes                                                         | Keeps                                      |
 | ----------------------- | --------------------------------- | --------------------------------------------------------------- | ------------------------------------------ |
@@ -58,8 +68,6 @@ Logs can contain private paths, URLs, account IDs, or access keys. Do not attach
 | **Reset Statistics…**   | Settings → Playtime               | Playtime totals                                                 | Everything else                            |
 | **Uninstall Game…**     | Settings → Installation           | The game folder of the selected server (moved to the Trash)     | Other servers, game environment, launcher  |
 | **Remove Runtime…**     | Settings → Installation → Runtime | The runtime you use (set it up again before you play)           | Game files, game environments, launcher    |
-
-Try **Clear Caches** and **Rebuild…** before **Delete Environment…**.
 
 ## Uninstall completely
 

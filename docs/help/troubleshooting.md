@@ -15,7 +15,7 @@ See [Error codes](errors/README.md) for codes such as `IN-DLD`.
 
 ## The launcher will not open
 
-- **Cannot verify the developer, or cannot check for malicious software:** Confirm that you downloaded the app from [the official GitHub release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest). Then follow [Apple’s Open Anyway steps](https://support.apple.com/en-au/102445): in **System Settings → Privacy & Security**, choose **Open Anyway**, then **Open**.
+- **Cannot verify the developer, or cannot check for malicious software:** Confirm you downloaded the app from [the official GitHub release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest). Then follow [Apple’s Open Anyway steps](https://support.apple.com/en-au/102445): in **System Settings → Privacy & Security**, choose **Open Anyway**, then **Open**.
 - **App is damaged:** Download a fresh DMG from the official release. If the warning stays, report it.
 - **App will damage your computer:** Do not open or override it. Report the warning and the download source.
 
@@ -50,7 +50,7 @@ When no other download runs, choose **Settings → Installation → Repair…**.
 
 ## Sign-in or Notices stay blank
 
-Sign-in by server:
+Sign-in opens in a different place by server:
 
 - **Global, Japan, Korea, and China:** a sign-in window inside the game.
 - **China (Bilibili):** the login window of Bilibili.
@@ -60,7 +60,7 @@ An in-game window can take up to one minute after first start, an update, or cac
 
 1. Wait one minute. Do not press sign-in again.
 2. Check your connection and the Mac date and time.
-3. For Global, Japan, Korea, or China: quit the game, choose **Settings → Storage → Clear Caches**, restart.
+3. For Global, Japan, Korea, or China, quit the game. Choose **Settings → Storage → Clear Caches**, then restart.
 4. If the window stays blank, [report the problem](README.md#report-a-problem) with the server.
 
 If the window works but your sign-in is rejected or the account is locked, contact your [publisher](README.md#publisher-support-routing).
@@ -71,9 +71,9 @@ Allow **Arknights Client** in **System Settings → Privacy & Security → Local
 
 ## Graphics, window, or performance problems
 
-1. If **Override in-game display settings** (**Settings → Game → Display**) is off, turn it on or change the display settings in the game.
+1. If **Override in-game display settings** (**Settings → Game → Display**) is off, turn it on. You can also change the display settings in the game.
 2. Set **Rendering** to **MetalFX** in **Settings → Game → Display**. See [Display](display.md#display).
-3. Pick **Compact**, a smaller **Window size**, a lower fullscreen **Resolution**, or **Fullscreen** (it can skip a macOS compositing pass).
+3. Pick **Compact**, a smaller **Window size**, a lower fullscreen **Resolution**, or **Fullscreen**. Fullscreen can skip a macOS compositing pass.
 4. If fullscreen looks grainy, set **Resolution** to **Native**.
 
 If the cursor lags, turn off VSync in the game. Tearing can occur.
@@ -101,3 +101,9 @@ defaults write com.lumisxh.arknights-client forceDisableRetina -bool YES
 ```
 
 Replace `YES` with `NO` to restore the default. Log files are in [Storage](storage.md#logs).
+
+## Debug logging
+
+Use **Debug Logging** when a maintainer asks for detailed logs. Turn it on in **Settings → Help → Troubleshooting**.
+
+The next game start writes detailed Wine and graphics logs. Logs grow quickly. Turn **Debug Logging** off when you are done.

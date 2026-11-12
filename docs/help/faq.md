@@ -8,7 +8,7 @@ order: 10
 
 ## Is this an official launcher?
 
-No. It is a community project, not affiliated with Yostar, Gryphline, Hypergryph, or Bilibili. It downloads the official game from your publisher. Publishers can treat third-party launchers as they choose.
+No. It is a community project. It is not affiliated with Yostar, Gryphline, Hypergryph, or Bilibili. It downloads the official game from your publisher. Publishers can treat third-party launchers as they choose.
 
 ## Does the download include the game?
 
@@ -16,7 +16,7 @@ No. The DMG contains only the launcher and Wine. The launcher downloads the game
 
 ## Which servers can I play?
 
-Global, Japan, Korea, Taiwan, China, and China (Bilibili). Servers install side by side with separate files and versions.
+You can play these servers: Global, Japan, Korea, Taiwan, China, and China (Bilibili). Each server has separate files and versions. Servers install side by side.
 
 ## Do I need an internet connection?
 
@@ -24,7 +24,7 @@ Yes. The game has no offline mode.
 
 ## Does the launcher update the game on its own?
 
-No. It downloads only when you choose **Update**. Launcher updates work the same way and never change game files.
+No. It downloads only when you choose **Update**. Launcher updates work the same way. They never change game files.
 
 ## What is the difference between update, resume, and repair?
 
@@ -34,7 +34,7 @@ No. It downloads only when you choose **Update**. Launcher updates work the same
 
 ## Does the launcher change the game files?
 
-It adds compatibility files for Wine. It restores the originals before every update or repair. Do not replace them.
+Yes. It adds compatibility files for Wine. It restores the originals before every update or repair. Do not replace the compatibility files.
 
 ## Why does macOS ask for Local Network access?
 
@@ -50,16 +50,24 @@ The setting covers only project announcements. Publisher notices come from the g
 
 ## Does “Report a Problem…” upload my logs?
 
-No. It opens a public GitHub issue with basic error and Mac details. Logs are not included. You can review the details before sending. See [Report a problem](README.md#report-a-problem).
+No. It opens a public GitHub issue with basic error and Mac details. Logs are not included. You can review the details before sending.
+
+See [Report a problem](README.md#report-a-problem).
 
 ## Is Game Mode required?
 
-No. It is optional, off by default, and needs the full Xcode app. Without Xcode, the setting is greyed out.
+No. It is optional and off by default. It needs the full Xcode app. Without Xcode, the setting is greyed out.
 
 ## Who helps with accounts and payments?
 
-Your publisher. See [Publisher support routing](README.md#publisher-support-routing).
+Contact your publisher.
+
+See [Publisher support routing](README.md#publisher-support-routing).
 
 ## How do I change the game volume in a per-app volume tool?
 
-Tools such as FineTune and SoundSource list the game under **Arknights Client**, not **Arknights**. The game runs through Wine and has no app bundle of its own, so these tools assign its audio to the launcher. Change the game volume in the **Arknights Client** entry. That entry also contains the launcher music. Use **Settings → Integration** for the launcher music settings.
+It depends on the runtime. With **ARM64**, tools such as FineTune and SoundSource list the game as its own **Arknights** entry. The entry may show a blank white icon. Change the game volume there.
+
+With **x86_64**, these tools list the game under **Arknights Client**, not **Arknights**. That runtime gives the game no app bundle of its own, so the tools assign its audio to the launcher. Use the **Arknights Client** entry for the game volume. That entry also contains the launcher music.
+
+To change launcher music settings, use **Settings → Integration**.

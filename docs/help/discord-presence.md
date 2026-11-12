@@ -6,7 +6,7 @@ order: 50
 
 # Discord presence
 
-Discord presence is off by default. Turn it on in **Settings → Integration → Discord presence**. Setup also asks this question.
+Show your Arknights session on your Discord profile. Discord presence is off by default. Turn it on in **Settings → Integration → Discord presence**. Setup also asks this question.
 
 When the game runs, your Discord profile shows:
 

@@ -6,7 +6,7 @@ order: 46
 
 # Screenshots
 
-The launcher can save a picture of the game window. It saves a PNG file and leaves the cursor out. The shortcut is off by default.
+Save a picture of the game window with a keyboard shortcut. The launcher saves a PNG file and leaves the cursor out. The shortcut is off by default.
 
 ## Turn it on
 
@@ -19,7 +19,7 @@ To use another key, choose **Record Shortcut…** and press the keys. Press **Es
 
 Each shortcut needs **⌃**, **⌥**, or **⌘**, unless it is an **F1** to **F20** key on its own.
 
-You can also choose **Game → Take Screenshot** or **Take Screenshot** in the Dock menu. Both work while the game runs.
+You can also choose **Game → Take Screenshot**. From the Dock menu, choose **Take Screenshot**. Both work while the game runs.
 
 ## Where files go
 
@@ -29,7 +29,7 @@ A file name looks like `Arknights Global 2026-11-02 at 21.14.05.png`. The launch
 
 Turn on **Notify when saved** to get a banner. The banner has a **Show in Finder** button.
 
-If no banner appears, open **Settings → Integration** and choose **Open System Settings**, or turn on notifications for Arknights Client in macOS.
+If no banner appears, open **Settings → Integration** and choose **Open System Settings**. You can also turn on notifications for Arknights Client in macOS.
 
 ## How it works
 
@@ -40,7 +40,7 @@ If no banner appears, open **Settings → Integration** and choose **Open System
 
 ## Screen Recording is off
 
-macOS needs your permission to capture a window. If it is off, **Settings → Integration** shows **Screen Recording is off for Arknights Client.** The shortcut stays off.
+macOS needs your permission to capture a window. If permission is off, **Settings → Integration** shows **Screen Recording is off for Arknights Client.** The shortcut stays off.
 
 1. Choose **Open System Settings**.
 2. Turn on Arknights Client under **Screen & System Audio Recording**.

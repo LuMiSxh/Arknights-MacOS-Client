@@ -21,7 +21,7 @@ Setup also asks this question. The first reminder uses the server you selected o
 
 - The launcher asks macOS to show each reminder for the next 7 days.
 - macOS shows the reminders even when the launcher is closed.
-- The launcher refreshes the reminders when it opens, when your Mac wakes, and when you change the time zone or the clock.
+- The launcher refreshes the reminders when it opens, when your Mac wakes, and when the time zone or clock changes.
 - Only installed servers are listed.
 - Server time does not change with daylight saving time. Your local time of the reset can change.
 

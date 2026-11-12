@@ -42,4 +42,4 @@ The form asks for:
 
 ## Your data
 
-The form runs on Tally Forms. The [privacy notice](/privacy/) explains the data that the form collects, how long the developer keeps it, and how to request deletion.
+The form runs on Tally Forms. The [privacy notice](/privacy/) explains the data that the form collects. It also explains how long the developer keeps the data and how to request deletion.
