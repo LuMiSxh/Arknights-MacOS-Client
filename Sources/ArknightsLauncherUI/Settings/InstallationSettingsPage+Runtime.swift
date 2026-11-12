@@ -147,33 +147,13 @@ extension InstallationSettingsPage {
 	}
 
 	private func runtimeNote(_ text: String) -> some View {
-		Text(text)
-			.font(.caption)
-			.foregroundStyle(theme.textSecondary)
-			.fixedSize(horizontal: false, vertical: true)
+		SettingsFootnote(text)
 	}
 
 	// MARK: - Status and failure
 
 	private func runtimeFailure(_ failure: RuntimeSelectionFailure) -> some View {
-		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
-			Text(failure.message)
-				.font(.callout)
-				.foregroundStyle(theme.textPrimary)
-				.fixedSize(horizontal: false, vertical: true)
-			if let code = failure.code {
-				HStack(spacing: LauncherTokens.Spacing.compact) {
-					Text("Support code")
-						.foregroundStyle(theme.textSecondary)
-					Text(code.rawValue)
-						.font(.callout.monospaced())
-						.foregroundStyle(theme.dangerText)
-						.textSelection(.enabled)
-				}
-				.font(.caption)
-			}
-		}
-		.padding(.vertical, LauncherTokens.Spacing.compact)
+		InlineFailureView(message: failure.message, code: failure.code)
 	}
 
 	// MARK: - Switch confirmation
@@ -219,13 +199,8 @@ extension InstallationSettingsPage {
 	}
 
 	private var runtimeChangesReason: String? {
-		if runtimeSelection.isInstalling || lifecycle.activity.isInstalling {
-			return "Wait for the current download to finish."
-		}
-		if lifecycle.activity.isGameActive {
-			return "Quit the game to change the runtime."
-		}
-		return nil
+		if runtimeSelection.isInstalling { return "Wait for the download to finish." }
+		return lifecycle.activity.lockReason
 	}
 
 	private var runtimeOtherLane: RuntimeLane {

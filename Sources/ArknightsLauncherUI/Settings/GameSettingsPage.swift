@@ -14,6 +14,9 @@ struct GameSettingsPage: View {
 			title: "Game",
 			subtitle: "How Arknights looks and plays"
 		) {
+			if gameSession.isGameActive, let reason = lifecycle.activity.lockReason {
+				SettingsLockBanner(reason: reason)
+			}
 			GameDisplaySettingsPanel(
 				settings: settings,
 				isLocked: isDisplayLocked,

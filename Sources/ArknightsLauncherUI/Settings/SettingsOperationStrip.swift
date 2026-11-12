@@ -72,7 +72,9 @@ struct SettingsOperationStrip: View {
 	var body: some View {
 		let status = lifecycle.state.presentation.status
 		let progress = installation.progress
-		if let text = SettingsOperationStripPresentation.text(status: status, progress: progress) {
+		if let text = SettingsOperationStripPresentation.text(status: status, progress: progress)
+			?? lifecycle.activity.lockReason
+		{
 			Text(text)
 				.font(.caption)
 				.foregroundStyle(theme.textSecondary)
