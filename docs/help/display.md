@@ -35,11 +35,13 @@ Lower resolutions scale to fill the screen. They look grainy on larger or differ
 
 **Frame rate limit** in **Settings → Game → Performance** caps the frames per second the game draws. Use the slider to choose **30 FPS**, **60 FPS**, or **120 FPS**. Lower values save battery.
 
+**Frame rate limit**, **Game Mode**, and **Metal Performance HUD** apply only when **Override in-game display settings** is on. When it is off, the game keeps its own settings for these options.
+
 ## Battery Saver
 
 **Battery Saver** lowers game options at the next launch. Turn it on in **Settings → Game → Performance**.
 
-It turns off **Game Mode**. The game uses the lower of **Battery Saver frame rate limit** and **Frame rate limit**.
+It turns off **Game Mode**. The game uses the lower of **Battery Saver frame rate limit** and **Frame rate limit**. If **Override in-game display settings** is off, the game uses **Battery Saver frame rate limit** alone.
 
 If **Override in-game display settings** is on, it also changes **Rendering** from **Retina** to **MetalFX** or **Standard**.
 

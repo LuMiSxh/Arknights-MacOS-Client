@@ -137,16 +137,32 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		}
 	}
 
-	/// Battery Saver lowers the options a launch uses. It never raises a value, and it leaves
-	/// the Metal HUD and the synchronization mode unchanged.
-	package func applyingBatterySaver(
-		frameRateLimit saverLimit: GameFrameRateLimit, metalFXSupported: Bool
-	) -> GameLaunchOptions {
+	/// Drops the options the game owns while **Override in-game display settings** is off:
+	/// Game Mode and the Metal HUD. The frame rate cap follows the same rule in `frameRateCap`.
+	package func yieldingToGameSettings() -> GameLaunchOptions {
+		guard usesGameSettings else { return self }
 		var options = self
 		options.usesGameMode = false
-		if frameRateLimit.framesPerSecond > saverLimit.framesPerSecond {
-			options.frameRateLimit = saverLimit
-		}
+		options.usesMetalPerformanceHUD = false
+		return options
+	}
+
+	/// The frame rate cap the runtime applies, or `nil` to leave pacing to the game. The user's
+	/// limit counts only with the override on. Battery Saver caps either way, because it is a
+	/// separate opt-in whose only effect on pacing is this cap, and it never raises the limit.
+	package func frameRateCap(batterySaverLimit: GameFrameRateLimit?) -> GameFrameRateLimit? {
+		let userLimit = usesGameSettings ? nil : frameRateLimit
+		guard let batterySaverLimit else { return userLimit }
+		guard let userLimit else { return batterySaverLimit }
+		return userLimit.framesPerSecond > batterySaverLimit.framesPerSecond
+			? batterySaverLimit : userLimit
+	}
+
+	/// Battery Saver lowers the options a launch uses. It never raises a value, and it leaves
+	/// the Metal HUD and the synchronization mode unchanged. The frame rate cap is in `frameRateCap`.
+	package func applyingBatterySaver(metalFXSupported: Bool) -> GameLaunchOptions {
+		var options = self
+		options.usesGameMode = false
 		// Only Retina draws more pixels than MetalFX or Standard, so only Retina changes.
 		// Game settings own the rendering mode, so the launcher leaves it alone.
 		if !usesGameSettings, renderingMode == .retina {

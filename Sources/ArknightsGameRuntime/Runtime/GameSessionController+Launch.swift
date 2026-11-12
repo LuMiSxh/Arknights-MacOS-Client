@@ -11,6 +11,7 @@ extension GameSessionController {
 		let region = installation.region
 		let lane = currentRuntimeLane()
 		let usesBatterySaver = settings.batterySaverEnabled
+		let launchOptions = settings.launchOptions.yieldingToGameSettings()
 		let request = LaunchRequest(
 			id: UUID(),
 			region: region,
@@ -20,11 +21,13 @@ extension GameSessionController {
 			),
 			prefixDirectory: paths.winePrefix(for: region, lane: lane),
 			options: usesBatterySaver
-				? settings.launchOptions.applyingBatterySaver(
-					frameRateLimit: settings.batterySaverFrameRateLimit,
+				? launchOptions.applyingBatterySaver(
 					metalFXSupported: metalFXSpatialUpscalingSupported ?? false)
-				: settings.launchOptions,
+				: launchOptions,
+			frameRateCap: settings.launchOptions.frameRateCap(
+				batterySaverLimit: usesBatterySaver ? settings.batterySaverFrameRateLimit : nil),
 			usesBatterySaver: usesBatterySaver,
+			disabledRuntimePatches: settings.disabledRuntimePatches,
 			usesDebugLogging: settings.debugLoggingEnabled,
 			usesHardwareCursor: settings.usesHardwareCursor,
 			forceDisableRetina: preferences.forceDisableRetina(),

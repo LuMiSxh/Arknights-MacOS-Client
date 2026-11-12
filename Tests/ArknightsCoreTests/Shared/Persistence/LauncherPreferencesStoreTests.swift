@@ -155,6 +155,19 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
+	func runtimePatchesDefaultOnAndStoreOneSwitchEach() {
+		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(RuntimePatch.allCases.allSatisfy { store.value(Key.runtimePatchEnabled($0)) })
+		store.set(false, for: Key.runtimePatchEnabled(.winsock))
+
+		#expect(defaults.object(forKey: "runtimePatch.winsock") as? Bool == false)
+		#expect(store.value(Key.runtimePatchEnabled(.menu)))
+	}
+
+	@Test
 	func resetRemovesExactlyTheResettablePreferences() {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }

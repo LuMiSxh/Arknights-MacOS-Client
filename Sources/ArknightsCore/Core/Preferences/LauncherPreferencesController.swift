@@ -128,6 +128,18 @@ package final class LauncherPreferencesController {
 	package var debugLoggingEnabled = Key.debugLoggingEnabled.defaultValue {
 		didSet { persist(debugLoggingEnabled, for: Key.debugLoggingEnabled) }
 	}
+	/// The runtime patches the user turned off. Each is stored as its own switch.
+	package var disabledRuntimePatches: Set<RuntimePatch> = [] {
+		didSet {
+			persist {
+				for patch in oldValue.symmetricDifference(disabledRuntimePatches) {
+					store.set(
+						!disabledRuntimePatches.contains(patch), for: Key.runtimePatchEnabled(patch)
+					)
+				}
+			}
+		}
+	}
 	package var batterySaverFrameRateLimit: GameFrameRateLimit = .fps30 {
 		didSet { persist { store.setBatterySaverFrameRateLimit(batterySaverFrameRateLimit) } }
 	}
@@ -209,6 +221,8 @@ package final class LauncherPreferencesController {
 		dismissedInGameResolutionNote = store.value(Key.dismissedInGameResolutionNote)
 		batterySaverEnabled = store.value(Key.batterySaverEnabled)
 		debugLoggingEnabled = store.value(Key.debugLoggingEnabled)
+		disabledRuntimePatches = Set(
+			RuntimePatch.allCases.filter { !store.value(Key.runtimePatchEnabled($0)) })
 		batterySaverFrameRateLimit = store.batterySaverFrameRateLimit()
 		screenshotShortcut = store.screenshotShortcut()
 		screenshotNotifies = store.value(Key.screenshotNotifies)

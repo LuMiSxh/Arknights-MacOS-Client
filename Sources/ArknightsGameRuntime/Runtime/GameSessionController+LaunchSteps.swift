@@ -12,7 +12,10 @@ struct LaunchRequest {
 	let executable: URL
 	let prefixDirectory: URL
 	let options: GameLaunchOptions
+	/// The DXMT cap, or nil when the game keeps its own pacing.
+	let frameRateCap: GameFrameRateLimit?
 	let usesBatterySaver: Bool
+	let disabledRuntimePatches: Set<RuntimePatch>
 	let usesDebugLogging: Bool
 	let usesHardwareCursor: Bool
 	let forceDisableRetina: Bool
@@ -223,9 +226,10 @@ extension GameSessionController {
 		)
 		let environment = RuntimePatchEnvironment.environment(
 			for: request.region,
-			lane: context.runtime.lane,
+			lane: request.lane,
 			usesHardwareCursor: request.usesHardwareCursor,
 			displayMode: request.options.displayMode,
+			disabledPatches: request.disabledRuntimePatches,
 			features: features
 		)
 		return PreparedLaunch(
@@ -281,7 +285,7 @@ extension GameSessionController {
 			debugLogging: request.usesDebugLogging,
 			metalPerformanceHUDEnabled: request.options.usesMetalPerformanceHUD,
 			synchronizationMode: request.options.synchronizationMode,
-			frameRateLimit: request.options.frameRateLimit,
+			frameRateLimit: request.frameRateCap,
 			runtimeEnvironmentOverrides: prepared.environment,
 			clientVariant: request.region.clientVariant,
 			publisher: request.region.publisher,

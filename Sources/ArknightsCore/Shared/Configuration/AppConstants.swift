@@ -48,6 +48,8 @@ package enum AppConstants {
 		package static let aceTimingEnvironmentKey = "LMISXH_AKMOCL_ACE_TIMING"
 		package static let aceDispatcherEnvironmentKey = "LMISXH_AKMOCL_ACE_DISPATCHER"
 		package static let aceRosettaEnvironmentKey = "LMISXH_AKMOCL_ACE_ROSETTA"
+		package static let eflagsEnvironmentKey = "LMISXH_AKMOCL_EFLAGS"
+		package static let hybridThreadEnvironmentKey = "LMISXH_AKMOCL_HYBRID_THREAD"
 		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
 		package static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
 		/// The only persisted runtime choice. It names the lane, not a version.

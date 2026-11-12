@@ -188,6 +188,7 @@ For a UI change, use the debug simulator. Check these states: an empty region, a
 - In Settings → Appearance, panels appear in this order: Artwork, Dynamic Theme, Appearance, Launcher shows, and Dock icons. The Dynamic Theme panel holds three rows: Follow the artwork, Home controls, and Branding.
 - The Look step of onboarding asks these questions in this order: Artwork, Dynamic Theme, Appearance, Home controls, Branding, Launcher shows, and Dock icons.
 - In Settings → Help, the Troubleshooting panel holds Setup assistant, **App Data Folder** with **Show in Finder**, **Debug Logging**, and the reset actions.
+- In Settings → Help, the Runtime patches panel follows Troubleshooting. It uses the danger tone and holds one toggle per patch the selected runtime contains, then **Restore Defaults**. Turning a patch off opens a destructive confirmation that warns the game may break and how to undo it. Turning it on needs no warning. Lock the panel while a game runs and show "Quit the game to change these settings."
 - Explain destructive or expensive actions in user terms.
 - Keep warning and danger panels on neutral backgrounds. Use semantic color only on the header, icon, edge, and relevant actions. Read every semantic color from `LauncherTheme`:
   - Danger: destructive settings and failure codes. Text uses `dangerText`. A danger button label uses `dangerInk`. A solid HUD or icon fill uses `dangerSurface`. Danger glass uses `dangerGlassTint` and `dangerGlassStroke`.

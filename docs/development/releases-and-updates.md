@@ -100,7 +100,7 @@ A lane is one runtime architecture. The x86 lane runs the WineCX and DXMT binari
 
 The top-level `architecture` value is the default lane for `just runtime` and local tooling. The launcher selects a lane explicitly from its saved selection; it never reads the x86 interface for an ARM runtime.
 
-Each runtime release compiles all compatibility patches into one build. The client selects patch behavior at launch with one `LMISXH_AKMOCL_<NAME>` gate per patch. It sends every gate as `1` or `0`. See [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md#host-checks-and-compatibility-profiles).
+Each runtime release compiles all compatibility patches into one build. The client selects patch behavior at launch with one `LMISXH_AKMOCL_<NAME>` gate per patch. It sends each gate its lane contains as `1` or `0`. See [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md#host-checks-and-compatibility-profiles).
 
 The ARM64 runtime is built in the [wine-build-new](https://github.com/riverfog7/wine-build-new) repository.
 

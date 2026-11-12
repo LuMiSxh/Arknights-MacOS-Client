@@ -133,6 +133,7 @@ struct LauncherSettingsView: View {
 							openProblemReport: openProblemReport,
 							installation: installation,
 							gameSession: gameSession,
+							runtimeLane: runtimeSelection.selectedLane,
 							lifecycle: lifecycle,
 							restartOnboarding: restartOnboarding,
 							revealApplicationSupport: storage.revealApplicationSupport

@@ -75,7 +75,7 @@ extension WineRuntime {
 		executableDirectory: URL,
 		baseEnvironment: [String: String] = ProcessInfo.processInfo.environment,
 		userName: String = NSUserName(),
-		frameRateLimit: GameFrameRateLimit,
+		frameRateLimit: GameFrameRateLimit?,
 		synchronizationMode: WineSynchronizationMode = .msync,
 		debugLogging: Bool = false
 	) -> [String: String] {
@@ -110,10 +110,12 @@ extension WineRuntime {
 			// Send DXMT output to the runtime log, as graphics diagnostics does.
 			environment["DXMT_LOG_PATH"] = "none"
 		}
-		// DXMT reads "key=value" entries separated by ";". The cap is always written, so DXMT
-		// never applies its own default pacing.
-		environment["DXMT_CONFIG"] =
-			"d3d11.preferredMaxFrameRate=\(frameRateLimit.framesPerSecond)"
+		// DXMT reads "key=value" entries separated by ";". With no cap the entry is omitted and
+		// the game keeps its own frame pacing.
+		if let frameRateLimit {
+			environment["DXMT_CONFIG"] =
+				"d3d11.preferredMaxFrameRate=\(frameRateLimit.framesPerSecond)"
+		}
 		for (name, value) in Self.synchronizationEnvironment(for: synchronizationMode) {
 			environment[name] = value
 		}
@@ -128,7 +130,7 @@ extension WineRuntime {
 	func runtimeEnvironment(
 		prefixDirectory: URL,
 		graphicsDiagnostics: Bool = false,
-		frameRateLimit: GameFrameRateLimit,
+		frameRateLimit: GameFrameRateLimit?,
 		synchronizationMode: WineSynchronizationMode = .msync,
 		debugLogging: Bool = false
 	) -> [String: String] {

@@ -13,12 +13,9 @@ protocol WineRuntimeSessionControlling: Sendable {
 extension WineRuntime: WineRuntimeSessionControlling {}
 
 extension WineRuntime {
-	// wineserver only signals and waits; it never draws, so shutdown ignores the game's frame cap.
+	// wineserver only signals and waits; it never draws, so shutdown sets no frame cap.
 	private func shutdownEnvironment(prefixDirectory: URL) -> [String: String] {
-		runtimeEnvironment(
-			prefixDirectory: prefixDirectory,
-			frameRateLimit: GameLaunchOptions.default.frameRateLimit
-		)
+		runtimeEnvironment(prefixDirectory: prefixDirectory, frameRateLimit: nil)
 	}
 
 	func waitUntilStopped(prefixDirectory: URL) async throws {

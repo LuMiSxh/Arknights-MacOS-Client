@@ -371,8 +371,11 @@ state that a newer launch owns. See [Troubleshooting](../../help/troubleshooting
   for every launch. Each compatibility patch has one gate: `_ACE_IMPORTS`, `_APPCONTAINER`,
   `_WINSOCK`, `_CEF`, `_CN`, `_FULLSCREEN`, `_CURSOR`, `_MENU`, `_AUDIO`, `_ACE_TIMING`,
   `_ACE_DISPATCHER`, and `_ACE_ROSETTA`. The launch sends every gate as `1` or `0`; there is no
-  master switch. Both lanes receive every gate, and the ARM runtime ignores the x86-only ones. The
-  runtime is built once with all patches compiled in, so the gates only choose behavior at launch.
+  master switch. A lane receives only the gates its build contains: `_AUDIO`, `_ACE_TIMING`,
+  `_ACE_DISPATCHER`, and `_ACE_ROSETTA` are x86 only, and `_EFLAGS` and `_HYBRID_THREAD` are ARM
+  only. Settings → Help → Runtime patches can set any default-on gate to `0` through
+  `RuntimePatch`. The runtime is built once with all patches compiled in, so the gates only choose
+  behavior at launch.
   China and China (Bilibili) set `_CEF` and `_CN` to `1` for the embedded login window. The cursor
   gate follows the runtime capability and the **Cursor** setting. The fullscreen gate follows the
   runtime capability and the display mode. The other gates are always `1`.

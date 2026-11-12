@@ -6,7 +6,7 @@ import Testing
 
 @testable import ArknightsGameRuntime
 
-private let patchGateKeys = [
+private let sharedGateKeys = [
 	"LMISXH_AKMOCL_ACE_IMPORTS",
 	"LMISXH_AKMOCL_APPCONTAINER",
 	"LMISXH_AKMOCL_WINSOCK",
@@ -15,11 +15,18 @@ private let patchGateKeys = [
 	"LMISXH_AKMOCL_FULLSCREEN",
 	"LMISXH_AKMOCL_CURSOR",
 	"LMISXH_AKMOCL_MENU",
+]
+private let x86GateKeys = [
 	"LMISXH_AKMOCL_AUDIO",
 	"LMISXH_AKMOCL_ACE_TIMING",
 	"LMISXH_AKMOCL_ACE_DISPATCHER",
 	"LMISXH_AKMOCL_ACE_ROSETTA",
 ]
+private let armGateKeys = ["LMISXH_AKMOCL_EFLAGS", "LMISXH_AKMOCL_HYBRID_THREAD"]
+
+private func gateKeys(for lane: RuntimeLane) -> [String] {
+	sharedGateKeys + (lane == .arm ? armGateKeys : x86GateKeys)
+}
 
 struct PatchLaunchState: Sendable, CustomTestStringConvertible {
 	let region: GameRegion
@@ -72,7 +79,7 @@ private let patchLaunchStates: [PatchLaunchState] =
 	}
 
 @Test(arguments: patchLaunchStates)
-func runtimePatchEnvironmentSendsEveryGateWithAnExplicitValue(
+func runtimePatchEnvironmentSendsEveryGateOfTheLaneWithAnExplicitValue(
 	_ state: PatchLaunchState
 ) {
 	let environment = RuntimePatchEnvironment.environment(
@@ -83,8 +90,8 @@ func runtimePatchEnvironmentSendsEveryGateWithAnExplicitValue(
 		features: state.features
 	)
 
-	#expect(Set(environment.keys) == Set(patchGateKeys))
-	for key in patchGateKeys {
+	#expect(Set(environment.keys) == Set(gateKeys(for: state.lane)))
+	for key in gateKeys(for: state.lane) {
 		#expect(environment[key] == "0" || environment[key] == "1")
 	}
 
@@ -97,16 +104,25 @@ func runtimePatchEnvironmentSendsEveryGateWithAnExplicitValue(
 	#expect(
 		environment["LMISXH_AKMOCL_FULLSCREEN"] == state.expectedFullscreen)
 
-	for key in [
-		"LMISXH_AKMOCL_ACE_IMPORTS",
-		"LMISXH_AKMOCL_APPCONTAINER",
-		"LMISXH_AKMOCL_WINSOCK",
-		"LMISXH_AKMOCL_MENU",
-		"LMISXH_AKMOCL_AUDIO",
-		"LMISXH_AKMOCL_ACE_TIMING",
-		"LMISXH_AKMOCL_ACE_DISPATCHER",
-		"LMISXH_AKMOCL_ACE_ROSETTA",
-	] {
+	let optOutKeys = gateKeys(for: state.lane).filter {
+		![
+			"LMISXH_AKMOCL_CEF", "LMISXH_AKMOCL_CN", "LMISXH_AKMOCL_FULLSCREEN",
+			"LMISXH_AKMOCL_CURSOR",
+		].contains($0)
+	}
+	for key in optOutKeys {
 		#expect(environment[key] == "1")
+	}
+}
+
+@Test(arguments: RuntimeLane.allCases)
+func disabledRuntimePatchesSendZeroOnlyOnTheirLane(lane: RuntimeLane) {
+	let environment = RuntimePatchEnvironment.environment(
+		for: .global, lane: lane, usesHardwareCursor: false, displayMode: .windowed,
+		disabledPatches: Set(RuntimePatch.allCases))
+
+	for patch in RuntimePatch.allCases {
+		let key = RuntimePatchEnvironment.key(for: patch)
+		#expect(environment[key] == (patch.lanes.contains(lane) ? "0" : nil))
 	}
 }

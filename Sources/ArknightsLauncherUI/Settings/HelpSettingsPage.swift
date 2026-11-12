@@ -14,6 +14,7 @@ struct HelpSettingsPage: View {
 	let openProblemReport: () -> Void
 	let installation: InstallationController
 	let gameSession: GameSessionController
+	let runtimeLane: RuntimeLane
 	let lifecycle: LauncherLifecycleStore
 	let restartOnboarding: () -> Void
 	let revealApplicationSupport: () -> Void
@@ -164,6 +165,8 @@ struct HelpSettingsPage: View {
 					confirmation: $confirmation
 				)
 			}
+			RuntimePatchSettingsPanel(
+				settings: settings, lane: runtimeLane, isLocked: gameSession.isGameActive)
 		}
 		.installationConfirmation($confirmation, gameSession: gameSession, actions: maintenance)
 	}

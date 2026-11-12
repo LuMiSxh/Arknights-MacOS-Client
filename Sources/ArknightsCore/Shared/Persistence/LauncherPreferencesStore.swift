@@ -133,6 +133,10 @@ package struct LauncherPreferencesStore {
 		static let batterySaverFrameRateLimit = Name.batterySaverFrameRateLimit.rawValue
 		static let seenAnnouncementIDs = Name.seenAnnouncementIDs.rawValue
 		static let gameLaunchOptions = Name.gameLaunchOptions.rawValue
+		/// One default-on switch per runtime patch, stored as `runtimePatch.<patch>`.
+		package static func runtimePatchEnabled(_ patch: RuntimePatch) -> ScalarKey<Bool> {
+			ScalarKey("runtimePatch.\(patch.rawValue)", default: true)
+		}
 		static func installPath(for region: GameRegion) -> String {
 			"installPath.\(region.rawValue)"
 		}
@@ -182,6 +186,7 @@ package struct LauncherPreferencesStore {
 				RawKey(homeLuminanceCache, resettable: false),
 				RawKey(lastAppliedDynamicIconHue, resettable: false),
 			] + GameRegion.allCases.map { RawKey(installPath(for: $0), resettable: false) }
+			+ RuntimePatch.allCases.map { runtimePatchEnabled($0) }
 	}
 
 	package let defaults: UserDefaults

@@ -164,9 +164,23 @@ func batterySaverNeverRaisesTheFrameRateLimit(
 	expected: GameFrameRateLimit
 ) {
 	let options = GameLaunchOptions(
-		displayMode: .windowed, resolution: .hd, frameRateLimit: userLimit
-	).applyingBatterySaver(frameRateLimit: saverLimit, metalFXSupported: true)
-	#expect(options.frameRateLimit == expected)
+		displayMode: .windowed, resolution: .hd, usesGameSettings: false,
+		frameRateLimit: userLimit)
+	#expect(options.frameRateCap(batterySaverLimit: saverLimit) == expected)
+}
+
+// With the override off, the game owns the frame rate, Game Mode, and the Metal HUD.
+// Battery Saver still caps, because it is its own opt-in.
+@Test(arguments: [false, true])
+func gameSettingsOwnFrameRateGameModeAndHUDUnlessTheOverrideIsOn(usesGameSettings: Bool) {
+	let options = GameLaunchOptions(
+		displayMode: .windowed, resolution: .hd, usesGameSettings: usesGameSettings,
+		usesMetalPerformanceHUD: true, usesGameMode: true, frameRateLimit: .fps60)
+	let launch = options.yieldingToGameSettings()
+	#expect(launch.usesGameMode == !usesGameSettings)
+	#expect(launch.usesMetalPerformanceHUD == !usesGameSettings)
+	#expect(options.frameRateCap(batterySaverLimit: nil) == (usesGameSettings ? nil : .fps60))
+	#expect(options.frameRateCap(batterySaverLimit: .fps30) == .fps30)
 }
 
 @Test(arguments: [
@@ -184,7 +198,7 @@ func batterySaverDowngradesOnlyRetinaRendering(
 ) {
 	let options = GameLaunchOptions(
 		displayMode: .windowed, resolution: .hd, renderingMode: renderingMode
-	).applyingBatterySaver(frameRateLimit: .fps30, metalFXSupported: metalFXSupported)
+	).applyingBatterySaver(metalFXSupported: metalFXSupported)
 	#expect(options.renderingMode == expected)
 }
 
@@ -193,7 +207,7 @@ func batterySaverLeavesRenderingAloneWhenGameSettingsApply(renderingMode: GameRe
 	let options = GameLaunchOptions(
 		displayMode: .windowed, resolution: .hd, usesGameSettings: true,
 		renderingMode: renderingMode
-	).applyingBatterySaver(frameRateLimit: .fps30, metalFXSupported: true)
+	).applyingBatterySaver(metalFXSupported: true)
 	#expect(options.renderingMode == renderingMode)
 }
 
@@ -202,7 +216,7 @@ func batterySaverTurnsOffGameModeAndKeepsHUDAndSynchronization() {
 	let options = GameLaunchOptions(
 		displayMode: .windowed, resolution: .hd, usesMetalPerformanceHUD: true,
 		usesGameMode: true, synchronizationMode: .esync
-	).applyingBatterySaver(frameRateLimit: .fps30, metalFXSupported: true)
+	).applyingBatterySaver(metalFXSupported: true)
 	#expect(!options.usesGameMode)
 	#expect(options.usesMetalPerformanceHUD)
 	#expect(options.synchronizationMode == .esync)

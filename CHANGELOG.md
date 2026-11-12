@@ -23,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a light mode. Choose System, Light, or Dark under **Settings → Appearance**. The choice applies to Settings, setup, and dialogs.
 - Added **Home controls** and **Branding** under **Settings → Appearance → Dynamic Theme**. Each one can follow the brightness of the artwork, or stay dark or light. In light mode, the logo is black and the backdrop is white.
 - Added **Custom…** to the game **Window size** menu. Enter a width and height in points, or use **Measure With a Window…** to read the size of a resizable window. A size too large for the screen scales down when the game starts.
-- Added **Frame rate limit** to **Settings → Game → Performance**. Use the slider to set 30, 60, or 120 FPS.
+- Added **Frame rate limit** to **Settings → Game → Performance**. Use the slider to set 30, 60, or 120 FPS. It applies only when **Override in-game display settings** is on.
 - Added **Battery Saver** to **Settings → Game → Performance**. It caps the frame rate, lowers **Rendering**, and turns off **Game Mode**.
 - Added an optional **Daily reset reminder** under **Settings → Integration → Notifications**. It notifies you at the reset or up to 2 hours before it.
 - Added **Screenshots** to **Settings → Integration**. Press **⌃⌥S** or your own **Shortcut** to save a PNG of the game window to **Pictures/Arknights**.
@@ -35,9 +35,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version and type, the Wine and DXMT versions, and the capabilities the runtime advertises.
 - The failure dialog can copy the support code.
 - Added **Debug Logging** to **Settings → Help → Troubleshooting**. It writes detailed Wine and graphics logs from the next game start.
+- Added **Runtime patches** to **Settings → Help**. Turn off a single runtime patch if it causes a problem. The launcher asks before it turns one off, and **Restore Defaults** turns them all back on.
 
 ### Changed
 
+- **Game Mode** and **Metal Performance HUD** now apply only when **Override in-game display settings** is on. When it is off, the game keeps its own settings. **Battery Saver** still caps the frame rate.
 - A launcher update can now require a newer runtime. Home then shows **Runtime update required** and **Update Runtime** instead of **Play**. The launcher never downloads a runtime on its own.
 - On macOS 28 and later, setup selects **ARM64 (Apple Silicon)** by default and no longer offers **x86_64**. If you still use x86_64 after upgrading macOS, **System Check** and the **RT-BLK** error ask you to switch to ARM64.
 - Updated the runtime to 0.8.0.

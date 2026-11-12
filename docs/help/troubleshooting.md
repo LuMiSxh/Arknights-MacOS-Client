@@ -102,6 +102,17 @@ defaults write com.lumisxh.arknights-client forceDisableRetina -bool YES
 
 Replace `YES` with `NO` to restore the default. Log files are in [Storage](storage.md#logs).
 
+## Runtime patches
+
+Use **Runtime patches** only when a maintainer asks, or when a problem started after a runtime update. Each switch turns off one fix that the runtime applies to Wine.
+
+1. Quit the game. The switches stay locked while the game runs.
+2. Open **Settings → Help → Runtime patches**.
+3. Turn off one switch and confirm the warning.
+4. Start the game and check whether the problem is gone.
+
+The game may break or behave differently with a patch off. To undo a change, turn the switch back on. **Restore Defaults** turns every patch back on. The list shows only the patches that your runtime contains.
+
 ## Debug logging
 
 Use **Debug Logging** when a maintainer asks for detailed logs. Turn it on in **Settings → Help → Troubleshooting**.
