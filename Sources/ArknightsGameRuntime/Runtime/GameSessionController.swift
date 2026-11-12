@@ -55,6 +55,8 @@ package final class GameSessionController {
 	let playtimeStatistics: PlaytimeStatisticsController
 	let graphicsDiagnosticsEnabled: Bool
 	@ObservationIgnored package var customGameIconURL: () -> URL? = { nil }
+	/// Sets the Finder icon of the loader bundle. AppKit work stays in the composition root.
+	@ObservationIgnored package var applyLoaderIcon: (URL) throws -> Void = { _ in }
 	@ObservationIgnored var runtimeSessionControllerProvider:
 		@MainActor () throws -> any WineRuntimeSessionControlling
 	/// Resolves the selected lane when an operation starts. Callers capture the result so one

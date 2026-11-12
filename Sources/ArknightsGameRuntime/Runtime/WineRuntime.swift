@@ -40,6 +40,8 @@ struct WineRuntime: Sendable {
 	let dxmtPayloadDestinations: [DXMTDestination]
 	let dxmtPayloadLibraries: [String]
 	let gameIconBridgeURL: URL?
+	// Candidate loader bundles in priority order; empty when the lane has none.
+	let loaderBundleURLs: [URL]
 	let features: RuntimeFeatures
 	let pins: RuntimePins
 	private let compatibilityManager: GameCompatibilityManager
@@ -54,6 +56,7 @@ struct WineRuntime: Sendable {
 		dxmtPayloadDestinations: [DXMTDestination] = WineRuntime.dxmtDestinations,
 		dxmtPayloadLibraries: [String] = WineRuntime.dxmtLibraryNames,
 		gameIconBridgeURL: URL? = nil,
+		loaderBundleURLs: [URL] = [],
 		features: RuntimeFeatures = .conservative,
 		pins: RuntimePins = RuntimePins(),
 		compatibilityManager: GameCompatibilityManager
@@ -67,6 +70,7 @@ struct WineRuntime: Sendable {
 		self.dxmtPayloadDestinations = dxmtPayloadDestinations
 		self.dxmtPayloadLibraries = dxmtPayloadLibraries
 		self.gameIconBridgeURL = gameIconBridgeURL
+		self.loaderBundleURLs = loaderBundleURLs
 		self.features = features
 		self.pins = pins
 		self.compatibilityManager = compatibilityManager
@@ -210,6 +214,8 @@ struct WineRuntime: Sendable {
 			dxmtPayloadDestinations: dxmtDestinations,
 			dxmtPayloadLibraries: dxmtLibraries,
 			gameIconBridgeURL: gameIconBridgeURL,
+			loaderBundleURLs: manifest.architecture == .arm
+				? manifest.interface.loaderPaths.map { runtimeRoot.appending(path: $0) } : [],
 			features: manifest.interface.features,
 			pins: RuntimePins(
 				wineVersion: manifest.components?.wine,

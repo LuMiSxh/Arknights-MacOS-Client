@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import ArknightsCore
 import ArknightsCustomization
 import ArknightsGameInstallation
@@ -53,6 +54,22 @@ extension LauncherViewModel {
 			guard let self else { return nil }
 			return customization.hasCustomGameIcon ? paths.customGameIcon : nil
 		}
+		gameSession.applyLoaderIcon = { bundle in
+			guard let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+				let icon = NSImage(contentsOf: iconURL)
+			else {
+				throw LoaderIconError.missingAppIcon
+			}
+			guard NSWorkspace.shared.setIcon(icon, forFile: bundle.path, options: []) else {
+				throw LoaderIconError.setIconFailed
+			}
+		}
 		discordPresence.activityDidChange()
 	}
+
+	private enum LoaderIconError: Error {
+		case missingAppIcon
+		case setIconFailed
+	}
+
 }

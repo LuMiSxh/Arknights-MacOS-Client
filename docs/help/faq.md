@@ -66,7 +66,7 @@ See [Publisher support routing](README.md#publisher-support-routing).
 
 ## How do I change the game volume in a per-app volume tool?
 
-It depends on the runtime. With **ARM64**, tools such as FineTune and SoundSource list the game as its own **Arknights** entry. The entry may show a blank white icon. Change the game volume there.
+It depends on the runtime. With **ARM64**, tools such as FineTune and SoundSource list the game as its own **Arknights** entry. Change the game volume there.
 
 With **x86_64**, these tools list the game under **Arknights Client**, not **Arknights**. That runtime gives the game no app bundle of its own, so the tools assign its audio to the launcher. Use the **Arknights Client** entry for the game volume. That entry also contains the launcher music.
 

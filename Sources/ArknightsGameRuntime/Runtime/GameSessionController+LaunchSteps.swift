@@ -214,6 +214,7 @@ extension GameSessionController {
 		let request = context.request
 		try Task.checkCancellation()
 		guard activeGameSessionID == request.id else { return nil }
+		RuntimeLoaderIcon.apply(to: context.runtime, log: log, setIcon: applyLoaderIcon)
 		let features = context.runtime.features
 		let displayConfiguration = WineDisplayConfiguration.current(
 			renderingMode: request.options.renderingMode,
