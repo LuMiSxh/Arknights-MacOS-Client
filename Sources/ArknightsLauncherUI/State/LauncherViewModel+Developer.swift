@@ -31,6 +31,7 @@ import ArknightsGameRuntime
 			installation.hasPartialDownload = simulation.hasPartialDownload
 			installation.installedVersion = simulation.installedVersion
 			installation.isGameUpdateAvailable = simulation.updateAvailable
+			runtimeSelection.simulate(simulatedRuntime(for: simulation.runtime))
 			gameSession.runtimeName = "Wine 11.16 + DXMT 0.80-199"
 			communication.launcherUpdateVersion = simulation.launcherUpdateVersion
 			communication.launcherUpdateStatus = simulation.launcherUpdateStatus
@@ -176,6 +177,18 @@ import ArknightsGameRuntime
 				.launchingGame(sessionID: UUID(), processIdentifier: nil)
 			case .running:
 				.runningGame(sessionID: UUID(), processIdentifier: 4242)
+			}
+		}
+
+		private func simulatedRuntime(
+			for runtime: DeveloperSimulationState.Runtime
+		) -> RuntimeSelectionController.SimulatedState? {
+			switch runtime {
+			case .real: nil
+			case .notInstalled: .notInstalled
+			case .installed: .installed
+			case .installing: .installing
+			case .failed: .failed
 			}
 		}
 

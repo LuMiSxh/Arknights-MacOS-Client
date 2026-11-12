@@ -25,6 +25,7 @@ import SwiftUI
 					picker("Launcher update", \.launcherUpdate)
 					picker("Failure", \.failure)
 					picker("Support code", \.failureCode)
+					picker("Runtime", \.runtime)
 					picker("Canary features", \.canaryFeaturesEnabled)
 					picker("Status pill", \.showStatusPill)
 					picker("Version pill", \.showVersionPill)

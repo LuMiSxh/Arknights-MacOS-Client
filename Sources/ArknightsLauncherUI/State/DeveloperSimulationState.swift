@@ -33,6 +33,9 @@ import ArknightsGameInstallation
 				}
 			}
 		}
+		enum Runtime: String, CaseIterable {
+			case real, notInstalled, installed, installing, failed
+		}
 		// The raw value is the pill identifier `LauncherHUDView` expands.
 		enum Pill: String, CaseIterable { case none, music, version, status }
 
@@ -47,6 +50,7 @@ import ArknightsGameInstallation
 		var launcherUpdate = LauncherUpdate.current
 		var failure = Failure.none
 		var failureCode = SupportCode.gameClosedUnexpectedly
+		var runtime = Runtime.real
 		var selectedRegion = GameRegion.global
 		var installedRegions: Set<GameRegion> = [.global]
 		var canaryFeaturesEnabled = false
