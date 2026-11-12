@@ -35,7 +35,10 @@ private func access(macOS major: Int) -> RuntimeAccess {
 }
 
 private func makePaths(_ temporary: TemporaryDirectory) -> AppPaths {
-	AppPaths(applicationSupportDirectory: temporary.url)
+	AppPaths(
+		applicationSupportDirectory: temporary.url,
+		runtimeSelection: RuntimeSelection(selected: .x86)
+	)
 }
 
 private func makeInstallOperation(
@@ -182,6 +185,9 @@ struct RuntimeSelectionControllerTests {
 			installOperation: makeInstallOperation(
 				paths: paths, throwsVerificationError: true)
 		)
+
+		try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).save(
+			RuntimeSelection(selected: .x86))
 
 		#expect(await controller.install(lane: .arm) == false)
 		#expect(controller.failure?.code == .runtimeVerificationFailed)

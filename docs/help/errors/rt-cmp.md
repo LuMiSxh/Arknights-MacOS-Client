@@ -15,14 +15,14 @@ The launcher could not apply or restore a compatibility file in the game folder.
 
 Possible causes:
 
-- These files enable the sign-in and Notices windows under Wine.
+- Compatibility files in the game folder enable the sign-in and Notices windows under Wine.
 - An official updater or another tool changed a compatibility file.
 - The launcher does not overwrite unknown files.
 
 ## What you can do
 
 1. Quit Arknights and any official updater.
-2. Do not delete or rename the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, or the temporary files of the launcher.
+2. Do not delete or rename these items: the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, and the launcher's temporary files.
 3. If the code returns after Repair, restart the Mac. Then choose **Repair…** in **Settings → Installation** again.
 
 Select **Retry** after you finish these steps. Retry repeats the failed operation. It keeps valid downloads and game files.

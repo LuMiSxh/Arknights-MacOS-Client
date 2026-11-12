@@ -98,7 +98,7 @@ func runtimeSelectionDeterminesTheLane() throws {
 }
 
 @Test
-func missingSelectionDefaultsToX86WhateverTheRuntimeTreesHold() throws {
+func missingSelectionDefaultsToARMWhateverTheRuntimeTreesHold() throws {
 	let temporary = try TemporaryDirectory("AppPathsDefaultLaneTests")
 	defer { temporary.remove() }
 	let support = temporary.url.appending(path: "Support", directoryHint: .isDirectory)
@@ -110,10 +110,15 @@ func missingSelectionDefaultsToX86WhateverTheRuntimeTreesHold() throws {
 	try Data(#"{"architecture":"arm"}"#.utf8).write(
 		to: armRuntime.appending(path: "RUNTIME.json"))
 
-	let paths = AppPaths(applicationSupportDirectory: support)
+	let paths = AppPaths(
+		applicationSupportDirectory: support,
+		runtimeAccess: RuntimeAccess(
+			macOSVersion: OperatingSystemVersion(
+				majorVersion: 26, minorVersion: 0, patchVersion: 0))
+	)
 
-	#expect(paths.runtimeLane == .x86)
-	#expect(paths.winePrefix.lastPathComponent == "Prefix")
+	#expect(paths.runtimeLane == .arm)
+	#expect(paths.winePrefix.lastPathComponent == "Prefix-ARM64")
 }
 
 @Test

@@ -25,6 +25,7 @@ extension GameSessionController {
 					metalFXSupported: metalFXSpatialUpscalingSupported ?? false)
 				: settings.launchOptions,
 			usesBatterySaver: usesBatterySaver,
+			usesDebugLogging: settings.debugLoggingEnabled,
 			usesHardwareCursor: settings.usesHardwareCursor,
 			forceDisableRetina: preferences.forceDisableRetina(),
 			requestedAt: .now

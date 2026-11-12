@@ -16,12 +16,12 @@ The launcher cannot take a screenshot because Screen Recording is off.
 Possible causes:
 
 - Screen Recording is off for Arknights Client in System Settings.
-- macOS asked to confirm Screen Recording again and the answer was not given.
+- macOS asked you to confirm Screen Recording again, and no answer was given.
 - A new permission needs a launcher restart before it takes effect.
 
 ## What you can do
 
-1. Open System Settings, then Privacy & Security, then Screen & System Audio Recording.
+1. Open **System Settings → Privacy & Security → Screen & System Audio Recording**.
 2. Turn on Arknights Client.
 3. Quit the launcher and open it again.
 

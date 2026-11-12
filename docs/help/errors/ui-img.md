@@ -16,13 +16,13 @@ The image cannot be used as launcher artwork.
 Possible causes:
 
 - The file is not a single still image, such as a PNG or JPEG.
-- The image is larger than 25 MB, or larger than 16,384 pixels on each side or 120 million pixels in total.
+- The image is larger than 25 MB, 16,384 pixels on one side, or 120 million pixels in total.
 - A gallery image is larger than the launcher allows.
 
 ## What you can do
 
 1. Choose another image. Use a single still image, such as a PNG or JPEG.
-2. Use an image that is 25 MB or smaller, with at most 16,384 pixels on each side and 120 million pixels in total.
+2. Use an image of 25 MB or less. It may have at most 16,384 pixels on each side and 120 million pixels in total.
 3. If a gallery image still fails, check for a launcher update, then try again.
 
 ## Report the problem

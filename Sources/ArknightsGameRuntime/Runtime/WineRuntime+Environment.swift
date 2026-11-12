@@ -76,7 +76,8 @@ extension WineRuntime {
 		baseEnvironment: [String: String] = ProcessInfo.processInfo.environment,
 		userName: String = NSUserName(),
 		frameRateLimit: GameFrameRateLimit,
-		synchronizationMode: WineSynchronizationMode = .msync
+		synchronizationMode: WineSynchronizationMode = .msync,
+		debugLogging: Bool = false
 	) -> [String: String] {
 		let home = prefixDirectory.appending(path: "home", directoryHint: .isDirectory)
 		var environment: [String: String] = [:]
@@ -89,7 +90,7 @@ extension WineRuntime {
 		// Crash-report matching (GameSessionController.recentCrashReportPath) looks for
 		// "Arknights-*.ips" under DiagnosticReports, so this name must stay in sync.
 		environment["WINEPRELOADERAPPNAME"] = AppConstants.Runtime.applicationName
-		environment["WINEDEBUG"] = Self.debugChannels
+		environment["WINEDEBUG"] = debugLogging ? Self.verboseDebugChannels : Self.debugChannels
 		environment["CFFIXED_USER_HOME"] = home.path
 		environment["XDG_CACHE_HOME"] = home.appending(path: ".cache").path
 		environment["XDG_CONFIG_HOME"] = home.appending(path: ".config").path
@@ -103,8 +104,12 @@ extension WineRuntime {
 		environment["GST_DEBUG"] = "1"
 		environment["DXMT_SHADER_CACHE"] = "1"
 		environment["DXMT_SHADER_CACHE_PATH"] = home.appending(path: ".cache/dxmt").path
-		// Keep normal launches quiet; graphics diagnostics raises this to "info".
-		environment["DXMT_LOG_LEVEL"] = "error"
+		// Keep normal launches quiet; debug logging and graphics diagnostics raise this to "info".
+		environment["DXMT_LOG_LEVEL"] = debugLogging ? "info" : "error"
+		if debugLogging {
+			// Send DXMT output to the runtime log, as graphics diagnostics does.
+			environment["DXMT_LOG_PATH"] = "none"
+		}
 		// DXMT reads "key=value" entries separated by ";". The cap is always written, so DXMT
 		// never applies its own default pacing.
 		environment["DXMT_CONFIG"] =
@@ -124,13 +129,15 @@ extension WineRuntime {
 		prefixDirectory: URL,
 		graphicsDiagnostics: Bool = false,
 		frameRateLimit: GameFrameRateLimit,
-		synchronizationMode: WineSynchronizationMode = .msync
+		synchronizationMode: WineSynchronizationMode = .msync,
+		debugLogging: Bool = false
 	) -> [String: String] {
 		var environment = Self.isolatedEnvironment(
 			prefixDirectory: prefixDirectory,
 			executableDirectory: executableURL.deletingLastPathComponent(),
 			frameRateLimit: frameRateLimit,
-			synchronizationMode: synchronizationMode
+			synchronizationMode: synchronizationMode,
+			debugLogging: debugLogging
 		)
 		if graphicsDiagnostics {
 			environment["WINEDEBUG"] = "-all,err+all,+macdrv,+display"

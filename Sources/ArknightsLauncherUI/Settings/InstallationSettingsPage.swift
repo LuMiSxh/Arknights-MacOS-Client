@@ -152,13 +152,13 @@ struct InstallationSettingsPage: View {
 			isPresented: $isRemoveRuntimeConfirmationPresented,
 			titleVisibility: .visible
 		) {
-			Button("Remove Runtime", role: .destructive) {
+			Button("Remove", role: .destructive) {
 				Task { _ = await actions.removeOtherRuntime() }
 			}
 			Button("Cancel", role: .cancel) {}
 		} message: {
 			Text(
-				"The other architecture's runtime files are deleted. Its game environment stays on disk. You can download the runtime again later."
+				"The other runtime's files are deleted. Its game environment stays on disk. You can download the runtime again later."
 			)
 		}
 		.confirmationDialog(
@@ -166,7 +166,7 @@ struct InstallationSettingsPage: View {
 			isPresented: $isRemoveSelectedRuntimeConfirmationPresented,
 			titleVisibility: .visible
 		) {
-			Button("Remove Runtime", role: .destructive) {
+			Button("Remove", role: .destructive) {
 				Task { _ = await actions.removeSelectedRuntime() }
 			}
 			Button("Cancel", role: .cancel) {}

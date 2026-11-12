@@ -67,6 +67,7 @@ package struct LauncherPreferencesStore {
 			case screenshotShortcut
 			case screenshotDirectory
 			case batterySaverFrameRateLimit
+			case debugLoggingEnabled
 			case seenAnnouncementIDs
 			case gameLaunchOptions
 			case selectedRegion
@@ -122,6 +123,8 @@ package struct LauncherPreferencesStore {
 			Name.usesDynamicTheme.rawValue, default: true)
 		package static let batterySaverEnabled = ScalarKey(
 			Name.batterySaverEnabled.rawValue, default: false)
+		package static let debugLoggingEnabled = ScalarKey(
+			Name.debugLoggingEnabled.rawValue, default: false)
 		package static let screenshotNotifies = ScalarKey(
 			Name.screenshotNotifies.rawValue, default: true)
 		static let screenshotShortcut = Name.screenshotShortcut.rawValue
@@ -159,6 +162,7 @@ package struct LauncherPreferencesStore {
 				launcherMusicMuted, usesDynamicTheme, canaryFeaturesEnabled,
 				usesHardwareCursor, dismissedInGameResolutionNote, batterySaverEnabled,
 				screenshotNotifies,
+				debugLoggingEnabled,
 				RawKey(screenshotShortcut, resettable: true),
 				RawKey(screenshotDirectory, resettable: true),
 				RawKey(gameLaunchOptions, resettable: true),

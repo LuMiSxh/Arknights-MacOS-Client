@@ -76,7 +76,7 @@
       "title": "Download incomplete or damaged",
       "status": "active",
       "summary": "A game file did not download completely or did not pass verification.",
-      "action": "Check the connection and any proxy. Then select Retry or Repair.",
+      "action": "Check the connection and any proxy. Then select **Retry** or **Repair**.",
       "allowsRetry": true,
       "allowsRepair": true,
       "causes": [
@@ -204,7 +204,7 @@
       "title": "Launcher data migration failed",
       "status": "active",
       "summary": "The launcher could not move its saved data to the current format.",
-      "action": "Quit apps that use the data folder. Then choose Retry.",
+      "action": "Quit apps that use the data folder. Then choose **Retry**.",
       "allowsRetry": true,
       "allowsRepair": false,
       "causes": [
@@ -313,20 +313,20 @@
       "title": "Runtime not installed",
       "status": "active",
       "summary": "The selected runtime is not installed.",
-      "action": "Set up the runtime, then start the game.",
+      "action": "Choose **Set Up Runtime** on Home, then start the game.",
       "allowsRetry": true,
       "allowsRepair": false,
       "causes": [
         "The runtime download has not started or has not finished.",
-        "The runtime for the selected architecture is not available in this launcher release.",
-        "The runtime was removed while its architecture was selected."
+        "The runtime you selected is not available in this launcher release.",
+        "The runtime was removed while it was selected."
       ],
       "steps": [
         "On Home, choose **Set Up Runtime**. In setup, choose **Download and Continue**.",
         "Wait for the download to finish. Then start the game.",
         "If setup cannot download the runtime, install pending launcher updates and try again."
       ],
-      "report": "In the report, say which architecture you selected and whether the download started.",
+      "report": "In the report, say which runtime you selected and whether the download started.",
       "legacy": []
     },
     {
@@ -349,7 +349,7 @@
         "Wait for the download to finish again.",
         "If verification fails again, install pending launcher updates and report the problem."
       ],
-      "report": "In the report, say which architecture failed verification and whether the download completed.",
+      "report": "In the report, say which runtime failed verification and whether the download completed.",
       "legacy": []
     },
     {
@@ -359,13 +359,13 @@
       "title": "Runtime setup failed",
       "status": "active",
       "summary": "The launcher could not set up the game runtime.",
-      "action": "Choose Rebuild… in Settings → Help → Troubleshooting, then start the game.",
+      "action": "Choose **Settings → Help → Troubleshooting → Rebuild…**, then start the game.",
       "allowsRetry": true,
       "allowsRepair": false,
       "causes": [
         "A game environment (Wine prefix) migration, registry setup, or DXMT installation failed.",
         "Another Wine process was running.",
-        "If the message mentions Vuplex, PlatformProcess, the Bilibili login window, or a game helper, see [RT-CMP](rt-cmp.md)."
+        "The message mentions Vuplex, PlatformProcess, the Bilibili login window, or a game helper. If so, see [RT-CMP](rt-cmp.md)."
       ],
       "steps": [
         "Quit other Wine apps.",
@@ -382,17 +382,17 @@
       "title": "Game compatibility setup failed",
       "status": "active",
       "summary": "The launcher could not apply or restore a compatibility file in the game folder.",
-      "action": "Quit the official updater. Then choose Repair.",
+      "action": "Quit the official updater. Then choose **Repair**.",
       "allowsRetry": true,
       "allowsRepair": true,
       "causes": [
-        "These files enable the sign-in and Notices windows under Wine.",
+        "Compatibility files in the game folder enable the sign-in and Notices windows under Wine.",
         "An official updater or another tool changed a compatibility file.",
         "The launcher does not overwrite unknown files."
       ],
       "steps": [
         "Quit Arknights and any official updater.",
-        "Do not delete or rename the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, or the temporary files of the launcher.",
+        "Do not delete or rename these items: the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, and the launcher's temporary files.",
         "If the code returns after Repair, restart the Mac. Then choose **Repair…** in **Settings → Installation** again."
       ],
       "report": "In the report, say whether the second Repair failed. Attach no helper binaries.",
@@ -468,11 +468,11 @@
       "allowsRepair": false,
       "causes": [
         "Screen Recording is off for Arknights Client in System Settings.",
-        "macOS asked to confirm Screen Recording again and the answer was not given.",
+        "macOS asked you to confirm Screen Recording again, and no answer was given.",
         "A new permission needs a launcher restart before it takes effect."
       ],
       "steps": [
-        "Open System Settings, then Privacy & Security, then Screen & System Audio Recording.",
+        "Open **System Settings → Privacy & Security → Screen & System Audio Recording**.",
         "Turn on Arknights Client.",
         "Quit the launcher and open it again."
       ],
@@ -549,12 +549,12 @@
       "allowsRepair": false,
       "causes": [
         "The file is not a single still image, such as a PNG or JPEG.",
-        "The image is larger than 25 MB, or larger than 16,384 pixels on each side or 120 million pixels in total.",
+        "The image is larger than 25 MB, 16,384 pixels on one side, or 120 million pixels in total.",
         "A gallery image is larger than the launcher allows."
       ],
       "steps": [
         "Choose another image. Use a single still image, such as a PNG or JPEG.",
-        "Use an image that is 25 MB or smaller, with at most 16,384 pixels on each side and 120 million pixels in total.",
+        "Use an image of 25 MB or less. It may have at most 16,384 pixels on each side and 120 million pixels in total.",
         "If a gallery image still fails, check for a launcher update, then try again."
       ],
       "report": "In the report, say whether the image came from the gallery or from a file you chose. Do not attach the image unless a maintainer asks for it.",

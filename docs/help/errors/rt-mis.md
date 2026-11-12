@@ -16,8 +16,8 @@ The selected runtime is not installed.
 Possible causes:
 
 - The runtime download has not started or has not finished.
-- The runtime for the selected architecture is not available in this launcher release.
-- The runtime was removed while its architecture was selected.
+- The runtime you selected is not available in this launcher release.
+- The runtime was removed while it was selected.
 
 ## What you can do
 
@@ -31,6 +31,6 @@ Select **Retry** after you finish these steps. Retry repeats the failed operatio
 
 Choose **Help → Report a Problem…** if these steps do not solve the problem. The report adds the code, the launcher version, and your Mac details.
 
-In the report, say which architecture you selected and whether the download started.
+In the report, say which runtime you selected and whether the download started.
 
 A maintainer can ask for a diagnostics file. Then choose **Help → Save Diagnostics…**

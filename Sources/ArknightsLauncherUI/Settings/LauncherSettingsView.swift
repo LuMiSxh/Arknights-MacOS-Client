@@ -127,6 +127,7 @@ struct LauncherSettingsView: View {
 					case .help:
 						HelpSettingsPage(
 							region: installation.region,
+							settings: settings,
 							actions: actions,
 							maintenance: actions,
 							openProblemReport: openProblemReport,

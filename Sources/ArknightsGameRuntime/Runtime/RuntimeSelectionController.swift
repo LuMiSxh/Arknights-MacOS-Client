@@ -42,9 +42,9 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 		case .busy:
 			"Wait for the current operation to finish, then try again."
 		case .laneNotAvailable:
-			"This Mac cannot run the selected runtime architecture."
+			"This Mac cannot run the selected runtime."
 		case .unavailablePin:
-			"This launcher release does not include a download for the selected runtime architecture."
+			"This launcher release does not include a download for the selected runtime."
 		case .notInstalled:
 			"The selected runtime is not installed. Download it first."
 		case .configurationUnavailable:
@@ -117,9 +117,9 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 /// Copy shared by the setup step and Settings before a lane switch. The warning applies in both
 /// directions because each lane owns a separate game environment.
 package enum RuntimeSwitchWarning {
-	package static let title = "Switch runtime architecture?"
+	package static let title = "Switch runtime?"
 	package static let message =
-		"Switching architectures uses a separate game environment. The game may treat this as a fresh install and ask you to sign in and download resources again. You can switch back later; both game environments stay on disk."
+		"Switching runtimes uses a separate game environment. The game may treat this as a fresh install and ask you to sign in and download resources again. You can switch back later; both game environments stay on disk."
 
 	package static func message(for pin: PinnedRuntime, isInstalled: Bool) -> String {
 		var parts = [message]

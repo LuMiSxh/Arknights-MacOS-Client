@@ -8,6 +8,7 @@ import SwiftUI
 
 struct HelpSettingsPage: View {
 	let region: GameRegion
+	@Bindable var settings: LauncherPreferencesController
 	let actions: any LauncherDiagnosticsActions
 	let maintenance: any LauncherSettingsActions
 	let openProblemReport: () -> Void
@@ -119,6 +120,14 @@ struct HelpSettingsPage: View {
 						tone: .neutral, presentation: .compact,
 						action: revealApplicationSupport
 					)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Debug Logging",
+					detail:
+						"Writes detailed Wine and graphics logs from the next game start. Logs grow quickly, so turn this off when you are done."
+				) {
+					SettingsToggle("Debug Logging", isOn: $settings.debugLoggingEnabled)
 				}
 				SettingsHairline()
 				InstallationDestructiveRow(

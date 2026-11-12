@@ -75,6 +75,20 @@ func frameRateLimitPassesThePickedCapToDXMT(limit: GameFrameRateLimit) {
 		environment["DXMT_CONFIG"] == "d3d11.preferredMaxFrameRate=\(limit.framesPerSecond)")
 }
 
+@Test(arguments: [false, true])
+func debugLoggingSelectsTheWineChannelSet(debugLogging: Bool) {
+	let environment = WineRuntime.isolatedEnvironment(
+		prefixDirectory: URL(filePath: "/isolated/prefix", directoryHint: .isDirectory),
+		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
+		baseEnvironment: [:],
+		userName: "tester",
+		frameRateLimit: .fps120,
+		debugLogging: debugLogging
+	)
+	let expected = debugLogging ? WineRuntime.verboseDebugChannels : WineRuntime.debugChannels
+	#expect(environment["WINEDEBUG"] == expected)
+}
+
 @Test
 func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 	let fileManager = FileManager.default

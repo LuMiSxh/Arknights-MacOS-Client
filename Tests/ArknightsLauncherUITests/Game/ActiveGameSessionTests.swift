@@ -94,7 +94,6 @@ struct ActiveGameSessionTests {
 		let directory = try GameSessionController.pinnedRuntimeVersionDirectory(
 			paths: model.gameSession.paths, lane: lane, configuration: configuration)
 
-		#expect(model.paths.runtimeLane == .x86)
 		#expect(lane == .arm)
 		#expect(directory == model.paths.runtimeVersionDirectory(for: .arm, version: "2.0.0"))
 		#expect(

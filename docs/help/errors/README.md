@@ -43,7 +43,7 @@ Each code has its own page. The page title starts with the code.
 | --- | --- | --- |
 | [IN-BSY](in-bsy.md) | Installation in use | Wait for the other launcher to finish, or restart the Mac. |
 | [IN-DIR](in-dir.md) | Install folder cannot be used | Choose a local folder that your account owns. |
-| [IN-DLD](in-dld.md) | Download incomplete or damaged | Check the connection and any proxy. Then select Retry or Repair. |
+| [IN-DLD](in-dld.md) | Download incomplete or damaged | Check the connection and any proxy. Then select **Retry** or **Repair**. |
 | [IN-DSK](in-dsk.md) | Not enough free disk space | Free disk space, then empty the Trash. |
 | [IN-MAN](in-man.md) | Unsafe game file list | Update the launcher, or wait for a corrected file list. |
 | [IN-MIS](in-mis.md) | Game files missing | Quit apps that change the game folder. Then restart the Mac. |
@@ -52,7 +52,7 @@ Each code has its own page. The page title starts with the code.
 
 | Code | Problem | What to do |
 | --- | --- | --- |
-| [FS-MIG](fs-mig.md) | Launcher data migration failed | Quit apps that use the data folder. Then choose Retry. |
+| [FS-MIG](fs-mig.md) | Launcher data migration failed | Quit apps that use the data folder. Then choose **Retry**. |
 | [FS-WRT](fs-wrt.md) | Local file action failed | Quit apps that use the affected files. Check folder permissions. |
 
 ### Runtime
@@ -62,10 +62,10 @@ Each code has its own page. The page title starts with the code.
 | [RT-BIL](rt-bil.md) | Bilibili login unavailable | Quit other Wine apps, then restart the Mac. |
 | [RT-BLK](rt-blk.md) | Intel translation blocked | Use the ARM64 runtime on macOS 28 or later. On a macOS 27 beta, turn off Legacy Game Test Mode. |
 | [RT-BND](rt-bnd.md) | Runtime information missing or damaged | Replace the launcher with a complete copy from the release DMG. |
-| [RT-CMP](rt-cmp.md) | Game compatibility setup failed | Quit the official updater. Then choose Repair. |
-| [RT-MIS](rt-mis.md) | Runtime not installed | Set up the runtime, then start the game. |
+| [RT-CMP](rt-cmp.md) | Game compatibility setup failed | Quit the official updater. Then choose **Repair**. |
+| [RT-MIS](rt-mis.md) | Runtime not installed | Choose **Set Up Runtime** on Home, then start the game. |
 | [RT-ROS](rt-ros.md) | Rosetta unavailable | Install Rosetta if the launcher offers it. |
-| [RT-SET](rt-set.md) | Runtime setup failed | Choose Rebuild… in Settings → Help → Troubleshooting, then start the game. |
+| [RT-SET](rt-set.md) | Runtime setup failed | Choose **Settings → Help → Troubleshooting → Rebuild…**, then start the game. |
 | [RT-VER](rt-ver.md) | Runtime failed verification | Download the runtime again. If it fails again, report the problem. |
 
 ### Game
@@ -113,4 +113,6 @@ Launcher 0.8.0 replaced these codes. Open the page for the new code.
 
 ## Publisher support
 
-The publisher and payment provider handle account, payment, billing, server, and in-game service problems. Use the [publisher support routing table](../README.md#publisher-support-routing).
+The publisher and payment provider handle account, payment, and billing problems. They also handle server and in-game service problems.
+
+Use the [publisher support routing table](../README.md#publisher-support-routing) to find the right contact.

@@ -17,7 +17,7 @@ Possible causes:
 
 - A game environment (Wine prefix) migration, registry setup, or DXMT installation failed.
 - Another Wine process was running.
-- If the message mentions Vuplex, PlatformProcess, the Bilibili login window, or a game helper, see [RT-CMP](rt-cmp.md).
+- The message mentions Vuplex, PlatformProcess, the Bilibili login window, or a game helper. If so, see [RT-CMP](rt-cmp.md).
 
 ## What you can do
 

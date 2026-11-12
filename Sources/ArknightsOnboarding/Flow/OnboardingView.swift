@@ -254,7 +254,7 @@ package struct OnboardingView: View {
 			guard let runtimeLane, runtimeSelection.installedVersion(for: runtimeLane) != nil
 			else { return "Download and Continue" }
 			return runtimeLane == runtimeSelection.selectedLane
-				? "Continue Setup" : "Switch & Continue"
+				? "Continue Setup" : "Switch and Continue"
 		}
 		if coordinator.step == .finish { return "Finish Setup" }
 		return "Continue"

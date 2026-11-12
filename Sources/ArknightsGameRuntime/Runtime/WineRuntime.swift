@@ -78,6 +78,8 @@ struct WineRuntime: Sendable {
 		"d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
 	static let winebootDLLOverride = "winemac.drv=d"
 	static let debugChannels = "-all,err+all"
+	static let verboseDebugChannels =
+		"+timestamp,+pid,-all,err+all,warn+module,+seh,+process,+exec,+loaddll,+winebrowser,+win,+system,+explorer,+macdrv"
 	static func synchronizationEnvironment(
 		for mode: WineSynchronizationMode
 	) -> [String: String] {
@@ -235,6 +237,7 @@ struct WineRuntime: Sendable {
 		gameArguments: [String] = [],
 		displayConfiguration: WineDisplayConfiguration,
 		graphicsDiagnostics: Bool = false,
+		debugLogging: Bool = false,
 		metalPerformanceHUDEnabled: Bool = false,
 		synchronizationMode: WineSynchronizationMode = .msync,
 		frameRateLimit: GameFrameRateLimit,
@@ -314,7 +317,8 @@ struct WineRuntime: Sendable {
 			prefixDirectory: prefixDirectory,
 			graphicsDiagnostics: graphicsDiagnostics,
 			frameRateLimit: frameRateLimit,
-			synchronizationMode: synchronizationMode
+			synchronizationMode: synchronizationMode,
+			debugLogging: debugLogging
 		)
 		environment.merge(runtimeEnvironmentOverrides) { _, value in value }
 		if clientVariant == .bilibili {

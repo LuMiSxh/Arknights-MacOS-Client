@@ -8,7 +8,7 @@ extension InstallationSettingsPage {
 	@ViewBuilder var runtimePanel: some View {
 		SettingsPanel(title: "Runtime") {
 			SettingsActionRow(
-				title: "Architecture",
+				title: "Runtime",
 				detail: runtimeSelection.selectedLane.title
 			) {
 				EmptyView()
@@ -53,6 +53,10 @@ extension InstallationSettingsPage {
 						|| runtimeSelection.installedVersion(
 							for: runtimeSelection.selectedLane) == nil
 				)
+			}
+
+			if let runtimeChangesReason {
+				runtimeNote(runtimeChangesReason)
 			}
 
 			if runtimeSelection.isInstalling {
@@ -206,6 +210,16 @@ extension InstallationSettingsPage {
 		lifecycle.activity != .idle || runtimeSelection.isInstalling
 	}
 
+	private var runtimeChangesReason: String? {
+		if runtimeSelection.isInstalling || lifecycle.activity.isInstalling {
+			return "Wait for the current download to finish."
+		}
+		if lifecycle.activity.isGameActive {
+			return "Quit the game to change the runtime."
+		}
+		return nil
+	}
+
 	private var runtimeOtherLane: RuntimeLane {
 		runtimeSelection.selectedLane == .x86 ? .arm : .x86
 	}
@@ -216,13 +230,18 @@ extension InstallationSettingsPage {
 
 	private var runtimeOtherDetail: String {
 		guard runtimeOtherInstalled else {
-			return "No runtime is installed for the other architecture."
+			return "No other runtime is installed."
 		}
 		return
 			"Remove the \(runtimeOtherLane.shortLabel) runtime. Its game environment stays on disk."
 	}
 
 	private func runtimeLaneDetail(_ lane: RuntimeLane) -> String {
+		let headline = lane == .arm ? "Recommended. \(lane.summary)" : lane.summary
+		return "\(headline) \(runtimeLaneInfo(lane))"
+	}
+
+	private func runtimeLaneInfo(_ lane: RuntimeLane) -> String {
 		var parts: [String] = []
 		switch runtimeSelection.state(for: lane) {
 		case .notInstalled:

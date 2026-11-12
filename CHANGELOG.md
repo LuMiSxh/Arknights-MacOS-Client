@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added the runtime download. The launcher no longer ships the runtime inside the app. Choose the architecture under **Settings → Installation → Runtime**. The launcher downloads, verifies, and installs that runtime. Runtime downloads show progress with the game download.
+- Added the runtime download. The launcher no longer ships the runtime inside the app. Choose the runtime under **Settings → Installation → Runtime**. The launcher downloads, verifies, and installs that runtime. Runtime downloads show progress with the game download.
 - Added an **ARM64 (Apple Silicon)** runtime for macOS 26 or later. It uses a separate game environment, so the game may look like a fresh install after a switch.
 - Added **Remove Runtime…** under **Settings → Installation → Runtime**. It deletes the runtime you use and keeps the game environment. **Remove Other Runtime** now reports a failure with a support code.
 - Added the **Game runtime** help page. It explains **x86_64** and **ARM64 (Apple Silicon)**, how to switch, and what a switch changes. The **Runtime** setup step and **Runtime** panel link to it with **About game runtimes**.
@@ -32,8 +32,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added **Save Diagnostics…**. It saves a zip of logs and system details to Downloads. Nothing is uploaded. SDK logs can contain account IDs, so review the zip before you share it.
 - Added **Contact the developer** to **Settings → Help** for private messages, feedback, and testing offers. Use **Contact…** to get in touch.
 - Added **App Data Folder** to **Settings → Help → Troubleshooting**. **Show in Finder** opens the folder that holds settings, logs, runtimes, and game environments.
-- Added a **Runtime** group to **Settings → About**. It shows the runtime version and architecture, the Wine and DXMT versions, and the capabilities the runtime advertises.
+- Added a **Runtime** group to **Settings → About**. It shows the runtime version and type, the Wine and DXMT versions, and the capabilities the runtime advertises.
 - The failure dialog can copy the support code.
+- Added **Debug Logging** to **Settings → Help → Troubleshooting**. It writes detailed Wine and graphics logs from the next game start.
 
 ### Changed
 

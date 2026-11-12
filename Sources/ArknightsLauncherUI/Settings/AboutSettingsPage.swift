@@ -98,7 +98,7 @@ struct AboutSettingsPage: View {
 				valueText(runtime.name)
 			}
 			SettingsHairline()
-			SettingsActionRow(title: "Architecture") {
+			SettingsActionRow(title: "Runtime") {
 				valueText(runtime.architecture)
 			}
 			SettingsHairline()

@@ -16,8 +16,8 @@ struct RuntimeSelectionStoreTests {
 	@Test(
 		arguments: [
 			(15, RuntimeLane.x86),
-			(26, RuntimeLane.x86),
-			(27, RuntimeLane.x86),
+			(26, RuntimeLane.arm),
+			(27, RuntimeLane.arm),
 			(28, RuntimeLane.arm),
 			(29, RuntimeLane.arm),
 		]

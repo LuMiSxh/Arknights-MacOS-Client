@@ -23,9 +23,9 @@ package struct RuntimeAccess: Sendable {
 		}
 	}
 
-	/// The lane a fresh install uses when no selection is persisted. macOS 28 and later have no
-	/// general Rosetta 2 support, so only the ARM64 lane can run there.
+	/// The lane a fresh install uses when no selection is persisted. ARM64 is the recommended lane
+	/// wherever it runs. macOS 15 can only run x86_64.
 	package var defaultLane: RuntimeLane {
-		allows(.x86) ? .x86 : .arm
+		allows(.arm) ? .arm : .x86
 	}
 }

@@ -31,6 +31,6 @@ Select **Retry** after you finish these steps. Retry repeats the failed operatio
 
 Choose **Help → Report a Problem…** if these steps do not solve the problem. The report adds the code, the launcher version, and your Mac details.
 
-In the report, say which architecture failed verification and whether the download completed.
+In the report, say which runtime failed verification and whether the download completed.
 
 A maintainer can ask for a diagnostics file. Then choose **Help → Save Diagnostics…**

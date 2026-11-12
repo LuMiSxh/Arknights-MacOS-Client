@@ -34,4 +34,9 @@ struct RuntimeAccessTests {
 		#expect(access(macOS: 26).allows(.arm))
 		#expect(access(macOS: 27).allows(.arm))
 	}
+
+	@Test(arguments: zip([15, 26, 27, 28], [RuntimeLane.x86, .arm, .arm, .arm]))
+	func defaultLanePrefersARMWhereItRuns(major: Int, expected: RuntimeLane) {
+		#expect(access(macOS: major).defaultLane == expected)
+	}
 }

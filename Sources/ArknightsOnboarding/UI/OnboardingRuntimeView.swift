@@ -18,7 +18,7 @@ struct OnboardingRuntimeView: View {
 				"The runtime runs the game on this Mac. You can change it later in Settings."
 		) {
 			OnboardingQuestion(
-				question: "Architecture",
+				question: "Choose a runtime",
 				answers: answers,
 				selection: $selectedLane,
 				isDisabled: isDisabled,
@@ -28,6 +28,17 @@ struct OnboardingRuntimeView: View {
 			QuietLink(title: "About game runtimes", destination: SupportLinks.runtimeGuide)
 				.font(.callout)
 				.padding(.horizontal, LauncherTokens.Spacing.panel)
+
+			if let lane = selectedLane, lane != runtimeSelection.selectedLane,
+				runtimeSelection.installedVersion(for: lane) != nil
+			{
+				Text(
+					"A different runtime uses its own game environment. You may need to sign in again."
+				)
+				.font(.callout)
+				.foregroundStyle(theme.textSecondary)
+				.padding(.horizontal, LauncherTokens.Spacing.panel)
+			}
 
 			if runtimeSelection.isInstalling {
 				RuntimeProgressPanel(controller: runtimeSelection)
@@ -46,7 +57,8 @@ struct OnboardingRuntimeView: View {
 				value: lane,
 				title: lane == .x86 ? "x86_64" : "ARM64 (Apple Silicon)",
 				detail: laneDetail(lane),
-				systemImage: lane == .x86 ? "cpu" : "apple.logo"
+				systemImage: lane == .x86 ? "cpu" : "apple.logo",
+				isRecommended: lane == .arm
 			)
 		}
 	}
@@ -88,6 +100,10 @@ struct OnboardingRuntimeView: View {
 	}
 
 	private func laneDetail(_ lane: RuntimeLane) -> String {
+		"\(lane.summary) \(laneInfo(lane))"
+	}
+
+	private func laneInfo(_ lane: RuntimeLane) -> String {
 		var parts: [String] = []
 		if let version = runtimeSelection.installedVersion(for: lane) {
 			parts.append("Installed, version \(version)")

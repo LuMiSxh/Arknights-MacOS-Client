@@ -125,6 +125,9 @@ package final class LauncherPreferencesController {
 	package var batterySaverEnabled = Key.batterySaverEnabled.defaultValue {
 		didSet { persist(batterySaverEnabled, for: Key.batterySaverEnabled) }
 	}
+	package var debugLoggingEnabled = Key.debugLoggingEnabled.defaultValue {
+		didSet { persist(debugLoggingEnabled, for: Key.debugLoggingEnabled) }
+	}
 	package var batterySaverFrameRateLimit: GameFrameRateLimit = .fps30 {
 		didSet { persist { store.setBatterySaverFrameRateLimit(batterySaverFrameRateLimit) } }
 	}
@@ -205,6 +208,7 @@ package final class LauncherPreferencesController {
 		usesHardwareCursor = store.value(Key.usesHardwareCursor)
 		dismissedInGameResolutionNote = store.value(Key.dismissedInGameResolutionNote)
 		batterySaverEnabled = store.value(Key.batterySaverEnabled)
+		debugLoggingEnabled = store.value(Key.debugLoggingEnabled)
 		batterySaverFrameRateLimit = store.batterySaverFrameRateLimit()
 		screenshotShortcut = store.screenshotShortcut()
 		screenshotNotifies = store.value(Key.screenshotNotifies)

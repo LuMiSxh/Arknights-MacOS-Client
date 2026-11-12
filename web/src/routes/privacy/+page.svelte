@@ -119,7 +119,7 @@
 		<li><code>api.github.com</code>: launcher announcements.</li>
 		<li>
 			<code>github.com</code>: app updates and the pinned runtime download
-			for the architecture that you choose.
+			for the runtime that you choose.
 		</li>
 		<li>
 			<code>www.youtube.com</code>: background music in the embedded

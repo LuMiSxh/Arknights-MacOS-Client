@@ -21,7 +21,7 @@ struct RuntimeStoreTests {
 	}
 
 	@Test
-	func selectionIsPersistedAndDefaultsToX86() throws {
+	func selectionIsPersistedAndDefaultsToARM() throws {
 		let temporary = try TemporaryDirectory("RuntimeStoreSelectionTests")
 		defer { temporary.remove() }
 		let access = RuntimeAccess(
@@ -34,13 +34,13 @@ struct RuntimeStoreTests {
 		let initialSelection = try RuntimeSelectionStore(
 			fileURL: paths.runtimeSelectionFile
 		).load(access: access)
-		#expect(initialSelection.selected == .x86)
+		#expect(initialSelection.selected == .arm)
 
-		try store.select(lane: .arm, access: access)
+		try store.select(lane: .x86, access: access)
 
 		let reloaded = AppPaths(applicationSupportDirectory: temporary.url)
-		#expect(reloaded.runtimeLane == .arm)
-		#expect(reloaded.winePrefix.lastPathComponent == "Prefix-ARM64")
+		#expect(reloaded.runtimeLane == .x86)
+		#expect(reloaded.winePrefix.lastPathComponent == "Prefix")
 	}
 
 	@Test
@@ -103,6 +103,9 @@ struct RuntimeStoreTests {
 		let store = RuntimeStore(paths: paths)
 		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
 
+		try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).save(
+			RuntimeSelection(selected: .x86))
+
 		#expect(throws: RuntimeStoreError.cannotRemoveSelectedLane(.x86)) {
 			try store.remove(lane: .x86)
 		}
@@ -124,6 +127,9 @@ struct RuntimeStoreTests {
 		let store = RuntimeStore(paths: paths)
 		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
 
+		try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).save(
+			RuntimeSelection(selected: .x86))
+
 		try store.remove(lane: .x86, allowSelected: true)
 
 		#expect(store.installedVersion(for: .x86) == nil)
@@ -142,6 +148,9 @@ struct RuntimeStoreTests {
 		)
 		let store = RuntimeStore(paths: paths)
 		try makeInstalledRuntime(version: "2.0.0", lane: .arm, paths: paths)
+
+		try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).save(
+			RuntimeSelection(selected: .x86))
 
 		try store.remove(lane: .arm)
 

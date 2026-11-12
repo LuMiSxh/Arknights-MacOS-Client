@@ -40,7 +40,8 @@ func appStorageMigratorMovesLegacyDirectoriesAndUpdatesExactInstallPreferences()
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library")
+		libraryDirectory: root.appending(path: "Library"),
+		runtimeSelection: RuntimeSelection(selected: .x86)
 	)
 	let fileManager = FileManager.default
 	let legacyGame = paths.applicationSupportRoot.appending(path: "Games/Arknights-Global")
@@ -97,7 +98,8 @@ func appStorageMigratorRejectsConflictsWithoutChangingEitherDirectory() throws {
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library")
+		libraryDirectory: root.appending(path: "Library"),
+		runtimeSelection: RuntimeSelection(selected: .x86)
 	)
 	let fileManager = FileManager.default
 	let legacy = paths.applicationSupportRoot.appending(path: "Games/Arknights-Global")
