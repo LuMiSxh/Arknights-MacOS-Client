@@ -26,8 +26,8 @@ private func makeFailure() -> LauncherFailurePresentation {
 }
 
 @MainActor
-@Test(arguments: [SupportOperation.install, .update])
-func gameDownloadFailureWaitsForSetupAndPresentsOnceItCloses(operation: SupportOperation) {
+@Test(arguments: [SupportOperation.install, .update, .runtimeSetup])
+func setupFailureWaitsForSetupAndPresentsOnceItCloses(operation: SupportOperation) {
 	let failure = LauncherFailurePresentation(
 		id: UUID(),
 		message: "Download failed",

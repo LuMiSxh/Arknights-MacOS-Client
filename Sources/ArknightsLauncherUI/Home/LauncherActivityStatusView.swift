@@ -18,9 +18,9 @@ struct LauncherActivityStatusView: View {
 				RuntimeDownloadStatusLabel(controller: runtimeSelection)
 			} else if lifecycle.activity == .idle, !installation.isDownloading,
 				!runtimeSelection.isSelectedLaneInstalled,
-				let failure = runtimeSelection.failure
+				runtimeSelection.failure != nil
 			{
-				RuntimeFailureStatusLabel(failure: failure)
+				PlainStatusText(title: "Needs attention")
 			} else if lifecycle.activity == .idle, !installation.isDownloading,
 				case .outdated = runtimeSelection.selectedLaneState
 			{
@@ -192,27 +192,4 @@ private struct DownloadStatusLabel: View {
 				) != nil)
 	}
 
-}
-
-private struct RuntimeFailureStatusLabel: View {
-	let failure: RuntimeSelectionFailure
-	@Environment(\.launcherTheme) private var theme
-
-	var body: some View {
-		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
-			Text("Runtime setup failed")
-				.font(LauncherTokens.Typography.statusTitle)
-			Text(failure.message)
-				.font(.caption)
-				.foregroundStyle(theme.textSecondary)
-				.lineLimit(2)
-			if let code = failure.code {
-				Text(code.rawValue)
-					.font(.caption.monospaced())
-					.foregroundStyle(theme.dangerText)
-					.textSelection(.enabled)
-			}
-		}
-		.accessibilityElement(children: .combine)
-	}
 }

@@ -96,6 +96,17 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 		}
 	}
 
+	/// Whether downloading the same lane again can fix the failure.
+	package var allowsRetry: Bool {
+		switch self {
+		case .installFailed, .verificationFailed:
+			true
+		case .busy, .laneNotAvailable, .unavailablePin, .notInstalled, .configurationUnavailable,
+			.removeFailed:
+			false
+		}
+	}
+
 	static func installFailure(_ error: any Error, lane: RuntimeLane) -> Self {
 		if let error = error as? RuntimeInstallError {
 			switch error {
@@ -250,16 +261,9 @@ package final class RuntimeSelectionController {
 			}
 
 		if let configurationFailure {
-			self.failure = Self.failure(for: configurationFailure)
-			log?.error(
-				"Runtime selection failed; code=\(self.failure?.code?.rawValue ?? "none"); \(configurationFailure.diagnosticDescription)"
-			)
+			present(configurationFailure)
 		} else if self.availableLanes.isEmpty {
-			let error = RuntimeSelectionError.unavailablePin(access.defaultLane)
-			self.failure = Self.failure(for: error)
-			log?.error(
-				"Runtime selection failed; code=\(self.failure?.code?.rawValue ?? "none"); \(error.diagnosticDescription)"
-			)
+			present(.unavailablePin(access.defaultLane))
 		} else {
 			self.failure = nil
 		}
@@ -311,6 +315,9 @@ package final class RuntimeSelectionController {
 
 	package func clearFailure() {
 		failure = nil
+		if lifecycle.state.presentation.failure?.context.operation == .runtimeSetup {
+			lifecycle.clearFailure()
+		}
 	}
 
 	/// Downloads and installs the lane pin, then selects the lane. Game installation may run at
@@ -320,7 +327,7 @@ package final class RuntimeSelectionController {
 		guard installingLane == nil,
 			lifecycle.activity == .idle || lifecycle.activity.isInstalling
 		else { return false }
-		failure = nil
+		clearFailure()
 		guard access.allows(lane) else {
 			present(.laneNotAvailable(lane))
 			return false
@@ -429,7 +436,7 @@ package final class RuntimeSelectionController {
 			throw error
 		}
 		selectedLane = lane
-		failure = nil
+		clearFailure()
 		log?.info("Runtime lane selected; lane=\(lane.rawValue)")
 	}
 
@@ -572,6 +579,17 @@ package final class RuntimeSelectionController {
 		self.failure = failure
 		log?.error(
 			"Runtime selection failed; code=\(failure.code?.rawValue ?? "none"); \(failure.diagnostic)"
+		)
+		// Presented through the shared lifecycle so Home shows the same failure sheet as game failures.
+		lifecycle.presentFailure(
+			message: failure.message,
+			id: UUID(),
+			code: failure.code,
+			context: SupportContext(operation: .runtimeSetup, region: nil),
+			canRepair: false,
+			allowsRetry: error.allowsRetry,
+			blocksGameLaunch: true,
+			diagnostic: failure.diagnostic
 		)
 	}
 

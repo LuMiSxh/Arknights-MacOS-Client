@@ -121,7 +121,7 @@ The **Active runtime** panel shows **Update available**, the required version, a
 
 ## If a runtime fails
 
-The **Active runtime** panel and the **Install** setup step show a message and a support code. Match the code to the list below.
+The **Active runtime** panel and the **Install** setup step show a message and a support code. Home shows **Needs attention**. The details open in a dialog. Match the code to the list below.
 
 If a download fails:
 

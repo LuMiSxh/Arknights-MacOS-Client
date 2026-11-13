@@ -70,6 +70,8 @@ extension LauncherViewModel {
 				started = intelTranslation.retryRosettaFailure(id: failureID)
 			case .intelTranslationPreflight:
 				started = intelTranslation.retryAvailabilityFailure(id: failureID)
+			case .runtimeSetup:
+				started = retryRuntimeSetup(failureID: failureID)
 			case .launcher:
 				guard
 					communication.launcherUpdater.retryFailure(id: failureID)
@@ -147,6 +149,13 @@ extension LauncherViewModel {
 		#endif
 		logRecovery(action: .repair, result: "started")
 		installation.repairGame()
+	}
+
+	private func retryRuntimeSetup(failureID: UUID) -> Bool {
+		guard lifecycle.activity == .idle, !runtimeSelection.isInstalling else { return false }
+		guard lifecycle.consumeFailure(id: failureID) != nil else { return false }
+		installSelectedRuntime()
+		return true
 	}
 
 	private func logRecovery(action: RecoveryAction, result: String) {

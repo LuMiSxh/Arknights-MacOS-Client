@@ -262,6 +262,27 @@ struct RuntimeSelectionControllerTests {
 	}
 
 	@Test
+	func aRuntimeInstallFailureIsPresentedWithItsCodeAndRetry() async throws {
+		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
+		defer { temporary.remove() }
+		let paths = makePaths(temporary)
+		let controller = makeController(
+			paths: paths,
+			storage: temporary,
+			configuration: try configuration(),
+			access: access(macOS: 26),
+			installOperation: makeInstallOperation(
+				paths: paths, throwsVerificationError: true)
+		)
+
+		#expect(await controller.install(lane: .arm) == false)
+		let presented = controller.lifecycle.state.presentation.failure
+		#expect(presented?.code == .runtimeVerificationFailed)
+		#expect(presented?.context.operation == .runtimeSetup)
+		#expect(presented?.actions.contains(.retry) == true)
+	}
+
+	@Test
 	func anUnpublishedLaneFailsWithTheNotInstalledCode() async throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
 		defer { temporary.remove() }

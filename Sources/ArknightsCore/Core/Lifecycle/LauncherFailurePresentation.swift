@@ -20,7 +20,7 @@ package struct LauncherFailurePresentation: Equatable, Sendable, Identifiable {
 	/// visible, the Home failure sheet waits for these.
 	package var isShownInSetup: Bool {
 		isGameDownloadFailure || context.operation == .intelTranslationPreflight
-			|| context.operation == .rosettaInstallation
+			|| context.operation == .rosettaInstallation || context.operation == .runtimeSetup
 	}
 
 	package init(

@@ -186,7 +186,8 @@ package struct ContentView: View {
 				}
 				registerQuitDismissal(dismissPresentationForQuit)
 			}
-			.onChange(of: model.lifecycle.state.presentation.failure) { _, failure in
+			// `initial` presents a failure raised during launcher start, such as RT-BND.
+			.onChange(of: model.lifecycle.state.presentation.failure, initial: true) { _, failure in
 				presentFailure(failure)
 			}
 			.onChange(of: model.lifecycle.activity.isGameProcessRunning, initial: true) {

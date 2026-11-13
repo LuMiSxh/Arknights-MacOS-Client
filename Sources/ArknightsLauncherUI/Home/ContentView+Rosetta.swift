@@ -7,6 +7,10 @@ extension ContentView {
 	func onboardingPresentationDidChange(_ isPresented: Bool) {
 		if isPresented {
 			presentation.removeRosettaPreflightFailures()
+			// Setup shows these failures inline; the sheet returns when setup closes.
+			if model.lifecycle.state.presentation.failure?.isShownInSetup == true {
+				presentation.removeFailures()
+			}
 		} else if let failure = model.lifecycle.state.presentation.failure {
 			presentation.request(.failure(failure))
 		}

@@ -18,4 +18,5 @@ package enum SupportOperation: String, Codable, Sendable {
 	case launch
 	case runtimeStop = "runtime-stop"
 	case runtimeExit = "runtime-exit"
+	case runtimeSetup = "runtime-setup"
 }
