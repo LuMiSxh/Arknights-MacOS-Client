@@ -200,7 +200,7 @@ package final class IntelTranslationController {
 		}
 		return switch lifecycle.state.readiness.intelTranslation {
 		case .waitingForLauncherCheck, .checking:
-			"The launcher is verifying that the bundled Wine runtime can start."
+			"The launcher is verifying that the x86_64 runtime can start."
 		case .available:
 			nil
 		case .rosettaMissing:
@@ -210,7 +210,7 @@ package final class IntelTranslationController {
 		case .unavailable:
 			"macOS could not start an Intel test process. Check Rosetta, restart your Mac, then check again."
 		case .unsupportedOS:
-			"Rosetta 2 is not available on macOS 28 and later. Switch to the ARM64 runtime in Settings → Installation → Runtime."
+			"Rosetta 2 is not available on macOS 28 and later. Switch to the ARM64 runtime in Settings → Runtime."
 		}
 	}
 

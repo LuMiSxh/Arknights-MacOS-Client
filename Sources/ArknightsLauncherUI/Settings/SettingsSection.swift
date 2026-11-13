@@ -19,6 +19,7 @@ enum SettingsGroup: CaseIterable {
 enum SettingsSection: String, CaseIterable, Identifiable {
 	case game
 	case servers
+	case runtime
 	case storage
 	case statistics
 	case appearance
@@ -36,7 +37,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
 	var group: SettingsGroup {
 		switch self {
-		case .game, .servers, .storage, .statistics: .arknights
+		case .game, .servers, .runtime, .storage, .statistics: .arknights
 		case .appearance, .integration, .updates: .launcher
 		default: .general
 		}
@@ -49,6 +50,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		case .integration: "Integration"
 		case .updates: "Updates"
 		case .servers: "Installation"
+		case .runtime: "Runtime"
 		case .storage: "Storage"
 		case .statistics: "Playtime"
 		case .help: "Help"
@@ -66,6 +68,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		case .integration: "puzzlepiece.extension"
 		case .updates: "arrow.trianglehead.2.clockwise"
 		case .servers: "globe"
+		case .runtime: "cpu"
 		case .storage: "internaldrive"
 		case .statistics: "chart.bar.xaxis"
 		case .help: "lifepreserver"

@@ -84,8 +84,8 @@ While the runtime downloads, the progress line shows the percentage, download si
 
 ## Switch runtimes in Settings
 
-1. Open **Settings → Installation**.
-2. In the **Runtime** panel, choose **Switch to x86_64** or **Switch to ARM64**.
+1. Open **Settings → Runtime**.
+2. In the **Active runtime** panel, choose **Switch to x86_64** or **Switch to ARM64**.
 3. Read the warning about the separate game environment (Wine prefix).
 4. Choose **Switch and Download** or **Switch**.
 
@@ -94,14 +94,14 @@ The warning title names the target, such as **Switch to ARM64?**.
 - **Switch and Download** also downloads the runtime.
 - **Switch** uses an installed runtime.
 
-The next game launch uses the new runtime. On macOS 28 or later, the **Runtime** panel does not offer **x86_64**. While the game or a download is running, the panel cannot switch runtimes. It shows the reason.
+The next game launch uses the new runtime. On macOS 28 or later, the **Active runtime** panel does not offer **x86_64**. While the game or a download is running, the panel cannot switch runtimes. It shows the reason.
 
 ## What a switch changes
 
-- The launcher downloads the selected runtime. The **Runtime** panel shows its download size.
+- The launcher downloads the selected runtime. The **Active runtime** panel shows its download size.
 - The other runtime stays on disk. The panel shows the installed version for each runtime.
-- **Remove Other Runtime** deletes the runtime you are not using. Its game environment stays on disk.
-- **Remove Runtime…** deletes the runtime you are using. Its game environment stays on disk. Set up the runtime again before you play.
+- **Remove Other Runtime** in the **Maintenance** panel deletes the runtime you are not using. Its game environment stays on disk.
+- **Remove Runtime…** in the **Danger zone** deletes the runtime you are using. Its game environment stays on disk. Set up the runtime again before you play.
 - Each runtime keeps its own game environment.
 - A switch keeps both game environments. It does not copy sign-ins, settings, or resources.
 
@@ -111,7 +111,7 @@ The game may treat the new game environment as a fresh install. It can ask you t
 
 A launcher update can require a newer runtime. Home then shows **Runtime update required** and **Update Runtime** instead of **Play**.
 
-1. Choose **Update Runtime** on Home or in **Settings → Installation → Runtime**.
+1. Choose **Update Runtime** on Home or in **Settings → Runtime → Maintenance**.
 2. Wait for the download to finish.
 3. Choose **Play** when the button returns.
 

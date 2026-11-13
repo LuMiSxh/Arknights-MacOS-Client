@@ -67,13 +67,13 @@ Try **Clear Caches** and **Rebuild…** before **Delete Environment…**.
 | **Reset All Settings…** | Settings → Help → Troubleshooting | Launcher preferences and launch options                         | Server, installation locations, game files |
 | **Reset Statistics…**   | Settings → Playtime               | Playtime totals                                                 | Everything else                            |
 | **Uninstall Game…**     | Settings → Installation           | The game folder of the selected server (moved to the Trash)     | Other servers, game environment, launcher  |
-| **Remove Runtime…**     | Settings → Installation → Runtime | The runtime you use (set it up again before you play)           | Game files, game environments, launcher    |
+| **Remove Runtime…**     | Settings → Runtime                | The runtime you use (set it up again before you play)           | Game files, game environments, launcher    |
 
 ## Uninstall completely
 
 1. Choose **Uninstall Game…** for each installed server.
 2. Choose **Delete Environment…** for each publisher you used.
-3. Choose **Remove Runtime…** and **Remove Other Runtime** in **Settings → Installation → Runtime**.
+3. Choose **Remove Runtime…** and **Remove Other Runtime** in **Settings → Runtime**.
 4. Quit the launcher and move **Arknights Client.app** to the Trash.
 5. Optional: Delete the folders in [Where files live](#where-files-live). **Show in Finder** opens the app data folder.
 

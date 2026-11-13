@@ -31,7 +31,7 @@ package enum GameRuntimeError: LocalizedError, LauncherDiagnosticError, Sendable
 		case .intelTranslationUnavailable:
 			"macOS could not start the Intel-based Wine runtime. Check that Rosetta 2 is installed and restart your Mac before trying again."
 		case .intelTranslationUnsupported:
-			"Rosetta 2 is not available on macOS 28 and later. Switch to ARM64 (Apple Silicon) in Settings → Installation → Runtime."
+			"Rosetta 2 is not available on macOS 28 and later. Switch to ARM64 (Apple Silicon) in Settings → Runtime."
 		case .runtimeWindowTimeout:
 			"Arknights did not open a window within \(Self.windowTimeoutText). Check the Wine log in Settings and try again."
 		case .runtimeConfiguration:

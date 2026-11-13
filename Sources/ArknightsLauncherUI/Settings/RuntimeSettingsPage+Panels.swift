@@ -4,9 +4,11 @@ import ArknightsCore
 import ArknightsGameRuntime
 import SwiftUI
 
-extension InstallationSettingsPage {
-	@ViewBuilder var runtimePanel: some View {
-		SettingsPanel(title: "Runtime") {
+extension RuntimeSettingsPage {
+	// MARK: - Panels
+
+	@ViewBuilder var activeRuntimePanel: some View {
+		SettingsPanel(title: "Active runtime") {
 			SettingsActionRow(
 				title: "Runtime",
 				detail: runtimeSelection.selectedLane.title
@@ -16,6 +18,26 @@ extension InstallationSettingsPage {
 
 			runtimeX86Content
 			runtimeARMContent
+
+			if let runtimeChangesReason {
+				runtimeNote(runtimeChangesReason)
+			}
+
+			if runtimeSelection.isInstalling {
+				RuntimeProgressLabel(controller: runtimeSelection)
+			}
+
+			if let failure = runtimeSelection.failure {
+				runtimeFailure(failure)
+			}
+
+			QuietLink(title: "About game runtimes", destination: SupportLinks.runtimeGuide)
+				.font(.caption)
+		}
+	}
+
+	@ViewBuilder var maintenancePanel: some View {
+		SettingsPanel(title: "Maintenance") {
 			runtimeUpdateContent
 
 			SettingsActionRow(
@@ -34,6 +56,20 @@ extension InstallationSettingsPage {
 					runtimeChangesDisabled || !runtimeOtherInstalled)
 			}
 
+			if runtimeSelection.selectedLane == .x86 {
+				SettingsActionRow(
+					title: "Rosetta 2",
+					detail: intelTranslation.statusDetail
+						?? "Available. The x86_64 runtime can start."
+				) {
+					EmptyView()
+				}
+			}
+		}
+	}
+
+	var removeRuntimePanel: some View {
+		DangerZonePanel {
 			SettingsActionRow(
 				title: "Remove Runtime",
 				detail:
@@ -54,21 +90,6 @@ extension InstallationSettingsPage {
 							for: runtimeSelection.selectedLane) == nil
 				)
 			}
-
-			if let runtimeChangesReason {
-				runtimeNote(runtimeChangesReason)
-			}
-
-			if runtimeSelection.isInstalling {
-				RuntimeProgressLabel(controller: runtimeSelection)
-			}
-
-			if let failure = runtimeSelection.failure {
-				runtimeFailure(failure)
-			}
-
-			QuietLink(title: "About game runtimes", destination: SupportLinks.runtimeGuide)
-				.font(.caption)
 		}
 	}
 

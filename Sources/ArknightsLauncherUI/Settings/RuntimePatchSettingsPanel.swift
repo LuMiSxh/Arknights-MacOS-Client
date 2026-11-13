@@ -16,7 +16,7 @@ struct RuntimePatchSettingsPanel: View {
 	}
 
 	var body: some View {
-		SettingsPanel(title: "Runtime patches", tone: .danger) {
+		SettingsPanel(title: "Runtime patches", tone: .warning) {
 			if isLocked {
 				Text("Quit the game to change these settings.")
 					.font(.callout)

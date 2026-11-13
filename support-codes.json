@@ -275,7 +275,7 @@
         "Legacy Game Test Mode turned off translation on a macOS 27 beta."
       ],
       "steps": [
-        "On macOS 28 or later, choose **ARM64 (Apple Silicon)** in **Settings → Installation → Runtime**. See [Game runtime](../runtime.md#macos-support).",
+        "On macOS 28 or later, choose **ARM64 (Apple Silicon)** in **Settings → Runtime**. See [Game runtime](../runtime.md#macos-support).",
         "On a macOS 27 beta, turn off Legacy Game Test Mode. Then restart the Mac. See [Game runtime](../runtime.md#legacy-game-test-mode-on-macos-27-beta).",
         "Install pending macOS updates and launcher updates."
       ],
@@ -345,7 +345,7 @@
         "A runtime file did not have the expected signature."
       ],
       "steps": [
-        "Choose **Set Up Runtime** on Home, or **Switch to x86_64** in **Settings → Installation → Runtime**.",
+        "Choose **Set Up Runtime** on Home, or **Switch to x86_64** in **Settings → Runtime**.",
         "Wait for the download to finish again.",
         "If verification fails again, install pending launcher updates and report the problem."
       ],

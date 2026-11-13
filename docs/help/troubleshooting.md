@@ -107,7 +107,7 @@ Replace `YES` with `NO` to restore the default. Log files are in [Storage](stora
 Use **Runtime patches** only when a maintainer asks, or when a problem started after a runtime update. Each switch turns off one fix that the runtime applies to Wine.
 
 1. Quit the game. The switches stay locked while the game runs.
-2. Open **Settings → Help → Runtime patches**.
+2. Open **Settings → Runtime → Runtime patches**.
 3. Turn off one switch and confirm the warning.
 4. Start the game and check whether the problem is gone.
 

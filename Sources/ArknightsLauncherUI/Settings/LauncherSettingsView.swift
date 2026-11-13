@@ -20,6 +20,7 @@ struct LauncherSettingsView: View {
 	let installation: InstallationController
 	let gameSession: GameSessionController
 	let runtimeSelection: RuntimeSelectionController
+	let intelTranslation: IntelTranslationController
 	let lifecycle: LauncherLifecycleStore
 	let reminders: ResetReminderController
 	let screenshots: GameScreenshotController
@@ -102,10 +103,18 @@ struct LauncherSettingsView: View {
 							settings: settings,
 							installation: installation,
 							gameSession: gameSession,
-							runtimeSelection: runtimeSelection,
 							lifecycle: lifecycle,
 							actions: actions,
 							maintenance: actions
+						)
+					case .runtime:
+						RuntimeSettingsPage(
+							settings: settings,
+							gameSession: gameSession,
+							runtimeSelection: runtimeSelection,
+							intelTranslation: intelTranslation,
+							lifecycle: lifecycle,
+							actions: actions
 						)
 					case .storage:
 						StorageOverviewPage(
@@ -133,7 +142,6 @@ struct LauncherSettingsView: View {
 							openProblemReport: openProblemReport,
 							installation: installation,
 							gameSession: gameSession,
-							runtimeLane: runtimeSelection.selectedLane,
 							lifecycle: lifecycle,
 							restartOnboarding: restartOnboarding,
 							revealApplicationSupport: storage.revealApplicationSupport

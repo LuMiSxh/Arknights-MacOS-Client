@@ -27,11 +27,6 @@ struct GameSettingsPage: View {
 				isLocked: gameSession.isGameActive,
 				isFrameRateLocked: isDisplayLocked,
 			)
-
-			GameCompatibilitySettingsPanel(
-				settings: settings,
-				isLocked: gameSession.isGameActive,
-			)
 		}
 	}
 

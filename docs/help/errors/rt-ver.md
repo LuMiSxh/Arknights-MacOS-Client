@@ -21,7 +21,7 @@ Possible causes:
 
 ## What you can do
 
-1. Choose **Set Up Runtime** on Home, or **Switch to x86_64** in **Settings → Installation → Runtime**.
+1. Choose **Set Up Runtime** on Home, or **Switch to x86_64** in **Settings → Runtime**.
 2. Wait for the download to finish again.
 3. If verification fails again, install pending launcher updates and report the problem.
 

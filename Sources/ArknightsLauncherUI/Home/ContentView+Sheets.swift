@@ -12,6 +12,7 @@ extension ContentView {
 				communication: model.communication,
 				installation: model.installation, gameSession: model.gameSession,
 				runtimeSelection: model.runtimeSelection,
+				intelTranslation: model.intelTranslation,
 				lifecycle: model.lifecycle, reminders: model.reminders,
 				screenshots: model.screenshots,
 				storage: model.storage, storageOverview: model.storageOverview,

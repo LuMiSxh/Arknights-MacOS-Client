@@ -16,10 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added the runtime download. The launcher no longer ships the runtime inside the app. Choose the runtime under **Settings → Installation → Runtime**. The launcher downloads, verifies, and installs that runtime. Runtime downloads show progress with the game download.
+- Added the runtime download. The launcher no longer ships the runtime inside the app. Choose the runtime under **Settings → Runtime**. The launcher downloads, verifies, and installs that runtime. Runtime downloads show progress with the game download.
 - Added an **ARM64 (Apple Silicon)** runtime for macOS 26 or later. It uses a separate game environment, so the game may look like a fresh install after a switch.
-- Added **Remove Runtime…** under **Settings → Installation → Runtime**. It deletes the runtime you use and keeps the game environment. **Remove Other Runtime** now reports a failure with a support code.
-- Added the **Game runtime** help page. It explains **x86_64** and **ARM64 (Apple Silicon)**, how to switch, and what a switch changes. The **Runtime** setup step and **Runtime** panel link to it with **About game runtimes**.
+- Added **Remove Runtime…** under **Settings → Runtime**. It deletes the runtime you use and keeps the game environment. **Remove Other Runtime** now reports a failure with a support code.
+- Added the **Game runtime** help page. It explains **x86_64** and **ARM64 (Apple Silicon)**, how to switch, and what a switch changes. The **Runtime** setup step and the **Active runtime** panel link to it with **About game runtimes**.
 - Added a light mode. Choose System, Light, or Dark under **Settings → Appearance**. The choice applies to Settings, setup, and dialogs.
 - Added **Home controls** and **Branding** under **Settings → Appearance → Dynamic Theme**. Each one can follow the brightness of the artwork, or stay dark or light. In light mode, the logo is black and the backdrop is white.
 - Added **Custom…** to the game **Window size** menu. Enter a width and height in points, or use **Measure With a Window…** to read the size of a resizable window. A size too large for the screen scales down when the game starts.
@@ -35,7 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version and type, the Wine and DXMT versions, and the capabilities the runtime advertises.
 - The failure dialog can copy the support code.
 - Added **Debug Logging** to **Settings → Help → Troubleshooting**. It writes detailed Wine and graphics logs from the next game start.
-- Added **Runtime patches** to **Settings → Help**. Turn off a single runtime patch if it causes a problem. The launcher asks before it turns one off, and **Restore Defaults** turns them all back on.
+- Added **Runtime patches** to **Settings → Runtime**. Turn off a single runtime patch if it causes a problem. The launcher asks before it turns one off, and **Restore Defaults** turns them all back on.
 
 ### Changed
 
@@ -50,7 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Setup has a new **Look** step for artwork, Dynamic Theme, Home controls, Branding, appearance, and Dock icons. Setup keeps a custom window size. Setup runs once more after this update so you can review the new options.
 - The first and last setup pages use the same panels and rows as the other setup steps. The last page shows where to find help.
 - Renamed **Settings → Audio** to **Settings → Integration**. It holds the daily reset reminder, launcher music, and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates & Integrations**.
-- Reorganized **Settings**: recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
+- Reorganized **Settings**: recovery actions moved to **Help**, and **Game** is split into **Display** and **Performance**. A new **Runtime** page holds the runtime choice, its maintenance, Wine sync under **Compatibility**, and **Runtime patches**.
 - **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.
 - Gryphline Taiwan is now a stable server. It no longer needs **Canary Features**.

@@ -373,7 +373,7 @@ state that a newer launch owns. See [Troubleshooting](../../help/troubleshooting
   `_ACE_DISPATCHER`, and `_ACE_ROSETTA`. The launch sends every gate as `1` or `0`; there is no
   master switch. A lane receives only the gates its build contains: `_AUDIO`, `_ACE_TIMING`,
   `_ACE_DISPATCHER`, and `_ACE_ROSETTA` are x86 only, and `_EFLAGS` and `_HYBRID_THREAD` are ARM
-  only. Settings → Help → Runtime patches can set any default-on gate to `0` through
+  only. Settings → Runtime → Runtime patches can set any default-on gate to `0` through
   `RuntimePatch`. The runtime is built once with all patches compiled in, so the gates only choose
   behavior at launch.
   China and China (Bilibili) set `_CEF` and `_CN` to `1` for the embedded login window. The cursor

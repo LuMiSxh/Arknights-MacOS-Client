@@ -251,7 +251,7 @@ package struct DangerZonePanel<Content: View>: View {
 	let title: String
 	@ViewBuilder package let content: Content
 
-	package init(title: String = "Danger Zone", @ViewBuilder content: () -> Content) {
+	package init(title: String = "Danger zone", @ViewBuilder content: () -> Content) {
 		self.title = title
 		self.content = content()
 	}
