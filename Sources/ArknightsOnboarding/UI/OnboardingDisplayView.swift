@@ -10,7 +10,7 @@ struct OnboardingDisplayView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "Display",
+			step: .display,
 			subtitle: "The launcher sets the resolution for this screen"
 		) {
 			OnboardingQuestion(
@@ -29,27 +29,29 @@ struct OnboardingDisplayView: View {
 					isDisabled: isLocked
 				)
 			}
-			OnboardingQuestion(
-				question: "Rendering",
-				answers: GameRenderingMode.allCases.map(\.answer),
-				selection: answerBinding(\.rendering),
-				isDisabled: isLocked
-			)
-			OnboardingQuestion(
-				question: "Frame rate limit",
-				answers: GameFrameRateLimit.allCases.map(\.answer),
-				selection: answerBinding(\.frameRateLimit),
-				isDisabled: isLocked,
-				footnote: "Lower limits save battery."
-			)
-			// The runtime reports pointer support only while launching, so the question is always
-			// shown; a runtime without it falls back to the game's own cursor at launch.
-			OnboardingQuestion(
-				question: "Cursor",
-				answers: PointerAnswer.allCases.map(\.answer),
-				selection: pointerBinding,
-				isDisabled: isLocked
-			)
+			OnboardingMoreOptions {
+				OnboardingQuestion(
+					question: "Rendering",
+					answers: GameRenderingMode.allCases.map(\.answer),
+					selection: answerBinding(\.rendering),
+					isDisabled: isLocked
+				)
+				OnboardingQuestion(
+					question: "Frame rate limit",
+					answers: GameFrameRateLimit.allCases.map(\.answer),
+					selection: answerBinding(\.frameRateLimit),
+					isDisabled: isLocked,
+					footnote: "Lower limits save battery."
+				)
+				// The runtime reports pointer support only while launching, so the question is always
+				// shown; a runtime without it falls back to the game's own cursor at launch.
+				OnboardingQuestion(
+					question: "Cursor",
+					answers: PointerAnswer.allCases.map(\.answer),
+					selection: pointerBinding,
+					isDisabled: isLocked
+				)
+			}
 			Text(displaySummary)
 				.font(.callout)
 				.foregroundStyle(theme.textSecondary)

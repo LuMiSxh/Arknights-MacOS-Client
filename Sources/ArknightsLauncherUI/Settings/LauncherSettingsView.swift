@@ -119,11 +119,11 @@ struct LauncherSettingsView: View {
 					case .storage:
 						StorageOverviewPage(
 							controller: storageOverview,
-							copy: .english,
 							actions: StorageOverviewActions(
 								clearGameCaches: storage.clearGameCache,
 								clearGalleryCache: storage.clearPresetGalleryCache,
-								revealLogs: storage.revealLogs
+								revealLogs: storage.revealLogs,
+								revealApplicationSupport: storage.revealApplicationSupport
 							)
 						)
 					case .statistics:
@@ -143,8 +143,7 @@ struct LauncherSettingsView: View {
 							installation: installation,
 							gameSession: gameSession,
 							lifecycle: lifecycle,
-							restartOnboarding: restartOnboarding,
-							revealApplicationSupport: storage.revealApplicationSupport
+							restartOnboarding: restartOnboarding
 						)
 					case .about:
 						AboutSettingsPage(
@@ -173,16 +172,6 @@ struct LauncherSettingsView: View {
 				HStack {
 					Spacer(minLength: 0)
 					FloatingActionBar {
-						if selectedSection == .storage {
-							CapsuleActionButton(
-								title: "Refresh",
-								systemImage: "arrow.clockwise",
-								tone: .neutral,
-								action: storageOverview.refreshNow
-							)
-							.controlSize(.large)
-							.disabled(storageOverview.isMeasuring)
-						}
 						FloatingDoneButton {
 							dismiss()
 						}

@@ -115,6 +115,6 @@ The game may break or behave differently with a patch off. To undo a change, tur
 
 ## Debug logging
 
-Use **Debug Logging** when a maintainer asks for detailed logs. Turn it on in **Settings → Help → Troubleshooting**.
+Use **Debug logging** when a maintainer asks for detailed logs. Turn it on in **Settings → Help → Troubleshooting**.
 
-The next game start writes detailed Wine and graphics logs. Logs grow quickly. Turn **Debug Logging** off when you are done.
+The next game start writes detailed Wine and graphics logs. Logs grow quickly. Turn **Debug logging** off when you are done.

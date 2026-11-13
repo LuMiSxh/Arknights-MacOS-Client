@@ -83,8 +83,3 @@
 - Same change: when a UI label, setting, menu item, or network host changes, update `docs/help`, `docs/development/design.md`, `web/src/routes/privacy/+page.svelte`, and `CHANGELOG.md` together. When a doc contradicts code, the code wins; fix the doc.
 - User help uses glossary terms (server, game environment). CHANGELOG entries use exact UI labels and describe the shipped change, not intermediate builds. Record user-visible changes in `CHANGELOG.md`; follow `docs/development/releases-and-updates.md` for releases.
 - Follow existing commit style. Never mention agent or model vendors. Push only with explicit consent.
-
-## Known Debt
-
-- Do not copy these patterns; fix a site only when you touch its code.
-- `StorageOverviewCopy` in `Sources/ArknightsGameRuntime/Storage/StorageOverviewPage.swift`.

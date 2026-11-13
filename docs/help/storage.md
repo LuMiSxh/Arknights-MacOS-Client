@@ -30,7 +30,7 @@ Paths start with `~/Library/Application Support/com.lumisxh.arknights-client/` u
 
 A custom installation location replaces only the game folder of that server. **Settings → Storage** shows the space each part uses. macOS backups exclude game folders and game environments.
 
-To open the app data folder, choose **Show in Finder** under **Settings → Help → Troubleshooting**.
+To open the app data folder, go to **Settings → Storage → Logs and data**. Choose **Show in Finder** in the **App Data Folder** row.
 
 > [!WARNING]
 > The game can see everything in its installation folder. For a custom location, use a folder with only the game.
@@ -63,8 +63,8 @@ Try **Clear Caches** and **Rebuild…** before **Delete Environment…**.
 | ----------------------- | --------------------------------- | --------------------------------------------------------------- | ------------------------------------------ |
 | **Clear Caches**        | Settings → Storage                | Graphics and sign-in window caches (the next start is slower)   | Games, sign-ins, settings                  |
 | **Rebuild…**            | Settings → Help → Troubleshooting | Nothing; reruns the Windows environment setup on the next start | Everything                                 |
-| **Delete Environment…** | Settings → Help → Troubleshooting | The publisher's game environment: sign-ins and Windows settings | All game files and launcher settings       |
-| **Reset All Settings…** | Settings → Help → Troubleshooting | Launcher preferences and launch options                         | Server, installation locations, game files |
+| **Delete Environment…** | Settings → Help → Danger zone     | The publisher's game environment: sign-ins and Windows settings | All game files and launcher settings       |
+| **Reset All Settings…** | Settings → Help → Danger zone     | Launcher preferences and launch options                         | Server, installation locations, game files |
 | **Reset Statistics…**   | Settings → Playtime               | Playtime totals                                                 | Everything else                            |
 | **Uninstall Game…**     | Settings → Installation           | The game folder of the selected server (moved to the Trash)     | Other servers, game environment, launcher  |
 | **Remove Runtime…**     | Settings → Runtime                | The runtime you use (set it up again before you play)           | Game files, game environments, launcher    |
@@ -72,10 +72,10 @@ Try **Clear Caches** and **Rebuild…** before **Delete Environment…**.
 ## Uninstall completely
 
 1. Choose **Uninstall Game…** for each installed server.
-2. Choose **Delete Environment…** for each publisher you used.
-3. Choose **Remove Runtime…** and **Remove Other Runtime** in **Settings → Runtime**.
+2. Choose **Delete Environment…** in **Settings → Help → Danger zone** for each publisher you used.
+3. Choose **Remove Runtime…** and **Remove Other Runtime…** in **Settings → Runtime → Danger zone**.
 4. Quit the launcher and move **Arknights Client.app** to the Trash.
-5. Optional: Delete the folders in [Where files live](#where-files-live). **Show in Finder** opens the app data folder.
+5. Optional: Delete the folders in [Where files live](#where-files-live). Open the app data folder with **Settings → Storage → Logs and data**.
 
 Removing only the app keeps game files, game environments, caches, and logs.
 

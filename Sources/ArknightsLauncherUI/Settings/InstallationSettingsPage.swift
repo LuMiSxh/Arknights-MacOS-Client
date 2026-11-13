@@ -21,6 +21,10 @@ struct InstallationSettingsPage: View {
 			title: "Installation",
 			subtitle: "Choose a server and manage its game files"
 		) {
+			if let reason = lifecycle.activity.lockReason {
+				SettingsLockBanner(reason: reason)
+			}
+
 			SettingsPanel(title: "Server") {
 				SettingsActionRow(
 					title: "Server",
@@ -41,15 +45,10 @@ struct InstallationSettingsPage: View {
 			) {
 				SettingsActionRow(
 					title: "Game files",
-					detail: (installation.installDirectory.path(percentEncoded: false) as NSString)
-						.abbreviatingWithTildeInPath
+					detail: gameFilesDetail
 				) {
-					InstallationDownloadStatus(
-						installation: installation
-					)
-					CapsuleActionButton(
-						title: "Show in Finder", systemImage: "folder",
-						tone: .neutral, presentation: .compact,
+					ExternalLinkButton(
+						title: "Show in Finder",
 						action: installation.revealInstallDirectory
 					)
 					.disabled(!installation.isInstalled)
@@ -68,6 +67,9 @@ struct InstallationSettingsPage: View {
 						)
 					}
 				}
+				if !installation.isInstalled {
+					SettingsFootnote("Install the game to show its files in Finder.")
+				}
 			}
 
 			SettingsPanel(
@@ -84,6 +86,9 @@ struct InstallationSettingsPage: View {
 						action: actions.repairGame
 					)
 					.disabled(!installation.isInstalled || !installation.canInstall)
+				}
+				if !installation.isInstalled {
+					SettingsFootnote("Install the game before you repair it.")
 				}
 			}
 
@@ -119,6 +124,9 @@ struct InstallationSettingsPage: View {
 					confirming: .uninstallGame(installation.region),
 					confirmation: $confirmation
 				)
+				if !installation.isInstalled && !installation.hasPartialDownload {
+					SettingsFootnote("Install the game before you uninstall it.")
+				}
 			}
 			.installationConfirmation($confirmation, gameSession: gameSession, actions: maintenance)
 		}
@@ -128,6 +136,23 @@ struct InstallationSettingsPage: View {
 		Binding(
 			get: { installation.region },
 			set: { region in actions.selectRegion(region) }
+		)
+	}
+
+	/// The install folder, then the static state. Live progress stays in the operation strip.
+	private var gameFilesDetail: String {
+		let path = (installation.installDirectory.path(percentEncoded: false) as NSString)
+			.abbreviatingWithTildeInPath
+		return "\(path) · \(gameFilesStatus)"
+	}
+
+	private var gameFilesStatus: String {
+		if installation.isDownloading { return "Downloading" }
+		return LauncherDownloadProgressPresentation.gameStatus(
+			isDownloading: false,
+			progress: nil,
+			isInstalled: installation.isInstalled,
+			hasPartialDownload: installation.hasPartialDownload
 		)
 	}
 }

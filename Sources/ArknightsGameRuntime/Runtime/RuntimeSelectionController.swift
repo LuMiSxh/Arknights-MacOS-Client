@@ -157,6 +157,9 @@ package final class RuntimeSelectionController {
 	package private(set) var availableLanes: [RuntimeLane]
 	package private(set) var installingLane: RuntimeLane?
 	package private(set) var installProgress: RuntimeInstallProgress?
+	/// The lane whose download the user paused. The partial archive stays on disk, so installing
+	/// the lane again resumes it. Cleared when the next install starts.
+	package private(set) var pausedLane: RuntimeLane?
 	package private(set) var failure: RuntimeSelectionFailure?
 
 	let log: LauncherLog?
@@ -165,6 +168,8 @@ package final class RuntimeSelectionController {
 	private let installOperation: InstallOperation
 	private var installedVersions: [RuntimeLane: String]
 	@ObservationIgnored private var lastProgressUpdate: ContinuousClock.Instant?
+	@ObservationIgnored private var installTask: Task<InstalledRuntime, any Error>?
+	@ObservationIgnored private var pauseRequested = false
 
 	#if DEBUG
 		/// A developer-preview runtime state. The controller mirrors it in memory only.
@@ -339,18 +344,33 @@ package final class RuntimeSelectionController {
 		installingLane = lane
 		installProgress = nil
 		lastProgressUpdate = nil
+		pausedLane = nil
+		pauseRequested = false
 		defer {
 			installingLane = nil
 			installProgress = nil
 			lastProgressUpdate = nil
+			installTask = nil
 		}
 		log?.info("Runtime install started; lane=\(lane.rawValue) version=\(pin.version)")
 
-		do {
-			let installed = try await installOperation(pin) { [weak self] progress in
+		// The operation runs in its own task so a pause can cancel it. Awaiting its value means the
+		// installer's lease and file handles are released before this method returns, even on cancel.
+		let operation = installOperation
+		let task = Task { [weak self] in
+			try await operation(pin) { progress in
 				await MainActor.run {
 					self?.receive(progress, for: lane)
 				}
+			}
+		}
+		installTask = task
+
+		do {
+			let installed = try await withTaskCancellationHandler {
+				try await task.value
+			} onCancel: {
+				task.cancel()
 			}
 			log?.info("Runtime installed; lane=\(lane.rawValue) version=\(installed.version)")
 			// A game may have started during the download. Keep the installed files but leave the
@@ -365,13 +385,25 @@ package final class RuntimeSelectionController {
 			refresh()
 			return true
 		} catch is CancellationError {
-			log?.info("Runtime install cancelled; lane=\(lane.rawValue)")
+			// A pause is not a failure: the partial archive stays and no failure is presented.
+			if pauseRequested { pausedLane = lane }
+			log?.info("Runtime install cancelled; lane=\(lane.rawValue) paused=\(pauseRequested)")
 			return false
 		} catch {
 			present(.installFailure(error, lane: lane))
 			refresh()
 			return false
 		}
+	}
+
+	/// Pauses the running download. The installer keeps its `.part` archive, so installing the
+	/// lane again resumes from the bytes already on disk. Does nothing outside the download phase.
+	package func pauseInstall() {
+		guard installingLane != nil, let task = installTask,
+			installProgress == nil || installProgress?.phase == .downloading
+		else { return }
+		pauseRequested = true
+		task.cancel()
 	}
 
 	package func select(lane: RuntimeLane) throws {
@@ -435,8 +467,17 @@ package final class RuntimeSelectionController {
 			availableLanes = lanes
 			installedVersions = state == .installed ? installed : [:]
 			installingLane = state == .installing ? selectedLane : nil
+			pausedLane = nil
 			installProgress = state == .installing ? Self.simulatedProgress : nil
 			failure = state == .failed ? failed : nil
+		}
+
+		/// Mirrors a paused download in memory only, for the developer preview.
+		package func simulatePause() {
+			guard let lane = installingLane else { return }
+			pausedLane = lane
+			installingLane = nil
+			installProgress = nil
 		}
 
 		/// Selects a lane in memory only, for the developer preview.
@@ -453,6 +494,7 @@ package final class RuntimeSelectionController {
 			failure = saved.failure
 			installingLane = nil
 			installProgress = nil
+			pausedLane = nil
 		}
 
 		private static let simulatedVersion = "1.0.0-sim"

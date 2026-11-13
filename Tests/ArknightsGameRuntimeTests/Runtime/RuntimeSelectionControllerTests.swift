@@ -3,6 +3,7 @@
 import ArknightsCore
 import ArknightsTestSupport
 import Foundation
+import Synchronization
 import Testing
 
 @testable import ArknightsGameRuntime
@@ -115,6 +116,55 @@ struct RuntimeSelectionControllerTests {
 
 		#expect(controller.installedVersion(for: .x86) == nil)
 		#expect(controller.lifecycle.activity == .idle)
+	}
+
+	@Test
+	func pausedDownloadKeepsItsPartialFileIsNotAFailureAndResumes() async throws {
+		let temporary = try TemporaryDirectory("RuntimeSelectionPauseTests")
+		defer { temporary.remove() }
+		let paths = makePaths(temporary)
+		let partURL = paths.runtimeDownloadsDirectory.appending(path: "archive.part")
+		let finish = makeInstallOperation(paths: paths)
+		let calls = Mutex(0)
+		let writing = Mutex(false)
+		// The first call writes a partial archive and waits to be cancelled. The second completes.
+		let operation: RuntimeSelectionController.InstallOperation = { pin, progress in
+			let call = calls.withLock { value in
+				value += 1
+				return value
+			}
+			guard call == 1 else { return try await finish(pin, progress) }
+			try FileManager.default.createDirectory(
+				at: partURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+			try Data("partial".utf8).write(to: partURL)
+			writing.withLock { $0 = true }
+			// Suspends until Pause cancels the task; the stream never yields or finishes on its own.
+			let parked = AsyncStream<Void>(bufferingPolicy: .bufferingNewest(1)) { _ in }
+			for await _ in parked {}
+			throw CancellationError()
+		}
+		let controller = makeController(
+			paths: paths,
+			storage: temporary,
+			configuration: try configuration(),
+			access: access(macOS: 26),
+			installOperation: operation
+		)
+
+		let first = Task { await controller.install(lane: .x86) }
+		while !writing.withLock({ $0 }) { await Task.yield() }
+		controller.pauseInstall()
+
+		#expect(await first.value == false)
+		#expect(controller.pausedLane == .x86)
+		#expect(controller.failure == nil)
+		#expect(!controller.isInstalling)
+		#expect(controller.lifecycle.activity == .idle)
+		#expect(FileManager.default.fileExists(atPath: partURL.path))
+
+		#expect(await controller.install(lane: .x86))
+		#expect(controller.pausedLane == nil)
+		#expect(controller.isSelectedLaneInstalled)
 	}
 
 	@Test

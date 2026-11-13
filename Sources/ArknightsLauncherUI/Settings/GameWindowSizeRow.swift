@@ -96,8 +96,8 @@ struct GameWindowSizeRow: View {
 			screen == nil ? [] : GameWindowSizeChoice.allCases.map(WindowSizeSelection.choice)
 		return SettingsActionRow(
 			title: "Window size",
-			help:
-				"Measured like the resolutions in System Settings › Displays. The launcher works out the resolution the game draws from this size and the Rendering setting."
+			detail:
+				"Sets the window size in points, measured like System Settings › Displays. Rendering sets how many pixels the game draws."
 		) {
 			GlassMenuPicker(
 				selection: windowSizeSelection,

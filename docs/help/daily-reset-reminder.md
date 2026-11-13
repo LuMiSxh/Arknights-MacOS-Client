@@ -29,7 +29,7 @@ Open the launcher at least once a week to keep the reminders going.
 
 ## Notifications are off
 
-If macOS blocks notifications, **Settings → Integration** shows **Notifications are off for Arknights Client.** The reminder turns off.
+If macOS blocks notifications, **Settings → Integration** shows **Notifications are off for Arknights Client**. The reminder turns off.
 
 1. Choose **Open System Settings**.
 2. Turn on **Allow Notifications** for Arknights Client.

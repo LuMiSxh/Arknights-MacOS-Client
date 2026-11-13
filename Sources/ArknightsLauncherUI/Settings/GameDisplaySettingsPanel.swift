@@ -34,9 +34,7 @@ struct GameDisplaySettingsPanel: View {
 			if showsDisplayRow {
 				SettingsActionRow(
 					title: "Game display",
-					detail: displayDetail,
-					help:
-						"Fullscreen and the window size use this display. Primary display follows the display with the menu bar. Applies the next time the game starts."
+					detail: displayDetail
 				) {
 					GlassMenuPicker(
 						selection: $settings.launchOptions.display,
@@ -51,7 +49,7 @@ struct GameDisplaySettingsPanel: View {
 				detail:
 					"On: the launcher sets mode and resolution at each start. Off: the game uses its own settings.",
 				help:
-					"Arknights’ own resolution setting counts the pixels the game draws. With the sharpest picture, every window point holds several pixels, so an in-game resolution opens a smaller window than its number suggests. The launcher passes the converted resolution to the game on every start."
+					"Arknights’ own resolution setting counts the pixels the game draws. With the sharpest picture, every window point holds several pixels, so an in-game resolution opens a smaller window than its number suggests."
 			) {
 				SettingsToggle(
 					"Override in-game display settings",
@@ -62,8 +60,7 @@ struct GameDisplaySettingsPanel: View {
 			SettingsHairline()
 			SettingsActionRow(
 				title: "Display mode",
-				detail: displayModeDetail,
-				help: "Applies the next time the game starts."
+				detail: displayModeDetail
 			) {
 				GlassMenuPicker(
 					selection: $settings.launchOptions.displayMode,
@@ -93,9 +90,7 @@ struct GameDisplaySettingsPanel: View {
 			SettingsHairline()
 			SettingsActionRow(
 				title: "Rendering",
-				detail: renderingDetail,
-				help:
-					"Retina: the game renders every pixel of the display.\nMetalFX: the game renders one pixel per point and MetalFX upscales each frame. Falls back to Standard if the runtime lacks support.\nStandard: the game renders one pixel per point and macOS scales the window. Softer image, lowest GPU load.\nApplies on next launch."
+				detail: renderingDetail
 			) {
 				GlassMenuPicker(
 					selection: $settings.launchOptions.renderingMode,
@@ -121,8 +116,8 @@ struct GameDisplaySettingsPanel: View {
 			}
 			SettingsActionRow(
 				title: "Cursor",
-				help:
-					"macOS cursor = hardware cursor. Older runtimes keep the game cursor. Applies on next launch."
+				detail:
+					"Sets whether the game shows the macOS pointer or its own cursor. Older runtimes keep the game cursor."
 			) {
 				AdaptiveSegmentedControl(
 					selection: $settings.usesHardwareCursor,
@@ -134,10 +129,9 @@ struct GameDisplaySettingsPanel: View {
 			}
 			if options.usesGameSettings {
 				SettingsHairline()
-				Text("The game uses the display settings chosen inside Arknights.")
-					.font(.callout)
-					.foregroundStyle(theme.textSecondary)
-					.fixedSize(horizontal: false, vertical: true)
+				SettingsFootnote(
+					"The game uses the display settings chosen inside Arknights. Turn on Override in-game display settings to change these."
+				)
 			}
 		}
 		.task { await screens.observe() }
@@ -161,8 +155,11 @@ struct GameDisplaySettingsPanel: View {
 		return choices
 	}
 
-	private var displayDetail: String? {
-		guard resolution?.isFallback == true, let saved = options.display else { return nil }
+	private var displayDetail: String {
+		guard resolution?.isFallback == true, let saved = options.display else {
+			return
+				"Sets the display for fullscreen and the window size. Primary display follows the menu bar."
+		}
 		return "\(saved.name) is not connected. The game opens on the primary display."
 	}
 
@@ -220,9 +217,10 @@ struct GameDisplaySettingsPanel: View {
 		}
 	}
 
-	private var renderingDetail: String? {
+	private var renderingDetail: String {
 		guard options.renderingMode == .metalFX, metalFXSpatialUpscalingSupported == false else {
-			return nil
+			return
+				"Sets how the game renders: Retina is sharpest, MetalFX upscales a smaller render, and Standard uses the least GPU."
 		}
 		return "This runtime has no MetalFX. The game uses Standard rendering."
 	}

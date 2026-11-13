@@ -12,8 +12,8 @@ struct OnboardingFinishView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "Setup complete",
-			subtitle: "Your choices are saved. You can change any of them in Settings"
+			step: .finish,
+			subtitle: "Your choices are saved and stay editable in Settings"
 		) {
 			SettingsPanel(title: "Server") {
 				OnboardingStatusRow(
@@ -29,6 +29,7 @@ struct OnboardingFinishView: View {
 					title: gameStatusTitle,
 					systemImage: gameStatusImage,
 					detail: gameStatusDetail,
+					failure: gameFailure,
 					install: install
 				)
 			}
@@ -52,7 +53,7 @@ struct OnboardingFinishView: View {
 					systemImage: "ladybug"
 				) {
 					CapsuleActionButton(
-						title: "Report a Problem…", systemImage: "ladybug",
+						title: "Report a Problem", systemImage: "arrow.up.right.square",
 						tone: .neutral, action: reportProblem
 					)
 				}
@@ -69,7 +70,7 @@ struct OnboardingFinishView: View {
 					systemImage: "person.crop.circle"
 				) {
 					CapsuleActionButton(
-						title: "Contact \(installation.region.publisherName) Support…",
+						title: "Contact \(installation.region.publisherName) Support",
 						systemImage: "arrow.up.right.square",
 						tone: .neutral, action: contactPublisher
 					)
@@ -85,8 +86,13 @@ struct OnboardingFinishView: View {
 		}
 	}
 
+	private var gameFailure: LauncherFailurePresentation? {
+		lifecycle.state.presentation.failure.flatMap { $0.isGameDownloadFailure ? $0 : nil }
+	}
+
 	private var gameStatusTitle: String {
 		if lifecycle.activity.isGameActive { return "Arknights is running" }
+		if gameFailure != nil { return "The download failed" }
 		if installation.isDownloading { return "The download continues" }
 		if installation.isInstalled { return "Arknights is ready" }
 		return "The download is paused"
@@ -94,6 +100,7 @@ struct OnboardingFinishView: View {
 
 	private var gameStatusImage: String {
 		if lifecycle.activity.isGameActive { return "gamecontroller.fill" }
+		if gameFailure != nil { return "exclamationmark.triangle" }
 		if installation.isDownloading { return "arrow.down.circle" }
 		if installation.isInstalled { return "checkmark.circle" }
 		return "pause.circle"
@@ -102,6 +109,9 @@ struct OnboardingFinishView: View {
 	private var gameStatusDetail: String {
 		if lifecycle.activity.isGameActive {
 			return "Close the game with Command-Q before finishing setup."
+		}
+		if gameFailure != nil {
+			return "Finish setup and retry from the launcher, or go back to the Install step."
 		}
 		if installation.isDownloading {
 			return

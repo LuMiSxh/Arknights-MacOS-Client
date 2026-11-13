@@ -175,6 +175,10 @@ import ArknightsCore
 			return true
 		}
 
+		func pauseRuntimeDownload() {
+			model.runtimeSelection.simulatePause()
+		}
+
 		func selectRuntimeLane(_ lane: RuntimeLane) -> Bool {
 			model.runtimeSelection.simulateSelect(lane: lane)
 			return true

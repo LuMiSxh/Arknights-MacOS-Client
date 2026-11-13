@@ -30,7 +30,7 @@ struct OnboardingProgressStoreTests {
 		#expect(store.needsOnboarding)
 
 		for (completedSchema, expectedRequiredSchema, needsOnboarding) in [
-			(0, nil, true), (1, 3, true), (2, 3, true), (3, nil, false),
+			(0, nil, true), (1, 4, true), (2, 4, true), (3, 4, true), (4, nil, false),
 		] as [(Int, Int?, Bool)] {
 			defaults.removePersistentDomain(forName: suiteName)
 			if completedSchema > 0 {

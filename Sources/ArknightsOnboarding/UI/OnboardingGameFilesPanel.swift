@@ -4,16 +4,37 @@ import ArknightsCore
 import ArknightsGameInstallation
 import SwiftUI
 
-/// The Game files panel of the server step. It reads `installation.progress` itself, so the
-/// ~10 Hz download ticks redraw this panel and not the whole onboarding page.
+/// The Location panel of the install step. It reads `installation.progress` itself, so the
+/// ~10 Hz download ticks redraw this panel and not the whole onboarding page. Its Change… menu
+/// matches Settings → Installation.
 struct OnboardingGameFilesPanel: View {
 	let installation: InstallationController
 	let lifecycle: LauncherLifecycleStore
+	let chooseInstallDirectory: () -> Void
+	let locateExistingInstallation: () -> Void
 	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
-		SettingsPanel(title: "Game files") {
+		SettingsPanel(title: "Location") {
 			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.content) {
+				SettingsActionRow(
+					title: "Game files",
+					detail: (installation.installDirectory.path(percentEncoded: false) as NSString)
+						.abbreviatingWithTildeInPath
+				) {
+					GlassActionMenu(
+						title: "Change…",
+						systemImage: "arrow.triangle.swap",
+						isDisabled: !installation.canModifyGameFiles
+					) {
+						Button("Choose New Location…", action: chooseInstallDirectory)
+						Button(
+							"Locate Existing Installation…",
+							action: locateExistingInstallation
+						)
+					}
+				}
+
 				HStack {
 					VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 						if isLoadingInstallationMetadata {
@@ -46,15 +67,24 @@ struct OnboardingGameFilesPanel: View {
 						.foregroundStyle(theme.textSecondary)
 				}
 
+				if let failure = gameFailure {
+					InlineFailureView(message: failure.message, code: failure.code)
+				}
+
 				if !installation.isInstalled && !installation.isDownloading {
 					Text(
-						"Continue to start the download. Closing the launcher pauses it safely."
+						"Download and Continue starts the download. Closing the launcher pauses it safely."
 					)
 					.font(.callout)
 					.foregroundStyle(theme.textSecondary)
 				}
 			}
 		}
+	}
+
+	// The Home failure sheet waits while setup is visible, so a download failure shows here.
+	private var gameFailure: LauncherFailurePresentation? {
+		lifecycle.state.presentation.failure.flatMap { $0.isGameDownloadFailure ? $0 : nil }
 	}
 
 	private var installationTitle: String {

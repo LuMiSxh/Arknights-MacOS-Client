@@ -14,9 +14,10 @@ struct GameSettingsPage: View {
 			title: "Game",
 			subtitle: "How Arknights looks and plays"
 		) {
-			if gameSession.isGameActive, let reason = lifecycle.activity.lockReason {
+			if isDisplayLocked, let reason = lifecycle.activity.lockReason {
 				SettingsLockBanner(reason: reason)
 			}
+			SettingsFootnote("Changes apply the next time the game starts.")
 			GameDisplaySettingsPanel(
 				settings: settings,
 				isLocked: isDisplayLocked,
@@ -25,7 +26,11 @@ struct GameSettingsPage: View {
 			GamePerformanceSettingsPanel(
 				settings: settings,
 				isLocked: gameSession.isGameActive,
-				isFrameRateLocked: isDisplayLocked,
+				isFrameRateLocked: isDisplayLocked
+			)
+			GameBatterySaverSettingsPanel(
+				settings: settings,
+				isLocked: gameSession.isGameActive
 			)
 		}
 	}

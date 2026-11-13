@@ -1,12 +1,22 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
+import ArknightsGameRuntime
 import SwiftUI
 
 struct OnboardingProgressRail: View {
 	@Environment(\.launcherTheme) private var theme
 	let currentStep: OnboardingStep
 	let appVersion: String
+	let installation: InstallationController
+	let runtimeSelection: RuntimeSelectionController
+	let lifecycle: LauncherLifecycleStore
+	let pauseDownload: () -> Void
+	let pauseRuntime: () -> Void
+	let resumeRuntime: () -> Void
+	let resumeDownload: () -> Void
+	let retryDownload: () -> Void
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
@@ -27,6 +37,18 @@ struct OnboardingProgressRail: View {
 			.padding(.horizontal, LauncherTokens.Spacing.control)
 
 			Spacer()
+
+			OnboardingRailDownload(
+				installation: installation,
+				runtimeSelection: runtimeSelection,
+				lifecycle: lifecycle,
+				pause: pauseDownload,
+				pauseRuntime: pauseRuntime,
+				resumeRuntime: resumeRuntime,
+				resume: resumeDownload,
+				retry: retryDownload
+			)
+			.padding(.horizontal, LauncherTokens.Spacing.panel)
 
 			HStack(spacing: LauncherTokens.Spacing.control) {
 				Rectangle()

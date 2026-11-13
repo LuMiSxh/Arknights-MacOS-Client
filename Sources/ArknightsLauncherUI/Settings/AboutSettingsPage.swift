@@ -21,7 +21,7 @@ struct AboutSettingsPage: View {
 	var body: some View {
 		SettingsPage(
 			title: "About",
-			subtitle: "Arknights Client, Version \(appVersion)"
+			subtitle: "Arknights Client, version \(appVersion)"
 		) {
 			SettingsPanel(title: "Arknights Client") {
 				ViewThatFits(in: .horizontal) {
@@ -78,10 +78,7 @@ struct AboutSettingsPage: View {
 					HStack(spacing: LauncherTokens.Spacing.compact) {
 						Text("Built with AI assistance.")
 							.foregroundStyle(theme.textSecondary)
-						QuietLink(
-							title: "Learn more",
-							destination: SupportLinks.aiAssistance
-						)
+						QuietLink(title: "Learn more", destination: SupportLinks.aiAssistance)
 					}
 					.font(.caption)
 				}
@@ -98,7 +95,7 @@ struct AboutSettingsPage: View {
 				valueText(runtime.name)
 			}
 			SettingsHairline()
-			SettingsActionRow(title: "Runtime") {
+			SettingsActionRow(title: "Architecture") {
 				valueText(runtime.architecture)
 			}
 			SettingsHairline()
@@ -196,23 +193,15 @@ struct AboutSettingsPage: View {
 	@ViewBuilder
 	private var identityActions: some View {
 		HStack(spacing: LauncherTokens.Spacing.control) {
-			CapsuleActionButton(
-				title: "Show in Finder", systemImage: "folder",
-				tone: .neutral, showsTitle: false,
+			ExternalLinkButton(
+				title: "Show in Finder", presentation: .standard,
 				action: revealApplication
 			)
-			.help("Reveal the launcher application in Finder")
-			CapsuleActionButton(
-				title: "GitHub", tone: .neutral
-			) {
+			ExternalLinkButton(title: "View on GitHub", presentation: .standard) {
 				NSWorkspace.shared.open(SupportLinks.sourceRepository)
 			}
 			.help("Open project repository")
-			CapsuleActionButton(
-				title: "Donate",
-				systemImage: "heart.fill",
-				tone: .neutral
-			) {
+			ExternalLinkButton(title: "Donate", presentation: .standard) {
 				NSWorkspace.shared.open(SupportLinks.donate)
 			}
 			.help("Support the project on Ko-fi")

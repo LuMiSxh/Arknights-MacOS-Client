@@ -54,9 +54,7 @@ See [Apple’s steps](https://support.apple.com/en-au/102445). Never override an
 
 The setup assistant opens on the first start. Change any choice later in **Settings**.
 
-1. **System Check** — The assistant checks for a launcher update and Rosetta 2.
-   - If Rosetta 2 is missing, choose **Install Rosetta 2…**, then **Check Again**.
-   - On macOS 28 or later, see [macOS support](help/runtime.md#macos-support).
+1. **System Check** — The assistant checks for a launcher update.
 2. **Server** — Choose the server for your account:
 
    | Server               | Publisher  | Availability |
@@ -68,17 +66,21 @@ The setup assistant opens on the first start. Change any choice later in **Setti
    | **China**            | Hypergryph | Always       |
    | **China (Bilibili)** | Hypergryph | Always       |
 
-   Choose **Download and Continue** to start the game download.
+   Nothing downloads on this step.
 
-   The download continues in the background while you finish setup.
-
-3. **Runtime** — Choose **ARM64 (Apple Silicon)** on macOS 26 or later. This is the recommended runtime.
+3. **Install** — The step names your server and its publisher. Then choose the runtime, the game files location, and Rosetta 2 if needed.
+   - Choose **ARM64 (Apple Silicon)** on macOS 26 or later. This is the recommended runtime.
    - On macOS 15, choose **x86_64**. It is the only runtime. On macOS 26 and 27, **x86_64** is a fallback.
-   - Choose **Download and Continue** to install the runtime, or **Continue** to use an installed one.
+   - Choose **Change…** to pick another location for the game files.
+   - **x86_64** needs Rosetta 2. If it is missing, choose **Install Rosetta 2…**, then **Check Again**.
+   - On macOS 28 or later, see [macOS support](help/runtime.md#macos-support).
+   - Choose **Download and Continue** to download what is missing, or **Continue** if everything is installed. The game download continues in the background while you finish setup. The setup rail shows its progress on every step. Choose **Pause** to stop it and **Resume** to continue. The runtime download pauses and resumes the same way. **Back** never stops a download.
+   - If a download fails, the step shows what happened and a support code under the failed item. Choose **Download and Continue** to try again.
+   - If the game download fails on a later step, the setup rail shows **Download failed** and its support code. Choose **Retry** to start the download again.
    - See [Game runtime](help/runtime.md).
-4. **Display** — Choose display mode, window size, rendering, and cursor. Pick an exact size later in **Settings → Game**.
-5. **Look** — Choose artwork, colors, the Dock operator, and launcher display options.
-6. **Updates & Integrations** — Choose update behavior, Discord presence, the daily reset reminder, and music.
+4. **Display** — Choose the display mode and window size. Open **More options** for rendering, frame rate limit, and cursor. Pick an exact size later in **Settings → Game**.
+5. **Look** — Choose artwork and Dynamic Theme. Open **More options** for Home controls, branding colors, appearance, launcher information, and the Dock operator.
+6. **Updates and Integrations** — Choose update behavior and the daily reset reminder. Choose whether to play launcher music. Open **More options** for Discord presence, music volume, and **Now playing**.
 
 After the launcher verifies the download, **Play** becomes available.
 
@@ -111,7 +113,7 @@ When a launcher update is available, the main window shows **Install Update**. C
 To change automatic checks:
 
 1. Choose **Settings → Updates**.
-2. Turn **Launcher** on or off under **Automatic checks**.
+2. Turn **Launcher updates** on or off under **Automatic checks**.
 
 If the launcher needs a newer runtime, Home shows **Runtime update required**. Choose **Update Runtime**.
 

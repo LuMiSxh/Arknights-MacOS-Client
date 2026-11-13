@@ -47,7 +47,7 @@ struct IntegrationSettingsPage: View {
 			SettingsPanel(title: "Notifications") {
 				SettingsActionRow(
 					title: "Daily reset reminder",
-					detail: "Shows a notification before the 04:00 server reset."
+					detail: "Sets when a notification appears before the 04:00 server reset."
 				) {
 					GlassMenuPicker(
 						selection: $settings.resetReminderTiming,
@@ -59,7 +59,7 @@ struct IntegrationSettingsPage: View {
 					SettingsHairline()
 					SettingsActionRow(
 						title: "Servers",
-						detail: "Installed servers that get a reminder."
+						detail: "Sets which installed servers get a reminder."
 					) {
 						GlassActionMenu(title: regionsSummary, systemImage: "server.rack") {
 							ForEach(reminders.availableRegions) { region in
@@ -71,23 +71,18 @@ struct IntegrationSettingsPage: View {
 				}
 				if reminders.isAccessDenied {
 					SettingsHairline()
-					SettingsActionRow(
-						title: "Notifications are off for Arknights Client."
-					) {
-						CapsuleActionButton(
-							title: "Open System Settings",
-							systemImage: "gearshape",
-							tone: .neutral,
-							action: reminders.openSystemNotificationSettings
-						)
-					}
+					SettingsStatusRow(
+						label: "Notifications are off for Arknights Client",
+						actionTitle: "Open System Settings",
+						action: reminders.openSystemNotificationSettings
+					)
 				}
 			}
 
 			SettingsPanel(title: "Music") {
 				SettingsActionRow(
 					title: "Launcher music",
-					detail: "YouTube playlist. Pauses while the game runs."
+					detail: "Plays a YouTube playlist in the launcher. Pauses while the game runs."
 				) {
 					SettingsToggle(
 						"Launcher music",
@@ -99,7 +94,7 @@ struct IntegrationSettingsPage: View {
 					SettingsHairline()
 					SettingsActionRow(
 						title: "Music URL",
-						detail: "A YouTube video or playlist link."
+						detail: "Sets the YouTube video or playlist that plays."
 					) {
 						ThemedTextField(
 							"Music URL",
@@ -146,11 +141,11 @@ struct IntegrationSettingsPage: View {
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: "Show what’s playing",
-						detail: "Shows the current track and playback controls on the launcher."
+						title: "Now playing",
+						detail: "Shows the current track and playback controls on the Home screen."
 					) {
 						SettingsToggle(
-							"Show what’s playing",
+							"Now playing",
 							isOn: $settings.showsPlayingMusic,
 						)
 					}

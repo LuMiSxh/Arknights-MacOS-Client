@@ -90,10 +90,7 @@ struct LauncherPresentationArbiter {
 	func suppressesFailure(
 		_ failure: LauncherFailurePresentation?, isOnboardingPresented: Bool
 	) -> Bool {
-		guard isOnboardingPresented, let operation = failure?.context.operation else {
-			return false
-		}
-		return operation == .intelTranslationPreflight || operation == .rosettaInstallation
+		isOnboardingPresented && failure?.isShownInSetup == true
 	}
 
 	mutating func removeRosettaPreflightFailures() {

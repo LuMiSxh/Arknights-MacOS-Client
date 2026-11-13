@@ -26,6 +26,31 @@ private func makeFailure() -> LauncherFailurePresentation {
 }
 
 @MainActor
+@Test(arguments: [SupportOperation.install, .update])
+func gameDownloadFailureWaitsForSetupAndPresentsOnceItCloses(operation: SupportOperation) {
+	let failure = LauncherFailurePresentation(
+		id: UUID(),
+		message: "Download failed",
+		code: nil,
+		context: SupportContext(operation: operation, region: nil),
+		actions: [.reportProblem]
+	)
+	var arbiter = LauncherPresentationArbiter()
+
+	#expect(arbiter.suppressesFailure(failure, isOnboardingPresented: true))
+	#expect(arbiter.current == nil)
+
+	// What ContentView does when setup closes.
+	#expect(!arbiter.suppressesFailure(failure, isOnboardingPresented: false))
+	arbiter.request(.failure(failure))
+	#expect(arbiter.current == .failure(failure))
+
+	// A failure outside setup keeps its presentation while setup is visible.
+	#expect(!arbiter.suppressesFailure(makeFailure(), isOnboardingPresented: true))
+	#expect(!arbiter.suppressesFailure(nil, isOnboardingPresented: true))
+}
+
+@MainActor
 @Test
 func settingsSheetIsDismissedBeforeAFailureIsPromoted() {
 	var arbiter = LauncherPresentationArbiter()

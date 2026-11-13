@@ -18,9 +18,11 @@ package final class OnboardingCoordinator {
 	// slot because a manual refresh must not cancel the launcher check.
 	private let updateSlot = TaskSlot()
 	private let intelSlot = TaskSlot()
+	let installRunner = OnboardingInstallRunner()
 
 	package private(set) var isPresented = false
 	private(set) var step: OnboardingStep = .welcome
+	private(set) var direction: OnboardingTravelDirection = .forward
 	private(set) var updateState: OnboardingUpdateState = .checking
 	private(set) var intelTranslationState: IntelTranslationState = .waitingForLauncherCheck
 	// Set while a returning player reruns a required setup schema; Skip Setup stays unavailable.
@@ -170,7 +172,13 @@ package final class OnboardingCoordinator {
 			checkForUpdates: checkForUpdates, checkIntelTranslation: checkIntelTranslation)
 	}
 
+	// Navigation only changes the visible step. A running download or runtime install belongs to
+	// its controller, so no step change cancels it.
 	private func move(to target: OnboardingStep) {
+		let order = OnboardingStep.allCases
+		if let from = order.firstIndex(of: step), let to = order.firstIndex(of: target) {
+			direction = to >= from ? .forward : .backward
+		}
 		step = target
 		store.save(step: target)
 	}

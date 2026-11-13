@@ -11,11 +11,19 @@ struct OnboardingFinishGameStatus: View {
 	let title: String
 	let systemImage: String
 	let detail: String
+	let failure: LauncherFailurePresentation?
 	let install: () -> Void
 	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
-		OnboardingStatusRow(title: title, detail: detail, systemImage: systemImage) {
+		OnboardingStatusRow(
+			title: title, detail: detail, systemImage: systemImage,
+			tone: failure == nil ? .neutral : .warning
+		) {
+			if let failure {
+				InlineFailureView(message: failure.message, code: failure.code)
+			}
+
 			if installation.isDownloading, let progress = installation.progress {
 				ProgressView(value: progress.fraction)
 					.tint(theme.accentFill)

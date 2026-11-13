@@ -23,7 +23,9 @@ struct UpdatesSettingsPage: View {
 				title: "Automatic checks"
 			) {
 				UpdateSettingsRow(
-					title: "Launcher",
+					title: "Launcher updates",
+					explanation:
+						"Checks for new launcher versions automatically. Turning it on checks now.",
 					status: launcherStatusText,
 					isEnabled: $settings.automaticallyChecksLauncherUpdates,
 					isChecking: communication.isCheckingLauncherUpdates,
@@ -32,7 +34,9 @@ struct UpdatesSettingsPage: View {
 				)
 				SettingsHairline()
 				UpdateSettingsRow(
-					title: "Arknights",
+					title: "Game updates",
+					explanation:
+						"Checks for new game versions automatically. Turning it on checks now.",
 					status: gameStatusText,
 					isEnabled: $settings.automaticallyChecksGameUpdates,
 					isChecking: lifecycle.state.refresh.isChecking,
@@ -40,23 +44,40 @@ struct UpdatesSettingsPage: View {
 						|| !lifecycle.canBeginExclusiveActivity,
 					check: actions.checkGameUpdates
 				)
+				if let activityLockReason {
+					SettingsFootnote(activityLockReason)
+				}
 			}
 
 			SettingsPanel(
-				title: Self.announcementsTitle
+				title: "Project news"
 			) {
 				SettingsActionRow(
 					title: Self.announcementsTitle,
-					detail: "Project news. Each message shows once."
+					detail: announcementsDetail
 				) {
 					SettingsToggle(
 						Self.announcementsTitle,
 						isOn: $settings.announcementsEnabled,
 					)
-					.disabled(lifecycle.activity == .maintaining(.migratingStorage))
+					.disabled(isAnnouncementsLocked)
 				}
 			}
 		}
+	}
+
+	private var isAnnouncementsLocked: Bool {
+		lifecycle.activity == .maintaining(.migratingStorage)
+	}
+
+	private var announcementsDetail: String? {
+		isAnnouncementsLocked
+			? lifecycle.activity.lockReason
+			: "Shows each project message once in the launcher."
+	}
+
+	private var activityLockReason: String? {
+		lifecycle.canBeginExclusiveActivity ? nil : lifecycle.activity.lockReason
 	}
 
 	private var launcherStatusText: String {

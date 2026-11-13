@@ -19,6 +19,8 @@ Only Apple silicon Macs work: M-series Macs and the MacBook Neo (A18 Pro).
 
 Use **ARM64 (Apple Silicon)** if your Mac runs macOS 26 or later.
 
+The **Recommended** badge marks **ARM64 (Apple Silicon)**. In **Settings → Runtime**, the **Active runtime** panel shows a macOS requirement only when your Mac does not meet it.
+
 ## macOS support
 
 | macOS          | Runtime you can use                                      |
@@ -31,12 +33,12 @@ Apple says macOS 27 is the last release with general Rosetta support. From macOS
 
 The launcher does not rely on Rosetta for ARM64. See Apple's [Rosetta details](https://support.apple.com/en-au/102527) and [developer notice](https://developer.apple.com/news/?id=w5ngl9k2).
 
-On macOS 28 or later, setup selects **ARM64 (Apple Silicon)** by default. The **Runtime** step does not offer **x86_64**.
+On macOS 28 or later, setup selects **ARM64 (Apple Silicon)** by default. The **Install** step does not offer **x86_64**.
 
-If you selected x86_64 on an earlier macOS and then upgraded, **System Check** asks you to switch to the ARM64 runtime. To switch:
+If you selected x86_64 on an earlier macOS and then upgraded, the **Install** step asks you to switch to the ARM64 runtime. To switch:
 
-1. Continue setup.
-2. Choose **ARM64 (Apple Silicon)** in the **Runtime** step.
+1. Continue setup to the **Install** step.
+2. Choose **ARM64 (Apple Silicon)**.
 
 The next game launch uses the ARM64 runtime.
 
@@ -71,7 +73,7 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 
 ## Choose a runtime during setup
 
-1. In the **Runtime** step, choose **ARM64 (Apple Silicon)** or **x86_64**. **ARM64 (Apple Silicon)** is recommended. On macOS 28 or later, only **ARM64 (Apple Silicon)** is offered.
+1. In the **Install** step, choose **ARM64 (Apple Silicon)** or **x86_64**. **ARM64 (Apple Silicon)** is recommended. On macOS 28 or later, only **ARM64 (Apple Silicon)** is offered.
 2. Choose **Download and Continue** or **Continue**.
 3. Wait for the download if one starts.
 
@@ -80,7 +82,7 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 
 The launcher shows a note when the game may ask you to sign in again.
 
-While the runtime downloads, the progress line shows the percentage, download size, and speed.
+While the runtime downloads, the progress line shows the percentage, download size, and speed. Choose **Pause** to stop the download in setup or in the **Active runtime** panel. Choose **Resume** to continue from the partial file. Pause works only while the runtime downloads, not while it installs.
 
 ## Switch runtimes in Settings
 
@@ -98,9 +100,9 @@ The next game launch uses the new runtime. On macOS 28 or later, the **Active ru
 
 ## What a switch changes
 
-- The launcher downloads the selected runtime. The **Active runtime** panel shows its download size.
+- The launcher downloads the selected runtime. The **Active runtime** panel shows its download size while the runtime is not installed.
 - The other runtime stays on disk. The panel shows the installed version for each runtime.
-- **Remove Other Runtime** in the **Maintenance** panel deletes the runtime you are not using. Its game environment stays on disk.
+- **Remove Other Runtime…** in the **Danger zone** deletes the runtime you are not using. Its game environment stays on disk.
 - **Remove Runtime…** in the **Danger zone** deletes the runtime you are using. Its game environment stays on disk. Set up the runtime again before you play.
 - Each runtime keeps its own game environment.
 - A switch keeps both game environments. It does not copy sign-ins, settings, or resources.
@@ -115,11 +117,11 @@ A launcher update can require a newer runtime. Home then shows **Runtime update 
 2. Wait for the download to finish.
 3. Choose **Play** when the button returns.
 
-The **Runtime** panel shows **Update available**, the required version, and the installed version. The launcher removes the old runtime after the update. The launcher never downloads a runtime on its own.
+The **Active runtime** panel shows **Update available**, the required version, and the installed version under the runtime. The launcher removes the old runtime after the update. The launcher never downloads a runtime on its own.
 
 ## If a runtime fails
 
-The **Runtime** panel and the **Runtime** setup step show a message and a support code. Match the code to the list below.
+The **Active runtime** panel and the **Install** setup step show a message and a support code. Match the code to the list below.
 
 If a download fails:
 

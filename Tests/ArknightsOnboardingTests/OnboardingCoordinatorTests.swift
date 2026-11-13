@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsInfrastructure
 import ArknightsTestSupport
 import Foundation
 import Testing
@@ -28,7 +29,7 @@ struct OnboardingCoordinatorTests {
 
 		coordinator.advance()
 		coordinator.advance()
-		#expect(coordinator.step == .runtime)
+		#expect(coordinator.step == .install)
 
 		let resumed = OnboardingCoordinator(store: store)
 		await resumed.startIfNeeded(
@@ -40,7 +41,7 @@ struct OnboardingCoordinatorTests {
 		)
 		resumed.advance()
 
-		#expect(resumed.step == .runtime)
+		#expect(resumed.step == .install)
 
 		store.save(step: .look)
 		let withoutGame = OnboardingCoordinator(store: store)
@@ -70,13 +71,46 @@ struct OnboardingCoordinatorTests {
 	}
 
 	@Test
-	func runtimeStepFollowsServerAndPrecedesDisplay() {
-		#expect(OnboardingStep.region.next == .runtime)
-		#expect(OnboardingStep.runtime.previous == .region)
-		#expect(OnboardingStep.runtime.next == .display)
-		#expect(OnboardingStep.display.previous == .runtime)
-		#expect(OnboardingStep.runtime.title == "Runtime")
-		#expect(OnboardingStep.runtime.rawValue == 16)
+	func installStepFollowsServerAndPrecedesDisplay() {
+		#expect(
+			OnboardingStep.allCases == [
+				.welcome, .region, .install, .display, .look, .extras, .finish,
+			])
+		#expect(OnboardingStep.region.next == .install)
+		#expect(OnboardingStep.install.previous == .region)
+		#expect(OnboardingStep.install.next == .display)
+	}
+
+	@Test
+	func stepSavedOnTheOldRuntimeStepResumesOnInstall() {
+		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingCoordinatorTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(16, forKey: "onboarding.currentStep")
+		#expect(OnboardingProgressStore(defaults: defaults).savedStep == .install)
+	}
+
+	@Test
+	func installStepDownloadsOnlyWhatIsMissing() {
+		let complete = OnboardingInstallPlan(
+			gameIsInstalled: true, gameIsDownloading: false, runtimeIsInstalled: true)
+		#expect(!complete.needsDownload)
+		#expect(complete.primaryTitle == "Continue")
+
+		let downloading = OnboardingInstallPlan(
+			gameIsInstalled: false, gameIsDownloading: true, runtimeIsInstalled: true)
+		#expect(!downloading.gameNeedsDownload)
+		#expect(downloading.primaryTitle == "Continue")
+
+		let missingRuntime = OnboardingInstallPlan(
+			gameIsInstalled: true, gameIsDownloading: false, runtimeIsInstalled: false)
+		#expect(missingRuntime.runtimeNeedsDownload)
+		#expect(!missingRuntime.gameNeedsDownload)
+		#expect(missingRuntime.primaryTitle == "Download and Continue")
+
+		let missingGame = OnboardingInstallPlan(
+			gameIsInstalled: false, gameIsDownloading: false, runtimeIsInstalled: true)
+		#expect(missingGame.gameNeedsDownload)
+		#expect(missingGame.primaryTitle == "Download and Continue")
 	}
 
 	@Test(arguments: [
@@ -183,7 +217,7 @@ struct OnboardingCoordinatorTests {
 			checkForUpdates: { .current },
 			checkIntelTranslation: { .available }
 		)
-		#expect(coordinator.requiredSchema == 3)
+		#expect(coordinator.requiredSchema == 4)
 
 		coordinator.skip()
 		#expect(coordinator.isPresented)
@@ -194,4 +228,33 @@ struct OnboardingCoordinatorTests {
 		#expect(store.pendingRequiredSchema == nil)
 	}
 
+	@Test
+	func navigatingBackAndForwardLeavesARunningDownloadAlone() async throws {
+		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingCoordinatorTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let logURL = FileManager.default.temporaryDirectory.appending(
+			path: "OnboardingCoordinatorTests.\(UUID().uuidString).log")
+		defer { try? FileManager.default.removeItem(at: logURL) }  // best effort: temporary log
+		let lifecycle = LauncherLifecycleStore(log: LauncherLog(fileURL: logURL))
+		let coordinator = OnboardingCoordinator(store: OnboardingProgressStore(defaults: defaults))
+		await coordinator.startIfNeeded(
+			isDeveloperMode: false,
+			isOnboardingPreview: false,
+			gameIsInstalled: true,
+			checkForUpdates: { .current },
+			checkIntelTranslation: { .available }
+		)
+		let installing = LauncherActivity.installing(id: UUID(), stage: .downloading)
+		let lease = try #require(lifecycle.begin(installing))
+
+		coordinator.advance()
+		coordinator.advance()
+		coordinator.advance()
+		coordinator.goBack()
+		coordinator.goBack()
+		coordinator.goBack()
+
+		#expect(lifecycle.activity == installing)
+		#expect(lifecycle.end(lease))
+	}
 }

@@ -9,22 +9,18 @@ extension RuntimeSettingsPage {
 
 	@ViewBuilder var activeRuntimePanel: some View {
 		SettingsPanel(title: "Active runtime") {
-			SettingsActionRow(
-				title: "Runtime",
-				detail: runtimeSelection.selectedLane.title
-			) {
-				EmptyView()
-			}
-
 			runtimeX86Content
 			runtimeARMContent
 
-			if let runtimeChangesReason {
-				runtimeNote(runtimeChangesReason)
+			if let panelChangesReason {
+				runtimeNote(panelChangesReason)
 			}
 
 			if runtimeSelection.isInstalling {
 				RuntimeProgressLabel(controller: runtimeSelection)
+				RuntimePauseButton(controller: runtimeSelection) {
+					actions.pauseRuntimeDownload()
+				}
 			}
 
 			if let failure = runtimeSelection.failure {
@@ -40,20 +36,8 @@ extension RuntimeSettingsPage {
 		SettingsPanel(title: "Maintenance") {
 			runtimeUpdateContent
 
-			SettingsActionRow(
-				title: "Other runtime",
-				detail: runtimeOtherDetail
-			) {
-				CapsuleActionButton(
-					title: "Remove Other Runtime",
-					systemImage: "trash",
-					tone: .neutral,
-					presentation: .compact
-				) {
-					isRemoveRuntimeConfirmationPresented = true
-				}
-				.disabled(
-					runtimeChangesDisabled || !runtimeOtherInstalled)
+			if let panelChangesReason {
+				runtimeNote(panelChangesReason)
 			}
 
 			if runtimeSelection.selectedLane == .x86 {
@@ -71,7 +55,7 @@ extension RuntimeSettingsPage {
 	var removeRuntimePanel: some View {
 		DangerZonePanel {
 			SettingsActionRow(
-				title: "Remove Runtime",
+				title: "Remove runtime",
 				detail:
 					"Delete the \(runtimeSelection.selectedLane.shortLabel) runtime. The game environment stays."
 			) {
@@ -90,6 +74,27 @@ extension RuntimeSettingsPage {
 							for: runtimeSelection.selectedLane) == nil
 				)
 			}
+			SettingsHairline()
+			SettingsActionRow(
+				title: "Remove other runtime",
+				detail: runtimeOtherDetail
+			) {
+				CapsuleActionButton(
+					title: "Remove Other Runtime…",
+					systemImage: "trash",
+					tone: .danger,
+					presentation: .compact,
+					role: .destructive
+				) {
+					isRemoveRuntimeConfirmationPresented = true
+				}
+				.disabled(runtimeChangesDisabled || !runtimeOtherInstalled)
+			}
+			if let panelChangesReason {
+				runtimeNote(panelChangesReason)
+			} else if runtimeSelection.installedVersion(for: runtimeSelection.selectedLane) == nil {
+				runtimeNote("Install the runtime before you remove it.")
+			}
 		}
 	}
 
@@ -98,9 +103,22 @@ extension RuntimeSettingsPage {
 	private func runtimeLaneRow(_ lane: RuntimeLane) -> some View {
 		SettingsActionRow(
 			title: lane.title,
-			detail: runtimeLaneDetail(lane)
+			detail: lane.summary,
+			badge: lane == .arm ? "Recommended" : nil,
+			secondaryDetail: runtimeSelection.pausedLane == lane
+				? "Download paused" : runtimeLaneStatus(lane)
 		) {
-			if runtimeSelection.selectedLane == lane {
+			if runtimeSelection.pausedLane == lane {
+				CapsuleActionButton(
+					title: "Resume",
+					systemImage: "play.fill",
+					tone: .accent,
+					presentation: .compact
+				) {
+					Task { _ = await actions.installRuntime(lane) }
+				}
+				.disabled(runtimeChangesDisabled)
+			} else if runtimeSelection.selectedLane == lane {
 				Image(systemName: "checkmark.circle.fill")
 					.foregroundStyle(theme.accentInk)
 					.accessibilityLabel("Selected")
@@ -224,7 +242,12 @@ extension RuntimeSettingsPage {
 		return lifecycle.activity.lockReason
 	}
 
-	private var runtimeOtherLane: RuntimeLane {
+	/// The game reason is in the page banner. Panels show the rest.
+	private var panelChangesReason: String? {
+		gameSession.isGameActive ? nil : runtimeChangesReason
+	}
+
+	var runtimeOtherLane: RuntimeLane {
 		runtimeSelection.selectedLane == .x86 ? .arm : .x86
 	}
 
@@ -237,25 +260,23 @@ extension RuntimeSettingsPage {
 			return "No other runtime is installed."
 		}
 		return
-			"Remove the \(runtimeOtherLane.shortLabel) runtime. Its game environment stays on disk."
+			"Deletes the \(runtimeOtherLane.shortLabel) runtime you are not using. Its game environment stays on disk."
 	}
 
-	private func runtimeLaneDetail(_ lane: RuntimeLane) -> String {
-		let headline = lane == .arm ? "Recommended. \(lane.summary)" : lane.summary
-		return "\(headline) \(runtimeLaneInfo(lane))"
-	}
-
-	private func runtimeLaneInfo(_ lane: RuntimeLane) -> String {
+	private func runtimeLaneStatus(_ lane: RuntimeLane) -> String {
 		var parts: [String] = []
+		let pin = runtimeSelection.pinnedRuntime(for: lane)
 		switch runtimeSelection.state(for: lane) {
 		case .notInstalled:
-			if let pin = runtimeSelection.pinnedRuntime(for: lane) {
-				parts.append("Not installed · Version \(pin.version)")
-			} else {
-				parts.append("Not installed")
+			parts.append("Not installed")
+			if let pin {
+				parts.append("Version \(pin.version)")
+				parts.append(
+					"\(ByteCountFormatter.string(fromByteCount: Int64(pin.sizeBytes), countStyle: .file)) download"
+				)
 			}
 		case .outdated(let installed):
-			if let pin = runtimeSelection.pinnedRuntime(for: lane) {
+			if let pin {
 				parts.append("Update available: \(pin.version) (installed \(installed))")
 			} else {
 				parts.append("Installed, version \(installed)")
@@ -265,13 +286,9 @@ extension RuntimeSettingsPage {
 				parts.append("Installed, version \(installed)")
 			}
 		}
-		guard let pin = runtimeSelection.pinnedRuntime(for: lane) else {
-			return parts.joined(separator: " · ")
+		if let pin, !ProcessInfo.processInfo.isOperatingSystemAtLeast(pin.minimumMacOS) {
+			parts.append("Requires \(macOSVersion(pin.minimumMacOS)) or later")
 		}
-		parts.append(
-			"\(ByteCountFormatter.string(fromByteCount: Int64(pin.sizeBytes), countStyle: .file)) download"
-		)
-		parts.append("Requires \(macOSVersion(pin.minimumMacOS)) or later")
 		return parts.joined(separator: " · ")
 	}
 

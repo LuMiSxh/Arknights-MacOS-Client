@@ -17,32 +17,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Added **Game display** to **Settings → Game → Display**. Choose the display the game opens on. The game opens on the primary display when the chosen display is not connected.
-- Added the runtime download. The launcher no longer ships the runtime inside the app. Choose the runtime under **Settings → Runtime**. The launcher downloads, verifies, and installs that runtime. Runtime downloads show progress with the game download.
+- Added the runtime download. The launcher no longer ships the runtime inside the app. Choose the runtime under **Settings → Runtime**. The launcher downloads, verifies, and installs that runtime. Runtime downloads show progress with the game download. In setup or **Settings → Runtime**, choose **Pause** to stop a runtime download and **Resume** to continue from the partial file.
 - Added an **ARM64 (Apple Silicon)** runtime for macOS 26 or later. It uses a separate game environment, so the game may look like a fresh install after a switch.
-- Added **Remove Runtime…** under **Settings → Runtime**. It deletes the runtime you use and keeps the game environment. **Remove Other Runtime** now reports a failure with a support code.
-- Added the **Game runtime** help page. It explains **x86_64** and **ARM64 (Apple Silicon)**, how to switch, and what a switch changes. The **Runtime** setup step and the **Active runtime** panel link to it with **About game runtimes**.
+- Added **Remove Runtime…** under **Settings → Runtime**. It deletes the runtime you use and keeps the game environment. **Remove Other Runtime…** moved to the same **Danger zone**, asks for confirmation, and reports a failure with a support code.
+- Added the **Game runtime** help page. It explains **x86_64** and **ARM64 (Apple Silicon)**, how to switch, and what a switch changes. The **Install** setup step and the **Active runtime** panel link to it with **About game runtimes**.
 - Added a light mode. Choose System, Light, or Dark under **Settings → Appearance**. The choice applies to Settings, setup, and dialogs.
 - Added **Home controls** and **Branding** under **Settings → Appearance → Dynamic Theme**. Each one can follow the brightness of the artwork, or stay dark or light. In light mode, the logo is black and the backdrop is white.
 - Added **Custom…** to the game **Window size** menu. Enter a width and height in points, or use **Measure With a Window…** to read the size of a resizable window. A size too large for the screen scales down when the game starts.
-- Added **Frame rate limit** to **Settings → Game → Performance**. Use the slider to set 30, 60, or 120 FPS. It applies only when **Override in-game display settings** is on.
-- Added **Battery Saver** to **Settings → Game → Performance**. It caps the frame rate, lowers **Rendering**, and turns off **Game Mode**.
+- Added **Frame rate limit** to **Settings → Game → Performance**. Choose 30, 60, or 120 FPS. It applies only when **Override in-game display settings** is on.
+- Added **Battery Saver mode** to **Settings → Game → Battery Saver**. It caps the frame rate, lowers **Rendering**, and turns off **Game Mode**.
 - Added an optional **Daily reset reminder** under **Settings → Integration → Notifications**. It notifies you at the reset or up to 2 hours before it.
 - Added **Screenshots** to **Settings → Integration**. Press **⌃⌥S** or your own **Shortcut** to save a PNG of the game window to **Pictures/Arknights**.
 - Added optional **Discord presence**. It shows your server and session time on Discord while the game runs.
 - Added a **Help** section to **Settings** and a **Help** menu with **Report a Problem…**, **Save Diagnostics…**, and the troubleshooting guide.
 - Added **Save Diagnostics…**. It saves a zip of logs and system details to Downloads. Nothing is uploaded. SDK logs can contain account IDs, so review the zip before you share it.
 - Added **Contact the developer** to **Settings → Help** for private messages, feedback, and testing offers. Use **Contact…** to get in touch.
-- Added **App Data Folder** to **Settings → Help → Troubleshooting**. **Show in Finder** opens the folder that holds settings, logs, runtimes, and game environments.
+- Added **App Data Folder** to **Settings → Storage → Logs and data**. **Show in Finder** opens the folder that holds settings, logs, runtimes, and game environments.
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version and type, the Wine and DXMT versions, and the capabilities the runtime advertises.
 - The failure dialog can copy the support code.
-- Added **Debug Logging** to **Settings → Help → Troubleshooting**. It writes detailed Wine and graphics logs from the next game start.
+- Added **Debug logging** to **Settings → Help → Troubleshooting**. It writes detailed Wine and graphics logs from the next game start.
 - Added **Runtime patches** to **Settings → Runtime**. Turn off a single runtime patch if it causes a problem. The launcher asks before it turns one off, and **Restore Defaults** turns them all back on.
 
 ### Changed
 
+- Setup has one **Install** step for the runtime, the game files location, and Rosetta 2. It names your server before anything downloads. The **Server** step no longer starts the game download, and **System Check** no longer checks Rosetta 2. Existing users go through setup once more. It keeps your server, runtime, location, and preferences, and downloads nothing unless you change something.
 - **Game Mode** and **Metal Performance HUD** now apply only when **Override in-game display settings** is on. When it is off, the game keeps its own settings. **Battery Saver** still caps the frame rate.
 - A launcher update can now require a newer runtime. Home then shows **Runtime update required** and **Update Runtime** instead of **Play**. The launcher never downloads a runtime on its own.
-- On macOS 28 and later, setup selects **ARM64 (Apple Silicon)** by default and no longer offers **x86_64**. If you still use x86_64 after upgrading macOS, **System Check** and the **RT-BLK** error ask you to switch to ARM64.
+- On macOS 28 and later, setup selects **ARM64 (Apple Silicon)** by default and no longer offers **x86_64**. If you still use x86_64 after upgrading macOS, the **Install** setup step and the **RT-BLK** error ask you to switch to ARM64.
 - Updated the runtime to 0.8.0.
 - Rebuilt the launcher design on one color theme for dark and light. Glow effects, hover zoom, and bouncy motion are gone. Text uses lighter weights, and spacing follows one grid in every window.
 - Secondary buttons in Settings, setup, and the update window use quiet neutral colors. Links use the accent color. Destructive buttons use a red tint in dark and light.
@@ -50,7 +51,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The selection in the Settings sidebar now slides between rows.
 - Setup has a new **Look** step for artwork, Dynamic Theme, Home controls, Branding, appearance, and Dock icons. Setup keeps a custom window size. Setup runs once more after this update so you can review the new options.
 - The first and last setup pages use the same panels and rows as the other setup steps. The last page shows where to find help.
-- Renamed **Settings → Audio** to **Settings → Integration**. It holds the daily reset reminder, launcher music, and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates & Integrations**.
+- Setup shows the main choice on each step and puts the other options under **More options**. The **Server** step no longer shows **Canary Features** and notes that each server has its own publisher and anti-cheat.
+- Renamed **Settings → Audio** to **Settings → Integration**. It holds the daily reset reminder, launcher music, and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates and Integrations**.
 - Reorganized **Settings**: recovery actions moved to **Help**, and **Game** is split into **Display** and **Performance**. A new **Runtime** page holds the runtime choice, its maintenance, Wine sync under **Compatibility**, and **Runtime patches**.
 - **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.

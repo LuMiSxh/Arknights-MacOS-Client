@@ -15,9 +15,10 @@ struct ScreenshotsSettingsPanel: View {
 		SettingsPanel(title: "Screenshots") {
 			SettingsActionRow(
 				title: "Shortcut",
-				detail: "Saves a picture of the game window while the game runs.",
+				detail:
+					"Saves a picture of the game window while the game runs. Needs Screen Recording access; you may need to restart the launcher after allowing it.",
 				help:
-					"The launcher needs Screen Recording access. macOS may ask you to confirm it again from time to time. After you allow it, you may need to restart the launcher."
+					"macOS may ask you to confirm Screen Recording access again from time to time."
 			) {
 				if isRecordingShortcut {
 					ScreenshotShortcutRecorder(
@@ -39,16 +40,11 @@ struct ScreenshotsSettingsPanel: View {
 			}
 			if screenshots.isPermissionDenied {
 				SettingsHairline()
-				SettingsActionRow(
-					title: "Screen Recording is off for Arknights Client."
-				) {
-					CapsuleActionButton(
-						title: "Open System Settings",
-						systemImage: "gearshape",
-						tone: .neutral,
-						action: screenshots.openSystemScreenRecordingSettings
-					)
-				}
+				SettingsStatusRow(
+					label: "Screen Recording is off for Arknights Client",
+					actionTitle: "Open System Settings",
+					action: screenshots.openSystemScreenRecordingSettings
+				)
 			}
 			SettingsHairline()
 			SettingsActionRow(
@@ -72,16 +68,11 @@ struct ScreenshotsSettingsPanel: View {
 			}
 			if settings.screenshotNotifies, screenshots.isNotificationAccessDenied {
 				SettingsHairline()
-				SettingsActionRow(
-					title: "Notifications are off for Arknights Client."
-				) {
-					CapsuleActionButton(
-						title: "Open System Settings",
-						systemImage: "gearshape",
-						tone: .neutral,
-						action: openNotificationSettings
-					)
-				}
+				SettingsStatusRow(
+					label: "Notifications are off for Arknights Client",
+					actionTitle: "Open System Settings",
+					action: openNotificationSettings
+				)
 			}
 		}
 		.onAppear {

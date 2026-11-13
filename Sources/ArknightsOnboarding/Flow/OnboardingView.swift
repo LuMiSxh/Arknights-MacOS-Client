@@ -56,7 +56,15 @@ package struct OnboardingView: View {
 		HStack(spacing: 0) {
 			OnboardingProgressRail(
 				currentStep: coordinator.step,
-				appVersion: IssueReportURL.appVersion
+				appVersion: IssueReportURL.appVersion,
+				installation: installation,
+				runtimeSelection: runtimeSelection,
+				lifecycle: lifecycle,
+				pauseDownload: actions.pauseDownload,
+				pauseRuntime: actions.pauseRuntime,
+				resumeRuntime: resumeRuntimeInstall,
+				resumeDownload: actions.installOrUpdate,
+				retryDownload: actions.installOrUpdate
 			)
 
 			Divider()
@@ -69,27 +77,30 @@ package struct OnboardingView: View {
 						case .welcome:
 							OnboardingWelcomeView(
 								updateState: coordinator.updateState,
-								intelTranslationState: coordinator.intelTranslationState,
 								requiredSchema: coordinator.requiredSchema,
-								rosettaInstallationState: lifecycle.state.readiness
-									.rosettaInstallation,
-								retry: retryUpdateCheck,
-								retryIntelTranslation: retryIntelTranslation,
-								installRosetta: installRosetta
+								retry: retryUpdateCheck
 							)
 						case .region:
 							OnboardingRegionView(
 								preferences: preferences,
 								installation: installation,
-								lifecycle: lifecycle,
 								canSwitchRegion: canSwitchRegion,
 								selectRegion: actions.selectRegion
 							)
-						case .runtime:
-							OnboardingRuntimeView(
+						case .install:
+							OnboardingInstallView(
+								installation: installation,
+								lifecycle: lifecycle,
 								runtimeSelection: runtimeSelection,
 								selectedLane: runtimeLaneBinding,
-								isDisabled: runtimeSelection.isInstalling
+								isDisabled: runtimeSelection.isInstalling,
+								intelTranslationState: coordinator.intelTranslationState,
+								rosettaInstallationState: lifecycle.state.readiness
+									.rosettaInstallation,
+								chooseInstallDirectory: actions.chooseInstallDirectory,
+								locateExistingInstallation: actions.locateExistingInstallation,
+								retryIntelTranslation: retryIntelTranslation,
+								installRosetta: installRosetta
 							)
 						case .display:
 							OnboardingDisplayView(
@@ -117,9 +128,7 @@ package struct OnboardingView: View {
 						}
 					}
 					.id(coordinator.step)
-					.transition(
-						reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity)
-					)
+					.transition(stepTransition)
 					.padding(.horizontal, LauncherTokens.Spacing.page)
 					.padding(.top, LauncherTokens.Spacing.page)
 					.padding(.bottom, 96)
@@ -130,7 +139,7 @@ package struct OnboardingView: View {
 				.scrollPosition($scrollPosition)
 				.onChange(of: coordinator.step) {
 					scrollPosition.scrollTo(edge: .top)
-					if coordinator.step == .runtime, !didInitializeRuntimeLane {
+					if coordinator.step == .install, !didInitializeRuntimeLane {
 						runtimeLane = runtimeSelection.selectedLane
 						didInitializeRuntimeLane = true
 					}
@@ -196,7 +205,7 @@ package struct OnboardingView: View {
 		}
 		.tint(theme.accentFill)
 		.animation(
-			LauncherMotion.animation(.page, reduceMotion: reduceMotion),
+			LauncherMotion.animation(for: .present, reduceMotion: reduceMotion),
 			value: coordinator.step
 		)
 		.animation(
@@ -233,27 +242,27 @@ package struct OnboardingView: View {
 		}
 	}
 
+	// The new page enters from the side it travels toward and the old page fades out. SwiftUI reads
+	// a leaving view's transition from its last render, so only the entering page can follow the
+	// direction. Reduce Motion keeps the fade alone.
+	private var stepTransition: AnyTransition {
+		guard !reduceMotion else { return .opacity }
+		let edge: Edge = coordinator.direction == .forward ? .trailing : .leading
+		return .asymmetric(
+			insertion: .move(edge: edge).combined(with: .opacity),
+			removal: .opacity
+		)
+	}
+
 	private var primaryTitle: String {
 		if coordinator.step == .welcome {
 			return switch coordinator.updateState {
 			case .checking: OnboardingUpdateState.checkingTitle
-			case .current, .checkFailed:
-				coordinator.intelTranslationState == .checking
-					? OnboardingUpdateState.checkingTitle : "Continue"
+			case .current, .checkFailed: "Continue"
 			case .updateRequired(let version): "Install Update \(version)"
 			}
 		}
-		if coordinator.step == .region {
-			if installation.isInstalled || installation.isDownloading {
-				return "Continue"
-			}
-			return "Download and Continue"
-		}
-		if coordinator.step == .runtime {
-			guard let runtimeLane, runtimeSelection.installedVersion(for: runtimeLane) != nil
-			else { return "Download and Continue" }
-			return "Continue"
-		}
+		if coordinator.step == .install { return installPlan.primaryTitle }
 		if coordinator.step == .finish { return "Finish Setup" }
 		return "Continue"
 	}
@@ -266,24 +275,10 @@ package struct OnboardingView: View {
 			case .updateRequired:
 				return true
 			case .current, .checkFailed:
-				return coordinator.intelTranslationState != .checking
-					&& coordinator.intelTranslationState != .waitingForLauncherCheck
+				return true
 			}
 		}
-		if coordinator.step == .region {
-			return installation.isInstalled || installation.isDownloading
-				|| installation.canInstall
-		}
-		if coordinator.step == .runtime {
-			guard !runtimeSelection.isInstalling, let runtimeLane,
-				runtimeSelection.availableLanes.contains(runtimeLane)
-			else { return false }
-			if runtimeSelection.installedVersion(for: runtimeLane) != nil {
-				return runtimeLane == runtimeSelection.selectedLane
-					|| lifecycle.activity == .idle
-			}
-			return lifecycle.activity == .idle || lifecycle.activity.isInstalling
-		}
+		if coordinator.step == .install { return canInstall }
 		return true
 	}
 
@@ -291,16 +286,9 @@ package struct OnboardingView: View {
 		if coordinator.step == .welcome, case .updateRequired = coordinator.updateState {
 			return "arrow.down.app"
 		}
-		if coordinator.step == .region && !installation.isInstalled
-			&& !installation.isDownloading
-		{
-			return installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
-		}
-		if coordinator.step == .runtime,
-			let runtimeLane,
-			runtimeSelection.installedVersion(for: runtimeLane) == nil
-		{
-			return "arrow.down"
+		if coordinator.step == .install, installPlan.needsDownload {
+			return installation.hasPartialDownload && !installPlan.runtimeNeedsDownload
+				? "arrow.clockwise" : "arrow.down"
 		}
 		if coordinator.step == .finish { return "checkmark" }
 		return "chevron.forward"
@@ -313,32 +301,76 @@ package struct OnboardingView: View {
 			actions.openLauncherUpdate()
 			return
 		}
-		if coordinator.step == .region && !installation.isInstalled
-			&& !installation.isDownloading
-		{
-			actions.installOrUpdate()
-		}
-		if coordinator.step == .runtime {
-			performRuntimeAction()
+		if coordinator.step == .install {
+			performInstallAction()
 			return
 		}
 		coordinator.advance()
 	}
 
-	private func performRuntimeAction() {
-		guard let runtimeLane else { return }
-		if runtimeSelection.installedVersion(for: runtimeLane) != nil {
-			if runtimeLane != runtimeSelection.selectedLane {
-				guard actions.selectRuntimeLane(runtimeLane) else { return }
+	// The game download and runtime install start here and nowhere else. A complete install
+	// downloads nothing, so a setup rerun only confirms what is already there.
+	private var installPlan: OnboardingInstallPlan {
+		OnboardingInstallPlan(
+			gameIsInstalled: installation.isInstalled,
+			gameIsDownloading: installation.isDownloading,
+			runtimeIsInstalled: runtimeLane.map {
+				runtimeSelection.installedVersion(for: $0) != nil
+			} ?? false
+		)
+	}
+
+	private var canInstall: Bool {
+		guard !runtimeSelection.isInstalling, !coordinator.installRunner.isRunning,
+			let runtimeLane,
+			runtimeSelection.availableLanes.contains(runtimeLane)
+		else { return false }
+		if runtimeLane == .x86 {
+			switch coordinator.intelTranslationState {
+			case .checking, .waitingForLauncherCheck: return false
+			default: break
 			}
+		}
+		let plan = installPlan
+		if plan.gameNeedsDownload && !installation.canInstall { return false }
+		if plan.runtimeNeedsDownload {
+			return lifecycle.activity == .idle || lifecycle.activity.isInstalling
+		}
+		return runtimeLane == runtimeSelection.selectedLane || lifecycle.activity == .idle
+	}
+
+	// Resuming re-runs the install; the installer continues from its partial archive.
+	private func resumeRuntimeInstall() {
+		guard let lane = runtimeSelection.pausedLane else { return }
+		coordinator.installRunner.installRuntime(
+			lane,
+			startsGameDownload: false,
+			actions: actions
+		) { [coordinator] in
+			guard coordinator.step == .install else { return }
 			coordinator.advance()
+		}
+	}
+
+	private func performInstallAction() {
+		guard let runtimeLane else { return }
+		let plan = installPlan
+		if plan.runtimeNeedsDownload {
+			coordinator.installRunner.installRuntime(
+				runtimeLane,
+				startsGameDownload: plan.gameNeedsDownload,
+				actions: actions
+			) { [coordinator] in
+				guard coordinator.step == .install else { return }
+				coordinator.advance()
+			}
 			return
 		}
-		Task {
-			guard await actions.installRuntime(runtimeLane) else { return }
-			guard coordinator.step == .runtime else { return }
-			coordinator.advance()
+		if runtimeLane != runtimeSelection.selectedLane {
+			guard actions.selectRuntimeLane(runtimeLane) else { return }
 		}
+		if plan.gameNeedsDownload { actions.installOrUpdate() }
+		coordinator.advance()
 	}
 
 	private var runtimeLaneBinding: Binding<RuntimeLane?> {

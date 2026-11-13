@@ -40,7 +40,7 @@ If no banner appears, open **Settings → Integration** and choose **Open System
 
 ## Screen Recording is off
 
-macOS needs your permission to capture a window. If permission is off, **Settings → Integration** shows **Screen Recording is off for Arknights Client.** The shortcut stays off.
+macOS needs your permission to capture a window. If permission is off, **Settings → Integration** shows **Screen Recording is off for Arknights Client**. The shortcut stays off.
 
 1. Choose **Open System Settings**.
 2. Turn on Arknights Client under **Screen & System Audio Recording**.

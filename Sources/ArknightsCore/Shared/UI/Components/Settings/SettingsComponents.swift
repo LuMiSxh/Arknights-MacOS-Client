@@ -265,6 +265,7 @@ package struct DangerZonePanel<Content: View>: View {
 
 package struct UpdateSettingsRow: View {
 	let title: String
+	let explanation: String
 	package let status: String
 	@Binding package var isEnabled: Bool
 	let isChecking: Bool
@@ -273,6 +274,7 @@ package struct UpdateSettingsRow: View {
 
 	package init(
 		title: String,
+		explanation: String,
 		status: String,
 		isEnabled: Binding<Bool>,
 		isChecking: Bool,
@@ -280,6 +282,7 @@ package struct UpdateSettingsRow: View {
 		check: @escaping () -> Void
 	) {
 		self.title = title
+		self.explanation = explanation
 		self.status = status
 		self._isEnabled = isEnabled
 		self.isChecking = isChecking
@@ -288,18 +291,28 @@ package struct UpdateSettingsRow: View {
 	}
 
 	package var body: some View {
-		SettingsActionRow(title: title, detail: status) {
+		SettingsActionRow(title: title, detail: "\(explanation)\n\(status)") {
 			HStack(spacing: LauncherTokens.Spacing.control) {
 				SettingsToggle(title, isOn: $isEnabled)
 					.disabled(isDisabled)
-				CapsuleActionButton(
-					title: "Check Now",
-					tone: .neutral,
-					presentation: .compact,
-					action: check
-				)
-				.disabled(isChecking || isDisabled)
+				checkButton
 			}
+		}
+	}
+
+	/// A hidden "Checking…" sets the width of both labels, so the button keeps its size while busy.
+	private var checkButton: some View {
+		ZStack {
+			CapsuleActionButton(title: "Checking…", tone: .neutral, presentation: .compact) {}
+				.hidden()
+				.accessibilityHidden(true)
+			CapsuleActionButton(
+				title: isChecking ? "Checking…" : "Check Now",
+				tone: .neutral,
+				presentation: .compact,
+				action: check
+			)
+			.disabled(isChecking || isDisabled)
 		}
 	}
 }
@@ -308,6 +321,8 @@ package struct SettingsActionRow<Actions: View>: View {
 	let title: String
 	let detail: String?
 	var help: String?
+	var badge: String?
+	var secondaryDetail: String?
 	@ViewBuilder package let actions: Actions
 	@Environment(\.settingsPanelRows) private var isInSettingsPanel
 	@Environment(\.launcherTheme) private var theme
@@ -316,11 +331,15 @@ package struct SettingsActionRow<Actions: View>: View {
 		title: String,
 		detail: String? = nil,
 		help: String? = nil,
+		badge: String? = nil,
+		secondaryDetail: String? = nil,
 		@ViewBuilder actions: () -> Actions
 	) {
 		self.title = title
 		self.detail = detail
 		self.help = help
+		self.badge = badge
+		self.secondaryDetail = secondaryDetail
 		self.actions = actions()
 	}
 
@@ -356,11 +375,27 @@ package struct SettingsActionRow<Actions: View>: View {
 	@ViewBuilder
 	private var label: some View {
 		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
-			Text(title)
-				.foregroundStyle(theme.textPrimary)
+			HStack(spacing: LauncherTokens.Spacing.control) {
+				Text(title)
+					.foregroundStyle(theme.textPrimary)
+				if let badge {
+					Text(badge)
+						.font(.caption2.weight(.medium))
+						.foregroundStyle(theme.textSecondary)
+						.padding(.horizontal, LauncherTokens.Spacing.control)
+						.padding(.vertical, LauncherTokens.Spacing.compact)
+						.background(Capsule().fill(theme.controlFill))
+				}
+			}
 			if let detail {
 				Text(detail)
 					.font(.caption)
+					.foregroundStyle(theme.textSecondary)
+					.fixedSize(horizontal: false, vertical: true)
+			}
+			if let secondaryDetail {
+				Text(secondaryDetail)
+					.font(.caption2)
 					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}

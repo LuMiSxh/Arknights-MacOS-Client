@@ -9,6 +9,7 @@ struct OnboardingRosettaRecoveryView: View {
 	static let checkAgainTitle = "Check Again"
 
 	let installationState: RosettaInstallationState
+	let failureCode: SupportCode?
 	@Environment(\.launcherTheme) private var theme
 	let install: () -> Void
 	let checkAgain: () -> Void
@@ -35,14 +36,7 @@ struct OnboardingRosettaRecoveryView: View {
 				}
 			case .failed(let message):
 				recoveryIntroduction
-				Label(
-					"Installation failed",
-					systemImage: "exclamationmark.triangle.fill"
-				)
-				.foregroundStyle(theme.warningInk)
-				Text(message)
-					.foregroundStyle(theme.textSecondary)
-					.fixedSize(horizontal: false, vertical: true)
+				InlineFailureView(message: message, code: failureCode)
 				Text("You can also install Rosetta manually in Terminal:")
 					.foregroundStyle(theme.textSecondary)
 				Text("softwareupdate --install-rosetta --agree-to-license")

@@ -21,6 +21,9 @@ struct RuntimeSettingsPage: View {
 			title: "Runtime",
 			subtitle: "Choose the runtime and manage its files"
 		) {
+			if gameSession.isGameActive, let reason = lifecycle.activity.lockReason {
+				SettingsLockBanner(reason: reason)
+			}
 			activeRuntimePanel
 			maintenancePanel
 			GameCompatibilitySettingsPanel(
@@ -48,25 +51,23 @@ struct RuntimeSettingsPage: View {
 			Text(runtimeSwitchMessage)
 		}
 		.confirmationDialog(
-			"Remove the other runtime?",
+			"Remove the \(runtimeOtherLane.shortLabel) runtime?",
 			isPresented: $isRemoveRuntimeConfirmationPresented,
 			titleVisibility: .visible
 		) {
-			Button("Remove", role: .destructive) {
+			Button("Remove Other Runtime", role: .destructive) {
 				Task { _ = await actions.removeOtherRuntime() }
 			}
 			Button("Cancel", role: .cancel) {}
 		} message: {
-			Text(
-				"The other runtime's files are deleted. Its game environment stays on disk. You can download the runtime again later."
-			)
+			Text("Its game environment stays on disk. You can download the runtime again later.")
 		}
 		.confirmationDialog(
 			"Remove the \(runtimeSelection.selectedLane.shortLabel) runtime?",
 			isPresented: $isRemoveSelectedRuntimeConfirmationPresented,
 			titleVisibility: .visible
 		) {
-			Button("Remove", role: .destructive) {
+			Button("Remove Runtime", role: .destructive) {
 				Task { _ = await actions.removeSelectedRuntime() }
 			}
 			Button("Cancel", role: .cancel) {}

@@ -16,7 +16,6 @@ struct HelpSettingsPage: View {
 	let gameSession: GameSessionController
 	let lifecycle: LauncherLifecycleStore
 	let restartOnboarding: () -> Void
-	let revealApplicationSupport: () -> Void
 	@State private var confirmation: InstallationConfirmation?
 
 	var body: some View {
@@ -42,7 +41,9 @@ struct HelpSettingsPage: View {
 				SettingsActionRow(
 					title: "Diagnostics",
 					detail:
-						"Save the launcher and game logs with your display settings. Logs are redacted for your home folder and URL queries. Nothing is uploaded. Review the file before you share it."
+						actions.isSavingDiagnostics
+						? "Wait for the diagnostics to finish saving."
+						: "Save the launcher and game logs with your display settings. Logs are redacted for your home folder and URL queries. Nothing is uploaded. Review the file before you share it."
 				) {
 					CapsuleActionButton(
 						title: "Save…", systemImage: "square.and.arrow.down",
@@ -99,6 +100,9 @@ struct HelpSettingsPage: View {
 				}
 			}
 			SettingsPanel(title: "Troubleshooting") {
+				if let reason = lifecycle.activity.lockReason {
+					SettingsFootnote(reason)
+				}
 				SettingsActionRow(
 					title: "Setup assistant",
 					detail: "Go through the first-run questions again."
@@ -112,22 +116,11 @@ struct HelpSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "App Data Folder",
-					detail: "Settings, logs, runtimes, and game environments."
-				) {
-					CapsuleActionButton(
-						title: "Show in Finder", systemImage: "folder",
-						tone: .neutral, presentation: .compact,
-						action: revealApplicationSupport
-					)
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: "Debug Logging",
+					title: "Debug logging",
 					detail:
 						"Writes detailed Wine and graphics logs from the next game start. Logs grow quickly, so turn this off when you are done."
 				) {
-					SettingsToggle("Debug Logging", isOn: $settings.debugLoggingEnabled)
+					SettingsToggle("Debug logging", isOn: $settings.debugLoggingEnabled)
 				}
 				SettingsHairline()
 				InstallationDestructiveRow(
@@ -141,7 +134,12 @@ struct HelpSettingsPage: View {
 					confirming: .rebuildEnvironment,
 					confirmation: $confirmation
 				)
-				SettingsHairline()
+			}
+
+			DangerZonePanel {
+				if let reason = lifecycle.activity.lockReason {
+					SettingsFootnote(reason)
+				}
 				InstallationDestructiveRow(
 					title: "Delete game environment",
 					detail: "Signs you out of every sign-in provider. Game files stay.",

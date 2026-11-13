@@ -7,7 +7,7 @@ import SwiftUI
 struct OnboardingRegionView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	@Bindable var installation: InstallationController
-	let lifecycle: LauncherLifecycleStore
+	@Environment(\.launcherTheme) private var theme
 	let canSwitchRegion: Bool
 	let selectRegion: @MainActor @Sendable (GameRegion) -> Void
 
@@ -19,9 +19,8 @@ struct OnboardingRegionView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "Server",
-			subtitle:
-				"Each server has its own game files and accounts. You can add another server later in Settings."
+			step: .region,
+			subtitle: "Each server has its own game files and accounts"
 		) {
 			OnboardingQuestion(
 				question: "Server",
@@ -31,17 +30,13 @@ struct OnboardingRegionView: View {
 				isDisabled: !canSwitchRegion
 			)
 
-			OnboardingCanaryPanel(title: "Canary Features") {
-				OnboardingToggleRow(
-					title: "Canary Features",
-					detail:
-						"Turns on experimental features. There are no canary features right now.",
-					isOn: $preferences.canaryFeaturesEnabled,
-				)
-				.disabled(lifecycle.activity != .idle)
-			}
-
-			OnboardingGameFilesPanel(installation: installation, lifecycle: lifecycle)
+			Text(
+				"Each server is run by its publisher, which handles sign-in and purchases. Some servers use ACE Anti-Cheat, which may block or flag the game on a Mac."
+			)
+			.font(.callout)
+			.foregroundStyle(theme.textSecondary)
+			.fixedSize(horizontal: false, vertical: true)
+			.padding(.horizontal, LauncherTokens.Spacing.panel)
 		}
 	}
 

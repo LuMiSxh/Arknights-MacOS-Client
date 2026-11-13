@@ -244,6 +244,6 @@ The setup assistant always does one silent Sparkle check before version-specific
 
 On a new installation, setup also asks for the runtime architecture. See [Game runtime](../help/runtime.md#macos-support) for the macOS rule.
 
-To make every existing user rerun setup after a release, bump `OnboardingProgressStore.currentSchemaVersion`. Schema 2 shipped with 0.7.0. Schema 3 ships with 0.8.0. Preferences stay unchanged. Only setup progress resets.
+To make every existing user rerun setup after a release, bump `OnboardingProgressStore.currentSchemaVersion`. Schema 2 shipped with 0.7.0. Schema 3 ships with 0.8.0. Schema 4 ships with 1.0 and merges the runtime, game download, location, and Rosetta 2 into the **Install** step. Preferences stay unchanged. Only setup progress resets.
 
-To make the rerun mandatory, also add the new schema to `OnboardingProgressStore.requiredSchemaVersions` and give it a reason in `OnboardingWelcomeView.requiredSetupReason(schema:)`. Returning players then see why, and Skip Setup stays hidden until they finish. First-time users can still skip. Schemas 2 and 3 are required. In debug builds, the **Required** toggle next to **Onboarding preview** in the developer simulator shows this state.
+To make the rerun mandatory, also add the new schema to `OnboardingProgressStore.requiredSchemaVersions` and give it a reason in `OnboardingWelcomeView.requiredSetupReason(schema:)`. Returning players then see why, and Skip Setup stays hidden until they finish. First-time users can still skip. Schemas 2, 3, and 4 are required. In debug builds, the **Required** toggle next to **Onboarding preview** in the developer simulator shows this state.

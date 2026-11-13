@@ -213,6 +213,10 @@ extension LauncherViewModel: LauncherActions {
 		return installed
 	}
 
+	package func pauseRuntimeDownload() {
+		runtimeSelection.pauseInstall()
+	}
+
 	@discardableResult
 	package func selectRuntimeLane(_ lane: RuntimeLane) -> Bool {
 		do {

@@ -44,6 +44,29 @@ struct RuntimeProgressLabel: View {
 	}
 }
 
+/// Pause for a runtime download. Only this leaf reads the per-tick phase. Shows in the download
+/// phase only, matching the controller, which cannot pause extraction.
+struct RuntimePauseButton: View {
+	let controller: RuntimeSelectionController
+	let pause: () -> Void
+
+	var body: some View {
+		if showsPause {
+			CapsuleActionButton(
+				title: "Pause",
+				systemImage: "pause.fill",
+				tone: .neutral,
+				presentation: .compact,
+				action: pause
+			)
+		}
+	}
+
+	private var showsPause: Bool {
+		controller.installProgress.map { $0.phase == .downloading } ?? true
+	}
+}
+
 /// Home status line for a runtime install. Only this leaf reads the per-tick progress, so the
 /// parent views do not re-render on every update.
 struct RuntimeDownloadStatusLabel: View {

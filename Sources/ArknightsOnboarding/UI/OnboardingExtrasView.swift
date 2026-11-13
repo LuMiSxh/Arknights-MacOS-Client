@@ -48,19 +48,13 @@ struct OnboardingExtrasView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "Updates & Integrations",
+			step: .extras,
 			subtitle: "Update checks only notify you. Nothing downloads until you choose"
 		) {
 			OnboardingQuestion(
 				question: "Update checks",
 				answers: UpdateCheckAnswer.allCases.map(\.answer),
 				selection: updateBinding
-			)
-
-			OnboardingQuestion(
-				question: "Discord presence",
-				answers: DiscordPresenceAnswer.allCases.map(\.answer),
-				selection: presenceBinding
 			)
 
 			OnboardingQuestion(
@@ -75,34 +69,47 @@ struct OnboardingExtrasView: View {
 					detail: "YouTube playlist. Pauses while the game runs.",
 					isOn: $preferences.playsLauncherMusic,
 				)
+			}
+
+			OnboardingMoreOptions {
+				OnboardingQuestion(
+					question: "Discord presence",
+					answers: DiscordPresenceAnswer.allCases.map(\.answer),
+					selection: presenceBinding
+				)
+
 				if preferences.playsLauncherMusic {
-					SettingsHairline()
-					LabeledContent("Volume") {
-						HStack(spacing: LauncherTokens.Spacing.control) {
-							Image(systemName: "speaker.fill")
-								.foregroundStyle(theme.textSecondary)
-								.accessibilityHidden(true)
-							Slider(value: $preferences.launcherMusicVolume, in: 0...1, step: 0.05)
-								.tint(theme.accentFill)
-								.accessibilityLabel("Volume")
-							Text(
-								preferences.launcherMusicVolume,
-								format: .percent.precision(.fractionLength(0))
-							)
-							.font(.caption.monospacedDigit())
-							.foregroundStyle(theme.textSecondary)
-							.frame(minWidth: 44, alignment: .trailing)
-							.accessibilityHidden(true)
-						}
-					}
-					SettingsHairline()
-					OnboardingToggleRow(
-						title: "Show what’s playing",
-						detail: "Adds the current track and playback controls to the launcher.",
-						isOn: $preferences.showsPlayingMusic,
-					)
+					playbackPanel
 				}
 			}
+		}
+	}
+
+	private var playbackPanel: some View {
+		SettingsPanel(title: "Playback") {
+			LabeledContent("Volume") {
+				HStack(spacing: LauncherTokens.Spacing.control) {
+					Image(systemName: "speaker.fill")
+						.foregroundStyle(theme.textSecondary)
+						.accessibilityHidden(true)
+					Slider(value: $preferences.launcherMusicVolume, in: 0...1, step: 0.05)
+						.tint(theme.accentFill)
+						.accessibilityLabel("Volume")
+					Text(
+						preferences.launcherMusicVolume,
+						format: .percent.precision(.fractionLength(0))
+					)
+					.font(.caption.monospacedDigit())
+					.foregroundStyle(theme.textSecondary)
+					.frame(minWidth: 44, alignment: .trailing)
+					.accessibilityHidden(true)
+				}
+			}
+			OnboardingToggleRow(
+				title: "Now playing",
+				detail: "Shows the current track and playback controls on the Home screen.",
+				isOn: $preferences.showsPlayingMusic,
+			)
 		}
 	}
 }

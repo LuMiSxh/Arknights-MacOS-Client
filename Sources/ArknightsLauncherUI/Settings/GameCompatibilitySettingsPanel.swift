@@ -6,13 +6,9 @@ import SwiftUI
 struct GameCompatibilitySettingsPanel: View {
 	@Bindable var settings: LauncherPreferencesController
 	let isLocked: Bool
-	@State private var isExpanded = false
 
 	var body: some View {
-		SettingsPanel(
-			title: "Compatibility",
-			isExpanded: $isExpanded
-		) {
+		SettingsPanel(title: "Compatibility") {
 			SettingsActionRow(
 				title: "Wine sync (MSYNC / ESYNC)",
 				detail: "MSYNC is faster on most Macs. Try ESYNC if the game freezes or crashes.",

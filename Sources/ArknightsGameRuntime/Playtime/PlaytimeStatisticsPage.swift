@@ -17,6 +17,18 @@ package struct PlaytimeStatisticsPage: View {
 		self.regions = regions
 	}
 
+	private var resetIsEmpty: Bool {
+		controller.totalDuration == 0
+			&& controller.statistics.activeSession == nil
+	}
+
+	private var resetDetail: String {
+		if resetIsEmpty {
+			return "Play the game to collect statistics first."
+		}
+		return "Deletes all local totals and daily data. This cannot be undone."
+	}
+
 	package var body: some View {
 		SettingsPage(
 			title: "Playtime",
@@ -78,7 +90,7 @@ package struct PlaytimeStatisticsPage: View {
 			DangerZonePanel {
 				SettingsActionRow(
 					title: "Playtime statistics",
-					detail: "Deletes all local totals and daily data. This cannot be undone."
+					detail: resetDetail
 				) {
 					CapsuleActionButton(
 						title: "Reset Statistics…",
@@ -88,10 +100,7 @@ package struct PlaytimeStatisticsPage: View {
 					) {
 						confirmsReset = true
 					}
-					.disabled(
-						controller.totalDuration == 0
-							&& controller.statistics.activeSession == nil
-					)
+					.disabled(resetIsEmpty)
 					.confirmationDialog(
 						"Reset playtime statistics?",
 						isPresented: $confirmsReset,

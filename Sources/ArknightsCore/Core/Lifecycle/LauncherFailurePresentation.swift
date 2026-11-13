@@ -11,6 +11,18 @@ package struct LauncherFailurePresentation: Equatable, Sendable, Identifiable {
 	package let actions: [RecoveryAction]
 	package let blocksGameLaunch: Bool
 
+	/// Whether the failure belongs to the game download that setup starts.
+	package var isGameDownloadFailure: Bool {
+		context.operation == .install || context.operation == .update
+	}
+
+	/// Whether first-run setup shows this failure inline on its Install step. While setup is
+	/// visible, the Home failure sheet waits for these.
+	package var isShownInSetup: Bool {
+		isGameDownloadFailure || context.operation == .intelTranslationPreflight
+			|| context.operation == .rosettaInstallation
+	}
+
 	package init(
 		id: UUID,
 		message: String,

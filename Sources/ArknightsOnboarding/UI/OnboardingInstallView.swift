@@ -1,21 +1,31 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
 import ArknightsGameRuntime
 import Foundation
 import SwiftUI
 
-struct OnboardingRuntimeView: View {
+// The one step that downloads: the runtime, then the game files location, then Rosetta 2 for the
+// x86_64 runtime. The server is already chosen, so the page names it before anything downloads.
+struct OnboardingInstallView: View {
+	let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
 	let runtimeSelection: RuntimeSelectionController
 	@Binding var selectedLane: RuntimeLane?
 	let isDisabled: Bool
-	@Environment(\.launcherTheme) private var theme
+	let intelTranslationState: IntelTranslationState
+	let rosettaInstallationState: RosettaInstallationState
+	let chooseInstallDirectory: () -> Void
+	let locateExistingInstallation: () -> Void
+	let retryIntelTranslation: () -> Void
+	let installRosetta: () -> Void
 
 	var body: some View {
 		OnboardingPage(
-			title: "Runtime",
+			step: .install,
 			subtitle:
-				"The runtime runs the game on this Mac. You can change it later in Settings."
+				"Set up the runtime and game files for \(installation.region.displayName) from \(installation.region.publisherName)"
 		) {
 			OnboardingQuestion(
 				question: "Choose a runtime",
@@ -34,9 +44,28 @@ struct OnboardingRuntimeView: View {
 			}
 
 			if let failure = runtimeSelection.failure {
-				failurePanel(failure)
+				InlineFailureView(message: failure.message, code: failure.code)
+					.padding(.horizontal, LauncherTokens.Spacing.panel)
 			}
 
+			OnboardingGameFilesPanel(
+				installation: installation,
+				lifecycle: lifecycle,
+				chooseInstallDirectory: chooseInstallDirectory,
+				locateExistingInstallation: locateExistingInstallation
+			)
+
+			if selectedLane == .x86 {
+				OnboardingRosettaPanel(
+					intelTranslationState: intelTranslationState,
+					rosettaInstallationState: rosettaInstallationState,
+					rosettaFailureCode: lifecycle.state.presentation.failure.flatMap {
+						$0.context.operation == .rosettaInstallation ? $0.code : nil
+					},
+					retryIntelTranslation: retryIntelTranslation,
+					installRosetta: installRosetta
+				)
+			}
 		}
 	}
 
@@ -63,29 +92,6 @@ struct OnboardingRuntimeView: View {
 			return "ARM64 is not available in this launcher release."
 		}
 		return nil
-	}
-
-	private func failurePanel(_ failure: RuntimeSelectionFailure) -> some View {
-		SettingsPanel(title: "Runtime setup failed", tone: .warning) {
-			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
-				Text(failure.message)
-					.font(.callout)
-					.foregroundStyle(theme.textPrimary)
-					.fixedSize(horizontal: false, vertical: true)
-				if let code = failure.code {
-					HStack(spacing: LauncherTokens.Spacing.compact) {
-						Text("Support code")
-							.foregroundStyle(theme.textSecondary)
-						Text(code.rawValue)
-							.font(.callout.monospaced())
-							.foregroundStyle(theme.dangerText)
-							.textSelection(.enabled)
-					}
-					.font(.caption)
-				}
-			}
-			.padding(.vertical, LauncherTokens.Spacing.compact)
-		}
 	}
 
 	private func laneDetail(_ lane: RuntimeLane) -> String {

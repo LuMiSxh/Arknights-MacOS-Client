@@ -178,11 +178,18 @@ package struct QuietLink: View {
 	@Environment(\.launcherTheme) private var theme
 	@State private var isHovering = false
 
+	/// Every destination opens in the browser, so the label carries the external-link icon inside the hit target.
 	package var body: some View {
-		Link(title, destination: destination)
-			.foregroundStyle(theme.accentInk)
-			.underline(isHovering)
-			.onHover { isHovering = $0 }
+		Link(destination: destination) {
+			HStack(spacing: LauncherTokens.Spacing.compact) {
+				Text(title)
+					.underline(isHovering)
+				Image(systemName: "arrow.up.right.square")
+					.accessibilityHidden(true)
+			}
+		}
+		.foregroundStyle(theme.accentInk)
+		.onHover { isHovering = $0 }
 	}
 }
 

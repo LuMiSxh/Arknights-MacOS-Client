@@ -5,7 +5,6 @@ import SwiftUI
 
 /// One switch per runtime patch. Turning a patch off asks first, because it can break the game.
 struct RuntimePatchSettingsPanel: View {
-	@Environment(\.launcherTheme) private var theme
 	@Bindable var settings: LauncherPreferencesController
 	let lane: RuntimeLane
 	let isLocked: Bool
@@ -17,11 +16,6 @@ struct RuntimePatchSettingsPanel: View {
 
 	var body: some View {
 		SettingsPanel(title: "Runtime patches", tone: .warning) {
-			if isLocked {
-				Text("Quit the game to change these settings.")
-					.font(.callout)
-					.foregroundStyle(theme.textSecondary)
-			}
 			ForEach(patches, id: \.self) { patch in
 				SettingsActionRow(title: patch.label, detail: patch.detail) {
 					SettingsToggle(patch.label, isOn: binding(for: patch))
