@@ -7,6 +7,11 @@ import AppKit
 package struct GameDisplayIdentity: Codable, Hashable, Sendable {
 	package let uuid: String
 	package let name: String
+
+	package init(uuid: String, name: String) {
+		self.uuid = uuid
+		self.name = name
+	}
 }
 
 /// One connected display, as AppKit reports it.
@@ -20,6 +25,19 @@ package struct GameScreenInfo: Equatable, Sendable {
 	package let backingScaleFactor: CGFloat
 	/// Points the notch covers at the top of the display; zero without a notch.
 	let notchHeight: CGFloat
+
+	/// Builds a display from its parts. The developer preview adds displays the Mac lacks.
+	package init(
+		displayID: CGDirectDisplayID, identity: GameDisplayIdentity, frameSize: CGSize,
+		visibleSize: CGSize, backingScaleFactor: CGFloat, notchHeight: CGFloat
+	) {
+		self.displayID = displayID
+		self.identity = identity
+		self.frameSize = frameSize
+		self.visibleSize = visibleSize
+		self.backingScaleFactor = backingScaleFactor
+		self.notchHeight = notchHeight
+	}
 }
 
 /// The connected displays and the order Wine lists them in. Tests build one directly. Only
@@ -118,6 +136,17 @@ package struct GameScreenList: Equatable, Sendable {
 			return nil
 		}
 		return CFUUIDCreateString(nil, uuid) as String?
+	}
+}
+
+extension GameScreenList {
+	/// Returns the list with `screen` added as an online display. The developer preview uses it
+	/// to show a display the Mac lacks.
+	package func adding(_ screen: GameScreenInfo) -> GameScreenList {
+		GameScreenList(
+			screens: screens + [screen],
+			onlineDisplays: onlineDisplays + [OnlineDisplay(id: screen.displayID, mirrorOf: 0)],
+			titleBarHeight: titleBarHeight)
 	}
 }
 

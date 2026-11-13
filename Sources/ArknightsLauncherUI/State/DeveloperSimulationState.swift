@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsGameInstallation
+import CoreGraphics
 
 #if DEBUG
 	package struct DeveloperSimulationState: Equatable, Sendable {
@@ -38,8 +39,19 @@ import ArknightsGameInstallation
 		}
 		// The raw value is the pill identifier `LauncherHUDView` expands.
 		enum Pill: String, CaseIterable { case none, music, version, status }
+		// Adds a simulated display to the Game display row only. Launches never read it.
+		enum Displays: String, CaseIterable { case system, twoDisplays }
 
 		static let launcherUpdateVersion = "0.6.1"
+		// Only the Game display row reads this. A saved choice of it is not connected at launch.
+		static let simulatedDisplay = GameScreenInfo(
+			displayID: 0x7FFF_0001,
+			identity: GameDisplayIdentity(
+				uuid: "6F1A2B3C-4D5E-4F60-8A7B-9C0D1E2F3A4B", name: "Simulated Display"),
+			frameSize: CGSize(width: 1920, height: 1080),
+			visibleSize: CGSize(width: 1920, height: 1080),
+			backingScaleFactor: 2,
+			notchHeight: 0)
 
 		var lifecycle = Lifecycle.ready
 		var phase = Phase.downloading
@@ -65,6 +77,8 @@ import ArknightsGameInstallation
 		var xcodeMissing = false
 		var longAccessibilityText = false
 		var usesDynamicTheme = true
+		// The preview starts with a second display so the Game display row is visible.
+		var displays = Displays.twoDisplays
 
 		package static func isPreviewArgument(_ arguments: [String]) -> Bool {
 			arguments.contains("--developer-preview")
@@ -160,6 +174,12 @@ import ArknightsGameInstallation
 			case .available: "Version \(Self.launcherUpdateVersion) available"
 			case .failed: "Couldn’t check for updates"
 			}
+		}
+
+		/// The Game display list with the simulated display added, or nil when none is simulated.
+		func simulatedGameScreens() -> GameScreenList? {
+			guard displays == .twoDisplays else { return nil }
+			return GameScreenList.system().adding(Self.simulatedDisplay)
 		}
 
 		var installationStage: InstallationStage {

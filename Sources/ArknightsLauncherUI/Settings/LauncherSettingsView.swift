@@ -165,6 +165,7 @@ struct LauncherSettingsView: View {
 				}
 				.id(selectedSection)
 				.environment(\.simulatesMissingXcode, simulatesMissingXcode)
+				.environment(\.simulatedGameScreens, simulatedGameScreens)
 				.frame(maxWidth: .infinity, maxHeight: .infinity)
 			}
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -215,6 +216,14 @@ struct LauncherSettingsView: View {
 			developerSimulation?.wrappedValue.xcodeMissing ?? false
 		#else
 			false
+		#endif
+	}
+
+	private var simulatedGameScreens: GameScreenList? {
+		#if DEBUG
+			developerSimulation?.wrappedValue.simulatedGameScreens()
+		#else
+			nil
 		#endif
 	}
 

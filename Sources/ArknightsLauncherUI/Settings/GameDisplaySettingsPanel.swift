@@ -3,6 +3,11 @@
 import ArknightsCore
 import SwiftUI
 
+extension EnvironmentValues {
+	/// Developer-simulated displays for the Game display row. Nil reads the connected ones.
+	@Entry var simulatedGameScreens: GameScreenList? = nil
+}
+
 struct GameDisplaySettingsPanel: View {
 	@Environment(\.launcherTheme) private var theme
 	@Bindable var settings: LauncherPreferencesController
@@ -10,13 +15,14 @@ struct GameDisplaySettingsPanel: View {
 	/// nil while runtime discovery runs. False means the game falls back to Standard.
 	let metalFXSpatialUpscalingSupported: Bool?
 	@State private var screens = GameScreenMonitor()
+	@Environment(\.simulatedGameScreens) private var simulatedGameScreens
 	/// Set by the Custom… choice. Shows the width and height fields for the stored size.
 	@State private var showsCustomSize = false
 
 	private var options: GameLaunchOptions { settings.launchOptions }
 	private var isSizeLocked: Bool { options.usesGameSettings || isLocked }
 	/// The screen the game opens on, from the connected displays.
-	private var resolution: GameScreenResolution? { screens.list.resolve(options.display) }
+	private var resolution: GameScreenResolution? { displayList.resolve(options.display) }
 	private var screen: GameScreenMetrics? { resolution?.metrics }
 	private var nativeFullscreenSize: GameDisplaySize? { resolution?.fullscreenDisplay.pixelSize }
 	private var plan: GameDisplayPlan {
@@ -139,14 +145,17 @@ struct GameDisplaySettingsPanel: View {
 
 	// MARK: Game display
 
+	/// The displays the row lists: the connected ones, or the developer simulation's.
+	private var displayList: GameScreenList { simulatedGameScreens ?? screens.list }
+
 	/// The row appears with several displays, or when the saved display is not connected.
 	private var showsDisplayRow: Bool {
-		screens.list.screens.count > 1 || resolution?.isFallback == true
+		displayList.screens.count > 1 || resolution?.isFallback == true
 	}
 
 	private var displayChoices: [(value: GameDisplayIdentity?, title: String)] {
 		var choices: [(value: GameDisplayIdentity?, title: String)] = [(nil, "Primary display")]
-		choices += screens.list.screens.map {
+		choices += displayList.screens.map {
 			(value: $0.identity as GameDisplayIdentity?, title: $0.identity.name)
 		}
 		if let saved = options.display, resolution?.isFallback == true {
