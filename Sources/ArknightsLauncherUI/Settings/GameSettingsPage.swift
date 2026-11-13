@@ -17,7 +17,7 @@ struct GameSettingsPage: View {
 			if isDisplayLocked, let reason = lifecycle.activity.lockReason {
 				SettingsLockBanner(reason: reason)
 			}
-			SettingsFootnote("Changes apply the next time the game starts.")
+
 			GameDisplaySettingsPanel(
 				settings: settings,
 				isLocked: isDisplayLocked,
