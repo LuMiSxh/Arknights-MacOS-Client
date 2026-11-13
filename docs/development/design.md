@@ -8,6 +8,77 @@ order: 20
 
 The launcher must feel like a current macOS app. It must feel like an Arknights launcher second.
 
+## Interface rules
+
+Pages that do not follow these rules yet are tracked in [UI rework for 1.0](ui-rework-1.0.md).
+
+### Wording
+
+1. Use sentence case for page subtitles, panel headers, row labels, rail captions, setup question headers, and dialog titles. Use Title Case for buttons and menu items. Keep capitals in feature names, such as Game Mode, Battery Saver, Dynamic Theme, MetalFX, and Discord.
+2. Do not end labels, headers, subtitles, or dialog titles with a period. A dialog title may end with "?". Put a full sentence in the detail. Keep periods in paragraphs.
+3. Start every button with a verb. Name the object when the row has another action or the action is destructive.
+4. Add "…" only when a button opens a dialog, sheet, or panel that asks for input or confirmation. A button that opens a browser, Finder, or Mail has no ellipsis. Give it an external-link icon.
+5. Repeat the trigger text, without "…", as the main button of a confirmation.
+6. Write a switch label as a noun phrase that names the feature. Write a detail that says what On does.
+7. Use these terms for users: server, game environment, runtime, sign-in window, and the game. Name the architecture of a runtime when it matters. Use one term for each concept: rail, page, panel, row, dialog, setup, and docs.
+8. Use developer terms (Wine, DXMT, prefix, gamepolicyctl, partial files, and registry) in three places only:
+   - A control that selects that technology. Explain the control in user terms.
+   - About, in its **Technical details** section, and collapsed expert panels.
+   - "(Wine prefix)" once, in a game environment confirmation.
+9. Write sizes and times as "120 FPS", "1280 × 720", "50%", and "04:00 server time". Format byte sizes with `ByteCountFormatter`. Show "None" when nothing is stored. Write "and", not "&". Use the typographic apostrophe (’), not the straight one.
+10. Use single words for Settings rail page names and rail captions. A setup rail label equals its page title exactly and may wrap.
+11. Give each setup question header the same text as its Settings row label.
+12. Use different names for adjacent levels. A page and its panel differ. A panel and its only row differ.
+
+### Explanations
+
+13. Give every row a detail when its label does not make the effect obvious. Use one or two sentences of at most 25 words. Write in present tense. Start with what the control does.
+14. Never put information needed to choose correctly only in a tooltip. This covers permissions, restarts, when changes apply, and data loss. A tooltip gives background only, in at most 40 words.
+15. Show a fact that applies to every row of a page or panel once. Use a page note or a panel footnote.
+16. Add one **Learn more** link to each panel that needs a longer explanation. Link it to the matching page in `docs/help`.
+
+### Layout and buttons
+
+17. Place the label and its detail on the left of a row, and the control at the trailing edge. Use the shared footnote component for other text inside a panel.
+18. Give a row at most two buttons. Move further choices into a menu.
+19. Use a switch for on or off. Use a segmented control for up to three short options. Use a menu for other choices.
+20. Place a dependent setting directly below its parent. Hide it while the parent is off. Disable it with a reason when something outside it blocks it.
+21. Use the danger tone (red) only for actions that lose data or sign the user out. Such an action always uses the danger tone, `role: .destructive`, an ellipsis, and a confirmation.
+22. Use the warning tone and a confirmation for a risky but reversible change. Keep a recoverable action, such as clearing a cache, neutral.
+23. Title a confirmation `<Verb> <object>?` and name its scope: the server or the runtime. Say what is lost and what stays, in at most two sentences. Make Cancel the default.
+24. Use the accent on the primary action. A normal button may carry an accent hint, such as an icon. Accent buttons have no per-screen limit.
+
+### Disabled, busy, and errors
+
+25. Show the reason for every disabled control in the same panel. Use a detail swap, a panel footnote, or one page banner when the whole page is locked.
+26. Write each reason as something the user can do, such as "Quit the game to change these settings." Take every reason from one activity-to-reason mapping.
+27. Make disabled controls look disabled. This includes switches, sliders, and tinted buttons.
+28. Keep a saved choice that became unavailable selectable as `<Name> (unavailable)`. Its detail says what happens instead.
+29. Change a busy button's label, such as to "Checking…". Keep its width. Disable only that button.
+30. Show a failure inline under the step or row that failed. Use the shared inline failure component. It states what happened, what to do, and the **Support code**.
+31. Show a blocked macOS permission as a status row directly under the feature it blocks. Show the row only while that feature is on. The row has a warning icon, a sentence-case label without a period, and **Open System Settings**.
+
+### Settings-only
+
+- S1. Order panels on each page: most used first, then an optional collapsed advanced panel, then the **Danger zone** last. Put every destructive action in its page's **Danger zone**.
+- S2. Show at most six visible rows in a panel. Split a larger panel by user task.
+- S3. Keep page actions inside the page. The floating footer holds only **Done**.
+- S4. Name the page and panel in every `docs/help` path. A rename updates `docs/help`, design.md, CHANGELOG.md, and setup in the same change.
+- S5. When an override changes a row's effective value, show that value in the row's detail.
+- S6. Hide a panel that has no working controls.
+
+### Setup-only
+
+- O1. Use only **Continue**, **Download and Continue**, **Install Update**, or **Finish Setup** as the footer primary button.
+- O2. Do not start a download until the server, runtime, and install location are chosen.
+- O3. Show Rosetta 2 only while x86_64 is selected.
+- O4. Show the questions that matter for the first launch in each step. Put the other options in a collapsed **More options** section. Accepting every default produces a working setup.
+- O5. Order setup questions as the Settings pages order them. A setup control that changes a setting uses the same action and label as in Settings.
+- O6. Show a running download on every step, with a **Pause** button. **Back** never cancels work.
+- O7. A step that cannot continue says why on the page. It offers one action. It never shows an empty panel.
+- O8. Make every step and state reachable in the developer preview.
+- O9. Move a step transition in the direction of travel, or crossfade.
+
 ## Home
 
 - Let the artwork fill the window. Extend it under the traffic lights. Do not add a title strip.
@@ -38,9 +109,8 @@ The launcher must feel like a current macOS app. It must feel like an Arknights 
 
 - The accent comes from the artwork. Dynamic Theme sets it.
 - The accent marks the current primary operation, progress, selection, and interaction highlights.
-- Give each panel or screen one accent action.
 - Install, Update, and Play use the accent as a prominent Liquid Glass tint.
-- Keep secondary actions, retry buttons that are not the default, and status text neutral. Links use the accent text role (`accentInk`), including About and the legal links.
+- Keep secondary actions, retry buttons that are not the default, and status text neutral. A normal button may carry an accent hint, such as an icon. Links use the accent text role (`accentInk`), including About and the legal links.
 - Do not use accent-colored shadows.
 - Keep neutrals graphite. Do not tint surfaces, borders, or secondary controls with the accent hue.
 - Use `LauncherVisuals.cyan` (#18D1FF) only as the fallback. Use it only when no artwork accent exists. Do not write any other fixed cyan value in UI styling.
@@ -68,7 +138,7 @@ The launcher must feel like a current macOS app. It must feel like an Arknights 
 - Use radius tokens only from `LauncherTokens.Radius`.
 - A nested radius equals the outer radius minus the padding. The minimum is 4 pt. Collapsed HUD surfaces and the primary action may use capsules.
 - Put every margin, padding, gap, and fixed size on a 4 pt grid. Use a 2 pt step only inside small controls.
-- Use one value for each role. Use `LauncherTokens.Spacing.page` (24 pt) for page margins. Use `LauncherTokens.Spacing.section` (20 pt) for section gaps. Use `LauncherTokens.Layout.railWidth` (192 pt) for the Settings and Onboarding rails.
+- Use one value for each role. Use `LauncherTokens.Spacing.page` (24 pt) for page margins. Use `LauncherTokens.Spacing.section` (20 pt) for section gaps. Use `LauncherTokens.Layout.railWidth` (192 pt) for the Settings and setup rails.
 - Use size and color for hierarchy. Use regular and medium weights. Use semibold only for rare emphasis. Do not use bold or heavier. Do not change weight to show selection.
 - Use fonts from `LauncherTokens.Typography`. Or use a semantic text style with an allowed weight. Do not write `.system(size:` in a view.
 
@@ -127,7 +197,7 @@ Rules:
 
 - A closed gate freezes each loop's phase. The loop resumes from that phase when the gate opens.
 - Reduce Motion also freezes the loop. A caller can pass a fixed phase for Reduce Motion (`reducedMotionPhase`).
-- The Home layer pauses its loops while a sheet, the update overlay, or onboarding covers it. Loops inside sheets and overlays run when the other conditions allow it.
+- The Home layer pauses its loops while a sheet, the update overlay, or setup covers it. Loops inside sheets and overlays run when the other conditions allow it.
 
 ## Interaction contract
 
@@ -146,7 +216,7 @@ Use one control for these actions. Secondary controls stay neutral. Update check
 
 Each server owns its game directory and installed manifest. The Home action and status capsule show only the active server. See [Installation architecture](architecture/installation.md) and [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md).
 
-Show a failure in the shared failure dialog. Give actionable guidance and matching recovery actions. For a blocking failure, the status capsule shows **Needs attention** and a **Show Details** action. The capsule does not repeat the error text, the support code, or the Rosetta recovery controls. During onboarding, keep the Rosetta prerequisites and the installation recovery in the setup step. Do not turn a transient check failure into an install or play action.
+Show a failure inline under the step or row that failed, using the shared inline failure component. Give actionable guidance and matching recovery actions. For a blocking failure, the status capsule shows **Needs attention** and a **Show Details** action. The capsule does not repeat the error text, the support code, or the Rosetta recovery controls. During setup, keep the Rosetta prerequisites and the installation recovery in the setup step. Do not turn a transient check failure into an install or play action.
 
 ## Accessibility and input
 
@@ -158,15 +228,11 @@ Show a failure in the shared failure dialog. Give actionable guidance and matchi
 
 ## Copy
 
-- Use sentence case for panel headers, labels, and group captions. Use title case for button labels, as macOS does.
-- Do not end labels, headers, or subtitles with a period. Keep periods in paragraphs.
 - Write the version as "Version 1.2.3". Do not use a "v" prefix.
-- Use typographic apostrophes (’) in all copy.
 - Use one label for each action.
-- Keep developer terms out of dialogs and help text. These terms include Wine, prefix, partial files, registry, and DXMT. About shows them only in a collapsed "Technical details" disclosure.
 - **Runtime** is a user term for the files that run the game. Name the runtime (x86_64 or ARM64) when a choice or state depends on it. Do not use Wine internals to explain it.
 - An advanced compatibility or display option names the technology it controls. Examples are MetalFX and Wine sync.
-- Danger zones and destructive confirmations name the technical object they change. An example is the Wine prefix.
+- Danger zones and destructive confirmations name the scope they change, such as the server, the runtime, or the game environment.
 
 ## Feedback and review
 
@@ -185,14 +251,15 @@ For a UI change, use the debug simulator. Check these states: an empty region, a
 - Group related controls in quiet glass panels. Switch Settings pages at once. Do not use page transitions. The selected rail row uses the accent.
 - Use a grouped list rail. The Arknights group holds Game, Installation, Runtime, Storage, and Playtime. The Launcher group holds Appearance, Integration, and Updates. In Integration, the panels are Notifications, Music, and Discord. The Notifications panel holds the daily reset reminder, a server menu limited to installed servers, and a status row with **Open System Settings** when macOS blocks notifications. Help and About follow. Debug builds add Developer. Game opens first. Later, Settings reopens the last page while the app runs.
 - In Settings → Runtime, panels appear in this order: Active runtime, Maintenance, Compatibility, Runtime patches, and Danger zone. The Active runtime panel shows the selected runtime, the installed version for each runtime, and the download size. It marks **ARM64 (Apple Silicon)** as **Recommended**, and offers **Switch to x86_64** or **Switch to ARM64**. Disable these changes unless the launcher is idle, and show the reason in a footnote. The Maintenance panel offers **Update Runtime** when the runtime is outdated, **Remove Other Runtime**, and the Rosetta 2 status for the x86_64 runtime. The Compatibility panel holds the Wine sync setting. The Danger zone holds **Remove Runtime…**. It asks for confirmation, keeps the game environment, and shows a failure inline with a support code. A switch that needs a download uses the same warning as setup. The new runtime applies at the next game launch. The page links to **Game runtime** with **About game runtimes**.
+- In 1.0.0, Installation holds **Server**, **Location**, **Maintenance**, and a **Danger zone**. Maintenance offers **Repair**. The Danger zone holds **Uninstall Game…**, which names the server in its confirmation. Hide **Canary Features** while it has no features.
 - In Settings → Appearance, panels appear in this order: Artwork, Dynamic Theme, Appearance, Launcher shows, and Dock icons. The Dynamic Theme panel holds three rows: Follow the artwork, Home controls, and Branding.
-- The Look step of onboarding asks these questions in this order: Artwork, Dynamic Theme, Appearance, Home controls, Branding, Launcher shows, and Dock icons.
-- In Settings → Help, the Troubleshooting panel holds Setup assistant, **App Data Folder** with **Show in Finder**, **Debug Logging**, and the reset actions.
+- The Look step of setup asks these questions in this order: Artwork, Dynamic Theme, Appearance, Home controls, Branding, Launcher shows, and Dock icons.
+- In Settings → Help, the Troubleshooting panel holds Setup assistant, **App Data Folder** with **Show in Finder**, **Debug logging**, and **Rebuild**. **Rebuild** is neutral and asks for confirmation. In 1.0.0, Help also holds **Report** and **Get help**. Its Danger zone holds **Delete Environment…** and **Reset All Settings…**.
 - In Settings → Runtime, the Runtime patches panel follows Compatibility. It uses the warning tone and holds one toggle per patch the selected runtime contains, then **Restore Defaults**. Turning a patch off opens a destructive confirmation that warns the game may break and how to undo it. Turning it on needs no warning. Lock the panel while a game runs and show "Quit the game to change these settings."
 - Explain destructive or expensive actions in user terms.
 - Keep warning and danger panels on neutral backgrounds. Use semantic color only on the header, icon, edge, and relevant actions. Read every semantic color from `LauncherTheme`:
-  - Danger: destructive settings and failure codes. Text uses `dangerText`. A danger button label uses `dangerInk`. A solid HUD or icon fill uses `dangerSurface`. Danger glass uses `dangerGlassTint` and `dangerGlassStroke`.
-  - Warning: cautionary state. Text and icons use `warningInk`. A solid fill or toggle uses `warning`. Warning glass uses `warningGlassTint` and `warningGlassStroke`.
+  - Danger: actions that lose data or sign the user out. Text uses `dangerText`. A danger button label uses `dangerInk`. A solid HUD or icon fill uses `dangerSurface`. Danger glass uses `dangerGlassTint` and `dangerGlassStroke`.
+  - Warning: cautionary state, such as a risky but reversible change. Text and icons use `warningInk`. A solid fill or toggle uses `warning`. Warning glass uses `warningGlassTint` and `warningGlassStroke`.
   - Success: completed state. Text and icons use `successInk`.
   - Accent: the primary operation and intentional selection.
 - Light mode darkens `dangerText`, `warningInk`, and `successInk` to at least 4.5:1 on the light sheet. Dark mode keeps the brand values.
@@ -208,13 +275,13 @@ For a UI change, use the debug simulator. Check these states: an empty region, a
 
 - Present setup as an operation briefing in the launcher window. The left column shows the route. The right column shows one task. Installation status appears inside its step.
 - Check for a newer launcher first. If one exists, stop setup at the update action. The user installs it and reopens the launcher.
-- Verify Intel execution through Rosetta 2 after the launcher preflight. Explain the macOS 27 beta-only Legacy Game Test Mode recovery. Do not present it as a stable-OS step.
-- Ask the daily reset reminder question in Updates & Integrations. The answers are Off (recommended), At reset, and 1 hour before. Ask macOS for notification permission only when the user picks a reminder, and keep Off if macOS refuses.
-- Walk through these steps in order: System Check, Server, Runtime, Display, Look, Updates & Integrations, and Ready. Ask each question with an answer card (`OnboardingQuestion`). Use one answer, several answers with checkboxes, or action cards that open a chooser. Mark the recommended answer. End Display with a one-sentence summary.
-- The Runtime step offers **ARM64 (Apple Silicon)** and **x86_64**. Mark **ARM64 (Apple Silicon)** as **Recommended** when it is offered. Show the installed version, download size, and macOS requirement for each choice. **Download and Continue** installs the selected runtime. On older macOS, show only x86_64 and state that ARM64 requires macOS 26 or later. The step links to **Game runtime** with **About game runtimes**.
-- Before a lane change in setup or Settings, show the runtime switch warning. It states that the runtimes use separate game environments, that the game may treat the switch as a fresh install and ask for sign-in and resources again, and that the switch can add a download. Apply the warning in both directions.
+- Verify Intel execution through Rosetta 2 in the Install step, only while x86_64 is selected. Explain the macOS 27 beta-only Legacy Game Test Mode recovery. Do not present it as a stable-OS step.
+- Ask the daily reset reminder question in Updates and Integrations. The answers are Off (recommended), At reset, and 1 hour before. Ask macOS for notification permission only when the user picks a reminder, and keep Off if macOS refuses.
+- Walk through these steps in order: System Check, Server, Install, Display, Look, Updates and Integrations, and Ready. The Install step covers the runtime, the install location, and Rosetta 2 for x86_64. Ask each question with an answer card (`OnboardingQuestion`). Use one answer, several answers with checkboxes, or action cards that open a chooser. Mark the recommended answer. End Display with a one-sentence summary.
+- The Install step offers **ARM64 (Apple Silicon)** and **x86_64**. Mark **ARM64 (Apple Silicon)** as **Recommended** when it is offered. Show the installed version, download size, and macOS requirement for each choice. **Download and Continue** installs the selected runtime. On older macOS, show only x86_64 and state that ARM64 requires macOS 26 or later. The step links to **Game runtime** with **About game runtimes**.
+- Before a lane change in setup or Settings, show the runtime switch warning. Show it only when a game environment exists. It states that the runtimes use separate game environments, that the game may treat the switch as a fresh install and ask for sign-in and resources again, and that the switch can add a download. Apply the warning in both directions.
 - Apply each choice at once. Use the same actions as Settings. The user reopens the assistant from Settings → Help → Troubleshooting.
-- When a release requires a rerun, open with a "Something important changed" briefing. Explain why. Hide Skip Setup until the user finishes. First runs stay skippable.
+- When a release requires a rerun, open with a "Something important changed" briefing. Explain why. The rerun reuses the current server, runtime, location, and preferences. It downloads nothing unless one of them changes. Hide Skip Setup until the user finishes. First runs stay skippable.
 - End with a plain statement: the launcher is an unofficial community project. Route launcher, game compatibility, and embedded-browser reports to the pre-filled GitHub form. Route account, payment, and game-service issues through the [publisher support routing table](../help/README.md#publisher-support-routing).
 
 ## Artwork
