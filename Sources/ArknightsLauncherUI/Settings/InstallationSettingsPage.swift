@@ -40,17 +40,13 @@ struct InstallationSettingsPage: View {
 				title: "Location"
 			) {
 				SettingsActionRow(
-					title: "Status"
+					title: "Game files",
+					detail: (installation.installDirectory.path(percentEncoded: false) as NSString)
+						.abbreviatingWithTildeInPath
 				) {
 					InstallationDownloadStatus(
 						installation: installation
 					)
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: "Folder",
-					detail: installation.installDirectory.lastPathComponent
-				) {
 					CapsuleActionButton(
 						title: "Show in Finder", systemImage: "folder",
 						tone: .neutral, presentation: .compact,
@@ -58,12 +54,6 @@ struct InstallationSettingsPage: View {
 					)
 					.disabled(!installation.isInstalled)
 					.help("Show game files in Finder")
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: "Installation location",
-					detail: "Move the game to a new folder, or point to a copy you already have."
-				) {
 					GlassActionMenu(
 						title: "Change…",
 						systemImage: "arrow.triangle.swap",
@@ -97,32 +87,36 @@ struct InstallationSettingsPage: View {
 				}
 			}
 
-			SettingsPanel(
-				title: Self.canaryFeaturesTitle,
-				tone: .warning
-			) {
-				SettingsActionRow(
+			// Shown only while a server needs Canary access. See RegionAccess.
+			if GameRegion.allCases.contains(where: \.requiresCanaryPermission) {
+				SettingsPanel(
 					title: Self.canaryFeaturesTitle,
-					detail:
-						"Try experimental features before they become stable."
+					tone: .warning
 				) {
-					SettingsToggle(
-						Self.canaryFeaturesTitle,
-						isOn: $settings.canaryFeaturesEnabled,
-						tint: theme.warning
-					)
-					.disabled(lifecycle.activity != .idle)
+					SettingsActionRow(
+						title: Self.canaryFeaturesTitle,
+						detail:
+							"Try experimental features before they become stable."
+					) {
+						SettingsToggle(
+							Self.canaryFeaturesTitle,
+							isOn: $settings.canaryFeaturesEnabled,
+							tint: theme.warning
+						)
+						.disabled(lifecycle.activity != .idle)
+					}
 				}
 			}
 
 			DangerZonePanel {
 				InstallationDestructiveRow(
 					title: "Uninstall game",
-					detail: "Move the game for this server to the Trash.",
+					detail:
+						"Move the game files for \(installation.region.displayName) to the Trash.",
 					buttonTitle: "Uninstall Game…",
 					systemImage: "trash",
 					isDisabled: !installation.canUninstallGame,
-					confirming: .uninstallGame,
+					confirming: .uninstallGame(installation.region),
 					confirmation: $confirmation
 				)
 			}

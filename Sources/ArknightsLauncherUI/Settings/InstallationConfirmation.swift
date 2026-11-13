@@ -6,7 +6,8 @@ import SwiftUI
 
 /// Destructive environment and settings actions that ask for confirmation first.
 enum InstallationConfirmation {
-	case rebuildEnvironment, resetSettings, deleteEnvironment, uninstallGame
+	case rebuildEnvironment, resetSettings, deleteEnvironment
+	case uninstallGame(GameRegion)
 
 	static let rebuildDetail = "Next launch takes longer. Game files and logins stay."
 	static let settingsResetDetail =
@@ -17,7 +18,7 @@ enum InstallationConfirmation {
 		case .rebuildEnvironment: "Rebuild the Game Environment?"
 		case .resetSettings: "Reset All Launcher Settings?"
 		case .deleteEnvironment: "Delete the Game Environment?"
-		case .uninstallGame: "Uninstall Arknights?"
+		case .uninstallGame(let region): "Uninstall Arknights for \(region.displayName)?"
 		}
 	}
 

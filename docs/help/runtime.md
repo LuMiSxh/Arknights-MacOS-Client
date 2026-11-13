@@ -142,6 +142,6 @@ If another operation runs, wait for it to finish. Then try again. If nothing hel
 
 ## Canary Features
 
-**Settings → Installation → Canary Features** turns on experimental options. There are no Canary features right now.
+The **Canary Features** panel in **Settings → Installation** appears only when a server needs it. There are no Canary features right now.
 
 Turning it off restores normal behavior. It deletes nothing. If a Canary option causes a problem, turn it off and mention it in your [report](README.md#report-a-problem).
