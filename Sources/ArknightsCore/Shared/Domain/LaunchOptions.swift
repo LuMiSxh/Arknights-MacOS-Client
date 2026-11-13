@@ -31,6 +31,8 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	package var usesGameMode: Bool
 	package var synchronizationMode: WineSynchronizationMode
 	package var frameRateLimit: GameFrameRateLimit
+	/// The display the game opens on. Nil follows the primary display.
+	package var display: GameDisplayIdentity?
 
 	// The initializer holds the only copy of each default; `default` is built from it.
 	package static let `default` = GameLaunchOptions(displayMode: .windowed, resolution: .hd)
@@ -38,7 +40,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	private enum CodingKeys: String, CodingKey {
 		case displayMode, resolution, fullscreenResolution, windowSize, usesGameSettings
 		case renderingMode
-		case usesMetalPerformanceHUD, usesGameMode, synchronizationMode, frameRateLimit
+		case usesMetalPerformanceHUD, usesGameMode, synchronizationMode, frameRateLimit, display
 		/// Pre-0.7.0 Retina toggle; still written so older launchers keep their pixel density.
 		case usesHighResolutionMode
 	}
@@ -53,7 +55,8 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		usesMetalPerformanceHUD: Bool = false,
 		usesGameMode: Bool = false,
 		synchronizationMode: WineSynchronizationMode = .msync,
-		frameRateLimit: GameFrameRateLimit = .fps120
+		frameRateLimit: GameFrameRateLimit = .fps120,
+		display: GameDisplayIdentity? = nil
 	) {
 		self.displayMode = displayMode
 		self.resolution = resolution
@@ -65,6 +68,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		self.usesGameMode = usesGameMode
 		self.synchronizationMode = synchronizationMode
 		self.frameRateLimit = frameRateLimit
+		self.display = display
 	}
 
 	/// Decodes each option independently, so one missing, retired, or malformed value falls
@@ -93,6 +97,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		usesGameMode = value(.usesGameMode, defaults.usesGameMode)
 		synchronizationMode = value(.synchronizationMode, defaults.synchronizationMode)
 		frameRateLimit = value(.frameRateLimit, defaults.frameRateLimit)
+		display = value(.display, defaults.display)
 
 		renderingMode = value(.renderingMode, defaults.renderingMode)
 		windowSize = value(.windowSize, defaults.windowSize)
@@ -111,6 +116,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		try container.encode(usesGameMode, forKey: .usesGameMode)
 		try container.encode(synchronizationMode, forKey: .synchronizationMode)
 		try container.encode(frameRateLimit, forKey: .frameRateLimit)
+		try container.encodeIfPresent(display, forKey: .display)
 	}
 
 	func fullscreenSize(native: GameDisplaySize?) -> GameDisplaySize {
@@ -190,7 +196,8 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	/// each point.
 	package func playerArguments(
 		gamePixelsPerPoint: Int, fullscreenDisplay: GameFullscreenDisplay? = nil,
-		screen: GameScreenMetrics? = nil
+		screen: GameScreenMetrics? = nil,
+		monitor: Int? = nil
 	) -> [String] {
 		guard !usesGameSettings else { return [] }
 		let fullscreen = displayMode == .fullscreen
@@ -203,10 +210,9 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 			"-screen-width", String(size.width),
 			"-screen-height", String(size.height),
 		]
-		// Native sizes come from the primary display, so keep the game from reopening on the
-		// display Unity remembers from an earlier session.
-		if fullscreen && fullscreenResolution == .native && fullscreenDisplay != nil {
-			arguments += ["-monitor", "1"]
+		// Names the display Unity opens on. Without it, Unity may reuse a display it remembers.
+		if let monitor {
+			arguments += ["-monitor", String(monitor)]
 		}
 		if displayMode == .borderlessWindow { arguments.append("-popupwindow") }
 		return arguments

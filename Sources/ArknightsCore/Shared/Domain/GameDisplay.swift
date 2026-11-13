@@ -146,26 +146,12 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 	}
 }
 
-/// The display Arknights fills in fullscreen. Wine's Mac driver makes the display with the menu
-/// bar its primary display, and the game opens fullscreen on the primary display. It is read at
-/// every launch, so rearranging or swapping displays needs no setting change.
+/// The display the game fills in fullscreen, taken from the resolved game screen.
 package struct GameFullscreenDisplay: Equatable, Sendable {
 	let pointSize: GameDisplaySize
 	let backingScale: Int
 	/// Points the notch covers at the top of the display; zero without a notch.
 	var notchHeight = 0
-
-	@MainActor package static var primary: GameFullscreenDisplay? {
-		// The first screen is always the one with the menu bar, even when it is not focused.
-		guard let screen = NSScreen.screens.first else { return nil }
-		return GameFullscreenDisplay(
-			pointSize: GameDisplaySize(
-				width: Int(screen.frame.width.rounded()), height: Int(screen.frame.height.rounded())
-			),
-			backingScale: max(1, Int(screen.backingScaleFactor.rounded())),
-			notchHeight: Int(screen.safeAreaInsets.top.rounded())
-		)
-	}
 
 	package var pixelSize: GameDisplaySize { pointSize.scaled(by: backingScale) }
 
@@ -185,6 +171,16 @@ package struct GameFullscreenDisplay: Equatable, Sendable {
 		guard !retina, backingScale > 1 else { return shown }
 		return GameDisplaySize(
 			width: shown.width / backingScale, height: shown.height / backingScale)
+	}
+}
+
+extension GameFullscreenDisplay {
+	init(screen: GameScreenInfo) {
+		pointSize = GameDisplaySize(
+			width: Int(screen.frameSize.width.rounded()),
+			height: Int(screen.frameSize.height.rounded()))
+		backingScale = max(1, Int(screen.backingScaleFactor.rounded()))
+		notchHeight = Int(screen.notchHeight.rounded())
 	}
 }
 

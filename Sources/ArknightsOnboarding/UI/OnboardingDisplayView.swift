@@ -23,7 +23,7 @@ struct OnboardingDisplayView: View {
 				OnboardingQuestion(
 					question: "Window size",
 					answers: answers.offeredWindowSizes.map {
-						$0.answer(on: GameScreenMetrics.main)
+						$0.answer(on: gameScreen)
 					},
 					selection: answerBinding(\.windowSize),
 					isDisabled: isLocked
@@ -79,8 +79,13 @@ struct OnboardingDisplayView: View {
 		return "\(placement), \(rendering), \(frameRate). Change this in Settings → Game."
 	}
 
+	/// The screen the game opens on, which sets the window size presets.
+	private var gameScreen: GameScreenMetrics? {
+		GameScreenList.system().resolve(preferences.launchOptions.display)?.metrics
+	}
+
 	private var answers: GameDisplayAnswers {
-		GameDisplayAnswers(preferences.launchOptions, screen: GameScreenMetrics.main)
+		GameDisplayAnswers(preferences.launchOptions, screen: gameScreen)
 	}
 
 	private func answerBinding<Value>(
@@ -89,7 +94,7 @@ struct OnboardingDisplayView: View {
 		Binding(
 			get: { answers[keyPath: keyPath] },
 			set: { value in
-				guard let value, let screen = GameScreenMetrics.main else { return }
+				guard let value, let screen = gameScreen else { return }
 				var updated = answers
 				updated[keyPath: keyPath] = value
 				preferences.launchOptions = updated.applied(
@@ -110,7 +115,7 @@ struct OnboardingDisplayView: View {
 	// so the answers shown are the answers in effect. The pointer has no untouched marker, so it
 	// is only recommended alongside untouched display defaults.
 	private func applyRecommendedAnswers() {
-		guard let screen = GameScreenMetrics.main else { return }
+		guard let screen = gameScreen else { return }
 		let options = preferences.launchOptions
 		if options == .default {
 			preferences.launchOptions = GameDisplayAnswers.recommended.applied(

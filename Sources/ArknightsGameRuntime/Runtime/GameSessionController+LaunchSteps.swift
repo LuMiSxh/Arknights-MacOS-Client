@@ -41,6 +41,7 @@ struct PreparedLaunch {
 	let displayConfiguration: WineDisplayConfiguration
 	let environment: [String: String]
 	let usesNativeFullscreenSpace: Bool
+	let screen: GameScreenResolution?
 }
 
 extension GameSessionController {
@@ -219,8 +220,13 @@ extension GameSessionController {
 		guard activeGameSessionID == request.id else { return nil }
 		RuntimeLoaderIcon.apply(to: context.runtime, log: log, setIcon: applyLoaderIcon)
 		let features = context.runtime.features
+		let screen = GameScreenList.system().resolve(request.options.display)
+		if let saved = request.options.display, screen?.isFallback == true {
+			log.info("\(saved.name) is not connected. The game opens on the primary display.")
+		}
 		let displayConfiguration = WineDisplayConfiguration.current(
 			renderingMode: request.options.renderingMode,
+			backingScaleFactor: screen?.screen.backingScaleFactor ?? 1,
 			forceDisabled: request.forceDisableRetina,
 			metalFXSupported: features.metalFXSpatialUpscaling
 		)
@@ -236,7 +242,8 @@ extension GameSessionController {
 			displayConfiguration: displayConfiguration,
 			environment: environment,
 			usesNativeFullscreenSpace: features.usesNativeFullscreenSpace(
-				for: request.options.displayMode)
+				for: request.options.displayMode),
+			screen: screen
 		)
 	}
 
@@ -250,13 +257,13 @@ extension GameSessionController {
 		guard let spawnGate = session?.spawnGate, activeGameSessionID == request.id else {
 			return nil
 		}
+		let screen = prepared.screen
 		// The notch sits outside a native Space's content area, so Unity gets the shorter height.
 		let fullscreenDisplay =
 			prepared.usesNativeFullscreenSpace
-			? GameFullscreenDisplay.primary?.nativeSpaceContent
-			: GameFullscreenDisplay.primary
-		let screen = GameScreenMetrics.main
-		let fittedWindowSize = request.options.launchWindowSize(on: screen)
+			? screen?.fullscreenDisplay.nativeSpaceContent
+			: screen?.fullscreenDisplay
+		let fittedWindowSize = request.options.launchWindowSize(on: screen?.metrics)
 		if request.options.displayMode != .fullscreen,
 			fittedWindowSize != request.options.windowSize
 		{
@@ -274,7 +281,9 @@ extension GameSessionController {
 		gameArguments += request.options.playerArguments(
 			gamePixelsPerPoint: prepared.displayConfiguration.gamePixelsPerPoint,
 			fullscreenDisplay: fullscreenDisplay,
-			screen: screen
+			screen: screen?.metrics,
+			monitor: screen?.monitorArgument(
+				fullscreen: request.options.displayMode == .fullscreen)
 		)
 		let launch = try await context.runtime.launch(
 			gameExecutable: request.executable,

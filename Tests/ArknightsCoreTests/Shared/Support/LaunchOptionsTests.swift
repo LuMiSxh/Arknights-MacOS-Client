@@ -65,7 +65,9 @@ func launchArgumentsConvertWindowPointsButKeepFullscreenPixels(
 			pointSize: GameDisplaySize(width: 3008, height: 1692), backingScale: 2) : nil
 
 	#expect(
-		options.playerArguments(gamePixelsPerPoint: gamePixelsPerPoint, fullscreenDisplay: display)
+		options.playerArguments(
+			gamePixelsPerPoint: gamePixelsPerPoint, fullscreenDisplay: display,
+			monitor: knownDisplay ? 1 : nil)
 			== expected)
 }
 

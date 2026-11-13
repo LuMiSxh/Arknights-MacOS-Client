@@ -10,6 +10,8 @@ order: 42
 
 Change these settings in **Settings → Game → Display**. They apply at the next launch.
 
+**Game display** chooses the display the game opens on. The list shows each connected display by name. **Primary display** follows the display with the menu bar. The row appears when more than one display is connected. If the chosen display is disconnected, the game opens on the primary display.
+
 **Rendering** sets how the game reaches a Retina display. It has no effect on other displays.
 
 | Choice       | Behavior                                                                                                                                         |

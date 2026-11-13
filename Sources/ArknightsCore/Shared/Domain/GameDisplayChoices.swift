@@ -19,20 +19,6 @@ package struct GameScreenMetrics: Equatable, Sendable {
 
 	}
 
-	@MainActor package static var main: GameScreenMetrics? {
-		guard let screen = NSScreen.main else { return nil }
-		let content = NSRect(x: 0, y: 0, width: 100, height: 100)
-		let frame = NSWindow.frameRect(forContentRect: content, styleMask: [.titled])
-		return GameScreenMetrics(
-			visibleSize: screen.visibleFrame.size,
-			pixelSize: CGSize(
-				width: screen.frame.width * screen.backingScaleFactor,
-				height: screen.frame.height * screen.backingScaleFactor
-			),
-			titleBarHeight: frame.height - content.height
-		)
-	}
-
 	/// The official game resolution with the most pixels that the panel can show unscaled.
 	package var fullscreenResolution: GameDisplaySize {
 		GameDisplaySize.largestOfficial(
@@ -67,6 +53,17 @@ package enum GameWindowSizeChoice: CaseIterable, Sendable {
 
 	package static func matching(_ size: GameDisplaySize, on screen: GameScreenMetrics) -> Self? {
 		allCases.first { $0.size(on: screen) == size }
+	}
+}
+
+extension GameScreenMetrics {
+	init(screen: GameScreenInfo, titleBarHeight: CGFloat) {
+		self.init(
+			visibleSize: screen.visibleSize,
+			pixelSize: CGSize(
+				width: screen.frameSize.width * screen.backingScaleFactor,
+				height: screen.frameSize.height * screen.backingScaleFactor),
+			titleBarHeight: titleBarHeight)
 	}
 }
 

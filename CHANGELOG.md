@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added **Game display** to **Settings → Game → Display**. Choose the display the game opens on. The game opens on the primary display when the chosen display is not connected.
 - Added the runtime download. The launcher no longer ships the runtime inside the app. Choose the runtime under **Settings → Runtime**. The launcher downloads, verifies, and installs that runtime. Runtime downloads show progress with the game download.
 - Added an **ARM64 (Apple Silicon)** runtime for macOS 26 or later. It uses a separate game environment, so the game may look like a fresh install after a switch.
 - Added **Remove Runtime…** under **Settings → Runtime**. It deletes the runtime you use and keeps the game environment. **Remove Other Runtime** now reports a failure with a support code.
@@ -64,6 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- The game's window size, fullscreen size, and Retina scale now follow the display the game opens on, and fullscreen names that display to the game. Before, they followed the focused window's display.
 - The "Wine configuration is being updated" window no longer appears when the game starts after a runtime update.
 - The Notices backdrop shows the blurred game again instead of solid black, also with the MetalFX rendering mode (Thanks to @darkwebdev, #119).
 - Clicking the Notices window brings the game to the front when another app is active (Thanks to @darkwebdev, #120).

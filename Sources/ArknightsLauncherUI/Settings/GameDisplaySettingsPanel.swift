@@ -9,18 +9,20 @@ struct GameDisplaySettingsPanel: View {
 	let isLocked: Bool
 	/// nil while runtime discovery runs. False means the game falls back to Standard.
 	let metalFXSpatialUpscalingSupported: Bool?
-	@Environment(\.displayScale) private var displayScale
+	@State private var screens = GameScreenMonitor()
 	/// Set by the Custom… choice. Shows the width and height fields for the stored size.
 	@State private var showsCustomSize = false
 
 	private var options: GameLaunchOptions { settings.launchOptions }
 	private var isSizeLocked: Bool { options.usesGameSettings || isLocked }
-	private var screen: GameScreenMetrics? { GameScreenMetrics.main }
-	private var nativeFullscreenSize: GameDisplaySize? { GameFullscreenDisplay.primary?.pixelSize }
+	/// The screen the game opens on, from the connected displays.
+	private var resolution: GameScreenResolution? { screens.list.resolve(options.display) }
+	private var screen: GameScreenMetrics? { resolution?.metrics }
+	private var nativeFullscreenSize: GameDisplaySize? { resolution?.fullscreenDisplay.pixelSize }
 	private var plan: GameDisplayPlan {
 		GameDisplayPlan(
-			options: options, backingScaleFactor: displayScale,
-			fullscreenDisplay: GameFullscreenDisplay.primary)
+			options: options, backingScaleFactor: resolution?.screen.backingScaleFactor ?? 1,
+			fullscreenDisplay: resolution?.fullscreenDisplay)
 	}
 	private var showsInGameResolutionNote: Bool {
 		options.usesGameSettings && plan.gamePixelsPerPoint > 1
@@ -29,6 +31,21 @@ struct GameDisplaySettingsPanel: View {
 
 	var body: some View {
 		SettingsPanel(title: "Display") {
+			if showsDisplayRow {
+				SettingsActionRow(
+					title: "Game display",
+					detail: displayDetail,
+					help:
+						"Fullscreen and the window size use this display. Primary display follows the display with the menu bar. Applies the next time the game starts."
+				) {
+					GlassMenuPicker(
+						selection: $settings.launchOptions.display,
+						options: displayChoices,
+						isDisabled: isLocked
+					)
+				}
+				SettingsHairline()
+			}
 			SettingsActionRow(
 				title: "Override in-game display settings",
 				detail:
@@ -123,6 +140,30 @@ struct GameDisplaySettingsPanel: View {
 					.fixedSize(horizontal: false, vertical: true)
 			}
 		}
+		.task { await screens.observe() }
+	}
+
+	// MARK: Game display
+
+	/// The row appears with several displays, or when the saved display is not connected.
+	private var showsDisplayRow: Bool {
+		screens.list.screens.count > 1 || resolution?.isFallback == true
+	}
+
+	private var displayChoices: [(value: GameDisplayIdentity?, title: String)] {
+		var choices: [(value: GameDisplayIdentity?, title: String)] = [(nil, "Primary display")]
+		choices += screens.list.screens.map {
+			(value: $0.identity as GameDisplayIdentity?, title: $0.identity.name)
+		}
+		if let saved = options.display, resolution?.isFallback == true {
+			choices.append((saved, "\(saved.name) (not connected)"))
+		}
+		return choices
+	}
+
+	private var displayDetail: String? {
+		guard resolution?.isFallback == true, let saved = options.display else { return nil }
+		return "\(saved.name) is not connected. The game opens on the primary display."
 	}
 
 	// MARK: Override and render resolution

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import AppKit
 import ArknightsCore
 import Foundation
 
@@ -27,19 +26,15 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 		gamePixelsPerPoint = retinaEnabled ? max(1, Int(backingScaleFactor.rounded())) : 1
 	}
 
-	@MainActor
 	static func current(
 		renderingMode: GameRenderingMode,
+		backingScaleFactor: CGFloat,
 		arguments: [String] = ProcessInfo.processInfo.arguments,
 		forceDisabled: Bool = false,
 		metalFXSupported: Bool = false
 	) -> WineDisplayConfiguration {
-		let scale =
-			NSApp.keyWindow?.screen?.backingScaleFactor
-			?? NSScreen.main?.backingScaleFactor
-			?? 1
 		return WineDisplayConfiguration(
-			backingScaleFactor: scale,
+			backingScaleFactor: backingScaleFactor,
 			renderingMode: renderingMode,
 			forceDisabled: forceDisabled || arguments.contains("--no-retina"),
 			metalFXSupported: metalFXSupported
