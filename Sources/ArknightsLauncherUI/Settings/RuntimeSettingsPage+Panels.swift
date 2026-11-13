@@ -33,6 +33,17 @@ extension RuntimeSettingsPage {
 	}
 
 	@ViewBuilder var maintenancePanel: some View {
+		if isRuntimeUpdateAvailable || runtimeSelection.selectedLane == .x86 {
+			maintenancePanelContent
+		}
+	}
+
+	private var isRuntimeUpdateAvailable: Bool {
+		if case .outdated = runtimeSelection.selectedLaneState { return true }
+		return false
+	}
+
+	private var maintenancePanelContent: some View {
 		SettingsPanel(title: "Maintenance") {
 			runtimeUpdateContent
 
@@ -169,7 +180,7 @@ extension RuntimeSettingsPage {
 			let pin = runtimeSelection.pinnedRuntime(for: runtimeSelection.selectedLane)
 		{
 			SettingsActionRow(
-				title: "Update Runtime",
+				title: "Runtime update",
 				detail: "Update available: \(pin.version) (installed \(installed))"
 			) {
 				CapsuleActionButton(
