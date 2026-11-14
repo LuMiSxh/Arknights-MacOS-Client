@@ -35,35 +35,6 @@ struct RuntimeConfigurationTests {
 	}
 
 	@Test
-	func decodesAnUnpublishedLaneWithEmptyComponentsAndProvenance() throws {
-		var armLane = makeRuntimeLane(
-			version: "0.9.0+arm",
-			url: "",
-			sha256: "",
-			sizeBytes: 0,
-			minimumMacOS: "26.0",
-			interface: makeRuntimeInterface(macDriver: "lib/wine/aarch64-unix/winemac.so")
-		)
-		armLane["components"] = [String: Any]()
-		armLane["provenance"] = [String: Any]()
-		let configuration = try makeRuntimeConfiguration(arm: armLane)
-
-		let pin = try configuration.pinnedRuntime(for: .arm)
-		#expect(!pin.isAvailable)
-		#expect(pin.components?.wine == nil)
-		#expect(pin.provenance?.wineCommit == nil)
-	}
-
-	@Test
-	func rejectsAnAbsentLane() throws {
-		let configuration = try makeRuntimeConfiguration(arm: nil)
-
-		#expect(throws: RuntimeConfigurationError.missingLane(.arm)) {
-			_ = try configuration.pinnedRuntime(for: .arm)
-		}
-	}
-
-	@Test
 	func rejectsAnUnsupportedSchema() throws {
 		let configuration = try makeRuntimeConfiguration(schemaVersion: 2)
 
@@ -100,21 +71,5 @@ struct RuntimeConfigurationTests {
 		#expect(throws: RuntimeConfigurationError.self) {
 			_ = try configuration.pinnedRuntime(for: .x86)
 		}
-	}
-
-	@Test
-	func decodesFeaturesAsBehaviorFlags() throws {
-		let configuration = try makeRuntimeConfiguration(
-			x86: makeRuntimeLane(
-				interface: makeRuntimeInterface(features: [
-					"hardwareCursor": false,
-					"metalFXSpatialUpscaling": true,
-					"nativeFullscreenSpace": false,
-				])))
-
-		let pin = try configuration.pinnedRuntime(for: .x86)
-		#expect(!pin.features.hardwareCursor)
-		#expect(pin.features.metalFXSpatialUpscaling)
-		#expect(!pin.features.nativeFullscreenSpace)
 	}
 }

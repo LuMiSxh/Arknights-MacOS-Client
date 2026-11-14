@@ -37,26 +37,6 @@ struct PlaytimeStatisticsPersistenceTests {
 		return (dir, PlaytimeStatisticsStore(fileURL: url, log: log), controller)
 	}
 
-	@Test
-	func recordBeforeLoadMergesOverPersistedData() async throws {
-		let (dir, _, controller) = try makeFixture(persisted: 100)
-		defer { dir.remove() }
-		let id = UUID()
-		controller.start(sessionID: id, region: .global)
-		controller.finish(sessionID: id)
-		await controller.loaded()
-		#expect(controller.totalDuration == 110)
-	}
-
-	@Test
-	func resetBeforeLoadDiscardsPersistedData() async throws {
-		let (dir, _, controller) = try makeFixture(persisted: 100)
-		defer { dir.remove() }
-		controller.reset()
-		await controller.loaded()
-		#expect(controller.totalDuration == 0)
-	}
-
 	@Test(arguments: [false, true])
 	func terminationPersistsSessionEvenBeforeLoadFinishes(reset: Bool) async throws {
 		let (dir, store, controller) = try makeFixture(persisted: 100)

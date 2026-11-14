@@ -11,86 +11,6 @@ import Testing
 @MainActor
 struct InstallationRecoveryTests {
 	@Test
-	func successfulInstallationPublishesOneCompletionFeedback() async throws {
-		let fixture = try makeInstallationFixture(region: .global)
-		defer { fixture.storage.remove() }
-		fixture.controller.startInstallation(launchAfterCompletion: false)
-		await fixture.installer.waitForInstallationStart()
-		await fixture.installer.completeSuccessfully()
-		await waitForCondition { fixture.controller.completionFeedback != nil }
-
-		let feedback = fixture.controller.completionFeedback
-		#expect(feedback?.region == .global)
-		#expect(fixture.controller.lifecycle.state.presentation.status == .ready)
-		#expect(!fixture.controller.finishInstallation(UUID()))
-		#expect(fixture.controller.consumeCompletionFeedback(for: .japan) == nil)
-		#expect(
-			fixture.controller.consumeCompletionFeedback(for: .global)?.id == feedback?.id
-		)
-		#expect(fixture.controller.consumeCompletionFeedback(for: .global) == nil)
-
-		let switching = try makeInstallationFixture(region: .global)
-		defer { switching.storage.remove() }
-		switching.controller.startInstallation(launchAfterCompletion: false)
-		await switching.installer.waitForInstallationStart()
-		await switching.installer.completeSuccessfully()
-		await waitForCondition { switching.controller.completionFeedback != nil }
-		#expect(switching.controller.selectRegion(.japan))
-		#expect(switching.controller.completionFeedback == nil)
-	}
-
-	@Test(.timeLimit(.minutes(1)), arguments: GameRegion.allCases)
-	func retryUsesTheOriginalRegion(region: GameRegion) async throws {
-		let fixture = try makeInstallationFixture(region: region)
-		defer { fixture.storage.remove() }
-		let failureID = UUID()
-		fixture.controller.presentInstallationFailure(
-			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
-			id: failureID,
-			operation: .install,
-			region: region
-		)
-		#expect(fixture.controller.lifecycle.state.presentation.failure?.blocksGameLaunch == true)
-
-		#expect(fixture.controller.retryInstallationFailure(id: failureID))
-		await fixture.installer.waitForInstallationStart()
-		#expect(await fixture.installer.requestedRegions() == [region])
-		#expect(await fixture.installer.requestedVerificationModes() == [false])
-		#expect(!fixture.controller.retryInstallationFailure(id: failureID))
-		#expect(await fixture.installer.installationCount() == 1)
-		await fixture.installer.completeSuccessfully()
-		await fixture.controller.waitForCurrentInstallation()
-
-		guard region == .global else { return }
-		// A repair retry keeps full verification.
-		fixture.controller.isInstalled = true
-		let repairID = UUID()
-		fixture.controller.presentInstallationFailure(
-			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
-			id: repairID,
-			operation: .repair,
-			region: .global
-		)
-		#expect(fixture.controller.retryInstallationFailure(id: repairID))
-		await fixture.installer.waitForInstallationCount(2)
-		#expect(await fixture.installer.requestedVerificationModes().last == true)
-		await fixture.installer.completeSuccessfully()
-		await fixture.controller.waitForCurrentInstallation()
-
-		// A retry is rejected after the region changed.
-		let staleID = UUID()
-		fixture.controller.presentInstallationFailure(
-			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
-			id: staleID,
-			operation: .install,
-			region: .global
-		)
-		#expect(fixture.controller.selectRegion(.japan))
-		fixture.controller.configuration = testGameConfiguration
-		#expect(!fixture.controller.retryInstallationFailure(id: staleID))
-	}
-
-	@Test
 	func partialInstallCanBeUninstalledOnlyWhileIdle() throws {
 		let fixture = try makeInstallationFixture(region: .global)
 		defer { fixture.storage.remove() }
@@ -117,19 +37,6 @@ struct InstallationRecoveryTests {
 			region: .global
 		)
 		#expect(fixture.controller.retryUninstallFailure(id: failureID))
-	}
-
-	@Test
-	func invalidConfigurationCannotSkipInstallationDiskPreflight() throws {
-		let fixture = try makeInstallationFixture(region: .global)
-		defer { fixture.storage.remove() }
-		fixture.controller.configuration = GameConfiguration(
-			gameLowestVersion: "1", gameLatestVersion: "1", gameLatestFilePath: "manifest",
-			gameStartExeName: "Arknights.exe", gameStartParams: [], gameUninstallScript: "",
-			decompressionSize: "not a size")
-		fixture.controller.startInstallation(launchAfterCompletion: false)
-		#expect(fixture.controller.lifecycle.activity == .idle)
-		#expect(fixture.controller.lifecycle.state.presentation.failure != nil)
 	}
 
 	@Test

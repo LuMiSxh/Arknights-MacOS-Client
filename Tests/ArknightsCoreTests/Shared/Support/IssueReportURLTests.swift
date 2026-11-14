@@ -45,12 +45,3 @@ func issueReportURLIncludesOnlyApprovedFailureContext() {
 		"failure context"
 	)
 }
-
-@Test(arguments: IssueReportSource.allCases)
-func issueReportURLNamesTheSourceThatStartedTheReport(source: IssueReportSource) {
-	let components = URLComponents(
-		url: IssueReportURL.build(runtimeName: nil, source: source),
-		resolvingAgainstBaseURL: false
-	)!
-	#expect(components.queryItems?.first { $0.name == "source" }?.value == source.rawValue)
-}

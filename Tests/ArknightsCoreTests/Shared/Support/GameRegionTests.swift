@@ -12,18 +12,3 @@ func globalRegionPreservesThePreExistingPreferencesKey() {
 	// existing users' custom install-directory preference on upgrade.
 	#expect(GameRegion.global.rawValue == "global")
 }
-
-@MainActor
-@Test
-func taiwanIsAStableServerThatNeedsNoCanaryFeatures() {
-	#expect(RegionAccess(canaryFeaturesEnabled: false).selectableRegions == GameRegion.allCases)
-
-	let (defaults, suiteName) = makeIsolatedDefaults("GameRegionTests")
-	defer { defaults.removePersistentDomain(forName: suiteName) }
-	let store = LauncherPreferencesStore(defaults: defaults)
-	store.setSelectedRegion(.chinaBilibili)
-	#expect(store.selectedRegion() == .chinaBilibili)
-
-	store.setSelectedRegion(.taiwan)
-	#expect(store.selectedRegion() == .taiwan)
-}

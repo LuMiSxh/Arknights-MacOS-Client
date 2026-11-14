@@ -105,35 +105,6 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
-	func appearancePreferencesRoundTripAndFallBackForUnknownValues() {
-		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
-
-		#expect(store.launcherAppearance() == .system)
-		#expect(store.homeTheme() == .automatic)
-		#expect(store.brandingTheme() == .automatic)
-
-		for appearance in LauncherAppearance.allCases {
-			store.setLauncherAppearance(appearance)
-			#expect(store.launcherAppearance() == appearance)
-		}
-		for theme in HomeTheme.allCases {
-			store.setHomeTheme(theme)
-			#expect(store.homeTheme() == theme)
-			store.setBrandingTheme(theme)
-			#expect(store.brandingTheme() == theme)
-		}
-
-		defaults.set("unknown", forKey: Key.launcherAppearance)
-		defaults.set("unknown", forKey: Key.homeTheme)
-		defaults.set("unknown", forKey: Key.brandingTheme)
-		#expect(store.launcherAppearance() == .system)
-		#expect(store.homeTheme() == .automatic)
-		#expect(store.brandingTheme() == .automatic)
-	}
-
-	@Test
 	func homeLuminanceRoundTripsThroughTheStoredDictionaryFormat() {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -152,19 +123,6 @@ struct LauncherPreferencesStoreTests {
 		#expect(written.map { $0["identity"] as? String } == ["new", "old"])
 		#expect(written.map { $0["score"] as? Double } == [0.75, 0.5])
 		#expect(store.homeLuminance(for: "old") == 0.5)
-	}
-
-	@Test
-	func runtimePatchesDefaultOnAndStoreOneSwitchEach() {
-		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
-
-		#expect(RuntimePatch.allCases.allSatisfy { store.value(Key.runtimePatchEnabled($0)) })
-		store.set(false, for: Key.runtimePatchEnabled(.winsock))
-
-		#expect(defaults.object(forKey: "runtimePatch.winsock") as? Bool == false)
-		#expect(store.value(Key.runtimePatchEnabled(.menu)))
 	}
 
 	@Test

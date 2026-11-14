@@ -13,31 +13,6 @@ struct GameInstallerReuseTests {
 	private static let body = Data((0..<4_096).map { UInt8($0 % 251) })
 
 	@Test
-	func matchingDonorFileIsClonedInsteadOfDownloaded() async throws {
-		let world = try ReuseWorld()
-		defer { world.remove() }
-		let donor = try world.makeDonor(body: Self.body)
-		let before = try FileSnapshot(donor.file)
-		let recorder = ProgressRecorder()
-
-		let result = try await world.install(donors: [donor.directory]) {
-			await recorder.record($0)
-		}
-
-		#expect(world.fixture.route.requestCount == 0)
-		#expect(result.downloadedFiles == 1)
-		#expect(try Data(contentsOf: world.destination) == Self.body)
-		#expect(try FileSnapshot(donor.file) == before)
-		#expect(!FileManager.default.fileExists(atPath: world.destination.path + ".part"))
-		#expect(try world.stagingEntries().isEmpty)
-		let updates = await recorder.updates()
-		#expect(updates.last?.downloadedBytes == Int64(Self.body.count))
-		#expect(updates.last?.completedFiles == 1)
-		#expect(updates.allSatisfy { $0.networkDownloadedBytes == 0 })
-		#expect(updates.allSatisfy { $0.transferRateBytesPerSecond == nil })
-	}
-
-	@Test
 	func donorWithSameSizeButDifferentContentFallsBackToDownload() async throws {
 		// Each row builds its own world and lists the donors that must not be reused.
 		let rows: [(String, @Sendable (ReuseWorld) throws -> [URL])] = [

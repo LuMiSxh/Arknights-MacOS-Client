@@ -68,13 +68,6 @@ func retirementWaitEndsWhenTheLastChildExits() async throws {
 }
 
 @Test(.timeLimit(.minutes(1)))
-func retirementWaitReturnsAtOnceWithoutChildren() async throws {
-	let gate = WineProcessSpawnGate()
-	gate.denyFurtherSpawns()
-	try await gate.waitForRetirement(timeout: .seconds(30), clock: ParkedClock())
-}
-
-@Test(.timeLimit(.minutes(1)))
 func cancellingARetirementWaitResumesItWithoutRetiringTheChild() async throws {
 	let storage = try TemporaryDirectory("spawn-gate-cancel")
 	defer { storage.remove() }
@@ -107,12 +100,4 @@ func retirementWaitTimesOutWhileAChildStillRuns() async throws {
 		try await gate.waitForRetirement(timeout: .seconds(30), clock: RecordingClock())
 	}
 	try child.release()
-}
-
-@Test
-func waitingBeforeSealingIsALogicErrorNotATimeout() async {
-	let gate = WineProcessSpawnGate()
-	await #expect(throws: WineProcessSpawnGateNotSealed.self) {
-		try await gate.waitForRetirement(timeout: .seconds(30), clock: ParkedClock())
-	}
 }

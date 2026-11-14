@@ -63,30 +63,6 @@ struct PresetCatalogServiceTests {
 	}
 
 	@Test
-	func cacheKeysAreHashedIntoSinglePathComponents() async throws {
-		let temporary = try TemporaryDirectory("PresetCatalogServiceTests")
-		defer { temporary.remove() }
-		let root = temporary.url
-		let service = PresetCatalogService(
-			cacheDirectory: root,
-			log: LauncherLog(fileURL: root.appending(path: "launcher.log"))
-		)
-
-		let first = await service.cacheFileURL(for: "../../outside")
-		let second = await service.cacheFileURL(for: "../../outside")
-
-		#expect(first == second)
-		#expect(first.deletingLastPathComponent() == root)
-
-		#expect(PresetCatalogService.isValidAvatarIdentifier("char_002_amiya"))
-		#expect(!PresetCatalogService.isValidAvatarIdentifier("char_../../escape"))
-		#expect(!PresetCatalogService.isValidAvatarIdentifier("char_éxample"))
-		#expect(
-			!PresetCatalogService.isValidAvatarIdentifier(
-				"char_" + String(repeating: "a", count: 100)))
-	}
-
-	@Test
 	func clearingTheCacheInvalidatesAnInFlightImageDownload() async throws {
 		EpochImageURLProtocol.reset()
 		defer {

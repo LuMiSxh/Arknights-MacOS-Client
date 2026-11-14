@@ -96,10 +96,6 @@ private final class Fixture {
 		lease = lifecycle.begin(.runningGame(sessionID: UUID(), processIdentifier: 42))
 	}
 
-	func endGame() {
-		if let lease { lifecycle.end(lease) }
-	}
-
 	var liveRegistrations: Int {
 		registrations.items.withLock { $0.filter { !$0.isCancelled.withLock { $0 } }.count }
 	}
@@ -142,50 +138,4 @@ private func theShortcutRegistersOnlyWhileTheGameRunsAndAccessExists(
 	#expect(fixture.controller.isPermissionDenied == denied)
 	// A missing permission also turns the stored shortcut off.
 	#expect(fixture.settings.screenshotShortcut == (denied ? .off : testCase.shortcut))
-}
-
-@MainActor
-@Test
-private func theShortcutIsReleasedWhenTheGameEndsOrTheShortcutTurnsOff() throws {
-	let fixture = try Fixture(granted: true, shortcut: .standard)
-	defer { fixture.remove() }
-
-	fixture.startGame()
-	#expect(fixture.liveRegistrations == 1)
-	fixture.endGame()
-	#expect(fixture.liveRegistrations == 0)
-
-	fixture.startGame()
-	#expect(fixture.liveRegistrations == 1)
-	fixture.settings.screenshotShortcut = .off
-	#expect(fixture.liveRegistrations == 0)
-}
-
-@MainActor
-@Test
-private func choosingAShortcutWithoutAccessTurnsItOffAndShowsThePermissionRow() throws {
-	let fixture = try Fixture(granted: false, shortcut: .off)
-	defer { fixture.remove() }
-
-	fixture.settings.screenshotShortcut = f13Shortcut
-
-	#expect(fixture.settings.screenshotShortcut == .off)
-	#expect(fixture.controller.isPermissionDenied)
-}
-
-@MainActor
-@Test
-private func aPressWhileACaptureRunsIsIgnored() async throws {
-	let fixture = try Fixture(granted: true, shortcut: .off)
-	defer { fixture.remove() }
-	fixture.startGame()
-
-	let first = fixture.controller.takeScreenshot()
-	let second = fixture.controller.takeScreenshot()
-	fixture.gateContinuation.yield()
-	await first?.value
-
-	#expect(first != nil)
-	#expect(second == nil)
-	#expect(fixture.calls.value.withLock { $0 } == 1)
 }

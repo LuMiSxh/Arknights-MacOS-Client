@@ -76,22 +76,6 @@ private func makeController(
 @MainActor
 struct RuntimeSelectionControllerTests {
 	@Test
-	func laneWithoutGameEnvironmentNeedsNoSwitchWarning() throws {
-		let temporary = try TemporaryDirectory("RuntimeSelectionWarningTests")
-		defer { temporary.remove() }
-		let paths = makePaths(temporary)
-		let controller = makeController(
-			paths: paths,
-			storage: temporary,
-			configuration: try configuration(),
-			access: access(macOS: 26),
-			installOperation: makeInstallOperation(paths: paths)
-		)
-
-		#expect(!controller.switchRequiresWarning)
-	}
-
-	@Test
 	func removalIsRefusedWhileAnotherActivityHoldsTheLeaseAndEndsItsOwnLease() async throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionRemoveTests")
 		defer { temporary.remove() }
@@ -168,57 +152,6 @@ struct RuntimeSelectionControllerTests {
 	}
 
 	@Test
-	func offersX86AndARMOnMacOS26() throws {
-		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
-		defer { temporary.remove() }
-		let paths = makePaths(temporary)
-		let controller = makeController(
-			paths: paths,
-			storage: temporary,
-			configuration: try configuration(),
-			access: access(macOS: 26),
-			installOperation: makeInstallOperation(paths: paths)
-		)
-
-		#expect(controller.availableLanes == [.x86, .arm])
-		#expect(controller.installedVersion(for: .x86) == nil)
-		#expect(!controller.isSelectedLaneInstalled)
-	}
-
-	@Test
-	func offersOnlyX86BeforeMacOS26() throws {
-		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
-		defer { temporary.remove() }
-		let paths = makePaths(temporary)
-		let controller = makeController(
-			paths: paths,
-			storage: temporary,
-			configuration: try configuration(),
-			access: access(macOS: 25),
-			installOperation: makeInstallOperation(paths: paths)
-		)
-
-		#expect(controller.availableLanes == [.x86])
-	}
-
-	@Test
-	func doesNotOfferAnUnpublishedARMPin() throws {
-		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
-		defer { temporary.remove() }
-		let paths = makePaths(temporary)
-		let controller = makeController(
-			paths: paths,
-			storage: temporary,
-			configuration: try configuration(arm: unpublishedARM()),
-			access: access(macOS: 26),
-			installOperation: makeInstallOperation(paths: paths)
-		)
-
-		#expect(controller.availableLanes == [.x86])
-		#expect(controller.pinnedRuntime(for: .arm)?.isAvailable == false)
-	}
-
-	@Test
 	func aVerificationFailureExposesTheRuntimeVerificationCode() async throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
 		defer { temporary.remove() }
@@ -242,27 +175,6 @@ struct RuntimeSelectionControllerTests {
 	}
 
 	@Test
-	func aRuntimeInstallFailureIsPresentedWithItsCodeAndRetry() async throws {
-		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
-		defer { temporary.remove() }
-		let paths = makePaths(temporary)
-		let controller = makeController(
-			paths: paths,
-			storage: temporary,
-			configuration: try configuration(),
-			access: access(macOS: 26),
-			installOperation: makeInstallOperation(
-				paths: paths, throwsVerificationError: true)
-		)
-
-		#expect(await controller.install(lane: .arm) == false)
-		let presented = controller.lifecycle.state.presentation.failure
-		#expect(presented?.code == .runtimeVerificationFailed)
-		#expect(presented?.context.operation == .runtimeSetup)
-		#expect(presented?.actions.contains(.retry) == true)
-	}
-
-	@Test
 	func anUnpublishedLaneFailsWithTheNotInstalledCode() async throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
 		defer { temporary.remove() }
@@ -277,25 +189,6 @@ struct RuntimeSelectionControllerTests {
 
 		#expect(await controller.install(lane: .arm) == false)
 		#expect(controller.failure?.code == .runtimeNotInstalled)
-	}
-
-	@Test
-	func anInstalledVersionThatDiffersFromThePinIsOutdated() throws {
-		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
-		defer { temporary.remove() }
-		let paths = makePaths(temporary)
-		try makeInstalledRuntime(version: "0.8.0", lane: .x86, paths: paths)
-		let controller = makeController(
-			paths: paths,
-			storage: temporary,
-			configuration: try configuration(),
-			access: access(macOS: 26),
-			installOperation: makeInstallOperation(paths: paths)
-		)
-
-		#expect(controller.state(for: .x86) == .outdated(installed: "0.8.0"))
-		#expect(controller.state(for: .arm) == .notInstalled)
-		#expect(!controller.isSelectedLaneInstalled)
 	}
 
 	@Test

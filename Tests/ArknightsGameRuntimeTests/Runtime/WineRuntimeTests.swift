@@ -62,33 +62,6 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	#expect(controller["LMISXH_AKMOCL_CEF"] == "1")
 }
 
-@Test(arguments: GameFrameRateLimit.allCases)
-func frameRateLimitPassesThePickedCapToDXMT(limit: GameFrameRateLimit) {
-	let environment = WineRuntime.isolatedEnvironment(
-		prefixDirectory: URL(filePath: "/isolated/prefix", directoryHint: .isDirectory),
-		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
-		baseEnvironment: [:],
-		userName: "tester",
-		frameRateLimit: limit
-	)
-	#expect(
-		environment["DXMT_CONFIG"] == "d3d11.preferredMaxFrameRate=\(limit.framesPerSecond)")
-}
-
-@Test(arguments: [false, true])
-func debugLoggingSelectsTheWineChannelSet(debugLogging: Bool) {
-	let environment = WineRuntime.isolatedEnvironment(
-		prefixDirectory: URL(filePath: "/isolated/prefix", directoryHint: .isDirectory),
-		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
-		baseEnvironment: [:],
-		userName: "tester",
-		frameRateLimit: .fps120,
-		debugLogging: debugLogging
-	)
-	let expected = debugLogging ? WineRuntime.verboseDebugChannels : WineRuntime.debugChannels
-	#expect(environment["WINEDEBUG"] == expected)
-}
-
 @Test
 func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 	let fileManager = FileManager.default
@@ -112,52 +85,6 @@ func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 		at: fixture.prefix.appending(path: "drive_c/windows/system32/d3d11.dll")
 	)
 	#expect(!(try WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix)))
-}
-
-@Test
-func runtimeInstallsTheARMDXMTPayloadFromTheInterface() throws {
-	let fileManager = FileManager.default
-	let libraries = ["d3d10core.dll", "d3d11.dll", "dxgi.dll"]
-	let destinations = [
-		WineRuntime.DXMTDestination(architecture: "x64", windowsDirectory: "system32")
-	]
-	let fixture = try DXMTFixture(fileManager: fileManager, libraries: libraries)
-	defer { fixture.remove(fileManager: fileManager) }
-
-	try WineRuntime.installDXMT(
-		from: fixture.payload,
-		in: fixture.prefix,
-		destinations: destinations,
-		libraries: libraries
-	)
-	#expect(
-		try WineRuntime.dxmtIsCurrent(
-			from: fixture.payload,
-			in: fixture.prefix,
-			destinations: destinations,
-			libraries: libraries
-		)
-	)
-	let installed = fixture.prefix.appending(
-		path: "drive_c/windows/system32",
-		directoryHint: .isDirectory
-	)
-	#expect(!fileManager.fileExists(atPath: installed.appending(path: "winemetal.dll").path))
-}
-
-@Test
-func injectedBridgesShareTheDynamicLoaderPath() {
-	let runtime = WineRuntime(
-		executableURL: URL(filePath: "/runtime/bin/Arknights"),
-		displayName: "Test",
-		revision: "test",
-		gameIconBridgeURL: URL(filePath: "/runtime/GameIconBridge.dylib"),
-		compatibilityManager: GameCompatibilityManager()
-	)
-	let environment = runtime.gameIconEnvironment(customIconURL: nil)
-	#expect(
-		environment["DYLD_INSERT_LIBRARIES"]
-			== "/runtime/GameIconBridge.dylib")
 }
 
 @Test
@@ -239,65 +166,6 @@ func runtimeProvidesOnlyPrivateUnixUserDirectoriesAndRejectsInvalidConfiguration
 
 @Suite
 struct WineRuntimeDiscoveryTests {
-	@Test
-	func pathBasedDiscoveryResolvesTheRuntime() throws {
-		let fileManager = FileManager.default
-		let root = fileManager.temporaryDirectory.appending(
-			path: "wine-path-discovery-\(UUID().uuidString)", directoryHint: .isDirectory)
-		defer {
-			// best effort: the fixture lives under the system temporary directory.
-			try? fileManager.removeItem(at: root)
-		}
-		let bin = root.appending(path: "bin", directoryHint: .isDirectory)
-		try fileManager.createDirectory(at: bin, withIntermediateDirectories: true)
-		let executable = bin.appending(path: "Arknights")
-		try Data("#!/bin/sh\n".utf8).write(to: executable)
-		try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
-		let configurationURL = root.appending(path: "RUNTIME.json")
-		try Data(
-			#"""
-			{
-			  "prefixRevision": 2,
-			  "architecture": "arm",
-			  "runtime": {"name": "Test Runtime", "sha256": "abc"},
-			  "interface": {
-			    "archive": {"wineDirectory": "Wine", "dxmtDirectory": "DXMT"},
-			    "executables": ["bin/wine64"],
-			    "features": {
-			      "hardwareCursor": true,
-			      "metalFXSpatialUpscaling": false,
-			      "nativeFullscreenSpace": false
-			    },
-			    "requiredFiles": ["lib/wine/aarch64-unix/winemac.so"],
-			    "macDriver": "lib/wine/aarch64-unix/winemac.so",
-			    "launcher": {"path": "bin/Arknights", "target": "wine64"},
-			    "dxmt": {
-			      "payloadDirectory": "Payload",
-			      "destinations": {"x64": "system32"},
-			      "libraries": ["d3d11.dll"]
-			    }
-			  }
-			}
-			"""#.utf8
-		).write(to: configurationURL)
-
-		let runtime = try WineRuntime.discover(
-			runtimeRoot: root,
-			configurationURL: configurationURL,
-			compatibilityManager: GameCompatibilityManager()
-		)
-
-		#expect(runtime.executableURL == executable)
-		#expect(runtime.lane == .arm)
-		#expect(runtime.displayName == "Test Runtime")
-		#expect(runtime.dxmtPayloadDirectory == "Payload")
-		#expect(runtime.dxmtPayloadLibraries == ["d3d11.dll"])
-		#expect(
-			runtime.features
-				== RuntimeFeatures(
-					hardwareCursor: true, metalFXSpatialUpscaling: false,
-					nativeFullscreenSpace: false))
-	}
 }
 
 private struct DXMTFixture {

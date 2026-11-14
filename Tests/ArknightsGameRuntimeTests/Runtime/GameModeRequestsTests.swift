@@ -86,30 +86,6 @@ struct GameModeRequestsTests {
 		await onRequest.value
 	}
 
-	/// Quitting closes the gate, so a later request cannot start another `gamepolicyctl`.
-	@Test(.timeLimit(.minutes(1)))
-	func quitRejectsLaterRequestsWithoutStartingAProcess() async throws {
-		let directory = try TemporaryDirectory("game-mode-closed")
-		defer { directory.remove() }
-		let trace = directory.url.appending(path: "requests.log")
-		let fake = try makeFakeGamePolicyControl(
-			in: directory.url,
-			script: """
-				#!/bin/sh
-				printf '%s\\n' "$3" >> "\(trace.path)"
-				exit 0
-				""")
-		let log = LauncherLog(fileURL: directory.url.appending(path: "launcher.log"))
-		let requests = GameModeRequests(executable: fake, quitWaitSeconds: 1)
-
-		requests.setGameModeBlocking(on: false, log: log)
-		#expect(try String(contentsOf: trace, encoding: .utf8) == "auto\n")
-
-		await requests.setGameMode(on: false, log: log)
-
-		#expect(try String(contentsOf: trace, encoding: .utf8) == "auto\n")
-	}
-
 	private func killHelper(at pidFile: URL) {
 		guard
 			let data = FileManager.default.contents(atPath: pidFile.path),

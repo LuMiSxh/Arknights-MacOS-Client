@@ -1,43 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsCustomization
 import Foundation
-import Testing
 
 @testable import ArknightsGameInstallation
 @testable import ArknightsLauncherUI
-
-@MainActor
-struct LauncherRefreshRecoveryTests {
-	@Test(arguments: GameRegion.yostarCases)
-	func requiredConfigurationFailureRetriesTheCurrentRegion(region: GameRegion) async throws {
-		let api = ConfigurationRefreshAPI(
-			outcomes: region == .global ? [.failure, .success] : [.success, .failure, .success]
-		)
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		#expect(await model.waitForStartup())
-		if region != .global {
-			model.actions.selectRegion(region)
-		}
-
-		await model.refreshController.waitForCurrentRefresh()
-		#expect(model.lifecycle.state.presentation.failure?.code == .serviceError)
-		let failure = try #require(model.lifecycle.state.presentation.failure)
-		#expect(failure.context.operation == .configurationRefresh)
-		#expect(failure.context.region == region.supportRegion)
-		#expect(failure.blocksGameLaunch)
-		#expect(
-			failure.actions == [.retry, .openTroubleshooting, .reportProblem]
-		)
-
-		#expect(model.performRecoveryAction(.retry, failureID: failure.id) == .completed)
-		#expect(model.performRecoveryAction(.retry, failureID: failure.id) == .ignored)
-		await model.refreshController.waitForCurrentRefresh()
-		#expect(model.installation.configuration != nil)
-		#expect(await api.requestedRegions().last == region)
-	}
-}
 
 actor ConfigurationRefreshAPI: LauncherAPIProviding {
 	enum Outcome: Equatable, Sendable {

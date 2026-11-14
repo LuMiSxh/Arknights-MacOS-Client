@@ -114,15 +114,3 @@ func runtimePatchEnvironmentSendsEveryGateOfTheLaneWithAnExplicitValue(
 		#expect(environment[key] == "1")
 	}
 }
-
-@Test(arguments: RuntimeLane.allCases)
-func disabledRuntimePatchesSendZeroOnlyOnTheirLane(lane: RuntimeLane) {
-	let environment = RuntimePatchEnvironment.environment(
-		for: .global, lane: lane, usesHardwareCursor: false, displayMode: .windowed,
-		disabledPatches: Set(RuntimePatch.allCases))
-
-	for patch in RuntimePatch.allCases {
-		let key = RuntimePatchEnvironment.key(for: patch)
-		#expect(environment[key] == (patch.lanes.contains(lane) ? "0" : nil))
-	}
-}

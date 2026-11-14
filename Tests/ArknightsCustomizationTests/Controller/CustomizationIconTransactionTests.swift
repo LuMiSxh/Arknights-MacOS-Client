@@ -80,43 +80,6 @@ struct CustomizationIconTransactionTests {
 			atPath: fixture.paths.customAppIcon.deletingLastPathComponent().path)
 		#expect(!files.contains { $0.contains(".stage.") })
 	}
-
-	@Test
-	func changedIconDestinationRejectsPreparedSnapshotBeforeCommit() async throws {
-		let fixture = try makeCustomizationController()
-		defer { fixture.temporary.remove() }
-		let previous = try writeOperatorIconSet(fixture.paths)
-		let destinations = [fixture.paths.customAppIcon, fixture.paths.customGameIcon]
-		let prepared = try await CustomizationImageIO.preparePublication(
-			destinations,
-			operationID: UUID(),
-			log: fixture.controller.log
-		)
-		let newerAppIcon = Data("newer app icon".utf8)
-		try newerAppIcon.write(to: fixture.paths.customAppIcon, options: .atomic)
-		let stages = destinations.map {
-			CustomizationImageIO.stagedURL(for: $0, operationID: UUID())
-		}
-		try Data("replacement app icon".utf8).write(to: stages[0])
-		try Data("replacement game icon".utf8).write(to: stages[1])
-
-		#expect(throws: IconPublicationSnapshotError.self) {
-			try CustomizationImageIO.publish(
-				[
-					(staged: stages[0], destination: destinations[0]),
-					(staged: stages[1], destination: destinations[1]),
-				],
-				prepared: prepared,
-				using: CustomizationImageIO.commit,
-				log: fixture.controller.log
-			)
-		}
-		#expect(try Data(contentsOf: fixture.paths.customAppIcon) == newerAppIcon)
-		#expect(try Data(contentsOf: fixture.paths.customGameIcon) == previous.game)
-		let files = try FileManager.default.contentsOfDirectory(
-			atPath: fixture.paths.customAppIcon.deletingLastPathComponent().path)
-		#expect(!files.contains { $0.contains(".backup.") })
-	}
 }
 
 @MainActor

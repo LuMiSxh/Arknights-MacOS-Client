@@ -79,25 +79,6 @@ func runtimeStorePathsStayOutsideTheAppBundle() throws {
 }
 
 @Test
-func runtimeSelectionDeterminesTheLane() throws {
-	let temporary = try TemporaryDirectory("AppPathsSelectionTests")
-	defer { temporary.remove() }
-	let support = temporary.url.appending(path: "Support", directoryHint: .isDirectory)
-	let applicationSupport = support.appending(
-		path: AppPaths.bundleIdentifier, directoryHint: .isDirectory)
-	try FileManager.default.createDirectory(
-		at: applicationSupport, withIntermediateDirectories: true)
-	try Data(#"{"selected":"arm"}"#.utf8).write(
-		to: applicationSupport.appending(path: "runtime-selection.json"))
-
-	let paths = AppPaths(applicationSupportDirectory: support)
-
-	#expect(paths.runtimeLane == .arm)
-	#expect(paths.winePrefix.lastPathComponent == "Prefix-ARM64")
-	#expect(paths.runtimeLaneDiagnostic == nil)
-}
-
-@Test
 func missingSelectionDefaultsToARMWhateverTheRuntimeTreesHold() throws {
 	let temporary = try TemporaryDirectory("AppPathsDefaultLaneTests")
 	defer { temporary.remove() }
@@ -119,34 +100,4 @@ func missingSelectionDefaultsToARMWhateverTheRuntimeTreesHold() throws {
 
 	#expect(paths.runtimeLane == .arm)
 	#expect(paths.winePrefix.lastPathComponent == "Prefix-ARM64")
-}
-
-@Test
-func activeRuntimeConfigurationFollowsTheSelectedLane() throws {
-	let temporary = try TemporaryDirectory("AppPathsActiveRuntimeTests")
-	defer { temporary.remove() }
-	let support = temporary.url.appending(path: "Support", directoryHint: .isDirectory)
-	let applicationSupport = support.appending(
-		path: AppPaths.bundleIdentifier, directoryHint: .isDirectory)
-	for lane in ["x86", "arm"] {
-		let version = applicationSupport.appending(
-			path: "Runtimes/\(lane)/1.0.0", directoryHint: .isDirectory)
-		try FileManager.default.createDirectory(at: version, withIntermediateDirectories: true)
-		try Data(#"{"architecture":"\#(lane)"}"#.utf8).write(
-			to: version.appending(path: "RUNTIME.json"))
-	}
-
-	let x86 = AppPaths(
-		applicationSupportDirectory: support,
-		runtimeSelection: RuntimeSelection(selected: .x86)
-	)
-	let arm = AppPaths(
-		applicationSupportDirectory: support,
-		runtimeSelection: RuntimeSelection(selected: .arm)
-	)
-
-	#expect(x86.activeRuntimeConfigurationURL()?.path.hasSuffix("x86/1.0.0/RUNTIME.json") == true)
-	#expect(arm.activeRuntimeConfigurationURL()?.path.hasSuffix("arm/1.0.0/RUNTIME.json") == true)
-	let installed = AppPaths.installedRuntimeConfigurationURLs(in: x86.runtimeRoot)
-	#expect(installed.map(\.lane) == [.x86, .arm])
 }

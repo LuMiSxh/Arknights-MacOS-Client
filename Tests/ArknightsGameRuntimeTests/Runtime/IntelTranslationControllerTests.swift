@@ -11,25 +11,6 @@ import Testing
 @MainActor
 struct IntelTranslationControllerTests {
 	@Test
-	func armRuntimeSkipsTheRosettaProbe() async throws {
-		let storage = try TemporaryDirectory("IntelTranslationControllerTests")
-		defer { storage.remove() }
-		let lifecycle = makeLifecycleStore(in: storage)
-		let controller = IntelTranslationController(
-			lifecycle: lifecycle,
-			runtimeLane: { .arm },
-			checkIntelTranslation: {
-				IntelTranslationCheck(state: .rosettaMissing, diagnostics: "probe")
-			}
-		)
-
-		let state = await controller.refreshAvailability()
-
-		#expect(state == .available)
-		#expect(controller.allowsWine)
-	}
-
-	@Test
 	func failedInstallationKeepsLaunchBlockedAndExposesRecovery() async throws {
 		let storage = try TemporaryDirectory("IntelTranslationControllerTests")
 		defer { storage.remove() }

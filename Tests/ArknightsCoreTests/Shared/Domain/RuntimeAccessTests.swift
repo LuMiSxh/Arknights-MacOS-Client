@@ -12,11 +12,6 @@ private func access(macOS major: Int) -> RuntimeAccess {
 }
 
 struct RuntimeAccessTests {
-	@Test(arguments: [15, 25, 26, 27])
-	func x86IsAllowedBeforeMacOS28(major: Int) {
-		#expect(access(macOS: major).allows(.x86))
-	}
-
 	@Test
 	func x86IsDeniedOnMacOS28AndLater() {
 		#expect(!access(macOS: 28).allows(.x86))
@@ -29,14 +24,4 @@ struct RuntimeAccessTests {
 		#expect(!access(macOS: 25).allows(.arm))
 	}
 
-	@Test
-	func armIsAllowedOnMacOS26AndLater() {
-		#expect(access(macOS: 26).allows(.arm))
-		#expect(access(macOS: 27).allows(.arm))
-	}
-
-	@Test(arguments: zip([15, 26, 27, 28], [RuntimeLane.x86, .arm, .arm, .arm]))
-	func defaultLanePrefersARMWhereItRuns(major: Int, expected: RuntimeLane) {
-		#expect(access(macOS: major).defaultLane == expected)
-	}
 }

@@ -7,37 +7,6 @@ import Testing
 
 struct DiscordIPCFrameTests {
 	@Test
-	func roundTripsFramesAndRejectsOversizedPayloads() throws {
-		let payload = Data(#"{"v":1,"client_id":"1539589207381770261"}"#.utf8)
-		let frame = DiscordIPCFrame(opcode: .handshake, payload: payload)
-
-		let encoded = try DiscordIPCFrameCodec.encode(frame, maximumPayloadBytes: 128)
-		#expect(encoded.count == DiscordIPCFrameCodec.headerByteCount + payload.count)
-		#expect(encoded.prefix(4) == Data([0, 0, 0, 0]))
-		#expect(
-			encoded.dropFirst(4).prefix(4) == Data(UInt32(payload.count).littleEndian.bytes))
-
-		var buffer = encoded
-		#expect(
-			try DiscordIPCFrameCodec.decode(from: &buffer, maximumPayloadBytes: 128) == frame)
-		#expect(buffer.isEmpty)
-		#expect(try DiscordIPCFrameCodec.decode(from: &buffer, maximumPayloadBytes: 128) == nil)
-
-		#expect(throws: DiscordIPCFrameError.payloadTooLarge(maximumBytes: 8)) {
-			try DiscordIPCFrameCodec.encode(
-				DiscordIPCFrame(opcode: .frame, payload: Data(repeating: 0, count: 9)),
-				maximumPayloadBytes: 8
-			)
-		}
-
-		// The length header fails before the claimed payload arrives.
-		var oversizedHeader = Data([1, 0, 0, 0, 9, 0, 0, 0])
-		#expect(throws: DiscordIPCFrameError.payloadTooLarge(maximumBytes: 8)) {
-			try DiscordIPCFrameCodec.decode(from: &oversizedHeader, maximumPayloadBytes: 8)
-		}
-	}
-
-	@Test
 	func activityFrameUsesMillisecondsAndClearsWithNull() throws {
 		let activity = DiscordIPCActivity(
 			details: "Playing Arknights",

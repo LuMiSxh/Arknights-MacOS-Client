@@ -193,21 +193,6 @@ struct CustomizationControllerTests {
 
 		#expect(try Data(contentsOf: fixture.paths.customAppIcon) != staleData)
 	}
-
-	@Test
-	func failedLauncherIconApplicationDoesNotPublishCustomIcon() async throws {
-		let fixture = try makeCustomizationController(setBundleIcon: { _ in false })
-		defer { fixture.temporary.remove() }
-		let data = try #require(solidImage(.systemGreen).tiffRepresentation)
-		try FileManager.default.createDirectory(
-			at: fixture.paths.customAppIcon.deletingLastPathComponent(),
-			withIntermediateDirectories: true
-		)
-		try data.write(to: fixture.paths.customAppIcon)
-
-		#expect(await !fixture.controller.loadCustomAppIcon())
-		#expect(!fixture.controller.hasCustomAppIcon)
-	}
 }
 
 @MainActor

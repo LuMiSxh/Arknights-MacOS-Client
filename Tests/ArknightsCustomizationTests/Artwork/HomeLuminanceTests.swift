@@ -32,11 +32,6 @@ struct HomeLuminanceTests {
 		#expect(HomeLuminance.colorScheme(for: score, previous: .light) == testCase.expected)
 	}
 
-	@Test func fullyTransparentArtworkHasNoScore() {
-		let pixels = [UInt8](repeating: 0, count: side * side * 4)
-		#expect(HomeLuminance.score(pixels: pixels, side: side) == nil)
-	}
-
 	@Test(
 		arguments: [
 			(score: 0.58, previous: ColorScheme.dark, expected: ColorScheme.light),

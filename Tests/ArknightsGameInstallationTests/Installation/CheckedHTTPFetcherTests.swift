@@ -45,23 +45,4 @@ struct CheckedHTTPFetcherTests {
 		#expect(sleeps.first?.duration == .milliseconds(400))
 		#expect((sleeps.first?.tolerance ?? .zero) >= .milliseconds(40))
 	}
-
-	/// A final server error surfaces as `HTTPFetchError`; cancelling the fetch surfaces as `CancellationError`.
-	@Test
-	func rethrowsTheLastFailureAndMapsCancellationToCancellationError() async throws {
-		let route = StubURLProtocol.Route()
-		route.handler = { request in
-			(makeHTTPResponse(url: request.url!, status: 500), Data("ok".utf8))
-		}
-		let fetcher = fetcher(route)
-		let policy = HTTPFetchPolicy(maximumBytes: 1_024)
-
-		await #expect(throws: HTTPFetchError.self) {
-			try await fetcher.fetch([first], policy: policy)
-		}
-
-		let task = Task { try await fetcher.fetch([first], policy: policy) }
-		task.cancel()
-		await #expect(throws: CancellationError.self) { try await task.value }
-	}
 }

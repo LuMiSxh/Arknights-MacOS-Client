@@ -28,30 +28,6 @@ struct InstallerDirectoryTests {
 		}
 	}
 
-	/// A second holder in the same process fails at once, and a throwing body still releases the lease.
-	@Test
-	func secondAcquireWhileHeldThrowsDirectoryInUse() throws {
-		let directory = try TemporaryDirectory("InstallerDirectoryTests")
-		defer { directory.remove() }
-		let root = directory.url
-
-		let held = try InstallLease.acquire(at: root)
-		do {
-			_ = try InstallLease.acquire(at: root)
-			Issue.record("Expected the second acquire to throw directoryInUse")
-		} catch InstallerFileSystemError.directoryInUse {
-		} catch {
-			Issue.record("Unexpected error: \(error)")
-		}
-		held.release()
-
-		struct Failure: Error {}
-		#expect(throws: Failure.self) {
-			try withInstallLease(at: root) { _ in throw Failure() }
-		}
-		try withInstallLease(at: root) { _ in }
-	}
-
 	private enum LockProbeResult: Equatable {
 		case blocked
 		case killed

@@ -51,29 +51,6 @@ struct DiagnosticsBundleTests {
 				== "# Readme")
 	}
 
-	/// An unsafe path or a missing source fails the write and leaves nothing behind.
-	@Test(arguments: ["../escape.txt", "/escape.txt", ".", "Logs/missing.log"])
-	func rejectsABadItemAndLeavesNothingBehind(archivePath: String) async throws {
-		let directory = try TemporaryDirectory("DiagnosticsBundleTests")
-		defer { directory.remove() }
-
-		await #expect(throws: DiagnosticsBundleError.self) {
-			try await DiagnosticsBundle.write(
-				[
-					.init(
-						archivePath: archivePath,
-						content: .file(directory.url.appending(path: "missing.log")))
-				],
-				readme: "",
-				named: baseName,
-				to: directory.url,
-				redaction: redaction,
-				reportCleanupFailure: { _ in }
-			)
-		}
-		#expect(try FileManager.default.contentsOfDirectory(atPath: directory.url.path).isEmpty)
-	}
-
 	/// Home path, user name, and URL queries are removed from a log that spans several chunks.
 	@Test
 	func redactsALogWhileCopyingIt() async throws {

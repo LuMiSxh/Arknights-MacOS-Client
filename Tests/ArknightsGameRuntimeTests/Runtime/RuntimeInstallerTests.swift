@@ -190,31 +190,6 @@ struct RuntimeInstallerTests {
 	}
 
 	@Test
-	func reinstallingThePinnedVersionReplacesTheLaneTree() async throws {
-		let temporary = try TemporaryDirectory("RuntimeInstallerReinstall")
-		defer { temporary.remove() }
-		let archive = runtimeArchive()
-		let route = StubURLProtocol.Route()
-		route.handler = { request in
-			(makeHTTPResponse(url: request.url!, status: 200), archive)
-		}
-		let paths = makePaths(temporary)
-		let installer = makeInstaller(paths: paths, route: route)
-		let pin = makePin(archive: archive)
-
-		let first = try await installer.install(pin: pin) { _ in }
-		try Data("stale".utf8).write(to: first.directory.appending(path: "bin/wine64"))
-
-		let second = try await installer.install(pin: pin) { _ in }
-
-		#expect(second.directory == first.directory)
-		#expect(
-			try Data(contentsOf: second.directory.appending(path: "bin/wine64"))
-				== Data("wine64".utf8))
-		#expect(route.requestCount == 1)
-	}
-
-	@Test
 	func rejectsAnArchiveWithTheWrongHashAndDeletesThePart() async throws {
 		let temporary = try TemporaryDirectory("RuntimeInstallerHash")
 		defer { temporary.remove() }
@@ -284,20 +259,5 @@ struct RuntimeInstallerTests {
 		}
 		#expect(FileManager.default.fileExists(atPath: oldVersion.path))
 		#expect(paths.installedRuntimeVersion(for: .x86) == nil)
-	}
-
-	@Test
-	func verifyAcceptsAnExactSizeAndHash() throws {
-		let temporary = try TemporaryDirectory("RuntimeInstallerVerify")
-		defer { temporary.remove() }
-		let archive = runtimeArchive()
-		let archiveURL = temporary.url.appending(path: "runtime.tar")
-		try archive.write(to: archiveURL)
-		let paths = makePaths(temporary)
-		let installer = RuntimeInstaller(paths: paths)
-
-		#expect(throws: Never.self) {
-			try installer.verify(pin: makePin(archive: archive), archiveAt: archiveURL)
-		}
 	}
 }

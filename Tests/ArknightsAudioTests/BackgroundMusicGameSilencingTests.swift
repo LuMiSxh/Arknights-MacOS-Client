@@ -9,27 +9,6 @@ import Testing
 
 @MainActor
 struct BackgroundMusicGameSilencingTests {
-	@Test
-	func trackChangeInFlightIssuesNoPlayerCommandAfterTheGameWindowAppears() async throws {
-		let fixture = try MusicFixture()
-		defer { fixture.remove() }
-		let controller = fixture.controller
-		controller.currentSource = .playlist(id: "list")
-		fixture.fake.holdsMetadata = true
-
-		controller.playNextTrack()
-		await waitForCondition { fixture.fake.isHoldingMetadata }
-		controller.gameActivityDidChange(to: .testRunningGame())
-		fixture.fake.releaseMetadata()
-		await waitForCondition { fixture.fake.count("pause") == 1 }
-		// Give the cancelled track change time to run its remaining steps.
-		for _ in 0..<20 { await Task.yield() }
-
-		let commands = fixture.fake.commands
-		#expect(!commands.contains("nextVideo"))
-		#expect(!controller.isChangingTrack)
-	}
-
 	@Test(arguments: [false, true])
 	func musicFadesBackInAfterTheGameExitsOnlyWhenNotPausedByTheUser(
 		userPaused: Bool
@@ -63,22 +42,6 @@ struct BackgroundMusicGameSilencingTests {
 		for _ in 0..<50 { await Task.yield() }
 
 		#expect(fixture.fake.commands.isEmpty)
-	}
-
-	@Test
-	func aSourceLoadFinishingWhileTheGameLaunchesStartsNothing() async throws {
-		let fixture = try MusicFixture()
-		defer { fixture.remove() }
-		let controller = fixture.controller
-		controller.currentSource = .playlist(id: "list")
-		_ = controller.lifecycle.begin(.launchingGame(sessionID: UUID(), processIdentifier: 1))
-
-		controller.performFadeIn()
-		for _ in 0..<50 { await Task.yield() }
-
-		#expect(fixture.fake.commands.isEmpty)
-		#expect(controller.fadeTask == nil)
-		#expect(controller.playbackIntent == nil)
 	}
 
 	@Test

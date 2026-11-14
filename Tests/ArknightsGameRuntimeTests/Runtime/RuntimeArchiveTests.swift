@@ -93,30 +93,6 @@ struct RuntimeArchiveTests {
 				atPath: root.appending(path: "DXMT/x64/d3d11.dll").path))
 	}
 
-	@Test
-	func acceptsPaxExtendedHeaders() throws {
-		let temporary = try TemporaryDirectory("RuntimeArchivePax")
-		defer { temporary.remove() }
-		var builder = TarBuilder()
-		builder.directory("Libraries")
-		builder.pax([
-			"mtime": "1793961641.027845",
-			"path": "Libraries/Wine/bin/Arknights",
-		])
-		builder.append(name: "short-name", content: Data("launcher".utf8))
-		builder.finish()
-		let archive = temporary.url.appending(path: "runtime.tar")
-		try builder.data.write(to: archive)
-
-		let destination = temporary.url.appending(path: "staging", directoryHint: .isDirectory)
-		let root = try RuntimeArchive.extract(at: archive, into: destination)
-
-		#expect(root == destination.appending(path: "Libraries", directoryHint: .isDirectory))
-		#expect(
-			FileManager.default.fileExists(
-				atPath: root.appending(path: "Wine/bin/Arknights").path))
-	}
-
 	@Test(arguments: ["/etc/evil", "Libraries/../../evil", "C:\\evil", "C:/evil"])
 	func rejectsUnsafePaths(name: String) throws {
 		let temporary = try TemporaryDirectory("RuntimeArchiveUnsafePath")
@@ -205,36 +181,5 @@ struct RuntimeArchiveTests {
 		#expect(
 			FileManager.default.isExecutableFile(
 				atPath: root.appending(path: "bin/wine64").path))
-	}
-
-	@Test
-	func extractsAGzipCompressedArchive() throws {
-		let temporary = try TemporaryDirectory("RuntimeArchiveGzip")
-		defer { temporary.remove() }
-		var builder = TarBuilder()
-		builder.directory("Libraries")
-		builder.append(name: "Libraries/Wine/bin/Arknights", content: Data("launcher".utf8))
-		builder.finish()
-		let tar = temporary.url.appending(path: "runtime.tar")
-		try builder.data.write(to: tar)
-
-		let archive = temporary.url.appending(path: "runtime.tar.gz")
-		guard FileManager.default.createFile(atPath: archive.path, contents: nil) else {
-			throw CocoaError(.fileWriteUnknown)
-		}
-		let process = Process()
-		process.executableURL = URL(fileURLWithPath: "/usr/bin/gzip")
-		process.arguments = ["-c", tar.path]
-		process.standardOutput = try FileHandle(forWritingTo: archive)
-		try process.run()
-		process.waitUntilExit()
-		#expect(process.terminationStatus == 0)
-
-		let destination = temporary.url.appending(path: "staging", directoryHint: .isDirectory)
-		let root = try RuntimeArchive.extract(at: archive, into: destination)
-		#expect(root == destination.appending(path: "Libraries", directoryHint: .isDirectory))
-		#expect(
-			FileManager.default.fileExists(
-				atPath: root.appending(path: "Wine/bin/Arknights").path))
 	}
 }

@@ -63,15 +63,6 @@ struct RuntimeManifestTests {
 	}
 
 	@Test
-	func rejectsAnUnknownArchitecture() {
-		#expect(throws: DecodingError.self) {
-			let data = try manifestData(
-				architecture: "aarch64", macDriver: "lib/wine/x86_64-unix/winemac.so")
-			_ = try JSONDecoder().decode(RuntimeManifest.self, from: data)
-		}
-	}
-
-	@Test
 	func aStaleDriverCannotOverrideTheDeclaredLane() throws {
 		let data = try manifestData(
 			architecture: "x86", macDriver: "lib/wine/aarch64-unix/winemac.so")

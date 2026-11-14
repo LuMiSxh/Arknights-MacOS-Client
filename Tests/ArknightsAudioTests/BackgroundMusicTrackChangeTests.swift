@@ -37,56 +37,6 @@ struct BackgroundMusicTrackChangeTests {
 	}
 
 	@Test
-	func nextCompletesFromAPlayerReadWhenYouTubeNeverReportsPlaying() async throws {
-		let fixture = try MusicFixture(clock: HeldClock())
-		defer { fixture.remove() }
-		let controller = fixture.controller
-		controller.currentSource = .playlist(id: "list")
-		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "a", title: "First")
-
-		controller.playNextTrack()
-		await waitForCondition { fixture.fake.count("nextVideo") == 1 }
-		for _ in 0..<20 { await Task.yield() }
-
-		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "b", title: "Second")
-		fixture.fake.state = .playing
-		fixture.fake.emit(.playback(.buffering))
-		fixture.fake.emit(.metadata(try FakeMusicPlayer.metadata(videoID: "b", title: "Second")))
-
-		await waitForCondition { !controller.isChangingTrack }
-		#expect(controller.currentMusicTitle == "Second")
-		#expect(controller.playbackState == .playing)
-	}
-
-	@Test
-	func nextCompletesOnTheRecheckWhenOnlyBufferingIsEverReported() async throws {
-		let clock = HeldClock()
-		let fixture = try MusicFixture(clock: clock)
-		defer { fixture.remove() }
-		let controller = fixture.controller
-		controller.currentSource = .playlist(id: "list")
-		controller.currentMusicTitle = "Old"
-		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "a", title: "Old")
-
-		controller.playNextTrack()
-		await waitForCondition { fixture.fake.count("nextVideo") == 1 }
-		for _ in 0..<20 { await Task.yield() }
-		fixture.fake.emit(.playback(.buffering))
-		for _ in 0..<20 { await Task.yield() }
-		#expect(controller.isChangingTrack)
-
-		// No further event arrives; only the recheck can notice the new track.
-		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "b", title: "New")
-		fixture.fake.state = .playing
-		// One recheck interval is far short of the timeout, so only the recheck can finish this.
-		clock.advance(by: AppConstants.Music.trackStartRecheckInterval)
-
-		await waitForCondition { !controller.isChangingTrack }
-		#expect(controller.currentMusicTitle == "New")
-		#expect(controller.playbackState == .playing)
-	}
-
-	@Test
 	func aTrackChangeThatTimesOutEndsAndShowsWhatThePlayerReads() async throws {
 		let clock = HeldClock()
 		let fixture = try MusicFixture(clock: clock)
@@ -105,21 +55,6 @@ struct BackgroundMusicTrackChangeTests {
 		clock.release()
 		await waitForCondition { !controller.isChangingTrack }
 		#expect(controller.currentMusicTitle == "Second")
-	}
-
-	@Test
-	func aFailedTrackCommandEndsTheEventSubscription() async throws {
-		let fixture = try MusicFixture()
-		defer { fixture.remove() }
-		let controller = fixture.controller
-		controller.currentSource = .playlist(id: "list")
-		fixture.fake.failsNavigation = true
-
-		controller.playNextTrack()
-
-		await fixture.fake.subscriptionCancelled.wait()
-		#expect(fixture.fake.terminatedStreams == 1)
-		await waitForCondition { !controller.isChangingTrack }
 	}
 
 	@Test

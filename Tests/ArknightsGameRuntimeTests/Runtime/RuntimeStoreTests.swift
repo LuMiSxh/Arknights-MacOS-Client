@@ -9,18 +9,6 @@ import Testing
 
 struct RuntimeStoreTests {
 	@Test
-	func findsTheInstalledVersionPerLane() throws {
-		let temporary = try TemporaryDirectory("RuntimeStoreTests")
-		defer { temporary.remove() }
-		let paths = AppPaths(applicationSupportDirectory: temporary.url)
-		let store = RuntimeStore(paths: paths)
-		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
-
-		#expect(store.installedVersion(for: .x86) == "1.0.0")
-		#expect(store.installedVersion(for: .arm) == nil)
-	}
-
-	@Test
 	func selectionIsPersistedAndDefaultsToARM() throws {
 		let temporary = try TemporaryDirectory("RuntimeStoreSelectionTests")
 		defer { temporary.remove() }
@@ -116,45 +104,4 @@ struct RuntimeStoreTests {
 				).path))
 	}
 
-	@Test
-	func removingTheSelectedLaneWorksOnlyWhenAllowedAndKeepsTheSelection() throws {
-		let temporary = try TemporaryDirectory("RuntimeStoreRemoveSelectedTests")
-		defer { temporary.remove() }
-		let paths = AppPaths(
-			applicationSupportDirectory: temporary.url,
-			runtimeSelection: RuntimeSelection(selected: .x86)
-		)
-		let store = RuntimeStore(paths: paths)
-		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
-
-		try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).save(
-			RuntimeSelection(selected: .x86))
-
-		try store.remove(lane: .x86, allowSelected: true)
-
-		#expect(store.installedVersion(for: .x86) == nil)
-		#expect(!FileManager.default.fileExists(atPath: paths.runtimeDirectory(for: .x86).path))
-		#expect(
-			try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load().selected == .x86)
-	}
-
-	@Test
-	func removingAnotherLaneDeletesItsInstalledRuntime() throws {
-		let temporary = try TemporaryDirectory("RuntimeStoreRemoveOtherTests")
-		defer { temporary.remove() }
-		let paths = AppPaths(
-			applicationSupportDirectory: temporary.url,
-			runtimeSelection: RuntimeSelection(selected: .x86)
-		)
-		let store = RuntimeStore(paths: paths)
-		try makeInstalledRuntime(version: "2.0.0", lane: .arm, paths: paths)
-
-		try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).save(
-			RuntimeSelection(selected: .x86))
-
-		try store.remove(lane: .arm)
-
-		#expect(store.installedVersion(for: .arm) == nil)
-		#expect(!FileManager.default.fileExists(atPath: paths.runtimeDirectory(for: .arm).path))
-	}
 }

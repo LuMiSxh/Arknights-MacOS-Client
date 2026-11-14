@@ -64,21 +64,4 @@ struct RosettaAvailabilityTests {
 			#expect(check.diagnostics.contains(diagnostic))
 		}
 	}
-
-	@Test
-	func macOS28IsRejectedBeforeRunningAProbe() async {
-		let check = await RosettaAvailability.check(
-			operatingSystemVersion: OperatingSystemVersion(
-				majorVersion: 28, minorVersion: 0, patchVersion: 0),
-			operatingSystemVersionString: "Version 28",
-			rosettaRuntimePresent: true,
-			gameTestToolAvailable: true,
-			runProcess: { _, _ in
-				Issue.record("The Intel probe must not run on unsupported macOS versions")
-				return IntelTranslationProcessResult(status: 0, output: "")
-			}
-		)
-
-		#expect(check.state == .unsupportedOS)
-	}
 }

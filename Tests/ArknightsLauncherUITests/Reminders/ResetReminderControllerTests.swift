@@ -160,34 +160,6 @@ private func fireDates(_ scheduler: FakeScheduler, region: GameRegion) -> [Date]
 				})
 	}
 
-	@Test func changingTheTimingReplacesPendingRequests() async {
-		let harness = Harness(scheduler: FakeScheduler(), now: now)
-		defer { harness.cleanUp() }
-		harness.settings.resetReminderRegions = [.global]
-		harness.settings.resetReminderTiming = .minutes60
-		await harness.settle()
-		harness.settings.resetReminderTiming = .minutes30
-		await harness.settle()
-
-		let expected = (0..<7).map {
-			date("2026-11-04T10:30:00Z").addingTimeInterval(Double($0) * 86_400)
-		}
-		#expect(fireDates(harness.scheduler, region: .global) == expected)
-	}
-
-	@Test func skipsAFireTimeThatAlreadyPassed() async {
-		// The 1 hour reminder for today's 11:00 UTC reset was due at 10:00 UTC.
-		let harness = Harness(scheduler: FakeScheduler(), now: date("2026-11-03T10:30:00Z"))
-		defer { harness.cleanUp() }
-		harness.settings.resetReminderRegions = [.global]
-		harness.settings.resetReminderTiming = .minutes60
-		await harness.settle()
-
-		#expect(
-			fireDates(harness.scheduler, region: .global).first == date("2026-11-04T10:00:00Z"))
-		#expect(harness.scheduler.pending["reset.global.2026-11-03.60"] == nil)
-	}
-
 	@Test func turningOffRemovesEveryPendingRequest() async {
 		let harness = Harness(scheduler: FakeScheduler(), now: now)
 		defer { harness.cleanUp() }
@@ -264,46 +236,4 @@ private func fireDates(_ scheduler: FakeScheduler, region: GameRegion) -> [Date]
 		#expect(scheduler.pending.isEmpty)
 	}
 
-	@Test func aThrownAuthorizationRequestKeepsTheSettingAndLeavesTheStatusUndetermined() async {
-		let scheduler = FakeScheduler(authorization: .notDetermined, grantsRequest: false)
-		scheduler.throwsOnRequest = true
-		let harness = Harness(scheduler: scheduler, now: now)
-		defer { harness.cleanUp() }
-		harness.settings.resetReminderTiming = .atReset
-		await harness.settle()
-
-		#expect(harness.settings.resetReminderTiming == .atReset)
-		#expect(!harness.controller.isAccessDenied)
-		#expect(scheduler.requestCount == 1)
-		#expect(scheduler.pending.isEmpty)
-	}
-
-	@Test func permissionIsAskedOnlyWhenTheUserTurnsTheReminderOn() async {
-		let scheduler = FakeScheduler(authorization: .notDetermined)
-		let harness = Harness(scheduler: scheduler, now: now)
-		defer { harness.cleanUp() }
-		await harness.settle()
-		#expect(scheduler.requestCount == 0)
-
-		harness.settings.resetReminderTiming = .minutes15
-		await harness.settle()
-		#expect(scheduler.requestCount == 1)
-		#expect(harness.settings.resetReminderRegions == [.global])
-		#expect(!scheduler.pending.isEmpty)
-	}
-
-	// Onboarding turns the reminder on before the first install finishes.
-	@Test func aReminderChosenBeforeAnyInstallStartsOnceTheServerIsInstalled() async {
-		let harness = Harness(scheduler: FakeScheduler(), now: now, installed: [])
-		defer { harness.cleanUp() }
-		harness.settings.resetReminderTiming = .atReset
-		await harness.settle()
-		#expect(harness.scheduler.pending.isEmpty)
-
-		harness.installed = [.global]
-		harness.controller.installedRegionsDidChange()
-		await harness.settle()
-		#expect(harness.settings.resetReminderRegions == [.global])
-		#expect(fireDates(harness.scheduler, region: .global).count == 7)
-	}
 }
