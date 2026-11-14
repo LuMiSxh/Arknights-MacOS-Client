@@ -823,11 +823,9 @@ body:has(.diagram-dialog[open]) {
 }
 
 .site-footer {
-	display: grid;
-	gap: var(--site-space-5);
 	border-top: 1px solid var(--site-hairline);
 	margin-top: var(--site-space-12);
-	padding: var(--site-space-6) var(--site-gutter);
+	padding: var(--site-space-8) var(--site-gutter) var(--site-space-6);
 	color: var(--site-text-tertiary);
 	font-size: 0.78rem;
 }
@@ -836,28 +834,57 @@ body:has(.diagram-dialog[open]) {
 	color: var(--site-text-secondary);
 }
 
+/* One column on mobile. Four columns from 761px, inside the home container or the docs column. */
+.footer-inner {
+	display: grid;
+	gap: var(--site-space-6);
+}
+
+.home-footer .footer-inner {
+	max-width: 1100px;
+	margin-inline: auto;
+}
+
+/* Start-aligned: a group stretched to the row height would spread its links apart. */
+.footer-about,
+.footer-group,
 .footer-links {
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	align-content: start;
+	gap: var(--site-space-2);
 	margin: 0;
-	gap: var(--site-space-2) var(--site-space-5);
 }
 
 .footer-group {
-	display: grid;
 	gap: var(--site-space-1);
 }
 
 .footer-label {
 	margin: 0;
-	font-family: var(--site-font-mono);
-	font-size: 0.72rem;
+	color: var(--site-text-secondary);
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.footer-about p {
+	margin: 0;
 }
 
 .footer-credit {
-	margin: 0;
 	opacity: 0.8;
 	font-size: 0.72rem;
+}
+
+@media (min-width: 761px) {
+	.footer-inner {
+		grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
+		gap: var(--site-space-6) var(--site-space-8);
+	}
+
+	/* Docs pages: start the footer at the documentation column, after the rail. */
+	.site-footer.with-rail {
+		padding-inline-start: calc(var(--site-rail-width) + var(--site-gutter));
+	}
 }
 
 /* Home content and footer sit on one near-opaque sheet: the fixed artwork shows only faintly. */

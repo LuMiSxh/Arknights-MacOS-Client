@@ -83,30 +83,40 @@
 </script>
 
 {#snippet footer()}
-	<footer class="site-footer" class:home-footer={isHome}>
-		<p>
-			Copyright © 2026 <a href="https://github.com/LuMiSxh">LuMiSxh</a> · Community-maintained,
-			not affiliated with Yostar, Gryphline, Hypergryph, or Bilibili
-		</p>
-		<nav class="footer-links" aria-label="Footer">
-			<a href={resolve('/legal/')}>Legal</a>
-			<a href={resolve('/privacy/')}>Privacy notice</a>
-			<a href={resolve('/contact/')}>Contact</a>
-			<a href={resolve('/ai-assistance/')}>AI assistance</a>
-		</nav>
-		<div class="footer-group">
-			<p class="footer-label">Contributors</p>
-			<a href={resolve('/development/')}>Development</a>
+	<footer
+		class="site-footer"
+		class:home-footer={isHome}
+		class:with-rail={showRail}
+	>
+		<div class="footer-inner">
+			<div class="footer-about">
+				<p>
+					Copyright © 2026 <a href="https://github.com/LuMiSxh"
+						>LuMiSxh</a
+					> · Community-maintained, not affiliated with Yostar, Gryphline,
+					Hypergryph, or Bilibili
+				</p>
+				<p class="footer-credit">
+					Artwork “Dissociative Recombination” by Krin · © Hypergryph
+					· © Yostar
+				</p>
+			</div>
+			<nav class="footer-links" aria-label="Footer">
+				<a href={resolve('/legal/')}>Legal</a>
+				<a href={resolve('/privacy/')}>Privacy notice</a>
+				<a href={resolve('/contact/')}>Contact</a>
+				<a href={resolve('/ai-assistance/')}>AI assistance</a>
+			</nav>
+			<div class="footer-group">
+				<p class="footer-label">Contributors</p>
+				<a href={resolve('/development/')}>Development</a>
+			</div>
+			<p class="footer-links">
+				<a href={`${repositoryUrl}/blob/main/LICENSE`}>MPL-2.0</a>
+				<a href={`${repositoryUrl}/issues`}>Report an issue</a>
+				<a href={repositoryUrl}>Source</a>
+			</p>
 		</div>
-		<p class="footer-links">
-			<a href={`${repositoryUrl}/blob/main/LICENSE`}>MPL-2.0</a>
-			<a href={`${repositoryUrl}/issues`}>Report an issue</a>
-			<a href={repositoryUrl}>Source</a>
-		</p>
-		<p class="footer-credit">
-			Artwork “Dissociative Recombination” by Krin · © Hypergryph · ©
-			Yostar
-		</p>
 	</footer>
 {/snippet}
 

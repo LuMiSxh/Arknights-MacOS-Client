@@ -307,8 +307,9 @@
 		cursor: pointer;
 	}
 
+	/* Near-opaque so hero content behind the panel cannot read through its edge. */
 	.menu-panel {
-		--glass-tint: rgb(19 20 23 / 0.8);
+		--glass-tint: rgb(19 20 23 / 0.94);
 		position: fixed;
 		top: calc(var(--top-bar-height) + var(--site-space-2));
 		right: var(--site-gutter);

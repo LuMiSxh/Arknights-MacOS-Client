@@ -236,11 +236,14 @@
 				>
 			</div>
 			{#if data.post}
-				<a class="post-card" href={resolve(data.post.route)}>
+				<article class="post-card">
 					<time datetime={data.post.date}>{data.post.date}</time>
 					<strong>{data.post.title}</strong>
 					<span>{data.post.summary}</span>
-				</a>
+					<a class="panel-link" href={resolve(data.post.route)}
+						>Read the post</a
+					>
+				</article>
 			{/if}
 		</div>
 	</section>
@@ -567,9 +570,11 @@
 		color: var(--site-accent-ink);
 	}
 
+	/* Cards keep their own height: a short post card must not stretch to the release card. */
 	.split {
 		display: grid;
 		grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+		align-items: start;
 		gap: var(--site-space-4);
 	}
 
@@ -631,16 +636,10 @@
 		gap: var(--site-space-2);
 		color: var(--site-text-secondary);
 		font-size: 0.9rem;
-		text-decoration: none;
-		transition: border-color var(--site-dur-state) var(--site-ease-state);
 	}
 
-	.post-card:hover {
-		border-color: color-mix(
-			in srgb,
-			var(--site-accent-ink) 45%,
-			transparent
-		);
+	.post-card .panel-link {
+		margin-top: var(--site-space-2);
 	}
 
 	.post-card time {
