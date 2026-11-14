@@ -10,8 +10,6 @@ The launcher must feel like a current macOS app. It must feel like an Arknights 
 
 ## Interface rules
 
-Pages that do not follow these rules yet are tracked in [UI rework for 1.0](ui-rework-1.0.md).
-
 ### Wording
 
 1. Use sentence case for page subtitles, panel headers, row labels, rail captions, setup question headers, and dialog titles. Use Title Case for buttons and menu items. Keep capitals in feature names, such as Game Mode, Battery Saver, Dynamic Theme, MetalFX, and Discord.

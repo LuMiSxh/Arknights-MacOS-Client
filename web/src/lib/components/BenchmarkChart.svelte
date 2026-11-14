@@ -79,6 +79,9 @@
 	): uPlot.Options {
 		const compact = width < COMPACT_WIDTH;
 		const font = `${compact ? 10 : 12}px system-ui, sans-serif`;
+		// uPlot draws labels outside the canvas unless padding or axis size reserves room for them.
+		const xAxisSize = compact ? 28 : 50;
+		const yAxisSize = compact ? 36 : 50;
 		const styles = getComputedStyle(document.documentElement);
 		const palette = [1, 2, 3, 4]
 			.map((index) =>
@@ -88,10 +91,20 @@
 		const colors = palette.length
 			? palette
 			: ['#7ea2db', '#eab064', '#a88cdb', '#7d838c'];
+		// Chart chrome reads the page's roles, so grid and labels follow the theme tokens.
+		const role = (name: string, fallback: string) =>
+			styles.getPropertyValue(name).trim() || fallback;
+		const gridStroke = role(
+			'--site-row-divider',
+			'rgba(255, 255, 255, 0.06)'
+		);
+		const tickStroke = role('--site-hairline', 'rgba(255, 255, 255, 0.12)');
+		const labelStroke = role('--site-text-tertiary', '#7d838c');
 		return {
 			width,
 			height,
-			padding: [12, compact ? 8 : 12, 0, 0],
+			// The x axis takes its height from the axis size; only the left needs padding for its labels.
+			padding: [12, compact ? 8 : 12, 0, yAxisSize],
 			// One cursor across every chart on the page, so a hover reads all metrics at once.
 			// Drag-zoom and live values would capture touch gestures and reflow the legend while the
 			// page scrolls, so compact charts keep a static legend and leave vertical swipes to the page.
@@ -115,21 +128,23 @@
 			axes: [
 				{
 					label: compact ? undefined : 'Seconds',
+					labelFont: `500 ${font}`,
 					font,
-					size: compact ? 28 : undefined,
+					size: xAxisSize,
 					space: compact ? 56 : 80,
-					stroke: '#7d838c',
-					grid: { stroke: 'rgba(255, 255, 255, 0.06)' },
-					ticks: { stroke: 'rgba(255, 255, 255, 0.12)' }
+					stroke: labelStroke,
+					grid: { stroke: gridStroke },
+					ticks: { stroke: tickStroke }
 				},
 				{
 					// The unit is already in the chart header, so the compact axis drops its title.
 					label: compact ? undefined : chartUnit,
+					labelFont: `500 ${font}`,
 					font,
-					size: compact ? 36 : undefined,
-					stroke: '#7d838c',
-					grid: { stroke: 'rgba(255, 255, 255, 0.06)' },
-					ticks: { stroke: 'rgba(255, 255, 255, 0.12)' }
+					size: yAxisSize,
+					stroke: labelStroke,
+					grid: { stroke: gridStroke },
+					ticks: { stroke: tickStroke }
 				}
 			]
 		};
@@ -272,6 +287,17 @@
 		grid-template-columns: minmax(0, 1fr);
 		gap: var(--site-space-3);
 		min-width: 0;
+		border: 1px solid var(--site-hairline);
+		border-radius: var(--site-radius-group);
+		background: var(--site-group-fill);
+		padding: var(--site-space-4);
+	}
+
+	/* This section is the panel, so the shell's own frame would show as a second border. */
+	:global(.content-copy .chart-shell:has(.benchmark-chart)) {
+		border: 0;
+		background: none;
+		padding: 0;
 	}
 
 	.benchmark-chart-header {
@@ -285,20 +311,18 @@
 	.benchmark-chart-header h3 {
 		margin: 0;
 		font-size: 0.95rem;
-		font-weight: 600;
+		font-weight: 500;
 	}
 
 	.benchmark-chart-header p {
 		margin: 0;
-		color: var(--site-faint);
-		font-family: var(--site-font-mono);
-		font-size: 0.65rem;
-		text-transform: uppercase;
+		color: var(--site-text-tertiary);
+		font-size: 0.8rem;
 	}
 
 	.benchmark-chart-caption {
 		margin: 0;
-		color: var(--site-muted);
+		color: var(--site-text-secondary);
 		font-size: 0.8rem;
 	}
 
@@ -318,10 +342,19 @@
 	}
 
 	.benchmark-chart-host :global(.u-legend) {
-		color: var(--site-muted);
+		color: var(--site-text-secondary);
 		font-family: var(--site-font-ui);
 		font-size: 0.75rem;
 		text-align: left;
+	}
+
+	/* The content table rules would box each legend cell; the legend is plain text. */
+	.benchmark-chart-host :global(.u-legend th),
+	.benchmark-chart-host :global(.u-legend td) {
+		border: 0;
+		background: none;
+		font-weight: 400;
+		padding: var(--site-space-1) var(--site-space-3) var(--site-space-1) 0;
 	}
 
 	/* Each entry wraps as one unit, so a name never splits from its marker or value. */
@@ -330,14 +363,17 @@
 		white-space: nowrap;
 	}
 
-	/* The x value is on the axis, so its legend entry only costs a line. */
-	.benchmark-chart-host :global(.u-legend tr:first-child) {
+	/* The x value is on the axis, so its legend entry only costs a line. Only the live legend
+	   starts with that row; the compact legend lists every series, so it must keep the first. */
+	.benchmark-chart-host :global(.u-legend.u-live tr:first-child) {
 		display: none;
 	}
 
 	/* A fixed value width keeps the row from reflowing as the cursor moves. */
 	.benchmark-chart-host :global(.u-legend .u-value) {
 		min-width: 5ch;
+		color: var(--site-text-primary);
+		font-weight: 500;
 		text-align: right;
 	}
 
@@ -347,7 +383,7 @@
 
 	.benchmark-chart-empty {
 		margin: 0;
-		color: var(--site-muted);
+		color: var(--site-text-secondary);
 		font-size: 0.85rem;
 	}
 
@@ -357,23 +393,22 @@
 		gap: var(--site-space-4);
 	}
 
+	/* Runs are rows inside the panel, not nested cards. */
 	.stat-card {
-		border: 1px solid var(--site-border);
-		border-radius: var(--site-radius-panel);
-		background: var(--site-panel);
-		padding: var(--site-space-4);
+		border-top: 1px solid var(--site-row-divider);
+		padding-top: var(--site-space-3);
 	}
 
 	.stat-card h4 {
 		margin: 0 0 var(--site-space-3);
-		color: var(--site-text);
-		font-size: 0.85rem;
-		font-weight: 600;
+		color: var(--site-text-primary);
+		font-size: 0.9rem;
+		font-weight: 500;
 	}
 
 	.stat-card dl {
 		display: grid;
-		gap: 0.35rem;
+		gap: var(--site-space-2);
 		margin: 0;
 	}
 
@@ -385,22 +420,20 @@
 	}
 
 	.stat-card dt {
-		color: var(--site-muted);
+		color: var(--site-text-secondary);
 		font-size: 0.8rem;
 	}
 
 	.stat-card dd {
 		margin: 0;
 		font-variant-numeric: tabular-nums;
-		font-weight: 600;
+		font-weight: 500;
 	}
 
 	.stat-card .stat-delta {
 		min-width: 3.5rem;
-		color: var(--site-faint);
-		font-family: var(--site-font-mono);
-		font-size: 0.75rem;
-		font-weight: 500;
+		color: var(--site-text-tertiary);
+		font-size: 0.8rem;
 		text-align: right;
 	}
 
@@ -416,8 +449,8 @@
 
 	.benchmark-table th,
 	.benchmark-table td {
-		border-bottom: 1px solid var(--site-border);
-		padding: 0.45rem 0.6rem;
+		border-bottom: 1px solid var(--site-row-divider);
+		padding: var(--site-space-2) var(--site-space-3);
 		text-align: right;
 		white-space: nowrap;
 	}
@@ -427,12 +460,15 @@
 		text-align: left;
 	}
 
+	/* Row labels are plain text; the table default would make them bold. */
+	.benchmark-table tbody th {
+		font-weight: 400;
+	}
+
 	.benchmark-table thead th {
-		color: var(--site-muted);
-		font-family: var(--site-font-mono);
-		font-size: 0.65rem;
+		color: var(--site-text-secondary);
+		font-size: 0.8rem;
 		font-weight: 500;
-		text-transform: uppercase;
 	}
 
 	/* Narrow screens: stack the header and let the legend wrap instead of clipping. */

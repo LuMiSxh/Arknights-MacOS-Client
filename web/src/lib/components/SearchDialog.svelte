@@ -186,7 +186,7 @@
 	closeOnBackdrop
 	closeOnEscape
 	onclose={resetSearch}
-	class="w-[min(42rem,calc(100vw-2rem))]"
+	class="glass-surface glass-float w-[min(42rem,calc(100vw-2rem))]"
 >
 	<div class="grid gap-4" aria-busy={loading}>
 		<Input
@@ -240,8 +240,7 @@
 				aria-live="polite"
 			>
 				<SectionLabel>Matches</SectionLabel>
-				<span
-					class="text-xs font-bold tracking-wider text-anasthasia-muted uppercase"
+				<span class="text-xs font-medium text-anasthasia-muted"
 					>{results.length} result{results.length === 1
 						? ''
 						: 's'}</span

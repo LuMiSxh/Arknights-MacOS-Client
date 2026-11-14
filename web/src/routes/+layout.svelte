@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { onNavigate } from '$app/navigation';
 	import { asset, base, resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { prefersReducedMotion } from 'svelte/motion';
-	import { Kbd } from 'anasthasia/keyboard';
 	import '../app.css';
 	import type { LayoutProps } from './$types';
 	import { normalizeBasePath, repositoryUrl } from '$lib/site.js';
-	import ProductMark from '$lib/components/ProductMark.svelte';
-	import SiteRail from '$lib/components/SiteRail.svelte';
-	import { rise } from '$lib/motion.svelte.js';
-	import SiteBackdrop from '$lib/components/SiteBackdrop.svelte';
 	import SearchDialog from '$lib/components/SearchDialog.svelte';
+	import SiteBackdrop from '$lib/components/SiteBackdrop.svelte';
+	import SiteRail from '$lib/components/SiteRail.svelte';
+	import SiteTopBar from '$lib/components/SiteTopBar.svelte';
 
 	let { data, children }: LayoutProps = $props();
 
@@ -23,38 +22,20 @@
 			? process.env.BASE_PATH
 			: base
 	);
-	let mobileMenuOpen = $state(false);
 	let searchOpen = $state(false);
-	let menuTrigger = $state<HTMLButtonElement>();
 	const isHome = $derived(isExact('/'));
-	// Contributor documentation is kept apart from the player-facing guides.
-	const railGroups = $derived([
-		{
-			label: 'Documentation',
-			entries: [
-				{ title: 'Home', route: '/' as const, children: [] },
-				...navigation.filter(
-					(entry) => entry.audience !== 'developers'
-				),
-				{
-					title: 'Blog',
-					route: '/blog/' as const,
-					children: []
-				},
-				{
-					title: 'Changelog',
-					route: '/changelog/' as const,
-					children: []
-				}
-			]
-		},
-		{
-			label: 'Contributors',
-			entries: navigation.filter(
-				(entry) => entry.audience === 'developers'
-			)
-		}
-	]);
+	// The rail lists only the documentation tree. Every other page, including the 404 page, stays full width.
+	const railRoutes: readonly string[] = [
+		'/installation/',
+		'/help/',
+		'/performance/'
+	];
+	const showRail = $derived(
+		!page.error && railRoutes.some((route) => isCurrent(route))
+	);
+	const railEntries = $derived(
+		navigation.filter((entry) => railRoutes.includes(entry.route))
+	);
 
 	function isCurrent(route: string): boolean {
 		const current = normalizePath(currentPath);
@@ -84,29 +65,8 @@
 		return normalizePath(`${configuredBasePath}${route}`);
 	}
 
-	function closeMobileMenu() {
-		mobileMenuOpen = false;
-	}
-
-	function closeMenuOnEscape(event: KeyboardEvent) {
-		if (
-			event.key !== 'Escape' ||
-			!mobileMenuOpen ||
-			document.querySelector('dialog[open], [aria-modal="true"]')
-		)
-			return;
-		closeMobileMenu();
-		if (menuTrigger?.isConnected && menuTrigger.getClientRects().length)
-			menuTrigger.focus();
-	}
-
-	function closeMenuOnResize() {
-		if (window.innerWidth > 760) closeMobileMenu();
-	}
-
-	// Cross-fades between pages; the sidebar keeps its own identity so it stays in place.
+	// Cross-fades between pages; the rail keeps its own identity so it stays in place.
 	onNavigate((navigation) => {
-		closeMobileMenu();
 		if (
 			!document.startViewTransition ||
 			prefersReducedMotion.current ||
@@ -120,72 +80,35 @@
 			});
 		});
 	});
-
-	function closeMenuOnOutsideClick(event: MouseEvent) {
-		if (!mobileMenuOpen || !(event.target instanceof Element)) return;
-		if (!event.target.closest('.mobile-header')) closeMobileMenu();
-	}
 </script>
 
-{#snippet searchIcon()}
-	<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
-		<circle
-			cx="8.5"
-			cy="8.5"
-			r="5.5"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="1.8"
-		/>
-		<path
-			d="m13 13 4 4"
-			stroke="currentColor"
-			stroke-width="1.8"
-			stroke-linecap="round"
-		/>
-	</svg>
-{/snippet}
-
-{#snippet searchTrigger(variant: 'rail' | 'compact' | 'round')}
-	<button
-		class={`search-trigger search-trigger-${variant}`}
-		type="button"
-		aria-haspopup="dialog"
-		aria-expanded={searchOpen}
-		aria-keyshortcuts="Control+K Meta+K"
-		aria-label={variant === 'rail' ? undefined : 'Search documentation'}
-		onclick={() => (searchOpen = true)}
-	>
-		{@render searchIcon()}
-		{#if variant === 'rail'}
-			<span>Search docs</span>
-			<Kbd>⌘K</Kbd>
-		{/if}
-	</button>
-{/snippet}
-
 {#snippet footer()}
-	<footer class="site-footer">
-		<span>
+	<footer class="site-footer" class:home-footer={isHome}>
+		<p>
 			Copyright © 2026 <a href="https://github.com/LuMiSxh">LuMiSxh</a> · Community-maintained,
 			not affiliated with Yostar, Gryphline, Hypergryph, or Bilibili
-		</span>
-		<span class="footer-credit">
+		</p>
+		<nav class="footer-links" aria-label="Footer">
+			<a href={resolve('/legal/')}>Legal</a>
+			<a href={resolve('/privacy/')}>Privacy notice</a>
+			<a href={resolve('/contact/')}>Contact</a>
+			<a href={resolve('/ai-assistance/')}>AI assistance</a>
+		</nav>
+		<div class="footer-group">
+			<p class="footer-label">Contributors</p>
+			<a href={resolve('/development/')}>Development</a>
+		</div>
+		<p class="footer-links">
+			<a href={`${repositoryUrl}/blob/main/LICENSE`}>MPL-2.0</a>
+			<a href={`${repositoryUrl}/issues`}>Report an issue</a>
+			<a href={repositoryUrl}>Source</a>
+		</p>
+		<p class="footer-credit">
 			Artwork “Dissociative Recombination” by Krin · © Hypergryph · ©
 			Yostar
-		</span>
-		<span>
-			<a href={`${repositoryUrl}/blob/main/LICENSE`}>MPL-2.0</a> ·
-			<a href={repositoryUrl}>Source</a> ·
-			<a href={`${repositoryUrl}/issues`}>Report an issue</a> ·
-			<a href={resolve('/contact/')}>Contact</a> ·
-			<a href={resolve('/privacy/')}>Privacy notice</a>
-		</span>
+		</p>
 	</footer>
 {/snippet}
-
-<svelte:window onkeydown={closeMenuOnEscape} onresize={closeMenuOnResize} />
-<svelte:document onclick={closeMenuOnOutsideClick} />
 
 <svelte:head>
 	<meta name="color-scheme" content="dark" />
@@ -198,81 +121,24 @@
 
 <SearchDialog bind:open={searchOpen} />
 <SiteBackdrop blurred={!isHome} />
+<SiteTopBar
+	iconUrl={appIconUrl}
+	{currentValue}
+	onSearch={() => (searchOpen = true)}
+/>
 
-{#if isHome}
-	<div class="home-chrome">
-		{@render searchTrigger('round')}
-		<a
-			class="round-action"
-			href={repositoryUrl}
-			aria-label="Source on GitHub"
-		>
-			<svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true">
-				<path
-					fill="currentColor"
-					d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.66 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"
-				/>
-			</svg>
-		</a>
-	</div>
-	<main id="main-content">
-		{@render children()}
-		<div class="home-footer home-sheet">{@render footer()}</div>
-	</main>
-{:else}
-	<div class="site-shell">
+<div class="site-shell" class:no-rail={!showRail}>
+	{#if showRail}
 		<SiteRail
-			groups={railGroups}
-			iconUrl={appIconUrl}
+			entries={railEntries}
 			{currentPath}
 			{isCurrent}
 			{currentValue}
-		>
-			{#snippet search()}{@render searchTrigger('rail')}{/snippet}
-		</SiteRail>
+		/>
+	{/if}
+	<main id="main-content" class:site-main={!isHome}>
+		<div class="site-content">{@render children()}</div>
+	</main>
+</div>
 
-		<header class="mobile-header">
-			<ProductMark href={resolve('/')} iconUrl={appIconUrl} compact />
-			{@render searchTrigger('compact')}
-			<div class="mobile-menu-anchor">
-				<button
-					class="menu-trigger"
-					type="button"
-					bind:this={menuTrigger}
-					aria-expanded={mobileMenuOpen}
-					aria-controls="mobile-menu"
-					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
-					>Menu</button
-				>
-				{#if mobileMenuOpen}
-					<div
-						class="mobile-menu glass-surface"
-						id="mobile-menu"
-						transition:rise={{ y: -6, scale: 0.96, duration: 220 }}
-					>
-						<nav aria-label="Mobile primary">
-							{#each railGroups as group (group.label)}
-								<p class="mobile-menu-label">{group.label}</p>
-								{#each group.entries as entry (entry.route)}
-									<a
-										href={resolve(entry.route)}
-										onclick={closeMobileMenu}
-										aria-current={currentValue(entry.route)}
-										>{entry.title}</a
-									>
-								{/each}
-							{/each}
-						</nav>
-					</div>
-				{/if}
-			</div>
-		</header>
-
-		<main class="site-main" id="main-content">
-			<div class="site-main-inner">
-				<div class="site-content">{@render children()}</div>
-				{@render footer()}
-			</div>
-		</main>
-	</div>
-{/if}
+{@render footer()}

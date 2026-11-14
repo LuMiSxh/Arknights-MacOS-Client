@@ -14,6 +14,7 @@ import { readBlogSources } from './blog.js';
 import { renderSourceDocuments, validateLinks } from './links.js';
 import type { SourceDocument } from './model.js';
 import { changelogPath } from './paths.js';
+import { readLatestRelease } from './release.js';
 import { siteRoute, slugify } from './routes.js';
 import { readSources } from './sources.js';
 import { buildDirectory, createDirectory, directoryFor } from './tree.js';
@@ -33,6 +34,7 @@ function loadIndex(): ContentIndex {
 			'draft content cannot be published'
 		);
 	}
+	const release = readLatestRelease(changelogParsed.body);
 	const changelogSource: SourceDocument = {
 		...changelogParsed,
 		relative: 'CHANGELOG.md',
@@ -132,7 +134,8 @@ function loadIndex(): ContentIndex {
 		directories,
 		byRoute,
 		changelog,
-		blog
+		blog,
+		release
 	};
 }
 

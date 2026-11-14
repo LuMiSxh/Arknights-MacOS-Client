@@ -12,7 +12,7 @@
 		"build": "svelte-kit sync && vite build && node scripts/postbuild.mjs",
 		"preview": "vite preview",
 		"check": "pnpm test:content && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"test:content": "tsc --noCheck --outDir .svelte-kit/content-tests --rootDir src/lib --module nodenext --moduleResolution nodenext --target es2022 src/lib/site.ts src/lib/scroll.ts src/lib/content/types.ts src/lib/content/frontmatter.ts src/lib/content/markdown.ts src/lib/content/search.ts src/lib/content/loader/routes.ts src/lib/content/loader/links.ts src/lib/content/loader/tree.ts && node --test scripts/content.test.mjs",
+		"test:content": "tsc --noCheck --outDir .svelte-kit/content-tests --rootDir src/lib --module nodenext --moduleResolution nodenext --target es2022 src/lib/site.ts src/lib/scroll.ts src/lib/content/types.ts src/lib/content/frontmatter.ts src/lib/content/markdown.ts src/lib/content/search.ts src/lib/content/loader/routes.ts src/lib/content/loader/links.ts src/lib/content/loader/tree.ts src/lib/content/loader/release.ts && node --test scripts/content.test.mjs",
 		"format": "prettier --write .",
 		"format:check": "prettier --check ."
 	},
@@ -32,6 +32,7 @@
 		"@types/node": "24.19.2",
 		"prettier": "3.8.2",
 		"prettier-plugin-svelte": "3.5.1",
+		"sharp": "^0.35.5",
 		"svelte": "5.57.0",
 		"svelte-check": "4.4.6",
 		"tailwindcss": "4.2.2",

@@ -63,4 +63,23 @@ export interface ContentIndex {
 	byRoute: Map<string, ContentNode>;
 	changelog: ContentDocument;
 	blog: BlogPost[];
+	release: ReleaseNote | null;
+}
+
+export interface InlineSegment {
+	text: string;
+	strong: boolean;
+}
+
+export interface ReleaseItem {
+	category: 'Added' | 'Changed' | 'Fixed';
+	segments: InlineSegment[];
+}
+
+export interface ReleaseNote {
+	version: string;
+	date: string;
+	items: ReleaseItem[];
+	/** True when the shown items span more than one category, so each item names its category. */
+	categorized: boolean;
 }

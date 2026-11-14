@@ -1,16 +1,12 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
-	import { prefersReducedMotion } from 'svelte/motion';
 
 	type Props = {
-		/** Documentation pages keep only the blurred artwork, behind the sidebar. */
+		/** Documentation pages draw the artwork's tones as CSS gradients and load no image. */
 		blurred?: boolean;
 	};
 
 	let { blurred = false }: Props = $props();
-	let scrollY = $state(0);
-	// Slow parallax: the artwork drifts up at a fraction of the scroll speed.
-	const drift = $derived(prefersReducedMotion.current ? 0 : scrollY * -0.12);
 
 	// Official Arknights Global wallpaper; the repository's only bundled artwork (see CLAUDE.md).
 	const widths = [960, 1600, 2400];
@@ -22,11 +18,9 @@
 	const sizes = '100vw';
 </script>
 
-<svelte:window bind:scrollY />
-
 <div class="site-backdrop" class:blurred aria-hidden="true">
-	<img class="backdrop-fill" src={file(960, 'webp')} alt="" />
 	{#if !blurred}
+		<img class="backdrop-fill" src={file(960, 'webp')} alt="" />
 		<picture>
 			<source type="image/avif" srcset={srcset('avif')} {sizes} />
 			<source type="image/webp" srcset={srcset('webp')} {sizes} />
@@ -37,7 +31,6 @@
 				width="1600"
 				height="900"
 				fetchpriority="high"
-				style:translate={`0 ${drift}px`}
 			/>
 		</picture>
 	{/if}
@@ -63,34 +56,50 @@
 		filter: blur(48px) brightness(0.45) saturate(1.2);
 	}
 
+	/* Starts below the top bar so the artwork's own logo stays in view. */
 	.backdrop-art {
 		position: absolute;
-		top: 0;
+		top: var(--top-bar-height);
 		left: 0;
 		width: 100%;
 		height: auto;
+		mask-image: linear-gradient(
+			to bottom,
+			#000 calc(100% - 4rem),
+			transparent
+		);
 	}
 
-	/* Fades the sharp artwork's lower edge into the blurred fill. */
-	.site-backdrop::after {
-		position: absolute;
-		inset: 0;
+	/* Parallax runs as a scroll-linked animation where supported. Elsewhere the artwork stays still. */
+	@supports (animation-timeline: scroll()) {
+		@media (prefers-reduced-motion: no-preference) {
+			.backdrop-art {
+				animation: backdrop-drift linear both;
+				animation-timeline: scroll();
+			}
+		}
+	}
+
+	@keyframes backdrop-drift {
+		to {
+			translate: 0 -20vh;
+		}
+	}
+
+	/* Docs pages skip the image: accent and chart tones over the page background. */
+	.blurred {
 		background:
-			linear-gradient(
-				180deg,
-				transparent calc(min(56.25vw, 100vh) - 30vh),
-				rgb(11 12 14 / 0.55) min(56.25vw, 100vh)
+			radial-gradient(
+				60% 50% at 18% 12%,
+				color-mix(in srgb, var(--site-accent-fill) 20%, transparent),
+				transparent 70%
 			),
-			linear-gradient(200deg, rgb(0 0 0 / 0.35), transparent 25%);
-		content: '';
-	}
-
-	.blurred .backdrop-fill {
-		filter: blur(56px) brightness(0.35) saturate(1.2);
-	}
-
-	.blurred::after {
-		background: none;
+			radial-gradient(
+				55% 60% at 88% 88%,
+				color-mix(in srgb, var(--site-chart-3) 14%, transparent),
+				transparent 72%
+			),
+			var(--site-bg);
 	}
 
 	@media (prefers-reduced-transparency: reduce) {

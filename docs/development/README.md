@@ -9,16 +9,16 @@ audience: developers
 
 ## Guides
 
-| Topic                           | Page                                                                                                                                                              |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Targets, ownership, boundaries  | [Architecture](architecture/README.md#targets)                                                                                                                    |
-| Install, launch, prefix, data   | [Installation](architecture/installation.md), [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md), [Wine prefix](architecture/wine-prefix.md), [Data and persistence](architecture/data-and-persistence.md) |
-| Remote sources, announcements   | [Communication and boundaries](architecture/communication-and-boundaries.md)                                                                                      |
-| Support codes, recovery         | [Error recovery](error-recovery.md)                                                                                                                               |
-| UI                              | [Design](design.md)                                                                                                                                               |
-| Tests                           | [Testing](testing.md)                                                                                                                                             |
-| Releases, Sparkle, runtime pins | [Releases and updates](releases-and-updates.md)                                                                                                                   |
-| Licenses, wallpapers, benchmarks | [License automation](license-automation.md), [Wallpaper tagging](wallpaper-tagging.md), [Performance comparison](performance-comparison.md)                      |
+| Topic                            | Page                                                                                                                                                                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Targets, ownership, boundaries   | [Architecture](architecture/README.md#targets)                                                                                                                                                                                       |
+| Install, launch, prefix, data    | [Installation](architecture/installation.md), [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md), [Wine prefix](architecture/wine-prefix.md), [Data and persistence](architecture/data-and-persistence.md) |
+| Remote sources, announcements    | [Communication and boundaries](architecture/communication-and-boundaries.md)                                                                                                                                                         |
+| Support codes, recovery          | [Error recovery](error-recovery.md)                                                                                                                                                                                                  |
+| UI                               | [Design](design.md)                                                                                                                                                                                                                  |
+| Tests                            | [Testing](testing.md)                                                                                                                                                                                                                |
+| Releases, Sparkle, runtime pins  | [Releases and updates](releases-and-updates.md)                                                                                                                                                                                      |
+| Licenses, wallpapers, benchmarks | [License automation](license-automation.md), [Wallpaper tagging](wallpaper-tagging.md), [Performance comparison](performance-comparison.md)                                                                                          |
 
 ## Before handing off a change
 
@@ -73,7 +73,8 @@ Use these terms in user help. Keep one term for each concept.
 The SvelteKit site in `web/` builds `docs/` and `CHANGELOG.md` into the project website. It is dark-only and uses the tokens in `web/src/lib/styles/arknights-client.css`.
 
 - The home page shows one official Arknights Global wallpaper from `web/static/artwork/`, the only artwork the repository bundles. Show it uncropped at 16:9. Credit the artist, Hypergryph, and Yostar beside it.
-- `--site-signal` is the accent that `WallpaperColorExtractor` derives from that wallpaper. `--site-signal-text` is its AA-readable text variant. Update both together when the wallpaper changes.
+- `--site-accent-fill` is the accent that `WallpaperColorExtractor` derives from that wallpaper. `--site-accent-ink` is its AA-readable text variant. Update both together when the wallpaper changes.
+- Keep `--site-accent-ink` a literal hex. `web/scripts/postbuild.mjs` checks its contrast against `--site-bg`, which needs a parsed value.
 - Use the signal only for the primary download action, active navigation, and focus. Use tinted fills. Keep secondary controls as quiet neutral capsules.
 
 Use Node 24.14 or newer and the `pnpm` version in `web/package.json`. The website has no Vitest suite. Validate it with these commands:
