@@ -334,10 +334,12 @@
 	.content-toc {
 		grid-area: toc;
 		position: sticky;
-		top: var(--site-space-6);
+		top: calc(var(--top-bar-height) + var(--site-space-6));
 		align-self: start;
 		display: flex;
-		max-height: calc(100dvh - 3rem);
+		max-height: calc(
+			100dvh - var(--top-bar-height) - 2 * var(--site-space-6)
+		);
 		flex-direction: column;
 		overflow: hidden;
 	}

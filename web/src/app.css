@@ -9,6 +9,7 @@
 }
 
 html {
+	scroll-padding-top: calc(var(--top-bar-height) + var(--site-space-6));
 	background: var(--site-bg);
 	color: var(--site-text-primary);
 	scroll-behavior: smooth;
@@ -327,7 +328,6 @@ p {
 .content-copy h3,
 .content-copy h4 {
 	font-weight: 500;
-	scroll-margin-top: 2rem;
 }
 
 .content-copy h1 {
