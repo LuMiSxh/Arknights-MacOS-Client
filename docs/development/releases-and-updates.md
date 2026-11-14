@@ -106,16 +106,18 @@ The ARM64 runtime is built in the [wine-build-new](https://github.com/riverfog7/
 
 There is no runtime feed, no runtime update check, and no previous-runtime rollback. A runtime change ships with a new client version. The app update replaces a stale pinned runtime for each lane that it uses.
 
-### Update one lane
+### Update the pin
 
-1. Run `just runtime update TAG --architecture LANE`. For example, `just runtime update v0.9.0 --architecture x86` or `just runtime update v0.9.0+arm --architecture arm`.
+1. Run `just runtime update TAG`. For example, `just runtime update v1.0.0`.
 2. Read the changed files with `git diff`.
 3. Run `just check scripts` and `just runtime check`.
-4. Download the new lane with `uv run --locked scripts/download_runtime.py --architecture LANE`.
+4. Download each lane with `uv run --locked scripts/download_runtime.py --architecture LANE`.
 5. Test a fresh and an existing prefix through install or update, game start, and clean exit.
-6. Confirm that the other lane pin and its prefix are unchanged.
+6. If you pinned one lane, confirm that the other lane and its prefix are unchanged.
 
-`TAG` is a release tag or `latest`. `latest` is the default. It selects the newest published release for the requested lane and skips drafts. It skips prereleases unless you add `--include-prerelease`.
+One release tag covers both lanes. Each lane has its own archive, named with its architecture.
+
+`TAG` is a release tag or `latest`. `latest` is the default. It selects the newest published release and skips drafts. It skips prereleases unless you add `--include-prerelease`.
 
 > [!WARNING]
 > `latest` without `--include-prerelease` selects the newest stable release. That release can be older than the current pin. Read the tag in the output before you commit.
@@ -123,40 +125,41 @@ There is no runtime feed, no runtime update check, and no previous-runtime rollb
 | Option                   | Use                                                                                                    |
 | ------------------------ | ------------------------------------------------------------------------------------------------------ |
 | `--tag TAG`              | A release tag or `latest`.                                                                             |
-| `--architecture LANE`    | The lane to pin: `x86` or `arm`. Defaults to `runtime.json.architecture`. The tag must match the lane. |
+| `--architecture LANE`    | Pins one lane: `x86` or `arm`. Without this option, both lanes are pinned.                           |
 | `--include-prerelease`   | Lets `latest` select a prerelease.                                                                     |
 | `--moltenvk-version VER` | The MoltenVK version. Required only if its commit changed.                                             |
-| `--sha256 SHA256`        | The archive checksum. Read from `provenance.json` by default.                                          |
-| `--size BYTES`           | The archive size. Read from the release metadata by default.                                           |
 | `--check`                | Verifies the pin and writes nothing. It uses no network.                                               |
 
 ### What the script reads
 
-The script reads three assets of the release over HTTPS. It does not download the runtime archive. When `provenance.json` has no archive size, the script reads the size from the GitHub release metadata. Pass `--size` to keep the update offline.
+The script reads these assets of the release over HTTPS. It does not download a runtime archive.
 
-| Asset                                              | Use                                         |
-| -------------------------------------------------- | ------------------------------------------- |
-| `Arknights-MacOS-Runtime-TAG.tar.gz.sha256`        | The archive checksum.                       |
-| `Arknights-MacOS-Runtime-TAG-source.tar.gz.sha256` | The build recipe checksum.                  |
-| `provenance.json`                                  | The commits, versions, size, and interface. |
+| Asset                                                   | Use                                                            |
+| ------------------------------------------------------- | -------------------------------------------------------------- |
+| `provenance.json`                                       | The schema 2 document. Each lane has one runtime fragment.     |
+| `Arknights-MacOS-Runtime-TAG-ARCH.tar.gz.sha256`        | The archive checksum of a lane. `ARCH` is `x86_64` or `arm64`. |
+| `Arknights-MacOS-Runtime-TAG-ARCH-source.tar.gz.sha256` | The source archive checksum of a lane.                         |
+
+The release metadata lists the archive sizes. The script checks them against the fragments.
 
 The script fails and writes nothing in these cases:
 
-- A `.sha256` file differs from `provenance.json` in name or checksum.
-- `provenance.json` names another tag.
-- The release interface of the lane differs from that lane's block in `runtime.json`. The script never rewrites the interface. Change it by hand and review the Swift runtime code.
-- The release tag names another lane than `--architecture`. For example, `v0.9.0+arm` with `--architecture x86`.
+- `provenance.json` has another schema version or names another tag.
+- A lane has no fragment, or its fragment names another architecture or version.
+- A `.sha256` file differs from its fragment in name or checksum.
+- The release metadata lists another size than the fragment.
+- The release interface of a lane differs from that lane's block in `runtime.json`. The script never rewrites the interface. Change it by hand and review the Swift runtime code.
 - The MoltenVK commit changed. `provenance.json` has no MoltenVK version. Pass `--moltenvk-version`.
 
 ### What the script rewrites
 
 | Target                                          | Fields                                                                                             |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `runtime.json`                                  | `lanes.LANE.runtime`, `lanes.LANE.minimumMacOS`, and the component sources that the release names. |
+| `runtime.json`                                  | `lanes.LANE.runtime`, `lanes.LANE.minimumMacOS`, and the component sources of each pinned lane.   |
 | `docs/legal/third-party-notices.md`             | The `runtime` blocks `components` and `build`.                                                     |
 | `docs/legal/source-code.md`, `license-texts.md` | The script calls `scripts/licenses.py`. That script regenerates them.                              |
 
-A second run with the same tag changes nothing. The other lane is never rewritten.
+A second run with the same tag changes nothing. Pinning one lane never rewrites the other lane.
 
 ### Manual steps
 
@@ -172,7 +175,8 @@ Change these by hand when the release changes them.
 
 `just runtime check` runs `scripts/update_runtime.py --check`. The test suite also checks a fixture pin. The check fails when:
 
-- A lane's `runtime.version`, `runtime.name`, `runtime.url`, or tag architecture disagrees with the tag in the archive URL.
+- A lane's `runtime.version` or `runtime.name` disagrees with the tag in the archive URL.
+- A lane's `runtime.url` is not an archive of that tag.
 - `runtime.sizeBytes` or `runtime.sha256` is invalid.
 - A generated `runtime` block in a document differs from `runtime.json`.
 - The file still has `armInterface`, a top-level `runtime`, a top-level `interface`, or `buildRecipe`.
@@ -189,7 +193,7 @@ A marker pair surrounds a generated block. The generator replaces the lines betw
 1. Write a render function in `scripts/lib/runtime_update.py`. It takes `runtime.json` data and returns Markdown that ends with a newline.
 2. Add the function to the dictionary in `render_documents`. The key is the document path. The value maps `NAME` to the function result.
 3. Add the marker pair to the document. Use a lowercase `NAME` with hyphens.
-4. Run `uv run --locked scripts/update_runtime.py --tag TAG --architecture LANE`. Add a test to `scripts/tests/test_update_runtime.py`.
+4. Run `uv run --locked scripts/update_runtime.py --tag TAG`. Add a test to `scripts/tests/test_update_runtime.py`.
 
 [License automation](license-automation.md#generated-blocks) owns the marker rules. The `runtime` blocks belong to this script.
 

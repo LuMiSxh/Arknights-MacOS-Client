@@ -167,7 +167,7 @@ swift-tests level filter='':
 [group('Checks')]
 ci: check integration build
 
-# Download the pinned runtime for a lane (--architecture), pin a release lane with update, or verify the pin with check.
+# Download the pinned runtime for a lane (--architecture), pin both lanes of a release with update, or verify the pin with check.
 [group('Runtime')]
 runtime action='download' *arguments:
     #!/usr/bin/env bash

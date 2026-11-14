@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: MPL-2.0
 
-"""Pin one lane of the Arknights macOS Runtime and keep every mention current.
+"""Pin the Arknights macOS Runtime release and keep every mention current.
 
-A release publishes `provenance.json` and two `.sha256` files. `update` reads them over
-HTTPS, checks that they agree, and rewrites the runtime pin of one lane in `runtime.json`.
-`render_documents` fills the generated `runtime` blocks of the documents from
-`runtime.json` alone, so `check` runs offline. The blocks use the marker syntax of the
-license generator: `<!-- runtime:begin NAME -->` and `<!-- runtime:end NAME -->`.
+A release publishes one `provenance.json` with a fragment per lane, plus two `.sha256`
+files per lane. `update` reads them over HTTPS, checks that they agree, and rewrites the
+runtime pins of the lanes in `runtime.json`. `render_documents` fills the generated
+`runtime` blocks of the documents from `runtime.json` alone, so `check` runs offline. The
+blocks use the marker syntax of the license generator: `<!-- runtime:begin NAME -->` and
+`<!-- runtime:end NAME -->`.
 """
 
 from __future__ import annotations
@@ -16,7 +17,8 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -47,16 +49,15 @@ RELEASE_API = f"https://api.github.com/repos/{REPOSITORY}/releases/tags/"
 RUNTIME_CONFIG = Path("runtime.json")
 NOTICES_DOCUMENT = Path("docs/legal/third-party-notices.md")
 BLOCK_NAMESPACE = "runtime"
-TAG_PATTERN = re.compile(
-    r"^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.]+)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
-)
-RUNTIME_ARCHITECTURE = "x86"
-BUILD_METADATA = "+"
+TAG_PATTERN = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.]+)?$")
 MAXIMUM_ASSET_BYTES = 8 * 1_024 * 1_024
 PRETTIER_WIDTH = 80
+PROVENANCE_SCHEMA_VERSION = 2
+# The archive name part and the provenance target of each lane of a release.
+RELEASE_ARCHITECTURES = {"x86": "x86_64", "arm": "arm64"}
 LANE_TARGETS = {"x86": "rosetta-x86_64", "arm": "native-arm64"}
-# Wine and DXMT are the components a lane can carry from `runtimeLock.contents.sources`;
-# MoltenVK comes only from `baseProvenance`.
+# Wine and DXMT are the components a lane can carry; their sources are fields of the
+# lane fragment. MoltenVK comes only from `runtimeLock.contents.baseProvenance`.
 RUNTIME_COMPONENTS = ("wine", "dxmt")
 ASSET_URL_PATTERN = re.compile(
     rf"^{re.escape(REPOSITORY_URL)}/releases/download/(?P<tag>[^/]+)/(?P<name>[^/]+)$"
@@ -89,21 +90,8 @@ def normalize_tag(value: str) -> str:
     return tag
 
 
-def tag_architecture(tag: str) -> str:
-    """Return the architecture of a release tag; older tags have no metadata."""
-    return (
-        tag.split(BUILD_METADATA, 1)[1]
-        if BUILD_METADATA in tag
-        else RUNTIME_ARCHITECTURE
-    )
-
-
-def latest_tag(
-    fetch: Fetch,
-    include_prerelease: bool,
-    architecture: str = RUNTIME_ARCHITECTURE,
-) -> str:
-    """Return the newest published release for one architecture; skip drafts."""
+def latest_tag(fetch: Fetch, include_prerelease: bool) -> str:
+    """Return the newest published runtime release; skip drafts."""
     releases = json.loads(fetch(RELEASES_API))
     if not isinstance(releases, list):
         fail("GitHub returned an invalid release list")
@@ -115,7 +103,6 @@ def latest_tag(
         and (include_prerelease or not release.get("prerelease"))
         and isinstance(release.get("tag_name"), str)
         and TAG_PATTERN.fullmatch(release["tag_name"])
-        and tag_architecture(release["tag_name"]) == architecture
         and isinstance(release.get("published_at"), str)
     ]
     if not published:
@@ -128,8 +115,9 @@ def latest_tag(
     return max(published, key=lambda release: release["published_at"])["tag_name"]
 
 
-def asset_names(tag: str) -> tuple[str, str]:
-    stem = f"Arknights-MacOS-Runtime-{tag}"
+def asset_names(tag: str, architecture: str) -> tuple[str, str]:
+    """Return the archive and source archive names of one lane of a release."""
+    stem = f"Arknights-MacOS-Runtime-{tag}-{RELEASE_ARCHITECTURES[architecture]}"
     return f"{stem}.tar.gz", f"{stem}-source.tar.gz"
 
 
@@ -137,23 +125,22 @@ def asset_url(tag: str, name: str) -> str:
     return f"{REPOSITORY_URL}/releases/download/{tag}/{name}"
 
 
-def release_asset_size(fetch: Fetch, tag: str, name: str) -> int:
-    """Read the archive size from the GitHub release metadata."""
+def release_asset_sizes(fetch: Fetch, tag: str) -> dict[str, int]:
+    """Read the asset sizes from the GitHub release metadata."""
     try:
         document = json.loads(fetch(f"{RELEASE_API}{tag}"))
     except json.JSONDecodeError:
         fail(f"GitHub returned invalid metadata for {tag}")
     if not isinstance(document, dict):
         fail(f"GitHub returned invalid metadata for {tag}")
-    for asset in document.get("assets") or []:
-        if (
-            isinstance(asset, dict)
-            and asset.get("name") == name
-            and isinstance(asset.get("size"), int)
-            and asset["size"] > 0
-        ):
-            return asset["size"]
-    fail(f"release {tag} has no size for {name}; pass --size")
+    return {
+        asset["name"]: asset["size"]
+        for asset in document.get("assets") or []
+        if isinstance(asset, dict)
+        and isinstance(asset.get("name"), str)
+        and isinstance(asset.get("size"), int)
+        and asset["size"] > 0
+    }
 
 
 def _checksum(fetch: Fetch, tag: str, name: str, expected: Mapping[str, Any]) -> str:
@@ -169,41 +156,94 @@ def _checksum(fetch: Fetch, tag: str, name: str, expected: Mapping[str, Any]) ->
 
 
 def fetch_provenance(fetch: Fetch, tag: str) -> dict[str, Any]:
-    """Download `provenance.json` and prove that it agrees with the checksum files."""
+    """Download the release `provenance.json` and check that it describes this tag."""
     provenance = json.loads(fetch(asset_url(tag, "provenance.json")))
-    if not isinstance(provenance, dict) or provenance.get("releaseTag") != tag:
-        fail(f"provenance.json does not describe {tag}")
-    archive, source = asset_names(tag)
-    _checksum(fetch, tag, archive, provenance.get("runtimeArchive") or {})
-    _checksum(fetch, tag, source, provenance.get("correspondingSourceArchive") or {})
+    if (
+        not isinstance(provenance, dict)
+        or provenance.get("schemaVersion") != PROVENANCE_SCHEMA_VERSION
+        or provenance.get("releaseTag") != tag
+    ):
+        fail(f"provenance.json is not schema {PROVENANCE_SCHEMA_VERSION} for {tag}")
     return provenance
+
+
+@dataclass(frozen=True)
+class LaneRelease:
+    """The runtime fragment and the verified assets of one lane of a release."""
+
+    architecture: str
+    fragment: Mapping[str, Any]
+    archive: str
+    sha256: str
+    size_bytes: int
+
+
+def lane_fragment(
+    provenance: Mapping[str, Any], tag: str, architecture: str
+) -> Mapping[str, Any]:
+    """Return the one runtime fragment of a lane; it must describe this release."""
+    runtimes = provenance.get("runtimes")
+    matches = [
+        fragment
+        for fragment in runtimes or []
+        if isinstance(fragment, dict)
+        and fragment.get("target") == LANE_TARGETS[architecture]
+    ]
+    if len(matches) != 1:
+        fail(
+            f"provenance.json needs one {architecture} runtime for {tag}, "
+            f"found {len(matches)}"
+        )
+    fragment = matches[0]
+    if fragment.get("arch") != RELEASE_ARCHITECTURES[architecture] or fragment.get(
+        "version"
+    ) != tag.removeprefix("v"):
+        fail(f"the {architecture} runtime in provenance.json does not describe {tag}")
+    return fragment
+
+
+def fetch_lane(
+    fetch: Fetch,
+    tag: str,
+    provenance: Mapping[str, Any],
+    architecture: str,
+    listed_sizes: Mapping[str, int],
+) -> LaneRelease:
+    """Verify the checksums and the size of one lane against its release assets."""
+    fragment = lane_fragment(provenance, tag, architecture)
+    archive, source = asset_names(tag, architecture)
+    published = fragment.get("runtimeArchive") or {}
+    digest = _checksum(fetch, tag, archive, published)
+    _checksum(fetch, tag, source, fragment.get("correspondingSourceArchive") or {})
+    size = published.get("sizeBytes")
+    listed = listed_sizes.get(archive)
+    if size is not None and listed is not None and size != listed:
+        fail(
+            f"the release lists {listed} bytes for {archive}; "
+            f"provenance.json has {size}"
+        )
+    size = size if size is not None else listed
+    if not isinstance(size, int) or isinstance(size, bool) or size < 1:
+        fail(f"the runtime archive size of the {architecture} lane is unknown")
+    return LaneRelease(architecture, fragment, archive, digest, size)
 
 
 def _published_interface(
     architecture: str, provenance: Mapping[str, Any]
-) -> Mapping[str, Any] | None:
-    """Return the release interface of one lane, or the usable part of it."""
+) -> Mapping[str, Any]:
+    """Return the release interface of one lane, with the lane's runtime features.
+
+    The fragment's `runtimeLock.contents` is the lock already resolved for that lane.
+    """
     lock = provenance.get("runtimeLock")
     contents = lock.get("contents") if isinstance(lock, dict) else None
-    if isinstance(contents, dict):
-        targets = contents.get("targets")
-        target = LANE_TARGETS[architecture]
-        if isinstance(targets, dict):
-            entry = targets.get(target)
-            if isinstance(entry, dict) and isinstance(entry.get("interface"), dict):
-                return entry["interface"]
-        if architecture == "x86" and isinstance(contents.get("interface"), dict):
-            return contents["interface"]
-    if isinstance(provenance.get("interface"), dict):
-        return provenance["interface"]
-    if provenance.get("target") == LANE_TARGETS[architecture]:
-        partial: dict[str, Any] = {}
-        if isinstance(provenance.get("minimumMacOS"), str):
-            partial["minimumMacOS"] = provenance["minimumMacOS"]
-        if isinstance(provenance.get("features"), dict):
-            partial["features"] = provenance["features"]
-        return partial or None
-    return None
+    interface = contents.get("interface") if isinstance(contents, dict) else None
+    if not isinstance(interface, dict):
+        fail(f"provenance.json has no {architecture} runtime interface")
+    features = contents.get("features")
+    return (
+        {**interface, "features": features} if isinstance(features, dict) else interface
+    )
 
 
 def check_interface(
@@ -211,8 +251,6 @@ def check_interface(
 ) -> None:
     """Fail when the release interface differs from the lane in `runtime.json`."""
     published = _published_interface(lane.name, provenance)
-    if published is None:
-        return
     wine, dxmt = lane.layout.archive_wine_directory, lane.layout.archive_dxmt_directory
     expected: dict[str, Any] = {
         "wineDirectory": str(wine),
@@ -251,6 +289,15 @@ def check_interface(
         )
 
 
+def _field(source: Mapping[str, Any], *keys: str) -> str | None:
+    """Return the first non-empty string under one of `keys`."""
+    for key in keys:
+        value = source.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
 def _repository(value: str) -> str:
     return value.removesuffix(".git")
 
@@ -269,7 +316,6 @@ def _update_provenance(
     """Update the component versions and sources that the release names."""
     lock = provenance.get("runtimeLock")
     contents = lock.get("contents") if isinstance(lock, dict) else None
-    sources = contents.get("sources") if isinstance(contents, dict) else None
     # `baseProvenance` describes the base archive; a lane built without one (the external
     # ARM64 tree) inherits the lock's top-level entry but does not ship that MoltenVK.
     base = (
@@ -279,31 +325,33 @@ def _update_provenance(
     )
     previous = lane["provenance"]
     previous["buildRepository"] = REPOSITORY_URL
-    if isinstance(provenance.get("sourceCommit"), str):
-        previous["buildCommit"] = _commit(provenance["sourceCommit"], "build")
-    external = provenance.get("externalBuild")
+    if isinstance(provenance.get("buildCommit"), str):
+        previous["buildCommit"] = _commit(provenance["buildCommit"], "build")
+    wine = provenance.get("wine")
+    external = wine.get("externalBuild") if isinstance(wine, dict) else None
     if isinstance(external, dict):
-        if isinstance(external.get("repository"), str):
-            previous["externalBuildRepository"] = external["repository"]
-        if isinstance(external.get("revision"), str):
-            previous["externalBuildCommit"] = _commit(
-                external["revision"], "external build"
-            )
-    if isinstance(sources, dict):
-        names = list(lane["components"])
-        if not names:
-            names = [
-                name
-                for name in RUNTIME_COMPONENTS
-                if isinstance(sources.get(name), dict)
-            ]
-        for name in names:
-            source = sources.get(name)
-            if not isinstance(source, dict):
-                continue
-            lane["components"][name] = str(source["version"])
-            previous[f"{name}Repository"] = _repository(str(source["repository"]))
-            previous[f"{name}Commit"] = _commit(source["commit"], name)
+        repository = _field(external, "repository")
+        commit = _field(external, "commit")
+        if repository is not None:
+            previous["externalBuildRepository"] = repository
+        if commit is not None:
+            previous["externalBuildCommit"] = _commit(commit, "external build")
+    names = list(lane["components"]) or [
+        name for name in RUNTIME_COMPONENTS if isinstance(provenance.get(name), dict)
+    ]
+    for name in names:
+        source = provenance.get(name)
+        if not isinstance(source, dict):
+            continue
+        version = _field(source, "version")
+        if version is not None:
+            lane["components"][name] = version
+        repository = _field(source, "repository")
+        commit = _field(source, "commit")
+        if repository is None or commit is None:
+            fail(f"provenance.json has no repository or commit for {name}")
+        previous[f"{name}Repository"] = _repository(repository)
+        previous[f"{name}Commit"] = _commit(commit, name)
     moltenvk = base.get("moltenvk") if isinstance(base, dict) else None
     if isinstance(moltenvk, dict):
         commit = _commit(moltenvk["commit"], "moltenvk")
@@ -321,55 +369,30 @@ def _update_provenance(
 def updated_manifest(
     manifest: Mapping[str, Any],
     tag: str,
-    provenance: Mapping[str, Any],
-    architecture: str = RUNTIME_ARCHITECTURE,
+    releases: Sequence[LaneRelease],
     moltenvk_version: str | None = None,
-    sha256: str | None = None,
-    size_bytes: int | None = None,
 ) -> dict[str, Any]:
-    """Return `manifest` with one lane pinned to the release."""
+    """Return `manifest` with each released lane pinned to the release."""
     result = json.loads(json.dumps(manifest))
-    lane = result["lanes"].get(architecture)
-    if not isinstance(lane, dict):
-        fail(f"runtime.json has no {architecture} lane")
     version = tag.removeprefix("v")
-    archive, _ = asset_names(tag)
-    published = provenance.get("runtimeArchive") or {}
-    published_sha256 = published.get("sha256")
-    if (
-        not isinstance(published_sha256, str)
-        or SHA256_PATTERN.fullmatch(published_sha256) is None
-    ):
-        fail("provenance.json has an invalid runtime archive checksum")
-    if sha256 is not None and sha256 != published_sha256:
-        fail("the provided SHA-256 differs from provenance.json")
-    digest = sha256 or published_sha256
-    published_size = published.get("sizeBytes")
-    if (
-        size_bytes is not None
-        and isinstance(published_size, int)
-        and size_bytes != published_size
-    ):
-        fail("the provided size differs from provenance.json")
-    size = size_bytes if size_bytes is not None else published_size
-    if not isinstance(size, int) or isinstance(size, bool) or size < 1:
-        fail("the runtime archive size is unknown; pass --size")
-    lane["runtime"] = {
-        "name": f"Arknights macOS Runtime {version}",
-        "version": version,
-        "url": asset_url(tag, archive),
-        "sha256": digest,
-        "sizeBytes": size,
-    }
-    interface = _published_interface(architecture, provenance)
-    minimum_macos = (
-        interface.get("minimumMacOS") if interface is not None else None
-    ) or provenance.get("minimumMacOS")
-    if isinstance(minimum_macos, str) and MINIMUM_MACOS_PATTERN.fullmatch(
-        minimum_macos
-    ):
-        lane["minimumMacOS"] = minimum_macos
-    _update_provenance(lane, provenance, moltenvk_version)
+    for release in releases:
+        lane = result["lanes"].get(release.architecture)
+        if not isinstance(lane, dict):
+            fail(f"runtime.json has no {release.architecture} lane")
+        lane["runtime"] = {
+            "name": f"Arknights macOS Runtime {version}",
+            "version": version,
+            "url": asset_url(tag, release.archive),
+            "sha256": release.sha256,
+            "sizeBytes": release.size_bytes,
+        }
+        interface = _published_interface(release.architecture, release.fragment)
+        minimum_macos = interface.get("minimumMacOS")
+        if isinstance(minimum_macos, str) and MINIMUM_MACOS_PATTERN.fullmatch(
+            minimum_macos
+        ):
+            lane["minimumMacOS"] = minimum_macos
+        _update_provenance(lane, release.fragment, moltenvk_version)
     return result
 
 
@@ -530,15 +553,12 @@ def manifest_problems(manifest: Mapping[str, Any]) -> list[str]:
             continue
         tag = match["tag"]
         version = tag.removeprefix("v")
-        archive, _ = asset_names(tag)
         expected = {
             "runtime.version": (runtime.get("version"), version),
             "runtime.name": (
                 runtime.get("name"),
                 f"Arknights macOS Runtime {version}",
             ),
-            "runtime.url": (url, asset_url(tag, archive)),
-            "runtime.architecture": (tag_architecture(tag), architecture),
         }
         problems.extend(
             f"runtime.json: {architecture} {key} is {actual!r}, the tag {tag} "
@@ -546,6 +566,14 @@ def manifest_problems(manifest: Mapping[str, Any]) -> list[str]:
             for key, (actual, wanted) in expected.items()
             if actual != wanted
         )
+        # Older pins name the asset without its lane; new pins add the architecture.
+        name = match["name"]
+        if not name.startswith(f"Arknights-MacOS-Runtime-{tag}") or not name.endswith(
+            ".tar.gz"
+        ):
+            problems.append(
+                f"runtime.json: {architecture} runtime.url is not an archive of {tag}"
+            )
         size = runtime.get("sizeBytes")
         if not isinstance(size, int) or isinstance(size, bool) or size < 1:
             problems.append(
@@ -581,42 +609,25 @@ def update(
     fetch: Fetch,
     moltenvk_version: str | None = None,
     *,
-    architecture: str = RUNTIME_ARCHITECTURE,
-    sha256: str | None = None,
-    size_bytes: int | None = None,
+    architectures: Sequence[str] = tuple(RUNTIME_ARCHITECTURES),
 ) -> list[Path]:
-    """Pin `tag` for one lane and rewrite `runtime.json` and the `runtime` blocks."""
+    """Pin `tag` for the given lanes and rewrite `runtime.json` and the `runtime` blocks."""
     target = root / RUNTIME_CONFIG
     original = target.read_text(encoding="utf-8")
-    if architecture not in RUNTIME_ARCHITECTURES:
-        fail(f"unknown runtime architecture: {architecture}")
-    if tag_architecture(tag) != architecture:
-        fail(
-            f"release {tag} is for {tag_architecture(tag)}, not {architecture}; "
-            "pass the matching --architecture"
-        )
+    for architecture in architectures:
+        if architecture not in RUNTIME_ARCHITECTURES:
+            fail(f"unknown runtime architecture: {architecture}")
     provenance = fetch_provenance(fetch, tag)
+    listed_sizes = release_asset_sizes(fetch, tag)
+    releases = [
+        fetch_lane(fetch, tag, provenance, architecture, listed_sizes)
+        for architecture in architectures
+    ]
     current = load_runtime_config(target)
-    lane = current.lane(architecture)
-    check_interface(lane, provenance)
-    archive, _ = asset_names(tag)
-    published_size = (provenance.get("runtimeArchive") or {}).get("sizeBytes")
-    if size_bytes is not None:
-        size = size_bytes
-    elif isinstance(published_size, int) and not isinstance(published_size, bool):
-        size = published_size
-    else:
-        size = release_asset_size(fetch, tag, archive)
+    for release in releases:
+        check_interface(current.lane(release.architecture), release.fragment)
     text = format_manifest(
-        updated_manifest(
-            current.raw,
-            tag,
-            provenance,
-            architecture,
-            moltenvk_version,
-            sha256,
-            size,
-        )
+        updated_manifest(current.raw, tag, releases, moltenvk_version)
     )
     changed: list[Path] = []
     if text != original:
