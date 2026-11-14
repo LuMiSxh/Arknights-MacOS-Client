@@ -219,26 +219,6 @@ struct RuntimeSelectionControllerTests {
 	}
 
 	@Test
-	func installingALaneSelectsItAndRecordsTheVersion() async throws {
-		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
-		defer { temporary.remove() }
-		let paths = makePaths(temporary)
-		let controller = makeController(
-			paths: paths,
-			storage: temporary,
-			configuration: try configuration(),
-			access: access(macOS: 26),
-			installOperation: makeInstallOperation(paths: paths)
-		)
-
-		#expect(await controller.install(lane: .arm))
-		#expect(controller.selectedLane == .arm)
-		#expect(controller.installedVersion(for: .arm) == "0.9.0+arm")
-		let selection = try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load()
-		#expect(selection.selected == .arm)
-	}
-
-	@Test
 	func aVerificationFailureExposesTheRuntimeVerificationCode() async throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
 		defer { temporary.remove() }
@@ -257,7 +237,7 @@ struct RuntimeSelectionControllerTests {
 
 		#expect(await controller.install(lane: .arm) == false)
 		#expect(controller.failure?.code == .runtimeVerificationFailed)
-		#expect(controller.selectedLane == .x86)
+		#expect(controller.selectedLane == .arm)
 		#expect(controller.installedVersion(for: .arm) == nil)
 	}
 

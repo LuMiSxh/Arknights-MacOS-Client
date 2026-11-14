@@ -93,7 +93,7 @@ While the runtime downloads, the progress line shows the percentage, download si
 
 The warning title names the target, such as **Switch to ARM64?**.
 
-- **Switch and Download** also downloads the runtime.
+- **Switch and Download** selects the runtime at once and downloads it. Home shows the runtime setup state, not **Play**, until the download finishes. To go back, switch to the installed runtime in **Settings → Runtime**.
 - **Switch** uses an installed runtime.
 
 The next game launch uses the new runtime. On macOS 28 or later, the **Active runtime** panel does not offer **x86_64**. While the game or a download is running, the panel cannot switch runtimes. It shows the reason.

@@ -198,17 +198,28 @@ extension LauncherViewModel: LauncherActions {
 
 	// MARK: - Runtime
 
-	/// Downloads the pinned runtime for `lane`, selects it, and refreshes discovery and the
-	/// Intel translation preflight so the next launch uses it.
+	/// Selects `lane`, downloads its pinned runtime, and refreshes discovery and the Intel
+	/// translation preflight. The selection applies when the download starts, so Home shows runtime
+	/// setup instead of Play until the lane is installed.
 	@discardableResult
 	package func installRuntime(_ lane: RuntimeLane) async -> Bool {
-		let installed = await runtimeSelection.install(lane: lane)
-		if installed {
+		let previous = runtimeSelection.selectedLane
+		do {
+			try runtimeSelection.selectForDownload(lane: lane)
+		} catch {
+			log.error(
+				"Runtime lane switch failed: \(launcherDiagnosticDescription(for: error))")
+			return false
+		}
+		if runtimeSelection.selectedLane != previous {
 			gameSession.refreshRuntime()
-			if runtimeSelection.selectedLane == lane {
-				intelTranslation.runtimeLaneDidChange()
-				_ = await intelTranslation.refreshAvailability(force: true)
-			}
+			intelTranslation.runtimeLaneDidChange()
+		}
+		let installed = await runtimeSelection.install(lane: lane)
+		if installed, runtimeSelection.selectedLane == lane {
+			gameSession.refreshRuntime()
+			intelTranslation.runtimeLaneDidChange()
+			_ = await intelTranslation.refreshAvailability(force: true)
 		}
 		return installed
 	}

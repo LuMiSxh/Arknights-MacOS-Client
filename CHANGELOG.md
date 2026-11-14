@@ -67,6 +67,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Switch and Download** in **Settings → Runtime** now selects the new runtime when the download starts. Before, Home kept an enabled **Play** for the old runtime while the new one downloaded, paused, or failed. Home now shows the runtime setup state until the new runtime is installed.
 - The game's window size, fullscreen size, and Retina scale now follow the display the game opens on, and fullscreen names that display to the game. Before, they followed the focused window's display.
 - The "Wine configuration is being updated" window no longer appears when the game starts after a runtime update.
 - The Notices backdrop shows the blurred game again instead of solid black, also with the MetalFX rendering mode (Thanks to @darkwebdev, #119).

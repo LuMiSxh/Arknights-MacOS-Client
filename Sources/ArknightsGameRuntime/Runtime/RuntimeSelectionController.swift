@@ -180,6 +180,9 @@ package final class RuntimeSelectionController {
 	private var installedVersions: [RuntimeLane: String]
 	@ObservationIgnored private var lastProgressUpdate: ContinuousClock.Instant?
 	@ObservationIgnored private var installTask: Task<InstalledRuntime, any Error>?
+	/// Owns the running download's outcome. Selecting another lane invalidates it, so a late
+	/// completion cannot change the selection or the failure state.
+	@ObservationIgnored private let installOwner = TaskSlot()
 	@ObservationIgnored private var pauseRequested = false
 
 	#if DEBUG
@@ -320,8 +323,10 @@ package final class RuntimeSelectionController {
 		}
 	}
 
-	/// Downloads and installs the lane pin, then selects the lane. Game installation may run at
-	/// the same time because the two downloads write to different trees. Any other activity waits.
+	/// Selects `lane` and then downloads and installs its pin. The lane stays selected while its
+	/// download runs, pauses, or fails, so Home shows runtime setup instead of Play. Game
+	/// installation may run at the same time because the two downloads write to different trees.
+	/// Any other activity waits.
 	@discardableResult
 	package func install(lane: RuntimeLane) async -> Bool {
 		guard installingLane == nil,
@@ -348,16 +353,24 @@ package final class RuntimeSelectionController {
 			return false
 		}
 
+		do {
+			try selectForDownload(lane: lane)
+		} catch {
+			return false
+		}
+
 		installingLane = lane
 		installProgress = nil
 		lastProgressUpdate = nil
 		pausedLane = nil
 		pauseRequested = false
+		let token = installOwner.begin()
 		defer {
 			installingLane = nil
 			installProgress = nil
 			lastProgressUpdate = nil
 			installTask = nil
+			if installOwner.owns(token) { installOwner.invalidate() }
 		}
 		log?.info("Runtime install started; lane=\(lane.rawValue) version=\(pin.version)")
 
@@ -380,27 +393,41 @@ package final class RuntimeSelectionController {
 				task.cancel()
 			}
 			log?.info("Runtime installed; lane=\(lane.rawValue) version=\(installed.version)")
-			// A game may have started during the download. Keep the installed files but leave the
-			// selection alone so the running session keeps the lane it launched with.
-			if isLaunchInProgress() {
-				log?.info("Runtime installed; lane=\(lane.rawValue); selection unchanged")
-				refresh()
-				return true
-			}
-			try store.select(lane: lane, access: access)
-			selectedLane = lane
 			refresh()
-			return true
+			return installOwner.owns(token)
 		} catch is CancellationError {
 			// A pause is not a failure: the partial archive stays and no failure is presented.
 			if pauseRequested { pausedLane = lane }
 			log?.info("Runtime install cancelled; lane=\(lane.rawValue) paused=\(pauseRequested)")
 			return false
 		} catch {
+			guard installOwner.owns(token) else {
+				log?.info("Runtime install failure ignored; lane=\(lane.rawValue); superseded")
+				return false
+			}
 			present(.installFailure(error, lane: lane))
 			refresh()
 			return false
 		}
+	}
+
+	/// Selects a lane that may not be installed yet, so a download of it can start. Home then shows
+	/// the runtime setup state until the download completes. Refused while a game launch or any
+	/// activity other than a game installation is in progress.
+	package func selectForDownload(lane: RuntimeLane) throws {
+		guard lifecycle.activity == .idle || lifecycle.activity.isInstalling,
+			installingLane == nil, !isLaunchInProgress()
+		else {
+			let error = RuntimeSelectionError.busy
+			present(error)
+			throw error
+		}
+		guard availableLanes.contains(lane) else {
+			let error = RuntimeSelectionError.laneNotAvailable(lane)
+			present(error)
+			throw error
+		}
+		try commitSelection(of: lane)
 	}
 
 	/// Pauses the running download. The installer keeps its `.part` archive, so installing the
@@ -414,7 +441,7 @@ package final class RuntimeSelectionController {
 	}
 
 	package func select(lane: RuntimeLane) throws {
-		guard lifecycle.activity == .idle, installingLane == nil, !isLaunchInProgress() else {
+		guard lifecycle.activity == .idle, !isLaunchInProgress() else {
 			throw RuntimeSelectionError.busy
 		}
 		guard availableLanes.contains(lane) else {
@@ -427,6 +454,15 @@ package final class RuntimeSelectionController {
 			present(error)
 			throw error
 		}
+		// Leaving a lane mid-download abandons that download. Its partial archive stays on disk.
+		if installingLane != nil {
+			installOwner.invalidate()
+			installTask?.cancel()
+		}
+		try commitSelection(of: lane)
+	}
+
+	private func commitSelection(of lane: RuntimeLane) throws {
 		do {
 			try store.select(lane: lane, access: access)
 		} catch {
