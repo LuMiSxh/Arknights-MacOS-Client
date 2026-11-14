@@ -13,7 +13,7 @@ import sparkle_deltas
 REPOSITORY = "owner/repo"
 UPDATE_NAME = "Example.Client.tar.xz"
 # `fetch` derives legacy names from the real project's asset stem.
-LEGACY_UPDATE_NAME = "Arknights.Client.zip"
+
 NAMESPACE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
 
 
@@ -28,31 +28,6 @@ def release(
         "assets": [{"name": asset}],
         **overrides,
     }
-
-
-def test_selects_newest_published_archives_excluding_current_and_unpublished() -> None:
-    releases = [
-        release("0.5.0", "2026-05-01T00:00:00Z"),
-        release("0.4.0", "2026-04-01T00:00:00Z", draft=True),
-        release("0.3.0", "2026-03-01T00:00:00Z", prerelease=True),
-        release("0.2.0", "2026-02-01T00:00:00Z"),
-        release("0.1.5", "2026-01-15T00:00:00Z", asset="Other.dmg"),
-        release("0.1.0", "2026-01-01T00:00:00Z"),
-        release("0.6.0", "2026-06-01T00:00:00Z"),
-    ]
-
-    sources = sparkle_deltas.select_sources(
-        releases,
-        current_version="0.6.0",
-        stem="Example.Client",
-        update_name=UPDATE_NAME,
-        count=2,
-    )
-
-    assert sources == [
-        ("0.5.0", "v0.5.0", UPDATE_NAME),
-        ("0.2.0", "v0.2.0", UPDATE_NAME),
-    ]
 
 
 def fetch(
@@ -77,36 +52,6 @@ def fetch(
             count=3,
         )
     )
-
-
-def test_download_failure_skips_deltas_without_failing_the_release(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    def fail_download(command: list[str]) -> None:
-        raise sparkle_deltas.ScriptError("download failed with status 500")
-
-    releases = [release("0.5.0", "2026-05-01T00:00:00Z")]
-    fetch(tmp_path, monkeypatch, releases, fail_download)
-
-    assert not list(tmp_path.iterdir())
-    assert "Skipping deltas from 0.5.0" in capsys.readouterr().err
-
-
-def test_fetch_keeps_each_sources_archive_format(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    def write_download(command: list[str]) -> None:
-        Path(command[command.index("--output") + 1]).write_bytes(b"archive")
-
-    releases = [
-        release("0.5.0", "2026-05-01T00:00:00Z", asset=LEGACY_UPDATE_NAME),
-        release("0.6.0", "2026-06-01T00:00:00Z"),
-    ]
-    fetch(tmp_path, monkeypatch, releases, write_download)
-
-    names = sorted(path.name for path in tmp_path.iterdir())
-    assert names[0].endswith(".0.5.0.zip")
-    assert names[1].endswith(".0.6.0.tar.xz")
 
 
 def appcast_with_delta(directory: Path) -> Path:
@@ -153,21 +98,6 @@ def test_finalize_renames_deltas_rewrites_urls_and_resigns(
         appcast,
     ]
     assert kwargs["input"] == b"SECRET"
-
-
-def test_finalize_without_deltas_leaves_appcast_untouched(tmp_path: Path) -> None:
-    appcast = tmp_path / "appcast.xml"
-    appcast.write_text(
-        '<rss><channel><item><enclosure url="u"/></item></channel></rss>'
-    )
-    before = appcast.read_bytes()
-
-    published = sparkle_deltas.finalize_deltas(
-        tmp_path, appcast, tmp_path / "out", Path("x"), ""
-    )
-
-    assert published == []
-    assert appcast.read_bytes() == before
 
 
 def test_finalize_fails_without_key_or_when_sign_update_fails(

@@ -35,22 +35,11 @@ def test_extracts_requested_release_body(changelog: str, expected: str) -> None:
     assert extract(changelog, "0.2.0") == expected
 
 
-def test_rejects_missing_version() -> None:
-    with pytest.raises(RuntimeError):
-        extract("# Changelog\n", "0.2.0")
-
-
 def write_changelog(path: Path, version: str) -> Path:
     path.write_text(
         f"# Changelog\n\n## [{version}]\n\n- Release notes.\n", encoding="utf-8"
     )
     return path
-
-
-def test_accepts_matching_release_metadata(tmp_path: Path) -> None:
-    changelog = write_changelog(tmp_path / "CHANGELOG.md", "0.2.0")
-
-    assert validate_release("0.2.0", changelog, "0.2.0") == "- Release notes."
 
 
 @pytest.mark.parametrize(

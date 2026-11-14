@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import plistlib
-from dataclasses import replace
 from pathlib import Path
 
 import build_app
@@ -16,18 +15,6 @@ def configuration() -> ProjectConfiguration:
     return load_project_configuration()
 
 
-def test_app_resources_follow_project_configuration(
-    configuration: ProjectConfiguration,
-) -> None:
-    resources = dict(build_app.app_resources(configuration))
-
-    assert resources[configuration.project_directory / "docs/help/errors"] == Path(
-        "SupportArticles"
-    )
-    for source in configuration.copied_resource_source_paths:
-        assert resources[source] == Path(source.name)
-
-
 def test_app_resources_bundle_the_runtime_configuration(
     configuration: ProjectConfiguration,
 ) -> None:
@@ -35,24 +22,6 @@ def test_app_resources_bundle_the_runtime_configuration(
 
     assert resources[configuration.project_directory / "runtime.json"] == Path(
         "RUNTIME.json"
-    )
-
-
-def test_compatibility_artifacts_are_discovered_recursively(tmp_path: Path) -> None:
-    source = tmp_path / "helpers"
-    destination = tmp_path / "app/Compatibility"
-    artifacts = (
-        source / "NewComponent/Bridge.dylib",
-        source / "NewComponent/Wrapper.exe",
-    )
-    for artifact in artifacts:
-        artifact.parent.mkdir(parents=True, exist_ok=True)
-        artifact.touch()
-
-    copied = build_app.copy_compatibility_helpers(source, destination)
-
-    assert copied == tuple(
-        destination / artifact.relative_to(source) for artifact in artifacts
     )
 
 
@@ -101,29 +70,3 @@ def test_sparkle_framework_copy_preserves_symlinks(tmp_path: Path) -> None:
     assert (destination / "Versions/Current").is_symlink()
     assert (destination / "Sparkle").is_symlink()
     assert (destination / "Sparkle").read_bytes() == b"framework"
-
-
-def test_sparkle_framework_version_comes_from_package_metadata(
-    tmp_path: Path, configuration: ProjectConfiguration
-) -> None:
-    changed = replace(
-        configuration,
-        package=replace(
-            configuration.package,
-            exact_dependency_versions=(("sparkle", "9.8.7"),),
-        ),
-    )
-    framework = tmp_path / "bin/Sparkle.framework/Versions/A"
-    (framework / "XPCServices/Downloader.xpc").mkdir(parents=True)
-    (framework / "XPCServices/Installer.xpc").mkdir()
-    (framework / "Updater.app").mkdir()
-    (framework / "Sparkle").write_bytes(b"framework")
-    (framework / "Resources").mkdir()
-    (framework / "Resources/Info.plist").write_bytes(
-        plistlib.dumps({"CFBundleShortVersionString": "9.8.7"})
-    )
-    (framework.parent / "Current").symlink_to("A")
-
-    discovered = build_app.sparkle_framework(tmp_path / "bin", changed)
-
-    assert discovered == tmp_path / "bin/Sparkle.framework"

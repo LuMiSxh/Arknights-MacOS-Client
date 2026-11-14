@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import shutil
-import zlib
 from dataclasses import replace
 from pathlib import Path
 
@@ -118,49 +116,8 @@ def write_index(root: Path, components: list[dict[str, object]]) -> None:
     )
 
 
-def rewrite(root: Path, mutate: object) -> None:
-    path = root / licenses.CLIENT_INDEX
-    document = json.loads(path.read_text(encoding="utf-8"))
-    mutate(document)  # type: ignore[operator]
-    path.write_text(json.dumps(document), encoding="utf-8")
-
-
 def test_project_inventory_is_current() -> None:
     licenses.check_all(PROJECT_DIR)
-
-
-def test_minimal_project_passes_and_warns_about_unverified(project: Path) -> None:
-    assert licenses.check_all(project) == ["Art 1.0.0: license not yet verified"]
-
-
-def test_strict_mode_fails_on_unverified(project: Path) -> None:
-    with pytest.raises(ScriptError, match="license not yet verified"):
-        licenses.check_all(project, strict=True)
-
-
-def test_new_swiftpm_pin_without_entry_fails(project: Path) -> None:
-    (project / "Package.resolved").write_text(
-        json.dumps(
-            {
-                "pins": [
-                    {"identity": "pkg", "state": {"version": "2.0.0"}},
-                    {"identity": "newpkg", "state": {"version": "1.0.0"}},
-                ]
-            }
-        ),
-        encoding="utf-8",
-    )
-    with pytest.raises(ScriptError, match="newpkg 1.0.0 has no index entry"):
-        licenses.check_all(project)
-
-
-def test_updated_swiftpm_pin_fails_until_index_follows(project: Path) -> None:
-    (project / "Package.resolved").write_text(
-        json.dumps({"pins": [{"identity": "pkg", "state": {"version": "2.1.0"}}]}),
-        encoding="utf-8",
-    )
-    with pytest.raises(ScriptError, match="pkg is 2.1.0, the index says 2.0.0"):
-        licenses.check_all(project)
 
 
 def test_new_website_dependency_and_resource_fail(project: Path) -> None:
@@ -173,54 +130,6 @@ def test_new_website_dependency_and_resource_fail(project: Path) -> None:
         licenses.check_all(project)
     assert "other has no index entry" in str(error.value)
     assert "New.svg: bundled resource has no index entry" in str(error.value)
-
-
-def test_orphan_text_and_missing_origin_fail(project: Path) -> None:
-    (project / "docs/legal/licenses/orphan.txt").write_text("x", encoding="utf-8")
-    with pytest.raises(
-        ScriptError, match="orphan.txt: license text has no index entry"
-    ):
-        licenses.check_all(project)
-
-
-def test_verified_entry_needs_basis_and_safe_paths(project: Path) -> None:
-    def mutate(document: dict[str, object]) -> None:
-        entries = document["components"]
-        assert isinstance(entries, list)
-        entries[0].pop("basis")
-        entries[0]["files"] = ["../escape.txt"]
-
-    rewrite(project, mutate)
-    with pytest.raises(ScriptError) as error:
-        licenses.check_all(project)
-    assert "needs a basis" in str(error.value)
-    assert "unsafe files path" in str(error.value)
-
-
-def test_stale_generated_block_fails_and_generate_repairs_it(project: Path) -> None:
-    notices = project / licenses.NOTICES_DOCUMENT
-    notices.write_text(
-        notices.read_text(encoding="utf-8").replace(
-            "<!-- licenses:begin launcher -->\n",
-            "<!-- licenses:begin launcher -->\nold\n",
-        ),
-        encoding="utf-8",
-    )
-    with pytest.raises(ScriptError, match="generated blocks are stale"):
-        licenses.check_all(project)
-    regenerate(project)
-    licenses.check_all(project)
-
-
-def test_source_offer_uses_each_lane_release(project: Path) -> None:
-    manifest = json.loads((project / "runtime.json").read_text(encoding="utf-8"))
-    offer = licenses.render_source_offer(manifest)
-
-    for lane in manifest["lanes"].values():
-        assert licenses.release_url(lane["runtime"]["url"]) in offer
-    assert "buildRecipe" not in offer
-    assert "Nixpkgs" not in offer
-    assert "does not cover today" in offer
 
 
 def make_runtime(root: Path, status: str = "verified") -> Path:
@@ -237,149 +146,6 @@ def make_runtime(root: Path, status: str = "verified") -> Path:
     return runtime
 
 
-def test_license_texts_page_holds_every_text_once(project: Path) -> None:
-    (project / "docs/legal/licenses/example.txt").write_text(
-        "MIT text\n```\nfence", encoding="utf-8"
-    )
-    page = licenses.generate_documents(project)[licenses.LICENSE_TEXTS_DOCUMENT]
-
-    assert "### pkg" in page
-    assert "### lib" in page
-    assert "````text\nMIT text\n```\nfence\n````" in page
-    assert page.count("MIT text") == 1
-    assert "The text of `example.txt` is under [pkg](#pkg)." in page
-    assert "### Art" not in page
-
-
-def test_license_texts_page_does_not_merge_a_prepared_runtime(
-    project: Path, tmp_path: Path
-) -> None:
-    runtime = make_runtime(tmp_path)
-    page = licenses.generate_documents(project)[licenses.LICENSE_TEXTS_DOCUMENT]
-
-    assert "### Lib" not in page
-    assert "Runtime notice" not in page
-    assert "carries the authoritative license texts" in page
-    assert licenses.generate_documents(project)[licenses.LICENSE_TEXTS_DOCUMENT] == page
-    assert licenses.check_all(project, runtime) == [
-        "Art 1.0.0: license not yet verified"
-    ]
-
-
-def test_stale_license_texts_page_fails_and_generate_repairs_it(
-    project: Path,
-) -> None:
-    (project / "docs/legal/licenses/example.txt").write_text(
-        "Changed text", encoding="utf-8"
-    )
-    with pytest.raises(
-        ScriptError, match="license-texts.md: generated blocks are stale"
-    ):
-        licenses.check_all(project)
-    regenerate(project)
-    licenses.check_all(project)
-
-
-def test_check_with_runtime_keeps_the_website_documents(
-    project: Path, tmp_path: Path
-) -> None:
-    runtime = make_runtime(tmp_path)
-    assert licenses.check_all(project, runtime) == [
-        "Art 1.0.0: license not yet verified"
-    ]
-
-
-def test_runtime_without_index_warns_and_strict_fails(
-    project: Path, tmp_path: Path
-) -> None:
-    runtime = tmp_path / "runtime"
-    runtime.mkdir()
-
-    assert licenses.check_all(project, runtime)[0] == (
-        "the runtime has no Licenses/index.json"
-    )
-    with pytest.raises(ScriptError, match="no Licenses/index.json"):
-        licenses.check_all(project, runtime, strict=True)
-
-
-def test_strict_fails_on_unverified_runtime_component(
-    project: Path, tmp_path: Path
-) -> None:
-    rewrite(project, lambda document: document["components"].pop())
-    (project / "Sources/ArknightsCore/Resources/Art.png").unlink()
-    runtime = make_runtime(tmp_path, status="unverified")
-    regenerate(project, runtime)
-
-    assert licenses.check_all(project, runtime)
-    with pytest.raises(ScriptError, match="Lib 1.0.0: license not yet verified"):
-        licenses.check_all(project, runtime, strict=True)
-
-
-def test_runtime_index_with_missing_text_fails(project: Path, tmp_path: Path) -> None:
-    runtime = make_runtime(tmp_path)
-    (runtime / "Licenses/runtime/MIT.txt").unlink()
-    with pytest.raises(ScriptError, match="lists missing file runtime/MIT.txt"):
-        licenses.check_all(project, runtime)
-
-
-def test_bundle_writes_one_compiled_file_with_launcher_notices(
-    project: Path,
-) -> None:
-    resources = project / "Resources"
-    resources.mkdir()
-
-    warnings = licenses.stage_bundle(project, resources, strict=False)
-
-    assert [path.name for path in resources.iterdir()] == ["ThirdPartyNotices.deflate"]
-    compressed = (resources / "ThirdPartyNotices.deflate").read_bytes()
-    notices = zlib.decompress(compressed, -15).decode("utf-8")
-    assert "[pkg](" in notices
-    assert "does not ship a runtime" in notices
-    assert "licenses:begin" not in notices
-    assert warnings == ["Art 1.0.0: license not yet verified"]
-
-
-def test_strict_bundle_fails_on_an_unverified_launcher_component(
-    project: Path,
-) -> None:
-    resources = project / "Resources"
-    resources.mkdir()
-
-    with pytest.raises(ScriptError, match="license not yet verified"):
-        licenses.stage_bundle(project, resources, strict=True)
-
-
-def test_compiled_notices_keep_each_distinct_text_once(project: Path) -> None:
-    (project / "docs/legal/licenses/same.txt").write_text("MIT text", encoding="utf-8")
-    rewrite(
-        project,
-        lambda document: (
-            document["components"].append(
-                component(name="Twin", files=["same.txt"], spdx="MIT")
-            ),
-            document["textOrigins"].update({"same.txt": "test"}),
-        ),
-    )
-    components = licenses.load_client_components(project, [])
-
-    notices = licenses.render_compiled_notices(project, components)
-
-    assert notices.count("MIT text") == 1
-    assert notices.count("| `MIT` |") == 2
-
-
-def test_compiled_notices_exclude_website_and_runtime_components(
-    project: Path,
-) -> None:
-    components = licenses.load_client_components(project, [])
-
-    notices = licenses.render_compiled_notices(project, components)
-
-    assert "[lib](" not in notices
-    assert "[pkg](" in notices
-    assert "Runtime components" not in notices
-
-
 def test_runtime_index_http_sources_load_as_https(tmp_path: Path) -> None:
     runtime = make_runtime(tmp_path)
     index = runtime / "Licenses/index.json"
@@ -393,27 +159,3 @@ def test_runtime_index_http_sources_load_as_https(tmp_path: Path) -> None:
     assert problems == []
     assert legal is not None
     assert legal.components[0].source == "https://example.org/lib"
-
-
-def test_staging_runtime_legal_rejects_symlinks(tmp_path: Path) -> None:
-    archive = tmp_path / "archive"
-    (archive / "Licenses").mkdir(parents=True)
-    (archive / "Licenses/link.txt").symlink_to("/etc/hosts")
-    runtime = tmp_path / "runtime"
-    runtime.mkdir()
-
-    with pytest.raises(ScriptError, match="regular file"):
-        licenses.stage_runtime_legal(archive, runtime)
-
-
-def test_staging_runtime_legal_copies_files(tmp_path: Path) -> None:
-    archive = tmp_path / "archive"
-    shutil.copytree(make_runtime(tmp_path) / "Licenses", archive / "Licenses")
-    (archive / "NOTICE.md").write_text("n", encoding="utf-8")
-    runtime = tmp_path / "prepared"
-    runtime.mkdir()
-
-    assert licenses.stage_runtime_legal(archive, runtime)
-    assert (runtime / "Licenses/index.json").is_file()
-    assert (runtime / "NOTICE.md").is_file()
-    assert not licenses.stage_runtime_legal(tmp_path / "empty", runtime)

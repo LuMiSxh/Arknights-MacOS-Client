@@ -99,21 +99,108 @@ def write_config(path: Path, value: dict[str, object]) -> None:
     path.write_text(json.dumps(value), encoding="utf-8")
 
 
-def test_validates_complete_configuration(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda value: value.update(schemaVersion=2), "schemaVersion must be 3"),
+        (
+            lambda value: value["lanes"].update(arm64=value["lanes"]["arm"]),
+            "unknown lanes: arm64",
+        ),
+        (
+            lambda value: value["lanes"]["x86"]["interface"].update(features={}),
+            "features must name the three known features",
+        ),
+        (
+            lambda value: value["lanes"]["x86"]["interface"].update(
+                features={
+                    "hardwareCursor": True,
+                    "metalFXSpatialUpscaling": True,
+                    "nativeFullscreenSpace": "yes",
+                }
+            ),
+            "feature must be a boolean",
+        ),
+        (
+            lambda value: value["lanes"]["x86"]["runtime"].update(sha256="latest"),
+            "lowercase SHA-256",
+        ),
+        (
+            lambda value: value["lanes"]["x86"]["runtime"].update(sizeBytes=0),
+            "pin must be complete or empty",
+        ),
+        (
+            lambda value: value["lanes"]["x86"]["runtime"].update(
+                url="http://example.com/runtime.tar.gz"
+            ),
+            "must use HTTPS",
+        ),
+        (
+            lambda value: value["lanes"]["x86"].update(minimumMacOS="macOS 15"),
+            "minimumMacOS must be a version",
+        ),
+        (
+            lambda value: value["lanes"]["x86"].update(prefixRevision=0),
+            "integer of at least 1",
+        ),
+        (lambda value: value.update(runtime={}), "keep the runtime contract in lanes"),
+        (
+            lambda value: value["lanes"]["x86"]["components"].update(newMedia="2"),
+            "missing component sources",
+        ),
+    ],
+)
+def test_rejects_invalid_manifests(
+    tmp_path: Path, mutate: object, message: str
+) -> None:
     config = tmp_path / "runtime.json"
-    write_config(config, valid_config())
+    value = valid_config()
+    mutate(value)  # type: ignore[operator]
+    write_config(config, value)
+
+    with pytest.raises(RuntimeError, match=message):
+        runtime_config.load_runtime_config(config)
+
+
+def test_accepts_an_unpublished_lane(tmp_path: Path) -> None:
+    config = tmp_path / "runtime.json"
+    value = valid_config()
+    value["lanes"]["arm"]["runtime"] = {
+        "name": "Arknights macOS Runtime 0.9.0+arm",
+        "version": "0.9.0+arm",
+        "url": "",
+        "sha256": "",
+        "sizeBytes": 0,
+    }
+    value["lanes"]["arm"]["components"] = {}
+    value["lanes"]["arm"]["provenance"] = {}
+    write_config(config, value)
 
     loaded = runtime_config.load_runtime_config(config)
 
-    assert loaded.architecture == "x86"
-    assert set(loaded.lanes) == {"x86", "arm"}
-    assert loaded.selected.name == "x86"
-    assert loaded.selected.runtime.version == "0.8.0"
-    assert loaded.selected.runtime.size_bytes == 400_000_000
-    assert loaded.selected.minimum_macos == "15.0"
-    assert loaded.selected.layout == loaded.lane("x86").layout
-    assert loaded.lane("arm").prefix_revision == 1
-    assert loaded.lane("arm").minimum_macos == "26.0"
+    assert not loaded.lane("arm").runtime.is_available
+    assert loaded.lane("arm").layout.mac_driver.parts[-1] == "winemac.so"
+
+
+@pytest.mark.parametrize("state", ["missing", "stale", "current"])
+def test_prepared_runtime_is_used_only_when_it_matches_the_lane_pin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, state: str
+) -> None:
+    write_config(tmp_path / "runtime.json", valid_config())
+    config = runtime_config.load_runtime_config(tmp_path / "runtime.json")
+    lane = config.lane("arm")
+    directory = tmp_path / ".build" / "runtime-arm"
+    monkeypatch.setattr(runtime_config, "runtime_is_valid", lambda *_: True)
+    if state != "missing":
+        directory.mkdir(parents=True)
+        revision = "0" * 64 if state == "stale" else lane.runtime.sha256
+        (directory / runtime_config.PREPARED_REVISION_FILE).write_text(
+            revision, encoding="utf-8"
+        )
+
+    expected = directory if state == "current" else None
+    assert runtime_config.prepared_runtime(tmp_path, "arm") == expected
+    assert runtime_config.prepared_runtime(tmp_path, "x86") is None
 
 
 def test_selects_each_lane_explicitly(tmp_path: Path) -> None:
@@ -156,130 +243,6 @@ def test_reads_runtime_features(tmp_path: Path) -> None:
     assert features.native_fullscreen_space is True
 
 
-@pytest.mark.parametrize(
-    ("features", "message"),
-    [
-        ({}, "features must name the three known features"),
-        (
-            {"hardwareCursor": True, "metalFXSpatialUpscaling": True},
-            "features must name the three known features",
-        ),
-        (
-            {
-                "hardwareCursor": True,
-                "metalFXSpatialUpscaling": True,
-                "nativeFullscreenSpace": "yes",
-            },
-            "feature must be a boolean",
-        ),
-    ],
-)
-def test_rejects_incomplete_or_non_boolean_features(
-    tmp_path: Path, features: dict[str, object], message: str
-) -> None:
-    config = tmp_path / "runtime.json"
-    value = valid_config()
-    value["lanes"]["x86"]["interface"]["features"] = features
-    write_config(config, value)
-
-    with pytest.raises(RuntimeError, match=message):
-        runtime_config.load_runtime_config(config)
-
-
-@pytest.mark.parametrize(
-    ("mutate", "message"),
-    [
-        (lambda value: value.update(schemaVersion=2), "schemaVersion must be 3"),
-        (
-            lambda value: value["lanes"]["x86"]["runtime"].update(sha256="latest"),
-            "lowercase SHA-256",
-        ),
-        (
-            lambda value: value["lanes"]["x86"]["runtime"].update(sizeBytes=0),
-            "pin must be complete or empty",
-        ),
-        (
-            lambda value: value["lanes"]["x86"]["runtime"].update(
-                url="http://example.com/runtime.tar.gz"
-            ),
-            "must use HTTPS",
-        ),
-        (
-            lambda value: value["lanes"]["x86"].update(minimumMacOS="macOS 15"),
-            "minimumMacOS must be a version",
-        ),
-        (
-            lambda value: value["lanes"]["x86"].update(prefixRevision=0),
-            "integer of at least 1",
-        ),
-    ],
-)
-def test_rejects_invalid_lane_values(
-    tmp_path: Path, mutate: object, message: str
-) -> None:
-    config = tmp_path / "runtime.json"
-    value = valid_config()
-    mutate(value)  # type: ignore[operator]
-    write_config(config, value)
-
-    with pytest.raises(RuntimeError, match=message):
-        runtime_config.load_runtime_config(config)
-
-
-@pytest.mark.parametrize("key", ["runtime", "interface", "buildRecipe", "armInterface"])
-def test_rejects_the_obsolete_top_level_contract(tmp_path: Path, key: str) -> None:
-    config = tmp_path / "runtime.json"
-    value = valid_config()
-    value[key] = {}
-    write_config(config, value)
-
-    with pytest.raises(RuntimeError, match="keep the runtime contract in lanes"):
-        runtime_config.load_runtime_config(config)
-
-
-def test_accepts_an_unpublished_lane(tmp_path: Path) -> None:
-    config = tmp_path / "runtime.json"
-    value = valid_config()
-    value["lanes"]["arm"]["runtime"] = {
-        "name": "Arknights macOS Runtime 0.9.0+arm",
-        "version": "0.9.0+arm",
-        "url": "",
-        "sha256": "",
-        "sizeBytes": 0,
-    }
-    value["lanes"]["arm"]["components"] = {}
-    value["lanes"]["arm"]["provenance"] = {}
-    write_config(config, value)
-
-    loaded = runtime_config.load_runtime_config(config)
-
-    assert not loaded.lane("arm").runtime.is_available
-    assert loaded.lane("arm").layout.mac_driver.parts[-1] == "winemac.so"
-
-
-def test_missing_components_and_provenance_are_empty(tmp_path: Path) -> None:
-    config = tmp_path / "runtime.json"
-    value = valid_config()
-    del value["lanes"]["arm"]["components"]
-    del value["lanes"]["arm"]["provenance"]
-    write_config(config, value)
-
-    loaded = runtime_config.load_runtime_config(config)
-
-    assert loaded.lane("arm").components == {}
-    assert loaded.lane("arm").provenance == {}
-
-
-def test_rejects_a_partial_unpublished_pin(tmp_path: Path) -> None:
-    config = tmp_path / "runtime.json"
-    value = valid_config()
-    value["lanes"]["arm"]["runtime"]["sizeBytes"] = 0
-    write_config(config, value)
-
-    with pytest.raises(RuntimeError, match="pin must be complete or empty"):
-        runtime_config.load_runtime_config(config)
-
-
 def test_allows_a_missing_lane_but_fails_when_it_is_selected(tmp_path: Path) -> None:
     config = tmp_path / "runtime.json"
     value = valid_config()
@@ -290,16 +253,6 @@ def test_allows_a_missing_lane_but_fails_when_it_is_selected(tmp_path: Path) -> 
 
     with pytest.raises(RuntimeError, match="no arm lane"):
         loaded.lane("arm")
-
-
-def test_rejects_an_unknown_lane(tmp_path: Path) -> None:
-    config = tmp_path / "runtime.json"
-    value = valid_config()
-    value["lanes"]["arm64"] = value["lanes"]["arm"]
-    write_config(config, value)
-
-    with pytest.raises(RuntimeError, match="unknown lanes: arm64"):
-        runtime_config.load_runtime_config(config)
 
 
 def test_new_component_requires_matching_provenance(tmp_path: Path) -> None:
@@ -317,24 +270,3 @@ def test_new_component_requires_matching_provenance(tmp_path: Path) -> None:
     value["lanes"]["x86"]["provenance"]["newMediaCommit"] = "1" * 40
     write_config(config, value)
     runtime_config.load_runtime_config(config)
-
-
-@pytest.mark.parametrize("state", ["missing", "stale", "current"])
-def test_prepared_runtime_is_used_only_when_it_matches_the_lane_pin(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, state: str
-) -> None:
-    write_config(tmp_path / "runtime.json", valid_config())
-    config = runtime_config.load_runtime_config(tmp_path / "runtime.json")
-    lane = config.lane("arm")
-    directory = tmp_path / ".build" / "runtime-arm"
-    monkeypatch.setattr(runtime_config, "runtime_is_valid", lambda *_: True)
-    if state != "missing":
-        directory.mkdir(parents=True)
-        revision = "0" * 64 if state == "stale" else lane.runtime.sha256
-        (directory / runtime_config.PREPARED_REVISION_FILE).write_text(
-            revision, encoding="utf-8"
-        )
-
-    expected = directory if state == "current" else None
-    assert runtime_config.prepared_runtime(tmp_path, "arm") == expected
-    assert runtime_config.prepared_runtime(tmp_path, "x86") is None

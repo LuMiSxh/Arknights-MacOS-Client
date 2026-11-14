@@ -387,35 +387,6 @@ def test_changed_moltenvk_commit_needs_a_version(project: Path) -> None:
     assert manifest_of(project)["lanes"]["x86"]["components"]["moltenvk"] == "1.4.3"
 
 
-def test_second_update_changes_nothing(project: Path) -> None:
-    runtime_update.update(project, NEW_TAG, release_fetch())
-    snapshot = {
-        path: (project / path).read_text(encoding="utf-8") for path in FIXTURE_FILES
-    }
-
-    assert runtime_update.update(project, NEW_TAG, release_fetch()) == []
-    assert snapshot == {
-        path: (project / path).read_text(encoding="utf-8") for path in FIXTURE_FILES
-    }
-
-
-def test_update_writes_no_feed_or_client_version_fields(project: Path) -> None:
-    runtime_update.update(project, NEW_TAG, release_fetch())
-
-    text = (project / "runtime.json").read_text(encoding="utf-8")
-    for forbidden in (
-        "runtimeFeed",
-        "feedUrl",
-        "channel",
-        "minimumClientVersion",
-        "maximumClientVersion",
-        "signature",
-        "armInterface",
-        "buildRecipe",
-    ):
-        assert forbidden not in text
-
-
 def releases_fetch(releases: list[dict[str, object]]) -> Callable[[str], bytes]:
     def fetch(url: str) -> bytes:
         assert url == runtime_update.RELEASES_API

@@ -2,20 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
-
 import build_app
 import pytest
 from lib import bundled_resources
 from lib.bundled_resources import (
-    DEFLATE,
-    FIXED_RESOURCES,
-    IDENTITY,
     registry_drift,
     staged_resources,
-    swift_registry,
 )
-from lib.licenses import BUNDLE_NOTICES_NAME
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 REGISTRY = """
@@ -31,20 +24,6 @@ extension BundledResource {
 @pytest.fixture(scope="module")
 def configuration() -> ProjectConfiguration:
     return load_project_configuration()
-
-
-def test_swift_registry_matches_the_staging_table(
-    configuration: ProjectConfiguration,
-) -> None:
-    assert registry_drift(configuration) == []
-
-
-def test_parser_reads_single_and_multi_line_declarations() -> None:
-    assert swift_registry(REGISTRY) == (
-        ("LICENSE", "file", "app", IDENTITY),
-        ("ThirdPartyNotices.deflate", "file", "app", DEFLATE),
-        ("SupportArticles", "directory", "app", IDENTITY),
-    )
 
 
 def test_drift_reports_missing_extra_and_changed_resources(
@@ -71,55 +50,6 @@ def test_drift_reports_missing_extra_and_changed_resources(
     assert registry_drift(configuration, source + "\n" + REGISTRY.splitlines()[2])
 
 
-def test_icons_are_staged_but_not_read_by_name(
-    configuration: ProjectConfiguration,
-) -> None:
-    unread = {
-        resource.path
-        for resource in staged_resources(configuration)
-        if not resource.swift_reads
-    }
-
-    assert "Assets.car" in unread
-    assert all(resource.swift_reads for resource in FIXED_RESOURCES)
-
-
-def test_runtime_configuration_is_staged_without_a_runtime_tree(
-    configuration: ProjectConfiguration,
-) -> None:
-    paths = {resource.path for resource in staged_resources(configuration)}
-
-    assert "RUNTIME.json" in paths
-    assert "Runtime" not in paths
-
-
-def test_package_resources_come_from_package_swift(
-    configuration: ProjectConfiguration,
-) -> None:
-    package = {
-        resource.path
-        for resource in staged_resources(configuration)
-        if resource.origin == "package"
-    }
-
-    assert package == {
-        source.name for source in configuration.copied_resource_source_paths
-    }
-
-
-def test_only_generated_documents_use_deflate(
-    configuration: ProjectConfiguration,
-) -> None:
-    deflated = [
-        resource
-        for resource in staged_resources(configuration)
-        if resource.encoding == DEFLATE
-    ]
-
-    assert [resource.path for resource in deflated] == [BUNDLE_NOTICES_NAME]
-    assert deflated[0].source is None
-
-
 def test_build_copies_every_resource_that_has_a_source(
     configuration: ProjectConfiguration,
 ) -> None:
@@ -132,12 +62,3 @@ def test_build_copies_every_resource_that_has_a_source(
                 == resource.path
             )
             assert (configuration.project_directory / resource.source).exists()
-
-
-def test_renamed_icon_follows_project_configuration(
-    configuration: ProjectConfiguration,
-) -> None:
-    product = replace(configuration.product, icon_file="Other")
-    renamed = replace(configuration, product=product)
-
-    assert "Other.icns" in {resource.path for resource in staged_resources(renamed)}

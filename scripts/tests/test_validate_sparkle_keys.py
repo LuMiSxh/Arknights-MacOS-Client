@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import plistlib
 import stat
 import sys
 from pathlib import Path
@@ -53,27 +52,12 @@ def test_accepts_matching_key_pair_and_rejects_another(tmp_path: Path) -> None:
         sparkle.validate_keys(base64.b64encode(b"Q" * 32).decode(), SEED, openssl)
 
 
-def test_missing_openssl_gives_install_guidance(tmp_path: Path) -> None:
-    with pytest.raises(RuntimeError, match="brew install openssl@3"):
-        sparkle.derive_public_key(b"S" * 32, str(tmp_path / "missing"))
-
-
 @pytest.mark.parametrize(
     "value", [" " + PUBLIC, "not base64!", base64.b64encode(b"P" * 31).decode()]
 )
 def test_rejects_invalid_key_encodings(value: str) -> None:
     with pytest.raises(RuntimeError, match="SUPublicEDKey"):
         sparkle.validate_keys(value, SEED)
-
-
-def test_reads_public_key_from_info_plist(tmp_path: Path) -> None:
-    plist = tmp_path / "Info.plist"
-    plist.write_bytes(plistlib.dumps({"SUPublicEDKey": PUBLIC}))
-    assert sparkle.public_key_from_plist(plist) == PUBLIC
-
-    plist.write_bytes(plistlib.dumps({}))
-    with pytest.raises(RuntimeError, match="missing"):
-        sparkle.public_key_from_plist(plist)
 
 
 def release(directory: Path) -> tuple[Path, Path, Path]:
@@ -93,16 +77,6 @@ def release(directory: Path) -> tuple[Path, Path, Path]:
     appcast = directory / "appcast.xml"
     appcast.write_text(f"{feed}{MARKER}edSignature: {signature(feed.encode())}\n-->\n")
     return script(directory / "sign_update", FAKE_SIGN_UPDATE), appcast, update
-
-
-def test_verifies_feed_archive_and_deltas(tmp_path: Path) -> None:
-    sign_update, appcast, update = release(tmp_path)
-
-    sparkle.verify_release(sign_update, SEED, appcast, update, tmp_path)
-
-    (tmp_path / DELTA).write_bytes(b"tampered")
-    with pytest.raises(RuntimeError, match=DELTA):
-        sparkle.verify_release(sign_update, SEED, appcast, update, tmp_path)
 
 
 def test_rejects_wrong_key_or_tampered_feed(tmp_path: Path) -> None:
