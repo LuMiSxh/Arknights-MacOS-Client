@@ -6,8 +6,6 @@
 With github-env, print the release-job names as NAME=value lines for GITHUB_ENV.
 """
 
-from __future__ import annotations
-
 import argparse
 from collections.abc import Callable
 

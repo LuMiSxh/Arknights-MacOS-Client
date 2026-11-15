@@ -8,8 +8,6 @@ carries a `known` flag. Known tags match an operator name or an existing manifes
 tag; unknown tags need a maintainer to verify them.
 """
 
-from __future__ import annotations
-
 import base64
 import json
 import os
@@ -24,7 +22,8 @@ from lib.wallpapers import GalleryWallpaper
 
 GEMINI_MODEL = "gemini-3.5-flash"
 GEMINI_ENDPOINT = (
-    "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}"
+    ":generateContent"
 )
 GEMINI_KEY_ENVIRONMENT = "GEMINI_API_KEY"
 GEMINI_TIMEOUT_SECONDS = 120
@@ -159,7 +158,7 @@ def build_gemini_request(
         "tools": [{"google_search": {}}],
     }
     return urllib.request.Request(
-        GEMINI_ENDPOINT.format(model=GEMINI_MODEL),
+        GEMINI_ENDPOINT,
         data=json.dumps(body).encode("utf-8"),
         headers={
             "Content-Type": "application/json",

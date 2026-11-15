@@ -15,8 +15,6 @@ the pull request body without any write. `--evaluate N` scores the suggestions
 against N already-tagged wallpapers and writes nothing.
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import re

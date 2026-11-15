@@ -11,8 +11,6 @@ prereleases unless `--include-prerelease` is set. `--check` verifies `runtime.js
 generated blocks offline and writes nothing.
 """
 
-from __future__ import annotations
-
 import argparse
 
 from lib.common import PROJECT_DIR, run_main

@@ -9,8 +9,6 @@ Each `path:silent-try:count` entry in the allowlist names a file and the exact n
 fails until its count is reviewed.
 """
 
-from __future__ import annotations
-
 import re
 from collections import Counter
 from dataclasses import dataclass

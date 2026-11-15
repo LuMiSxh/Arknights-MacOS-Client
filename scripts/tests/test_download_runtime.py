@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 
-from __future__ import annotations
-
 import hashlib
 import io
 import subprocess

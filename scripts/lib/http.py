@@ -2,8 +2,6 @@
 
 """Bounded HTTPS GET shared by the repository scripts that read remote data."""
 
-from __future__ import annotations
-
 import urllib.error
 import urllib.parse
 import urllib.request

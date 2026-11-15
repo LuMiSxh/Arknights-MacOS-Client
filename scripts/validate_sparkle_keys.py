@@ -8,8 +8,6 @@ own `sign_update --verify` then checks the archive, every delta, and the appcast
 feed, so this script never parses signatures itself.
 """
 
-from __future__ import annotations
-
 import argparse
 import base64
 import binascii

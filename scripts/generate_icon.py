@@ -3,8 +3,6 @@
 
 """Regenerate the layered app icon, README preview, and fallback assets."""
 
-from __future__ import annotations
-
 import argparse
 import shutil
 import subprocess

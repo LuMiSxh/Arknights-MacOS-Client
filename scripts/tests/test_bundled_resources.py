@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 
-from __future__ import annotations
-
 import build_app
 import pytest
 from lib import bundled_resources

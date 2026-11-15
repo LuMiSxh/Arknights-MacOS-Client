@@ -3,8 +3,6 @@
 
 """Build and verify the distributable application disk image."""
 
-from __future__ import annotations
-
 import argparse
 import sys
 import tempfile

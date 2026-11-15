@@ -2,8 +2,6 @@
 
 """Safely extract a verified Wine runtime archive for release packaging."""
 
-from __future__ import annotations
-
 import posixpath
 import tarfile
 from pathlib import Path, PurePosixPath

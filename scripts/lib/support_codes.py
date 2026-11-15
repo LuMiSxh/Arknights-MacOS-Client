@@ -6,8 +6,6 @@ The catalog is the only hand-written source. The outputs are the help pages, the
 registry, the legacy redirects, the issue-form code list, and the Swift enum.
 """
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass

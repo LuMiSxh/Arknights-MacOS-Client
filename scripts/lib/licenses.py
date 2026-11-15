@@ -12,8 +12,6 @@ appears once, and the whole file is raw-deflate compressed. The app build genera
 file; the repository does not commit it.
 """
 
-from __future__ import annotations
-
 import json
 import re
 import shutil

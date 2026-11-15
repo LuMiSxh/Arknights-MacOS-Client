@@ -3,8 +3,6 @@
 
 """Show app-delivery statistics for published GitHub releases."""
 
-from __future__ import annotations
-
 import json
 
 from lib.common import ScriptError, fail, output, require_command, run_main

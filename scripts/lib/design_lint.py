@@ -8,8 +8,6 @@ that rule. A count that differs from the scan is an error, so a new violation in
 fails. An entry that matches nothing is an error, so the list shrinks as the migration proceeds.
 """
 
-from __future__ import annotations
-
 import re
 from collections import Counter
 from dataclasses import dataclass

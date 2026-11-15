@@ -9,8 +9,6 @@ deltas to the names GitHub stores, rewrites their appcast URLs, and signs the
 feed again, because the feed signature covers those URLs.
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import os

@@ -7,8 +7,6 @@ file ends with one newline. Rewriting the whole file keeps the diff limited to t
 new entries.
 """
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from pathlib import Path

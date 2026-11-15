@@ -3,8 +3,6 @@
 
 """Build the game compatibility components bundled with the launcher."""
 
-from __future__ import annotations
-
 import argparse
 import struct
 import sys

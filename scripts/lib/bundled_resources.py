@@ -11,8 +11,6 @@ Encoding rule: a file that the build copies verbatim from the repository stays
 build generates uses `deflate` (raw deflate of UTF-8 text).
 """
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 from pathlib import Path

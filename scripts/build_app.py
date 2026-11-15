@@ -3,8 +3,6 @@
 
 """Build and ad-hoc sign the native application bundle."""
 
-from __future__ import annotations
-
 import argparse
 import base64
 import binascii

@@ -6,8 +6,6 @@ A block is `<!-- NAMESPACE:begin NAME -->` to `<!-- NAMESPACE:end NAME -->`. Eac
 generator owns one namespace, so two generators can share a document.
 """
 
-from __future__ import annotations
-
 import re
 from collections.abc import Mapping
 from pathlib import Path

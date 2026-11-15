@@ -6,8 +6,6 @@ All output goes to stderr, so scripts that print a result to stdout (paths, valu
 pipeable. Every status is a plain line: CI logs are not terminals.
 """
 
-from __future__ import annotations
-
 import os
 import sys
 

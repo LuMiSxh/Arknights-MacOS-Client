@@ -3,8 +3,6 @@
 
 """Print or validate the release notes of one version in CHANGELOG.md."""
 
-from __future__ import annotations
-
 import argparse
 import re
 import xml.etree.ElementTree as ET

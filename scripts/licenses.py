@@ -13,8 +13,6 @@ the website documents; the installed runtime archive shows its own notices. `--s
 fails on any license that is not verified and on a runtime without license files.
 """
 
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
 

@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 
-from __future__ import annotations
-
 import pytest
 from lib.common import PROJECT_DIR, ScriptError
 from lib.project_config import (

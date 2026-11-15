@@ -7,8 +7,6 @@ genuine sleeps: wall-clock timeout bounds or live-contract probes. A count that 
 scan is an error, so a new sleep in a listed file fails until its count is reviewed.
 """
 
-from __future__ import annotations
-
 import re
 from collections import Counter
 from dataclasses import dataclass

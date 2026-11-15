@@ -3,8 +3,6 @@
 
 """Sample CPU, GPU, and memory use of a running game for a fair comparison."""
 
-from __future__ import annotations
-
 import argparse
 import csv
 import json

@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 
-from __future__ import annotations
-
 from lib.common import PROJECT_DIR
 from lib.design_lint import check as check_design_lint
 from lib.sleep_lint import check as check_sleep_lint

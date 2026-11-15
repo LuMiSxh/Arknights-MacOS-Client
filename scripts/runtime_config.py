@@ -2,8 +2,6 @@
 
 """Load and validate the pinned runtime configuration."""
 
-from __future__ import annotations
-
 import json
 import os
 import re

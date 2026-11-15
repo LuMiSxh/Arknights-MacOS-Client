@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 
@@ -155,7 +153,7 @@ def test_rejects_invalid_manifests(
 ) -> None:
     config = tmp_path / "runtime.json"
     value = valid_config()
-    mutate(value)  # type: ignore[operator]
+    mutate(value)  # type: ignore[operator]  # deliberately invalid: each case mutates the manifest into a rejection
     write_config(config, value)
 
     with pytest.raises(RuntimeError, match=message):

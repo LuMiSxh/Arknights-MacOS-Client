@@ -2,8 +2,6 @@
 
 """Read and validate the project metadata used by packaging scripts."""
 
-from __future__ import annotations
-
 import json
 import plistlib
 import re

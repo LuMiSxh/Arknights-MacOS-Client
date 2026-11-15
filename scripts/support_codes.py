@@ -3,8 +3,6 @@
 
 """Generate or check every output of `support-codes.json`."""
 
-from __future__ import annotations
-
 import argparse
 
 from lib.common import PROJECT_DIR, run_main

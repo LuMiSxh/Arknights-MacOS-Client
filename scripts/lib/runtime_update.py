@@ -10,8 +10,6 @@ blocks use the marker syntax of the license generator: `<!-- runtime:begin NAME 
 `<!-- runtime:end NAME -->`.
 """
 
-from __future__ import annotations
-
 import json
 import re
 import urllib.error

@@ -3,8 +3,6 @@
 
 """Download and prepare the runtime pinned for one architecture."""
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import shutil

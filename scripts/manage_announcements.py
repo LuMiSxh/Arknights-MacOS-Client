@@ -3,8 +3,6 @@
 
 """Prepare the repository-hosted launcher announcement feed."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import re

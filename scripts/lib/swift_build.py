@@ -2,8 +2,6 @@
 
 """Build SwiftPM products with the active macOS SDK recorded in Mach-O metadata."""
 
-from __future__ import annotations
-
 import os
 
 from lib.common import output, run

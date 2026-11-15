@@ -3,8 +3,6 @@
 
 """Build the SwiftPM product with the active macOS SDK metadata."""
 
-from __future__ import annotations
-
 import argparse
 
 from lib.common import run_main
