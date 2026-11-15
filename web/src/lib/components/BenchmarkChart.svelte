@@ -33,7 +33,7 @@
 	const metric = $derived(
 		isChartMetric(spec.metric)
 			? spec.metric
-			: ('cpu_percent' as ChartMetric)
+			: ('cpu_percent' satisfies ChartMetric)
 	);
 	const title = $derived(spec.title ?? CHART_METRIC_LABELS[metric]);
 	const unit = $derived(spec.unit ?? CHART_METRIC_UNITS[metric]);

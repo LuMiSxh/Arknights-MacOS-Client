@@ -67,7 +67,7 @@ function decodeHtml(value: string): string {
 		.replace(/&#39;/g, "'");
 }
 
-export function plainTextFromHtml(html: string): string {
+function plainTextFromHtml(html: string): string {
 	return decodeHtml(
 		html
 			.replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, ' ')

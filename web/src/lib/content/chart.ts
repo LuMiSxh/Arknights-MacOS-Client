@@ -1,4 +1,4 @@
-export const CHART_METRICS = [
+const CHART_METRICS = [
 	'cpu_percent',
 	'system_cpu_percent',
 	'background_cpu_percent',
@@ -86,12 +86,12 @@ export interface ChartSpec {
 	height?: number;
 }
 
-export interface BenchmarkSample {
+interface BenchmarkSample {
 	elapsed_seconds?: number | null;
 	[key: string]: number | string | null | undefined;
 }
 
-export interface BenchmarkSummaryMetric {
+interface BenchmarkSummaryMetric {
 	mean?: number;
 	p95?: number;
 }

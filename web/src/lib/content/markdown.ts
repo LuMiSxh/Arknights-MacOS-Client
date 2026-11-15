@@ -178,7 +178,7 @@ export function renderMarkdown(
 	});
 	parser.use(gfmHeadingId());
 	resetHeadings();
-	const html = addHeadingLinks(parser.parse(input) as string);
+	const html = addHeadingLinks(parser.parse(input, { async: false }));
 	const headings = getHeadingList().map(({ level, raw, id }) => ({
 		level,
 		text: raw,

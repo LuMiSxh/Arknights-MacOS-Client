@@ -194,7 +194,7 @@ The documentation website embeds these packages. They are not part of the app.
 
 ### marked
 
-Version 18.0.11. `MIT`. [Source](https://github.com/markedjs/marked/tree/v18.0.11).
+Version 18.2.0. `MIT`. [Source](https://github.com/markedjs/marked/tree/v18.0.11).
 
 Text: `marked.txt`
 
@@ -277,7 +277,7 @@ SOFTWARE.
 
 ### mermaid
 
-Version 11.17.2. `MIT`. [Source](https://github.com/mermaid-js/mermaid/tree/mermaid@11.17.2).
+Version 12.3.0. `MIT`. [Source](https://github.com/mermaid-js/mermaid/tree/mermaid@11.17.2).
 
 Text: `mermaid.txt`
 
@@ -307,7 +307,7 @@ SOFTWARE.
 
 ### yaml
 
-Version 2.9.0. `ISC`. [Source](https://github.com/eemeli/yaml/tree/v2.9.0).
+Version 2.9.1. `ISC`. [Source](https://github.com/eemeli/yaml/tree/v2.9.0).
 
 Text: `yaml.txt`
 
@@ -329,7 +329,7 @@ THIS SOFTWARE.
 
 ### svelte
 
-Version 5.57.0. `MIT`. [Source](https://github.com/sveltejs/svelte/tree/svelte@5.57.0).
+Version 5.57.3. `MIT`. [Source](https://github.com/sveltejs/svelte/tree/svelte@5.57.0).
 
 Text: `svelte.txt`
 
@@ -345,7 +345,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ### @sveltejs/kit
 
-Version 2.70.3. `MIT`. [Source](https://github.com/sveltejs/kit/tree/@sveltejs/kit@2.70.3).
+Version 2.70.4. `MIT`. [Source](https://github.com/sveltejs/kit/tree/@sveltejs/kit@2.70.3).
 
 Text: `sveltejs-kit.txt`
 

@@ -70,12 +70,12 @@ The documentation website embeds these packages. They are not part of the app. T
 
 | Component | Version | License | Status | Text |
 | --- | --- | --- | --- | --- |
-| [marked](https://github.com/markedjs/marked/tree/v18.0.11) | 18.0.11 | `MIT` | Verified | [`marked.txt`](licenses/marked.txt) |
+| [marked](https://github.com/markedjs/marked/tree/v18.0.11) | 18.2.0 | `MIT` | Verified | [`marked.txt`](licenses/marked.txt) |
 | [marked-gfm-heading-id](https://github.com/markedjs/marked-gfm-heading-id/tree/v4.1.4) | 4.1.4 | `MIT` | Verified | [`marked-gfm-heading-id.txt`](licenses/marked-gfm-heading-id.txt) |
-| [mermaid](https://github.com/mermaid-js/mermaid/tree/mermaid@11.17.2) | 11.17.2 | `MIT` | Verified | [`mermaid.txt`](licenses/mermaid.txt) |
-| [yaml](https://github.com/eemeli/yaml/tree/v2.9.0) | 2.9.0 | `ISC` | Verified | [`yaml.txt`](licenses/yaml.txt) |
-| [svelte](https://github.com/sveltejs/svelte/tree/svelte@5.57.0) | 5.57.0 | `MIT` | Verified | [`svelte.txt`](licenses/svelte.txt) |
-| [@sveltejs/kit](https://github.com/sveltejs/kit/tree/@sveltejs/kit@2.70.3) | 2.70.3 | `MIT` | Verified | [`sveltejs-kit.txt`](licenses/sveltejs-kit.txt) |
+| [mermaid](https://github.com/mermaid-js/mermaid/tree/mermaid@11.17.2) | 12.3.0 | `MIT` | Verified | [`mermaid.txt`](licenses/mermaid.txt) |
+| [yaml](https://github.com/eemeli/yaml/tree/v2.9.0) | 2.9.1 | `ISC` | Verified | [`yaml.txt`](licenses/yaml.txt) |
+| [svelte](https://github.com/sveltejs/svelte/tree/svelte@5.57.0) | 5.57.3 | `MIT` | Verified | [`svelte.txt`](licenses/svelte.txt) |
+| [@sveltejs/kit](https://github.com/sveltejs/kit/tree/@sveltejs/kit@2.70.3) | 2.70.4 | `MIT` | Verified | [`sveltejs-kit.txt`](licenses/sveltejs-kit.txt) |
 | [anasthasia](https://github.com/LuMiSxh/Anasthasia/tree/v0.2.4) | 0.2.4 | `BSD-3-Clause` | Verified | [`anasthasia.txt`](licenses/anasthasia.txt) |
 | [uPlot](https://github.com/leeoniya/uPlot/tree/1.6.32) | 1.6.32 | `MIT` | Verified | [`uplot.txt`](licenses/uplot.txt) |
 <!-- licenses:end website -->

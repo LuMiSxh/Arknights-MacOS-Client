@@ -1,4 +1,4 @@
-export type ContentAudience = 'all' | 'developers' | 'users';
+type ContentAudience = 'all' | 'developers' | 'users';
 export type SiteRoute = `/${string}`;
 
 export interface DocumentMetadata {

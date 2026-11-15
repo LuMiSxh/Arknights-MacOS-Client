@@ -59,7 +59,7 @@ export function parseContactCallout(
 	};
 }
 
-export function contactHref(topic: string | undefined): string {
+function contactHref(topic: string | undefined): string {
 	if (!topic) return contactFormUrl;
 	return `${contactFormUrl}?${new URLSearchParams({ topic: contactTopics[topic] }).toString()}`;
 }

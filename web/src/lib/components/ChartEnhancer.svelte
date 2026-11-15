@@ -7,6 +7,15 @@
 
 	let { route }: { route: string } = $props();
 
+	function hasSrc(value: unknown): value is { src: string } {
+		return (
+			typeof value === 'object' &&
+			value !== null &&
+			'src' in value &&
+			typeof value.src === 'string'
+		);
+	}
+
 	onMount(() => {
 		let cancelled = false;
 		const instances: Array<{
@@ -30,18 +39,13 @@
 
 		function parseSpec(source: string): ChartSpec {
 			const value: unknown = JSON.parse(source);
-			if (
-				!value ||
-				typeof value !== 'object' ||
-				typeof (value as { src?: unknown }).src !== 'string'
-			) {
+			if (!hasSrc(value)) {
 				throw new Error('Chart spec needs a src string');
 			}
-			const spec = value as ChartSpec;
-			if (!spec.src.startsWith('/') || spec.src.startsWith('//')) {
+			if (!value.src.startsWith('/') || value.src.startsWith('//')) {
 				throw new Error('Chart src must be a site path');
 			}
-			return spec;
+			return value;
 		}
 
 		async function load(src: string): Promise<BenchmarkDataset> {

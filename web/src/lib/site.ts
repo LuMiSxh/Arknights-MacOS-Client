@@ -7,7 +7,7 @@ export const contactTopics: Readonly<Record<string, string>> = {
 	testing: 'Testing',
 	translation: 'Translation'
 };
-export const siteOrigin = 'https://lumisxh.github.io';
+const siteOrigin = 'https://lumisxh.github.io';
 
 export function normalizeBasePath(value: string): string {
 	if (!value || value === '/' || /^\.\.?(?:\/|$)/.test(value)) return '';

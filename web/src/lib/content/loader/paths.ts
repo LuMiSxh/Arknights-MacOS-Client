@@ -2,7 +2,7 @@ import { basename, resolve } from 'node:path';
 
 // SvelteKit bundles server modules into `.svelte-kit/output`; the working directory
 // remains anchored at either the repository or its web package during builds.
-export const repositoryRoot =
+const repositoryRoot =
 	basename(process.cwd()) === 'web'
 		? resolve(process.cwd(), '..')
 		: process.cwd();

@@ -24,8 +24,7 @@ export function load({ params }: { params: { path?: string } }) {
 	const { byRoute } = getContent();
 	const segments = route.split('/').filter(Boolean);
 	const breadcrumbs = segments.map((segment, index) => {
-		const breadcrumbRoute =
-			`/${segments.slice(0, index + 1).join('/')}/` as SiteRoute;
+		const breadcrumbRoute: SiteRoute = `/${segments.slice(0, index + 1).join('/')}/`;
 		return {
 			title:
 				byRoute.get(breadcrumbRoute)?.title ??
