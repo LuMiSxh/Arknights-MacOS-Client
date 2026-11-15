@@ -200,8 +200,6 @@ nonisolated enum UpdateCheckAnswer: CaseIterable, Sendable {
 	case noticesOnly
 	case manual
 
-	static let recommended = UpdateCheckAnswer.automatic
-
 	var checksForUpdates: Bool { self == .automatic }
 	var showsAnnouncements: Bool { self != .manual }
 
@@ -240,8 +238,6 @@ nonisolated enum DiscordPresenceAnswer: CaseIterable, Sendable {
 	case off
 	case on
 
-	static let recommended = DiscordPresenceAnswer.off
-
 	var showsDiscordPresence: Bool { self == .on }
 }
 
@@ -266,8 +262,6 @@ nonisolated enum ResetReminderAnswer: CaseIterable, Sendable {
 	case off
 	case atReset
 	case hourBefore
-
-	static let recommended = ResetReminderAnswer.off
 
 	var timing: ResetReminderTiming {
 		switch self {

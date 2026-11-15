@@ -2,7 +2,6 @@
 
 import ArknightsCore
 import ArknightsCustomization
-import ArknightsGameInstallation
 import SwiftUI
 import UniformTypeIdentifiers
 

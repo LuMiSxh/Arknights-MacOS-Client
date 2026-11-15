@@ -69,7 +69,6 @@ import ArknightsGameRuntime
 
 		func loadDeveloperArtwork() async {
 			let region = installation.region
-			guard !region.requiresCanaryPermission else { return }
 			if await customization.loadCustomArtwork() { return }
 			let artworkCache = customization.artworkCache
 			do {

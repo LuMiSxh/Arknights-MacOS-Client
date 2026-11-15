@@ -4,20 +4,6 @@ import AppKit
 import ArknightsCore
 
 extension AppIconRenderer {
-	static func createPresetIcon(
-		from avatarData: Data,
-		treatment: OperatorIconTreatment,
-		accentHue: Double?
-	) -> NSImage? {
-		guard let avatarImage = NSImage(data: avatarData) else { return nil }
-		switch treatment {
-		case .launcher:
-			return createLauncherIcon(from: avatarImage, accentHue: accentHue)
-		case .game:
-			return createGameIcon(from: avatarImage)
-		}
-	}
-
 	@concurrent
 	static func renderPresetIcons(
 		from avatarData: Data,

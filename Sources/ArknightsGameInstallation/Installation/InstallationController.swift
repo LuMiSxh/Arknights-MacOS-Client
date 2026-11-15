@@ -97,7 +97,7 @@ package final class InstallationController {
 
 	package func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard newRegion != region, lifecycle.activity == .idle else { return false }
-		guard preferences.regionAccess().allows(newRegion) else { return false }
+
 		cancelInstalledStateRefresh()
 		completionFeedback = nil
 		lifecycle.clearFailure()
@@ -138,7 +138,7 @@ package final class InstallationController {
 			selectedRegion: region,
 			selectedDirectory: installDirectory,
 			regionDirectories: Dictionary(
-				uniqueKeysWithValues: preferences.regionAccess().selectableRegions.map {
+				uniqueKeysWithValues: GameRegion.allCases.map {
 					candidate in
 					(
 						candidate,
@@ -236,7 +236,7 @@ package final class InstallationController {
 
 	private var currentSelectableRegions: Set<GameRegion> {
 		Set(
-			preferences.regionAccess().selectableRegions
+			GameRegion.allCases
 		)
 	}
 }

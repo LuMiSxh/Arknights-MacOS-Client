@@ -32,15 +32,11 @@ extension LauncherViewModel {
 		settings.onDynamicThemeChanged = { [weak self] in
 			self?.customization.updateThemeColor()
 		}
-		settings.onCanaryFeaturesChanged = { [weak self] _ in
-			self?.refreshInstalledRegionsAfterCanaryChange()
-		}
+
 		settings.onDiscordPresenceChanged = { [weak self] in
 			self?.discordPresence.activityDidChange()
 		}
-		_ = lifecycle.observeActivityChanges { [weak self] in
-			self?.scheduleCanaryRefreshIfIdle()
-		}
+
 		_ = lifecycle.observeActivityChanges { [weak self] in
 			self?.discordPresence.activityDidChange()
 		}

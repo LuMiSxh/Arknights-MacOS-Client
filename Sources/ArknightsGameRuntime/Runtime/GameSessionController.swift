@@ -30,7 +30,6 @@ package final class GameSessionController {
 	/// nil until discovery finishes or when no runtime is installed. Settings → About reads it.
 	package internal(set) var installedRuntime: InstalledRuntimeDetails?
 	package var isGameActive: Bool { lifecycle.activity.isGameActive }
-	var isGameProcessRunning: Bool { lifecycle.activity.isGameProcessRunning }
 	var activeGameSessionID: UUID? { lifecycle.activity.activeGameSessionID }
 	package var canStopGame: Bool { Self.canStopGame(for: lifecycle.activity) }
 	/// True while a launch has claimed a click but has no session yet, or a session owns the runtime.

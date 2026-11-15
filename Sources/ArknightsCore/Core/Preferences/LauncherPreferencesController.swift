@@ -110,11 +110,7 @@ package final class LauncherPreferencesController {
 		}
 	}
 	package var canaryFeaturesEnabled = Key.canaryFeaturesEnabled.defaultValue {
-		didSet {
-			persist(canaryFeaturesEnabled, for: Key.canaryFeaturesEnabled) {
-				onCanaryFeaturesChanged?(canaryFeaturesEnabled)
-			}
-		}
+		didSet { persist(canaryFeaturesEnabled, for: Key.canaryFeaturesEnabled) }
 	}
 	package var usesHardwareCursor = Key.usesHardwareCursor.defaultValue {
 		didSet { persist(usesHardwareCursor, for: Key.usesHardwareCursor) }
@@ -159,16 +155,12 @@ package final class LauncherPreferencesController {
 	package var screenshotDirectory: URL? {
 		didSet { persist { store.setScreenshotDirectory(screenshotDirectory) } }
 	}
-	package var regionAccess: RegionAccess {
-		RegionAccess(
-			canaryFeaturesEnabled: canaryFeaturesEnabled
-		)
-	}
+
 	@ObservationIgnored package var onLauncherUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored package var onGameUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored package var onAnnouncementCheckRequested: (() -> Void)?
 	@ObservationIgnored package var onDynamicThemeChanged: (() -> Void)?
-	@ObservationIgnored package var onCanaryFeaturesChanged: ((Bool) -> Void)?
+
 	@ObservationIgnored package var onDiscordPresenceChanged: (() -> Void)?
 	@ObservationIgnored package var onResetReminderChanged: (() -> Void)?
 	/// Called with the previous value after the shortcut changes, including a reset to defaults.

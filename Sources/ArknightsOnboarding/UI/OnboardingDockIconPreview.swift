@@ -3,7 +3,6 @@
 import AppKit
 import ArknightsCore
 import ArknightsCustomization
-import ArknightsGameInstallation
 import SwiftUI
 
 // Shows the launcher and game Dock icons as they are right now, so choosing an operator has a

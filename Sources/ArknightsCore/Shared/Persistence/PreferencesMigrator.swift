@@ -16,13 +16,6 @@ struct PreferencesMigrationStore {
 			defaults.removeObject(forKey: key)
 		}
 	}
-
-	// Moves a value to a new key. An existing value under the new key wins.
-	func rename(_ key: String, to newKey: String) {
-		guard let value = defaults.object(forKey: key) else { return }
-		if defaults.object(forKey: newKey) == nil { defaults.set(value, forKey: newKey) }
-		defaults.removeObject(forKey: key)
-	}
 }
 
 // Converts a launch-options blob stored before 0.7.0 into the current format. Before 0.7.0 one
@@ -114,6 +107,8 @@ package struct PreferencesMigrator {
 		Step(version: 3) {
 			$0.removeKeys(withPrefix: "dynamicThemeAccent.", keeping: "dynamicThemeAccent.v4.")
 		},
+		// The hidden Retina override is gone; Rendering and `--no-retina` cover it.
+		Step(version: 4) { $0.remove("forceDisableRetina") },
 	]
 
 	private static let versionKey = LauncherPreferencesStore.Key.preferencesMigrationVersion

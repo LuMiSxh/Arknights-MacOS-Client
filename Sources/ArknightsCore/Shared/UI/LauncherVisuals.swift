@@ -9,8 +9,6 @@ package enum LauncherVisuals {
 	/// Opaque black for surfaces that must fully hide whatever sits behind them.
 	package static let opaqueDim = Color.black
 
-	package static let overlayDim = 0.55
-
 	package static func selectedNavigationFill(for accent: Color) -> Color {
 		accent.opacity(0.13)
 	}

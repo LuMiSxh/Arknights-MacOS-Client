@@ -2,12 +2,10 @@
 
 import AppKit
 import ArknightsCore
-import ArknightsTestSupport
 import Foundation
 import Testing
 
 @testable import ArknightsCustomization
-@testable import ArknightsLauncherUI
 
 @Test
 func artworkRedirectsUseTheSelectedPublisherHostModel() throws {

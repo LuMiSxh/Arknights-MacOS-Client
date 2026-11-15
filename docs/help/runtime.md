@@ -141,9 +141,3 @@ If the Mac cannot run the selected runtime, update macOS for **ARM64 (Apple Sili
 A launcher release may not include the ARM64 download. In that case, update the launcher.
 
 If another operation runs, wait for it to finish. Then try again. If nothing helps, [report a problem](README.md#report-a-problem). Include the runtime you chose.
-
-## Canary Features
-
-The **Canary Features** panel in **Settings → Installation** appears only when a server needs it. There are no Canary features right now.
-
-Turning it off restores normal behavior. It deletes nothing. If a Canary option causes a problem, turn it off and mention it in your [report](README.md#report-a-problem).

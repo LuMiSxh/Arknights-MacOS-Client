@@ -20,11 +20,6 @@ private final class FakeScheduler: NotificationScheduling {
 	}
 
 	private let state: Mutex<State>
-	/// When set, `requestAuthorization` throws instead of answering.
-	var throwsOnRequest: Bool {
-		get { state.withLock { $0.throwsOnRequest } }
-		set { state.withLock { $0.throwsOnRequest = newValue } }
-	}
 	/// When set, the first read of pending requests waits until `releaseFirstRead` fires.
 	let firstReadReached = Signal()
 	let releaseFirstRead = Signal()
@@ -39,7 +34,6 @@ private final class FakeScheduler: NotificationScheduling {
 	}
 
 	var pending: [String: LocalNotification] { state.withLock { $0.pending } }
-	var requestCount: Int { state.withLock { $0.requestCount } }
 
 	func authorization() async -> NotificationAuthorization { state.withLock { $0.authorization } }
 

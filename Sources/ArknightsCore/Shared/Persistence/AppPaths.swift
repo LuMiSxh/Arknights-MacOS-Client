@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import ArknightsInfrastructure
 import Foundation
 
 enum AppPathsError: LocalizedError, Sendable {
@@ -58,13 +57,13 @@ package struct AppPaths: Sendable {
 	) {
 		let supportDirectory =
 			applicationSupportDirectory
-			?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+			?? Self.userDomainDirectory(.applicationSupportDirectory, fileManager)
 		let cachesDirectory =
 			cachesDirectory
-			?? fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+			?? Self.userDomainDirectory(.cachesDirectory, fileManager)
 		let libraryDirectory =
 			libraryDirectory
-			?? fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first!
+			?? Self.userDomainDirectory(.libraryDirectory, fileManager)
 
 		applicationSupportRoot = supportDirectory.appending(
 			path: Self.bundleIdentifier,
@@ -136,6 +135,16 @@ package struct AppPaths: Sendable {
 			path: "Gryphline/\(prefixName)",
 			directoryHint: .isDirectory
 		)
+	}
+
+	private static func userDomainDirectory(
+		_ directory: FileManager.SearchPathDirectory,
+		_ fileManager: FileManager
+	) -> URL {
+		guard let url = fileManager.urls(for: directory, in: .userDomainMask).first else {
+			fatalError("macOS reports no \(directory) in the user domain")
+		}
+		return url
 	}
 
 	package func runtimeDirectory(for lane: RuntimeLane) -> URL {
@@ -273,10 +282,6 @@ package struct AppPaths: Sendable {
 	package var logsDirectory: URL { logRoot }
 
 	/// Where the publisher SDK writes its logs inside the publisher's Wine prefix.
-	package func sdkLogDirectory(for publisher: GamePublisher) -> URL {
-		sdkLogDirectory(for: publisher, lane: runtimeLane)
-	}
-
 	package func sdkLogDirectory(for publisher: GamePublisher, lane: RuntimeLane) -> URL {
 		winePrefix(for: publisher, lane: lane).appending(
 			path: "drive_c/users/crossover/AppData/LocalLow/HyperGryph/Arknights/sdklogs",
@@ -287,10 +292,6 @@ package struct AppPaths: Sendable {
 	/// Where the launcher keeps copies of the publisher SDK logs.
 	package func collectedSDKLogDirectory(for publisher: GamePublisher) -> URL {
 		logsDirectory.appending(path: "sdklogs/\(publisher.rawValue)", directoryHint: .isDirectory)
-	}
-
-	var yostarLogFile: URL {
-		publisherLogFile(for: .yostar)
 	}
 
 	package var launcherLogFile: URL {
@@ -323,28 +324,9 @@ package struct AppPaths: Sendable {
 		cacheRoot.appending(path: "PresetGallery", directoryHint: .isDirectory)
 	}
 
-	var dxmtCache: URL {
-		dxmtCache(for: .global)
-	}
-
-	package func dxmtCache(for region: GameRegion) -> URL {
-		dxmtCache(for: region, lane: runtimeLane)
-	}
-
 	package func dxmtCache(for region: GameRegion, lane: RuntimeLane) -> URL {
 		winePrefix(for: region, lane: lane)
 			.appending(path: "home/.cache/dxmt", directoryHint: .isDirectory)
-	}
-
-	package func browserCacheDirectories(fileManager: FileManager = .default) throws -> [URL] {
-		try browserCacheDirectories(for: .global, fileManager: fileManager)
-	}
-
-	package func browserCacheDirectories(
-		for region: GameRegion,
-		fileManager: FileManager = .default
-	) throws -> [URL] {
-		try browserCacheDirectories(for: region, lane: runtimeLane, fileManager: fileManager)
 	}
 
 	package func browserCacheDirectories(

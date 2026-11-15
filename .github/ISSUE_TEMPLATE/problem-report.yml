@@ -81,7 +81,7 @@ body:
     id: region
     attributes:
       label: Selected region
-      description: Global, Japan, Korea, China, China (Bilibili), or Taiwan (Canary), when the problem belongs to one region.
+      description: Global, Japan, Korea, China, China (Bilibili), or Taiwan, when the problem belongs to one region.
 
   - type: dropdown
     id: prefix-history
@@ -98,7 +98,7 @@ body:
     id: runtime-settings
     attributes:
       label: Runtime settings
-      description: List non-default audio, cursor, frame rate limit, rendering, synchronization, graphics, or Canary settings.
+      description: List non-default audio, cursor, frame rate limit, rendering, synchronization, or graphics settings.
       placeholder: Defaults
 
   - type: textarea

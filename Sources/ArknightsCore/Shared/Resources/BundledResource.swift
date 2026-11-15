@@ -73,10 +73,4 @@ extension BundledResource {
 		file: "GameIconBackground.png", origin: .package)
 	package static let operatorIconFrame = BundledResource(
 		file: "OperatorIconFrame.svg", origin: .package)
-
-	static let all: [BundledResource] = [
-		.projectLicense, .changelog, .thirdPartyNotices, .runtimeConfiguration,
-		.supportArticles, .compatibility,
-		.wallpaperTags, .appIconTintSource, .gameIconBackground, .operatorIconFrame,
-	]
 }

@@ -427,7 +427,7 @@ extension WineRuntime {
 					.appending(path: library)
 				let destination = destinationDirectory.appending(path: library)
 				if fileManager.fileExists(atPath: destination.path) {
-					if try filesMatch(source, destination, fileManager: fileManager) { continue }
+					if try filesMatch(source, destination) { continue }
 					try fileManager.removeItem(at: destination)
 				}
 				try fileManager.copyItem(at: source, to: destination)
@@ -454,7 +454,7 @@ extension WineRuntime {
 					.appending(path: destination.windowsDirectory, directoryHint: .isDirectory)
 					.appending(path: library)
 				guard fileManager.fileExists(atPath: destination.path),
-					try filesMatch(source, destination, fileManager: fileManager)
+					try filesMatch(source, destination)
 				else {
 					return false
 				}
@@ -463,8 +463,7 @@ extension WineRuntime {
 		return true
 	}
 
-	private static func filesMatch(_ lhs: URL, _ rhs: URL, fileManager: FileManager) throws -> Bool
-	{
+	private static func filesMatch(_ lhs: URL, _ rhs: URL) throws -> Bool {
 		let lhsValues = try lhs.resourceValues(forKeys: [
 			.fileSizeKey, .contentModificationDateKey,
 		])

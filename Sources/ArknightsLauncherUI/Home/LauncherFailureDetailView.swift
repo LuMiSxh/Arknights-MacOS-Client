@@ -5,7 +5,6 @@ import ArknightsCore
 import SwiftUI
 
 struct LauncherFailureDetailView: View {
-	@Environment(\.launcherTheme) private var theme
 	let failure: LauncherFailurePresentation
 
 	let perform: (RecoveryAction, LauncherFailurePresentation) -> Void

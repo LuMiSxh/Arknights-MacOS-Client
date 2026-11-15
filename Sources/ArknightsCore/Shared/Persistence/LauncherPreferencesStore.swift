@@ -77,7 +77,7 @@ package struct LauncherPreferencesStore {
 			case dynamicThemeAccent = "dynamicThemeAccent.v4"
 			case homeLuminanceCache
 			case lastAppliedDynamicIconHue
-			case forceDisableRetina
+
 			case preferencesMigrationVersion
 			case onboardingCompletedSchemaVersion = "onboarding.completedSchemaVersion"
 			case onboardingCurrentStep = "onboarding.currentStep"
@@ -147,7 +147,7 @@ package struct LauncherPreferencesStore {
 		package static let dynamicThemeAccent = Name.dynamicThemeAccent.rawValue
 		package static let homeLuminanceCache = Name.homeLuminanceCache.rawValue
 		package static let lastAppliedDynamicIconHue = Name.lastAppliedDynamicIconHue.rawValue
-		static let forceDisableRetina = Name.forceDisableRetina.rawValue
+
 		static let preferencesMigrationVersion = Name.preferencesMigrationVersion.rawValue
 		package static let onboardingCompletedSchemaVersion =
 			Name.onboardingCompletedSchemaVersion.rawValue
@@ -179,7 +179,7 @@ package struct LauncherPreferencesStore {
 				RawKey(resetReminderRegions, resettable: true),
 				RawKey(seenAnnouncementIDs, resettable: false),
 				RawKey(selectedRegion, resettable: false),
-				RawKey(forceDisableRetina, resettable: false),
+
 				RawKey(preferencesMigrationVersion, resettable: false),
 				RawKey(onboardingCompletedSchemaVersion, resettable: false),
 				RawKey(onboardingCurrentStep, resettable: false),
@@ -273,14 +273,7 @@ package struct LauncherPreferencesStore {
 
 	package func selectedRegion() -> GameRegion {
 		let region = defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:))
-		guard let region, regionAccess().allows(region) else { return .global }
-		return region
-	}
-
-	package func regionAccess() -> RegionAccess {
-		RegionAccess(
-			canaryFeaturesEnabled: value(Key.canaryFeaturesEnabled)
-		)
+		return region ?? .global
 	}
 
 	package func setSelectedRegion(_ region: GameRegion) {
@@ -385,10 +378,6 @@ package struct LauncherPreferencesStore {
 		for preference in Key.all where preference.resettable {
 			defaults.removeObject(forKey: preference.name)
 		}
-	}
-
-	package func forceDisableRetina() -> Bool {
-		defaults.bool(forKey: Key.forceDisableRetina)
 	}
 
 	package func dynamicThemeAccent(for cacheKey: String) -> ThemeAccentSnapshot? {

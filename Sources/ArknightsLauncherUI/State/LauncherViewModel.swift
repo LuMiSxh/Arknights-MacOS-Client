@@ -46,8 +46,7 @@ package final class LauncherViewModel {
 	@ObservationIgnored var startupTask: Task<Bool, Never>?
 	@ObservationIgnored var startupOptions = StartupOptions()
 	@ObservationIgnored var storageMigrationFailureID: UUID?
-	@ObservationIgnored private var deferredCanaryRefreshTask: Task<Void, Never>?
-	@ObservationIgnored private var canaryRefreshPending = false
+
 	@ObservationIgnored let runtimeInstallSlot = TaskSlot()
 
 	/// True when no activity and no refresh is in flight. Shared by the real and simulated actions.
@@ -119,7 +118,7 @@ package final class LauncherViewModel {
 				log: launcherLog,
 				reuseSourceDirectories: { [preferences] region in
 					await MainActor.run {
-						preferences.regionAccess().selectableRegions
+						GameRegion.allCases
 							.filter { $0 != region }
 							.map {
 								preferences.installDirectory(
@@ -268,43 +267,8 @@ package final class LauncherViewModel {
 		log.info("Launcher \(appVersion) started")
 	}
 
-	func refreshInstalledRegionsAfterCanaryChange() {
-		#if DEBUG
-			guard !isDeveloperMode else { return }
-		#endif
-		canaryRefreshPending = true
-		scheduleCanaryRefreshIfIdle()
-	}
-
-	func scheduleCanaryRefreshIfIdle() {
-		guard
-			canaryRefreshPending, lifecycle.activity == .idle,
-			deferredCanaryRefreshTask == nil
-		else {
-			return
-		}
-		deferredCanaryRefreshTask = Task { @MainActor [weak self] in
-			await Task.yield()
-			guard let self else { return }
-			deferredCanaryRefreshTask = nil
-			guard lifecycle.activity == .idle, canaryRefreshPending else { return }
-			canaryRefreshPending = false
-			refreshInstalledRegionsNow()
-		}
-	}
-
-	private func refreshInstalledRegionsNow() {
-		if !settings.regionAccess.allows(installation.region),
-			refreshController.selectRegion(.global)
-		{
-			return
-		}
-		_ = installation.updateInstalledState()
-	}
-
 	deinit {
 		startupTask?.cancel()
-		deferredCanaryRefreshTask?.cancel()
 	}
 
 	func waitForStartup() async -> Bool {

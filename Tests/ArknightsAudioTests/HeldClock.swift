@@ -59,15 +59,4 @@ final class HeldClock: Clock, @unchecked Sendable {
 		}
 		for waiter in pending { waiter.continuation.resume() }
 	}
-
-	/// Moves time forward and ends only the sleeps whose deadline has passed.
-	func advance(by duration: Duration) {
-		let due = lock.withLock {
-			elapsed += duration
-			let now = Instant(offset: elapsed)
-			let ids = waiters.filter { $0.value.deadline <= now }.map(\.key)
-			return ids.compactMap { waiters.removeValue(forKey: $0)?.continuation }
-		}
-		for continuation in due { continuation.resume() }
-	}
 }

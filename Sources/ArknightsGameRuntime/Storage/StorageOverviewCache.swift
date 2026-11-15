@@ -63,12 +63,12 @@ struct StorageOverviewCacheEntry: Codable, Equatable {
 /// paths so that the key stays Codable.
 struct StorageOverviewCacheKey: Codable, Equatable {
 	let region: GameRegion
-	let canaryFeaturesEnabled: Bool
+
 	let installDirectories: [GameRegion: String]
 
 	init(context: StorageOverviewContext) {
 		region = context.region
-		canaryFeaturesEnabled = context.regionAccess.canaryFeaturesEnabled
+
 		installDirectories = context.persistedInstallDirectories.mapValues(\.path)
 	}
 }

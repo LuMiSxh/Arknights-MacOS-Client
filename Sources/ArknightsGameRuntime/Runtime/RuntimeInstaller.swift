@@ -95,19 +95,6 @@ package struct RuntimeInstaller: Sendable {
 		}
 	}
 
-	/// Verifies an already-downloaded archive: byte size first, then SHA-256.
-	package func verify(pin: PinnedRuntime, archiveAt url: URL) throws {
-		let size = Int64(
-			try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int ?? -1)
-		guard size == Int64(pin.sizeBytes) else {
-			throw RuntimeInstallError.sizeMismatch(
-				expected: pin.sizeBytes, actual: Int(size))
-		}
-		guard try Self.sha256Hex(at: url) == pin.sha256 else {
-			throw RuntimeInstallError.hashMismatch
-		}
-	}
-
 	// MARK: - Install sequence
 
 	private func guardPin(_ pin: PinnedRuntime) throws {

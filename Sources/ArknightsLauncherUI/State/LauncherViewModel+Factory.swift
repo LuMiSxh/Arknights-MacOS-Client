@@ -28,7 +28,9 @@ extension LauncherViewModel {
 					cachesDirectory: root.appending(path: "Caches"),
 					libraryDirectory: root.appending(path: "Library")
 				)
-				let defaults = UserDefaults(suiteName: suiteName)!
+				guard let defaults = UserDefaults(suiteName: suiteName) else {
+					fatalError("UserDefaults rejected the preview suite name \(suiteName)")
+				}
 				defaults.removePersistentDomain(forName: suiteName)
 				return LauncherViewModel(
 					paths: paths,

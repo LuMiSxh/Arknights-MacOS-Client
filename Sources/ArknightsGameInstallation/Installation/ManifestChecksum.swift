@@ -1,30 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsInfrastructure
 import CryptoKit
 import Darwin
 import Foundation
 
 enum ManifestChecksum {
-	// Honors task cancellation between buffers and reports each buffer's size through `onRead`.
-	static func checksum(
-		of url: URL,
-		expected: String,
-		onRead: ((Int) -> Void)? = nil
-	) throws -> String {
-		let descriptor = open(
-			url.path,
-			O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK
-		)
-		guard descriptor >= 0 else { throw POSIXError(.init(rawValue: errno) ?? .EIO) }
-		defer { _ = close(descriptor) }
-		return try checksum(
-			ofFileDescriptor: descriptor,
-			expected: expected,
-			onRead: onRead
-		)
-	}
 
 	static func matches(_ actual: String, expected: String) -> Bool {
 		isMD5(expected)

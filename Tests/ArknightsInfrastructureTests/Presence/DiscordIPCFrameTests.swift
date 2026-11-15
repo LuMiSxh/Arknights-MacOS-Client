@@ -64,9 +64,3 @@ struct DiscordIPCFrameTests {
 		#expect(clearArgs["activity"] is NSNull)
 	}
 }
-
-extension FixedWidthInteger {
-	fileprivate var bytes: [UInt8] {
-		withUnsafeBytes(of: self) { Array($0) }
-	}
-}

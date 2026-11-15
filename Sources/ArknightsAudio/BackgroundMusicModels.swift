@@ -191,13 +191,4 @@ package enum BackgroundMusicOperation {
 		if case .playbackChange = self { return true }
 		return false
 	}
-
-	package var token: TaskSlot.Token? {
-		switch self {
-		case .idle:
-			nil
-		case .trackChange(let token), .playbackChange(let token, _):
-			token
-		}
-	}
 }

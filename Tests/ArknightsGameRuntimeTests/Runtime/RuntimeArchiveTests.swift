@@ -33,19 +33,6 @@ private struct TarBuilder {
 		append(name: name, typeFlag: 0x35)
 	}
 
-	mutating func pax(_ records: [String: String]) {
-		var payload = ""
-		for (key, value) in records {
-			let body = "\(key)=\(value)\n"
-			var length = body.utf8.count + 2
-			while "\(length)".utf8.count + 1 + body.utf8.count != length {
-				length += 1
-			}
-			payload += "\(length) \(body)"
-		}
-		append(name: "././@PaxHeader", typeFlag: 0x78, content: Data(payload.utf8))
-	}
-
 	mutating func finish() {
 		data.append(Data(repeating: 0, count: 1_024))
 	}

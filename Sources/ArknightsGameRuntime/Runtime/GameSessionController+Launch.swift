@@ -30,7 +30,7 @@ extension GameSessionController {
 			disabledRuntimePatches: settings.disabledRuntimePatches,
 			usesDebugLogging: settings.debugLoggingEnabled,
 			usesHardwareCursor: settings.usesHardwareCursor,
-			forceDisableRetina: preferences.forceDisableRetina(),
+
 			requestedAt: .now
 		)
 		// The session does not exist until the preflight finishes. This marker keeps a second

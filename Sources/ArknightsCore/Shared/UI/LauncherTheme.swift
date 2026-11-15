@@ -25,8 +25,6 @@ package struct LauncherTheme: Equatable, Sendable {
 	package let trackStroke: Color
 	/// Neutral row selection behind the accent tick.
 	package let neutralFill: Color
-	package let chipFill: Color
-	package let fieldFill: Color
 
 	package let textPrimary: Color
 	package let textSecondary: Color
@@ -36,8 +34,6 @@ package struct LauncherTheme: Equatable, Sendable {
 	package let accentFill: Color
 	/// Text and icons on surfaces.
 	package let accentInk: Color
-	/// Text on `accentFill`. Always dark, so it stays readable on the light fill.
-	package let onAccent: Color
 	package let accentGlassTint: Color
 	package let accentGlassStroke: Color
 	/// Footer pill fill. Light mode uses a frosted white so dark accent ink stays readable on it.
@@ -126,8 +122,6 @@ package struct LauncherTheme: Equatable, Sendable {
 		trackFill = ink(0.06, 0.05)
 		trackStroke = ink(0.08 * edge, 0.06 * edge)
 		neutralFill = ink(0.08, 0.06)
-		chipFill = ink(0.10, 0.06)
-		fieldFill = ink(0.06, 0.04)
 
 		textPrimary = primaryText
 		textSecondary = primaryText.opacity(secondaryOpacity)
@@ -141,7 +135,6 @@ package struct LauncherTheme: Equatable, Sendable {
 				hue: hue, saturation: saturation,
 				brightness: Self.lightInkBrightness(
 					hue: hue, saturation: saturation, from: brightness))
-		onAccent = tone(hue: hue, saturation: 0.30, brightness: 0.15)
 		accentGlassTint = fill.opacity(Glass.tintOpacity)
 		accentGlassStroke = fill.opacity(Glass.strokeOpacity)
 		footerGlassTint = isDark ? fill.opacity(Glass.tintOpacity) : Color.white.opacity(0.80)

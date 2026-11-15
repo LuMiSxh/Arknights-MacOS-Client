@@ -77,14 +77,6 @@ private struct VuplexFixture {
 		)
 	}
 
-	var directory: URL { helper.deletingLastPathComponent() }
-
-	func compatibility(shimData: Data) throws -> VuplexCompatibility {
-		let shim = root.appending(path: "shim.exe")
-		try shimData.write(to: shim)
-		return VuplexCompatibility(shimURL: shim)
-	}
-
 	func remove() {
 		temporary.remove()
 	}

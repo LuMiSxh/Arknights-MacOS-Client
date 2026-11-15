@@ -12,6 +12,8 @@ struct ChildProcessAlreadyStarted: Error, Sendable {}
 // Without an output pipe, cancellation and timeout resume the caller at once. With one, they only
 // terminate the child; the caller resumes after the child exits and its output ends, so the child
 // is reaped before the error is reported.
+// `@unchecked`: `Process` and `Pipe` are not Sendable; they are configured in `init` and driven by
+// one start path, and all other mutable state lives in the `state` Mutex.
 package final class ChildProcess: @unchecked Sendable {
 	package enum Output {
 		/// Writes both output streams to `handle`.

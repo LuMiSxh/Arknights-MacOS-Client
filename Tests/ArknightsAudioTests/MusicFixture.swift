@@ -31,7 +31,6 @@ final class SubscriptionRecorder: Sendable {
 	let cancellation = Signal()
 
 	var active: Int { started.withLock { $0 } }
-	var terminated: Int { cancelled.withLock { $0 } }
 
 	func didSubscribe(_ subscription: any Subscription) {
 		started.withLock { $0 += 1 }
@@ -59,12 +58,8 @@ final class FakeMusicPlayer {
 	/// Makes `nextVideo` and `previousVideo` throw.
 	var failsNavigation = false
 	private let subscriptions = SubscriptionRecorder()
-	/// Fires when an event subscription is cancelled.
-	var subscriptionCancelled: Signal { subscriptions.cancellation }
 	/// Event subscriptions that are started and not yet cancelled.
 	var activeSubscriptions: Int { subscriptions.active }
-	/// Event subscriptions that were cancelled.
-	var terminatedStreams: Int { subscriptions.terminated }
 	/// What `getPlaybackMetadata` returns; it throws while nil.
 	var metadata: YouTubePlayer.PlaybackMetadata?
 	/// What `getPlaybackState` returns.
@@ -89,18 +84,6 @@ final class FakeMusicPlayer {
 	}
 
 	struct Unsupported: Error {}
-
-	func releasePlaylist() {
-		gate?.resume()
-		gate = nil
-		isHoldingPlaylist = false
-	}
-
-	func releaseMetadata() {
-		metadataGate?.resume()
-		metadataGate = nil
-		isHoldingMetadata = false
-	}
 
 	func count(_ command: String) -> Int {
 		commands.filter { $0 == command }.count
@@ -165,7 +148,6 @@ final class FakeMusicPlayer {
 @MainActor
 struct MusicFixture {
 	let fake = FakeMusicPlayer()
-	let clock: any Clock<Duration>
 	let controller: BackgroundMusicController
 	private let temporary: TemporaryDirectory
 	private let defaults: UserDefaults
@@ -175,7 +157,6 @@ struct MusicFixture {
 		clock: any Clock<Duration> = RecordingClock(),
 		randomIndex: @escaping (Int) -> Int = { _ in 0 }
 	) throws {
-		self.clock = clock
 		temporary = try TemporaryDirectory("BackgroundMusicControllerTests")
 		(defaults, suiteName) = makeIsolatedDefaults("BackgroundMusicControllerTests")
 		let paths = AppPaths(

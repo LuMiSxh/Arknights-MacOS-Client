@@ -85,6 +85,7 @@ package struct DiscordIPCButton: Encodable, Equatable, Sendable {
 ///
 /// One instance owns one socket. The caller creates a new connection for each attempt. State is
 /// confined to `queue`; async methods return through checked continuations resumed on that queue.
+// `@unchecked`: all mutable state below is read and written only on `queue` (serial).
 package final class DiscordIPCConnection: @unchecked Sendable {
 	private let queue = DispatchQueue(label: "com.lumisxh.arknights-client.discord-ipc")
 	private let maximumPayloadBytes: Int

@@ -139,6 +139,7 @@ struct WinePrefixLibraryDeduplicator: Sendable {
 			let lhsCount = try Self.fill(lhsFD, &lhsBuffer)
 			let rhsCount = try Self.fill(rhsFD, &rhsBuffer)
 			guard lhsCount == rhsCount else { return false }
+			if lhsCount == 0 { return true }
 			let equal = lhsBuffer.withUnsafeBufferPointer { lhsPointer in
 				rhsBuffer.withUnsafeBufferPointer { rhsPointer in
 					memcmp(lhsPointer.baseAddress!, rhsPointer.baseAddress!, lhsCount) == 0
@@ -154,7 +155,8 @@ struct WinePrefixLibraryDeduplicator: Sendable {
 		var filled = 0
 		while filled < buffer.count {
 			let count = buffer.withUnsafeMutableBytes { raw in
-				read(fd, raw.baseAddress!.advanced(by: filled), raw.count - filled)
+				guard let base = raw.baseAddress else { return 0 }
+				return read(fd, base.advanced(by: filled), raw.count - filled)
 			}
 			if count < 0 {
 				if errno == EINTR { continue }

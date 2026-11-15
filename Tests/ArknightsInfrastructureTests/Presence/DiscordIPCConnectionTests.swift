@@ -38,8 +38,6 @@ struct DiscordIPCConnectionTests {
 
 private enum SocketPairError: Error {
 	case posix(Int32)
-	case timedOut
-	case closed
 }
 
 /// Two connected AF_UNIX descriptors. The connection end is non-blocking, as a real socket is.

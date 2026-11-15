@@ -24,7 +24,7 @@ struct OnboardingRegionView: View {
 		) {
 			OnboardingQuestion(
 				question: "Server",
-				answers: preferences.regionAccess.selectableRegions.map(
+				answers: GameRegion.allCases.map(
 					Self.regionAnswer),
 				selection: regionBinding,
 				isDisabled: !canSwitchRegion

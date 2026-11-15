@@ -42,7 +42,7 @@ struct StorageUsage: Equatable, Identifiable, Sendable {
 
 package struct StorageOverviewContext: Equatable, Sendable {
 	package let region: GameRegion
-	package let regionAccess: RegionAccess
+
 	let persistedInstallDirectories: [GameRegion: URL]
 }
 
@@ -54,7 +54,7 @@ enum StorageOverviewResolver {
 	) -> StorageOverviewContext {
 		StorageOverviewContext(
 			region: region,
-			regionAccess: preferences.regionAccess(),
+
 			persistedInstallDirectories: preferences.persistedInstallDirectories()
 		)
 	}
@@ -64,7 +64,7 @@ enum StorageOverviewResolver {
 		context: StorageOverviewContext,
 		fileManager: FileManager = .default
 	) throws -> [StorageLocation] {
-		let games = context.regionAccess.selectableRegions.map { region in
+		let games = GameRegion.allCases.map { region in
 			StorageLocation(
 				category: .game(region),
 				urls: [
@@ -106,7 +106,7 @@ enum StorageOverviewResolver {
 	}
 
 	static func placeholderLocations(context: StorageOverviewContext) -> [StorageLocation] {
-		let games = context.regionAccess.selectableRegions.map {
+		let games = GameRegion.allCases.map {
 			StorageLocation(category: .game($0), urls: [])
 		}
 		return games + [

@@ -30,13 +30,12 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 		renderingMode: GameRenderingMode,
 		backingScaleFactor: CGFloat,
 		arguments: [String] = ProcessInfo.processInfo.arguments,
-		forceDisabled: Bool = false,
 		metalFXSupported: Bool = false
 	) -> WineDisplayConfiguration {
 		return WineDisplayConfiguration(
 			backingScaleFactor: backingScaleFactor,
 			renderingMode: renderingMode,
-			forceDisabled: forceDisabled || arguments.contains("--no-retina"),
+			forceDisabled: arguments.contains("--no-retina"),
 			metalFXSupported: metalFXSupported
 		)
 	}

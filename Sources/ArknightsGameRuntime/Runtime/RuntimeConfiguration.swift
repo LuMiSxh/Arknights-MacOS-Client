@@ -87,11 +87,6 @@ package struct RuntimeConfiguration: Decodable, Sendable {
 	let prefixRevision: Int
 	let lanes: Lanes
 
-	package init(contentsOf url: URL) throws {
-		let data = try Data(contentsOf: url)
-		self = try JSONDecoder().decode(Self.self, from: data)
-	}
-
 	package static func bundled() throws -> RuntimeConfiguration {
 		let data = try BundledResource.runtimeConfiguration.data()
 		return try JSONDecoder().decode(Self.self, from: data)

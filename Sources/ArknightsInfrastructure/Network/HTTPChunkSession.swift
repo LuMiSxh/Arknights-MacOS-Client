@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import Foundation
+import Synchronization
 
 package enum HTTPTransportError: Error, Sendable {
 	case invalidResponse(URL?)
@@ -46,6 +47,8 @@ package struct HTTPChunkStream: Sendable {
 ///
 /// `AsyncThrowingStream` has no backpressure, so each stream counts its unacknowledged bytes
 /// and suspends its task at the ceiling, letting TCP flow control slow the server down.
+// `@unchecked` because NSObject cannot conform checked: `subscribers` is guarded by its Mutex, and
+// `session` is assigned once in `init` before the instance escapes.
 package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Sendable {
 	private typealias Continuation = AsyncThrowingStream<HTTPChunkEvent, any Error>.Continuation
 
@@ -60,8 +63,7 @@ package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @uncheck
 	private let redirectValidator: (@Sendable (URL) -> Bool)?
 	private let maximumBufferedBytes: Int
 	private let delegateQueue: OperationQueue
-	private let lock = NSLock()
-	private var subscribers: [Int: Subscriber] = [:]
+	private let subscribers = Mutex<[Int: Subscriber]>([:])
 	private var session: URLSession!
 
 	package init(
@@ -95,8 +97,8 @@ package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @uncheck
 		)
 		let task = session.dataTask(with: request)
 		let identifier = task.taskIdentifier
-		lock.withLock {
-			subscribers[identifier] = Subscriber(
+		subscribers.withLock {
+			$0[identifier] = Subscriber(
 				continuation: continuation,
 				task: task,
 				redirectValidator: redirectValidator ?? self.redirectValidator
@@ -142,7 +144,7 @@ package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @uncheck
 		completionHandler: @escaping @Sendable (URLRequest?) -> Void
 	) {
 		guard let url = request.url,
-			let subscriber = lock.withLock({ subscribers[task.taskIdentifier] }),
+			let subscriber = subscribers.withLock({ $0[task.taskIdentifier] }),
 			subscriber.redirectValidator?(url) != false
 		else {
 			completionHandler(nil)
@@ -162,7 +164,7 @@ package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @uncheck
 		dataTask: URLSessionDataTask,
 		didReceive data: Data
 	) {
-		let continuation = lock.withLock { () -> Continuation? in
+		let continuation = subscribers.withLock { subscribers -> Continuation? in
 			guard var subscriber = subscribers[dataTask.taskIdentifier] else { return nil }
 			subscriber.bufferedBytes += data.count
 			if !subscriber.isSuspended, subscriber.bufferedBytes >= maximumBufferedBytes {
@@ -177,7 +179,7 @@ package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @uncheck
 
 	// Resume at half the ceiling so a steady download does not suspend once per chunk.
 	private func acknowledge(_ byteCount: Int, taskIdentifier: Int) {
-		lock.withLock {
+		subscribers.withLock { subscribers in
 			guard var subscriber = subscribers[taskIdentifier] else { return }
 			subscriber.bufferedBytes = max(0, subscriber.bufferedBytes - byteCount)
 			if subscriber.isSuspended, subscriber.bufferedBytes <= maximumBufferedBytes / 2 {
@@ -197,17 +199,17 @@ package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @uncheck
 	}
 
 	private func continuation(for taskIdentifier: Int) -> Continuation? {
-		lock.withLock { subscribers[taskIdentifier]?.continuation }
+		subscribers.withLock { $0[taskIdentifier]?.continuation }
 	}
 
 	private func removeSubscriber(for taskIdentifier: Int?) {
 		guard let taskIdentifier else { return }
-		_ = lock.withLock { subscribers.removeValue(forKey: taskIdentifier) }
+		_ = subscribers.withLock { $0.removeValue(forKey: taskIdentifier) }
 	}
 
 	private func finish(taskIdentifier: Int, throwing error: (any Error)?) {
-		let continuation = lock.withLock {
-			subscribers.removeValue(forKey: taskIdentifier)?.continuation
+		let continuation = subscribers.withLock {
+			$0.removeValue(forKey: taskIdentifier)?.continuation
 		}
 		if let error {
 			continuation?.finish(throwing: error)

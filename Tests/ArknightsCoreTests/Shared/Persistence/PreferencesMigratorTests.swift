@@ -46,6 +46,18 @@ struct PreferencesMigratorTests {
 		#expect(store.dynamicThemeAccent(for: "current-cache")?.hue == 0.6)
 	}
 
+	@Test
+	func retiredRetinaOverrideIsRemoved() {
+		let (defaults, suiteName) = makeIsolatedDefaults("PreferencesMigratorTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(3, forKey: LauncherPreferencesStore.Key.preferencesMigrationVersion)
+		defaults.set(true, forKey: "forceDisableRetina")
+
+		PreferencesMigrator().migrate(defaults)
+
+		#expect(defaults.object(forKey: "forceDisableRetina") == nil)
+	}
+
 	@Test(arguments: [
 		// Retina on: the stored resolution was in pixels, so the window is half its size.
 		(

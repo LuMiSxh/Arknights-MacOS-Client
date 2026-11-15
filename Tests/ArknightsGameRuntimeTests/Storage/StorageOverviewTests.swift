@@ -47,17 +47,6 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 		locations.first { $0.category == .browserCache }?.urls.first?.resolvingSymlinksInPath()
 			.path == browserCache.resolvingSymlinksInPath().path
 	)
-
-	let filtered = try StorageOverviewResolver.locations(
-		paths: paths,
-		context: StorageOverviewContext(
-			region: .global,
-			regionAccess: RegionAccess(canaryFeaturesEnabled: false),
-			persistedInstallDirectories: [:]
-		)
-	)
-	#expect(filtered.contains { $0.category == .game(.taiwan) })
-	#expect(filtered.contains { $0.category == .game(.china) })
 }
 
 @Test

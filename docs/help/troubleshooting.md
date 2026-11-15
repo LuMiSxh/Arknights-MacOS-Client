@@ -94,13 +94,7 @@ open "/Applications/Arknights Client.app" --args --no-retina
 - `--graphics-diagnostics` writes detailed graphics logs.
 - `--no-retina` starts the game at 1× scaling. It fixes a wrong window size on a Retina display.
 
-To keep 1× scaling:
-
-```sh
-defaults write com.lumisxh.arknights-client forceDisableRetina -bool YES
-```
-
-Replace `YES` with `NO` to restore the default. Log files are in [Storage](storage.md#logs).
+To keep 1× scaling, choose **Standard** under **Rendering**. Log files are in [Storage](storage.md#logs).
 
 ## Runtime patches
 

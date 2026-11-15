@@ -70,8 +70,4 @@ private struct Fixture {
 			calendar: calendar
 		)
 	}
-
-	func date(_ year: Int, _ month: Int, _ day: Int, hour: Int = 0) -> Date {
-		calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour))!
-	}
 }

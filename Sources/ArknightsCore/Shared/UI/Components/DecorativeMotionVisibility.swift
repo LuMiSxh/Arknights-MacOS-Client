@@ -34,8 +34,6 @@ package final class DecorativeMotionVisibility {
 		}
 	}
 
-	var isObserving: Bool { !observers.isEmpty }
-
 	func attach(to window: NSWindow) {
 		guard self.window !== window else {
 			refreshWindowState()

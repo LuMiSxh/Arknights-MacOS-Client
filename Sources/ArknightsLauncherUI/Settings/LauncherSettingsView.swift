@@ -129,7 +129,7 @@ struct LauncherSettingsView: View {
 					case .statistics:
 						PlaytimeStatisticsPage(
 							controller: playtimeStatistics,
-							regions: settings.regionAccess.selectableRegions.filter {
+							regions: GameRegion.allCases.filter {
 								installation.isRegionInstalled($0)
 							}
 						)

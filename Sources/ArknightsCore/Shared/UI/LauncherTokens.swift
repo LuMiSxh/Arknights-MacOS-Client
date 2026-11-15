@@ -49,7 +49,6 @@ package enum LauncherTokens {
 		package static let control: CGFloat = 10
 		package static let panel: CGFloat = 16
 		static let hudPill: CGFloat = 22
-		package static let modal: CGFloat = 24
 		package static let railRow: CGFloat = 8
 		/// Default corner radius for the modal surface kind.
 		static let glassModal: CGFloat = 20
@@ -60,9 +59,6 @@ package enum LauncherTokens {
 	/// Button and field insets. Buttons and text fields share the standard horizontal and
 	/// vertical padding.
 	package enum ControlPadding {
-		package static let horizontal: CGFloat = 12
-		package static let vertical: CGFloat = 6
-		package static let largeHorizontal: CGFloat = 16
 		package static let segmentTrack: CGFloat = 4
 		package static let segmentHorizontal: CGFloat = 10
 		package static let segmentVertical: CGFloat = 4

@@ -7,7 +7,7 @@ import SwiftUI
 
 struct InstallationSettingsPage: View {
 	@Environment(\.launcherTheme) var theme
-	private static let canaryFeaturesTitle = "Canary Features"
+
 	@Bindable var settings: LauncherPreferencesController
 	let installation: InstallationController
 	let gameSession: GameSessionController
@@ -32,7 +32,7 @@ struct InstallationSettingsPage: View {
 				) {
 					GlassMenuPicker(
 						selection: regionBinding,
-						options: settings.regionAccess.selectableRegions.map {
+						options: GameRegion.allCases.map {
 							($0, $0.displayName)
 						},
 						isDisabled: lifecycle.activity != .idle
@@ -89,27 +89,6 @@ struct InstallationSettingsPage: View {
 				}
 				if !installation.isInstalled {
 					SettingsFootnote("Install the game before you repair it.")
-				}
-			}
-
-			// Shown only while a server needs Canary access. See RegionAccess.
-			if GameRegion.allCases.contains(where: \.requiresCanaryPermission) {
-				SettingsPanel(
-					title: Self.canaryFeaturesTitle,
-					tone: .warning
-				) {
-					SettingsActionRow(
-						title: Self.canaryFeaturesTitle,
-						detail:
-							"Try experimental features before they become stable."
-					) {
-						SettingsToggle(
-							Self.canaryFeaturesTitle,
-							isOn: $settings.canaryFeaturesEnabled,
-							tint: theme.warning
-						)
-						.disabled(lifecycle.activity != .idle)
-					}
 				}
 			}
 

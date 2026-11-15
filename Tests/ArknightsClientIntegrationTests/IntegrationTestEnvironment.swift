@@ -5,8 +5,6 @@ import ArknightsTestSupport
 import Foundation
 import Testing
 
-@testable import ArknightsLauncherUI
-
 @MainActor
 struct IntegrationTestEnvironment {
 	let root: URL

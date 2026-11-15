@@ -195,7 +195,6 @@ package struct GameDisplayPlan: Equatable, Sendable {
 	package let renderSize: GameDisplaySize?
 	/// Game pixels per macOS point; the in-game resolution is a window size times this value.
 	package let gamePixelsPerPoint: Int
-	let backingScale: Int
 	package let scaling: Scaling
 
 	package init(
@@ -203,7 +202,6 @@ package struct GameDisplayPlan: Equatable, Sendable {
 		fullscreenDisplay: GameFullscreenDisplay? = nil
 	) {
 		let backingScale = max(1, Int(backingScaleFactor.rounded()))
-		self.backingScale = backingScale
 		switch (backingScale, options.renderingMode) {
 		case (1, _), (_, .retina): scaling = .native
 		case (_, .metalFX): scaling = .metalFX

@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsCustomization
 import ArknightsTestSupport
 import Foundation
 import Testing
-
-@testable import ArknightsLauncherUI
 
 @MainActor
 struct LauncherLifecycleStoreTests {

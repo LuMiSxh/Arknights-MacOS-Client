@@ -95,16 +95,9 @@ import CoreGraphics
 			}
 		}
 
-		var selectableRegions: [GameRegion] {
-			RegionAccess(canaryFeaturesEnabled: canaryFeaturesEnabled).selectableRegions
-		}
-
 		/// Removes combinations the launcher cannot reach, so controllers never see them.
 		func normalized() -> Self {
 			var normalized = self
-			let selectable = Set(selectableRegions)
-			if !selectable.contains(selectedRegion) { normalized.selectedRegion = .global }
-			normalized.installedRegions.formIntersection(selectable)
 			if lifecycle == .paused { normalized.hasPartialDownload = true }
 			if lifecycle == .launching || lifecycle == .running {
 				normalized.isInstalled = true

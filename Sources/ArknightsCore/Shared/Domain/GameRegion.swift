@@ -32,25 +32,7 @@ package enum GameClientVariant: String, Codable, Sendable {
 struct GameClientProfile: Sendable {
 	let publisher: GamePublisher
 	let variant: GameClientVariant
-	let requiresCanaryPermission: Bool
 	let requiresACEWarning: Bool
-}
-
-/// The Canary permission that exposes extra regions. This is the single source of truth for
-/// whether a region may be selected, installed, listed, or launched. No region needs it now.
-package struct RegionAccess: Equatable, Sendable {
-	package var canaryFeaturesEnabled: Bool
-
-	package init(canaryFeaturesEnabled: Bool) {
-		self.canaryFeaturesEnabled = canaryFeaturesEnabled
-	}
-
-	package var selectableRegions: [GameRegion] { GameRegion.allCases.filter(allows) }
-
-	package func allows(_ region: GameRegion) -> Bool {
-		guard region.requiresCanaryPermission else { return true }
-		return canaryFeaturesEnabled
-	}
 }
 
 package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
@@ -111,28 +93,24 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 			GameClientProfile(
 				publisher: .yostar,
 				variant: .standard,
-				requiresCanaryPermission: false,
 				requiresACEWarning: false
 			)
 		case .taiwan:
 			GameClientProfile(
 				publisher: .gryphline,
 				variant: .standard,
-				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
 		case .china:
 			GameClientProfile(
 				publisher: .hypergryph,
 				variant: .standard,
-				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
 		case .chinaBilibili:
 			GameClientProfile(
 				publisher: .hypergryph,
 				variant: .bilibili,
-				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
 		}
@@ -149,8 +127,6 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 	}
 
 	package var clientVariant: GameClientVariant { clientProfile.variant }
-
-	package var requiresCanaryPermission: Bool { clientProfile.requiresCanaryPermission }
 
 	/// China servers sign in through the embedded CEF window. Taiwan uses the default browser.
 	package var usesEmbeddedLoginWindow: Bool {

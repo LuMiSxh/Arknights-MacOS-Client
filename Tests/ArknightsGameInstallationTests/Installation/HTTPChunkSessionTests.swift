@@ -5,7 +5,6 @@ import ArknightsTestSupport
 import Foundation
 import Testing
 
-@testable import ArknightsGameInstallation
 @testable import ArknightsInfrastructure
 
 @Suite(.serialized)

@@ -24,9 +24,7 @@ import ArknightsCore
 
 		func selectRegion(_ newRegion: GameRegion) {
 			model.updateDeveloperSimulation { simulation in
-				if simulation.selectableRegions.contains(newRegion) {
-					simulation.selectedRegion = newRegion
-				}
+				simulation.selectedRegion = newRegion
 			}
 		}
 
@@ -137,7 +135,6 @@ import ArknightsCore
 			guard var simulation,
 				canRequestDockLaunch,
 				model.intelTranslation.allowsWine,
-				simulation.selectableRegions.contains(region),
 				simulation.installedRegions.contains(region),
 				simulation.isInstalled,
 				!simulation.hasPartialDownload,

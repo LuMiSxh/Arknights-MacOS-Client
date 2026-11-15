@@ -18,7 +18,7 @@ struct LaunchRequest {
 	let disabledRuntimePatches: Set<RuntimePatch>
 	let usesDebugLogging: Bool
 	let usesHardwareCursor: Bool
-	let forceDisableRetina: Bool
+
 	let requestedAt: Date
 }
 
@@ -227,7 +227,7 @@ extension GameSessionController {
 		let displayConfiguration = WineDisplayConfiguration.current(
 			renderingMode: request.options.renderingMode,
 			backingScaleFactor: screen?.screen.backingScaleFactor ?? 1,
-			forceDisabled: request.forceDisableRetina,
+
 			metalFXSupported: features.metalFXSpatialUpscaling
 		)
 		let environment = RuntimePatchEnvironment.environment(

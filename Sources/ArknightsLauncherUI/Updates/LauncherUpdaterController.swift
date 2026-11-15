@@ -103,14 +103,6 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		updater.checkForUpdateInformation()
 	}
 
-	#if DEBUG
-		func beginProbeForTesting(
-			completion: @escaping (LauncherUpdateCheckOutcome) -> Void
-		) {
-			check = .probe(.current, completion: completion)
-		}
-	#endif
-
 	private func startIfNeeded(showError: Bool) -> Bool {
 		guard !hasStarted else { return true }
 		do {

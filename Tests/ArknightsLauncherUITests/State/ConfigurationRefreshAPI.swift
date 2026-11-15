@@ -4,7 +4,6 @@ import ArknightsCore
 import Foundation
 
 @testable import ArknightsGameInstallation
-@testable import ArknightsLauncherUI
 
 actor ConfigurationRefreshAPI: LauncherAPIProviding {
 	enum Outcome: Equatable, Sendable {
@@ -13,14 +12,12 @@ actor ConfigurationRefreshAPI: LauncherAPIProviding {
 	}
 
 	private var outcomes: [Outcome]
-	private var regions: [GameRegion] = []
 
 	init(outcomes: [Outcome]) {
 		self.outcomes = outcomes
 	}
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
-		regions.append(region)
 		let outcome = outcomes.isEmpty ? .success : outcomes.removeFirst()
 		guard outcome == .success else {
 			throw ContextualLauncherError(
@@ -53,8 +50,6 @@ actor ConfigurationRefreshAPI: LauncherAPIProviding {
 	) async throws -> GameManifest {
 		throw CancellationError()
 	}
-
-	func requestedRegions() -> [GameRegion] { regions }
 }
 
 private let testConfiguration = GameConfiguration(

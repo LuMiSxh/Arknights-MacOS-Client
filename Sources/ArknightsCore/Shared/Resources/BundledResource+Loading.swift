@@ -94,17 +94,4 @@ extension BundledResource {
 		}
 		return text
 	}
-
-	package func decode<Value: Decodable>(
-		_ type: Value.Type = Value.self,
-		using decoder: JSONDecoder = JSONDecoder(),
-		in bundle: Bundle? = nil
-	) throws -> Value {
-		let data = try data(in: bundle)
-		do {
-			return try decoder.decode(type, from: data)
-		} catch {
-			throw BundledResourceError.corrupt(path: path, reason: String(describing: error))
-		}
-	}
 }

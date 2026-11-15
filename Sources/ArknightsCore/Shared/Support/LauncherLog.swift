@@ -60,11 +60,6 @@ package final class LauncherLog: Sendable {
 		await perform { $0.prepare() }
 	}
 
-	/// Returns once every earlier entry has been written.
-	package func flush() async {
-		await perform { _ in }
-	}
-
 	private func enqueue(_ level: Level, _ message: String) {
 		let date = Date()
 		queue.async { [writer] in writer.write(level, message, at: date) }
@@ -85,6 +80,7 @@ package final class LauncherLog: Sendable {
 /// Keeps one `O_APPEND` descriptor and the file size in memory. It reopens only when the file
 /// rotates, when the path no longer names the open file (the user cleared the logs), or after
 /// a failed write.
+// `@unchecked`: every stored mutable member is touched only on `LauncherLog.queue` (serial).
 private final class LauncherLogWriter: @unchecked Sendable {
 	private let fileURL: URL
 	private let fileManager = FileManager.default
@@ -215,9 +211,9 @@ private final class LauncherLogWriter: @unchecked Sendable {
 	private func append(_ bytes: [UInt8]) throws {
 		var offset = 0
 		try bytes.withUnsafeBytes { buffer in
+			guard let base = buffer.baseAddress else { return }
 			while offset < buffer.count {
-				let written = Darwin.write(
-					descriptor, buffer.baseAddress! + offset, buffer.count - offset)
+				let written = Darwin.write(descriptor, base + offset, buffer.count - offset)
 				if written < 0 {
 					if errno == EINTR { continue }
 					throw LogFileError.cannotWrite(errno: errno)
