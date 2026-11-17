@@ -162,7 +162,7 @@ enum BackgroundMusicFailure: Sendable {
 /// The value types the background-music controller passes between its track, playback, and
 /// fade paths.
 
-package enum PlaybackIntent {
+enum PlaybackIntent {
 	case playing
 	case paused
 }
@@ -177,7 +177,7 @@ struct BackgroundMusicPlaybackExpectation {
 	let intent: PlaybackIntent
 }
 
-package enum BackgroundMusicOperation {
+enum BackgroundMusicOperation {
 	case idle
 	case trackChange(TaskSlot.Token)
 	case playbackChange(TaskSlot.Token, PlaybackIntent)

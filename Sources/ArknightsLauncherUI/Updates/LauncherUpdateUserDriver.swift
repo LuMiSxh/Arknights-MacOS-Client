@@ -301,7 +301,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func recordAvailableUpdate(_ item: SUAppcastItem) {
 		setUpdateDetails(item)
 	}
-	func recordNoUpdate(_ error: Error) {
+	func recordNoUpdate() {
 		if phase == .hidden || phase == .checking { phase = .noUpdate }
 	}
 	func recordAvailabilityError(_ error: Error) {

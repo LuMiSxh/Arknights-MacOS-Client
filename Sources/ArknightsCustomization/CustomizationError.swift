@@ -3,7 +3,7 @@
 import ArknightsCore
 import Foundation
 
-package enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendable {
+enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendable {
 	case invalidRemoteAsset(URL)
 	case invalidPresetImage(URL)
 	case invalidCustomImage(URL)
@@ -12,7 +12,7 @@ package enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendab
 	case presetServiceFailed(status: Int)
 	case presetNetworkFailed(detail: String)
 
-	package var errorDescription: String? {
+	var errorDescription: String? {
 		switch self {
 		case .invalidRemoteAsset:
 			"The requested content uses an unsupported download address. Check for a launcher update and try again."
@@ -31,7 +31,7 @@ package enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendab
 		}
 	}
 
-	package var diagnosticDescription: String {
+	var diagnosticDescription: String {
 		switch self {
 		case .invalidRemoteAsset(let url):
 			"Refused an unsupported remote asset URL: \(url.absoluteString)"
@@ -59,7 +59,7 @@ package enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendab
 }
 
 extension CustomizationError: SupportCodeProviding {
-	package var supportCode: SupportCode? {
+	var supportCode: SupportCode? {
 		switch self {
 		case .cannotEncodeAppIcon, .cannotSetAppIcon:
 			.appIconFailed

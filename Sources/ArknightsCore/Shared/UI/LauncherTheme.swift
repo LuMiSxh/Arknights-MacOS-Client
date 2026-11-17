@@ -13,18 +13,18 @@ package struct LauncherTheme: Equatable, Sendable {
 	package let modalDim: Color
 	package let hairline: Color
 	/// Modal edge, a little brighter than `hairline` so the card separates from the dimmed sheet.
-	package let dialogHairline: Color
+	let dialogHairline: Color
 	package let groupFill: Color
-	package let rowDivider: Color
+	let rowDivider: Color
 	package let footerFill: Color
 	/// Quiet filled neutral for secondary controls.
 	package let controlFill: Color
 	package let controlStroke: Color
 	package let hoverTint: Color
 	package let trackFill: Color
-	package let trackStroke: Color
+	let trackStroke: Color
 	/// Neutral row selection behind the accent tick.
-	package let neutralFill: Color
+	let neutralFill: Color
 
 	package let textPrimary: Color
 	package let textSecondary: Color
@@ -37,24 +37,24 @@ package struct LauncherTheme: Equatable, Sendable {
 	package let accentGlassTint: Color
 	package let accentGlassStroke: Color
 	/// Footer pill fill. Light mode uses a frosted white so dark accent ink stays readable on it.
-	package let footerGlassTint: Color
+	let footerGlassTint: Color
 
 	/// Solid fill for destructive controls.
 	package let danger: Color
 	/// Label on a danger button: near-white pink in dark mode, so it stays readable on the red glass.
-	package let dangerInk: Color
+	let dangerInk: Color
 	/// Danger text on neutral surfaces. Light mode uses the darkened `dangerInk` red.
 	package let dangerText: Color
 	/// Solid fill for destructive HUD and icon controls.
-	package let dangerSurface: Color
-	package let dangerGlassTint: Color
-	package let dangerGlassStroke: Color
+	let dangerSurface: Color
+	let dangerGlassTint: Color
+	let dangerGlassStroke: Color
 	/// Solid fill for cautionary controls and toggles.
 	package let warning: Color
 	/// Warning text and icons on neutral surfaces. Light mode darkens the hue to 4.5:1 on the sheet.
 	package let warningInk: Color
-	package let warningGlassTint: Color
-	package let warningGlassStroke: Color
+	let warningGlassTint: Color
+	let warningGlassStroke: Color
 	/// Success text and icons on neutral surfaces. Light mode darkens the hue to 4.5:1 on the sheet.
 	package let successInk: Color
 

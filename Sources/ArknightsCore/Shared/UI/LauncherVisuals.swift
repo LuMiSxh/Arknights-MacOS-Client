@@ -15,10 +15,10 @@ package enum LauncherVisuals {
 
 	/// Opacities for control surfaces, borders, and disabled foregrounds.
 	package enum Control {
-		package static let enabledNeutralSurfaceOpacity = 0.07
-		package static let enabledNeutralBorderOpacity = 0.24
-		package static let enabledChromaticSurfaceOpacity = 0.14
-		package static let enabledChromaticBorderOpacity = 0.40
+		static let enabledNeutralSurfaceOpacity = 0.07
+		static let enabledNeutralBorderOpacity = 0.24
+		static let enabledChromaticSurfaceOpacity = 0.14
+		static let enabledChromaticBorderOpacity = 0.40
 		static let disabledChromaticBorderOpacity = 0.14
 		package static let disabledForegroundOpacity = 0.44
 		static let disabledForegroundHighContrastOpacity = 0.52

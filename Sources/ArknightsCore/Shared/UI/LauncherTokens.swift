@@ -49,7 +49,7 @@ package enum LauncherTokens {
 		package static let control: CGFloat = 10
 		package static let panel: CGFloat = 16
 		static let hudPill: CGFloat = 22
-		package static let railRow: CGFloat = 8
+		static let railRow: CGFloat = 8
 		/// Default corner radius for the modal surface kind.
 		static let glassModal: CGFloat = 20
 		/// Default corner radius for the grouped surface kind.
@@ -58,10 +58,10 @@ package enum LauncherTokens {
 
 	/// Button and field insets. Buttons and text fields share the standard horizontal and
 	/// vertical padding.
-	package enum ControlPadding {
-		package static let segmentTrack: CGFloat = 4
-		package static let segmentHorizontal: CGFloat = 10
-		package static let segmentVertical: CGFloat = 4
+	enum ControlPadding {
+		static let segmentTrack: CGFloat = 4
+		static let segmentHorizontal: CGFloat = 10
+		static let segmentVertical: CGFloat = 4
 		/// Vertical inset inside a settings panel row.
 		static let settingsRowVertical: CGFloat = 10
 	}
@@ -88,8 +88,8 @@ package enum LauncherTokens {
 			}
 		}
 
-		package static let hudHorizontalPadding: CGFloat = 12
-		package static let hudVerticalPadding: CGFloat = 6
+		static let hudHorizontalPadding: CGFloat = 12
+		static let hudVerticalPadding: CGFloat = 6
 		package static let iconButtonSize: CGFloat = 36
 		package static let iconButtonGlyphSize: CGFloat = 17
 		/// Matches GlassCapsuleMenu at the default control size: a 16 pt chevron chip plus 2 x 6 pt padding.

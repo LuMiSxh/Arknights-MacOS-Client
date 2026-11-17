@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import ArknightsCustomization
 import Foundation
 import Testing
 
 @testable import ArknightsCore
+@testable import ArknightsCustomization
 @testable import ArknightsGameInstallation
 @testable import ArknightsGameRuntime
 

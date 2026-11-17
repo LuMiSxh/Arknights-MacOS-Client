@@ -17,7 +17,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	var openSettings: (() -> Void)?
 	var blockingPresentationForQuit: (() -> LauncherPresentationDestination?)?
 	var dismissPresentationForQuit: (() -> Void)?
-	private var quitKeyMonitor: Any?
 	private var quitSheetObserver: Any?
 	private var quitSheetDetachTask: Task<Void, Never>?
 
@@ -53,7 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 	// A key sheet can also bypass the menu item's Command-Q dispatch.
 	private func installQuitKeyMonitor() {
-		quitKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+		_ = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
 			guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
 				event.charactersIgnoringModifiers?.lowercased() == "q"
 			else { return event }
@@ -77,7 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	}
 
 	@objc private func handleQuitEvent(
-		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
+		_ event: NSAppleEventDescriptor, withReplyEvent _: NSAppleEventDescriptor
 	) {
 		// Logout, restart, and shutdown attach a quit reason; the launcher never vetoes them.
 		let isSystemInitiated =

@@ -5,7 +5,7 @@ import ArknightsGameInstallation
 import CoreGraphics
 
 #if DEBUG
-	package struct DeveloperSimulationState: Equatable, Sendable {
+	struct DeveloperSimulationState: Equatable, Sendable {
 		// String raw values keep these CaseIterable choices usable by the generic developer picker.
 		enum Lifecycle: String, CaseIterable { case ready, installing, paused, launching, running }
 		enum Phase: String, CaseIterable { case preparing, verifying, downloading, pausing }
@@ -80,7 +80,7 @@ import CoreGraphics
 		// The preview starts with a second display so the Game display row is visible.
 		var displays = Displays.twoDisplays
 
-		package static func isPreviewArgument(_ arguments: [String]) -> Bool {
+		static func isPreviewArgument(_ arguments: [String]) -> Bool {
 			arguments.contains("--developer-preview")
 		}
 

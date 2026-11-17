@@ -142,7 +142,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 
 	func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
 		if recordProbeOutcome(.current) { return }
-		userDriver.recordNoUpdate(error)
+		userDriver.recordNoUpdate()
 	}
 
 	func updater(

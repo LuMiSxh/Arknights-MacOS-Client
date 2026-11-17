@@ -14,7 +14,7 @@ import YouTubePlayerKit
 package final class BackgroundMusicController {
 	var player: YouTubePlayer?
 	var playbackState: YouTubePlayer.PlaybackState?
-	package var operation: BackgroundMusicOperation = .idle
+	var operation: BackgroundMusicOperation = .idle
 	var playbackExpectation: BackgroundMusicPlaybackExpectation?
 
 	let lifecycle: LauncherLifecycleStore
