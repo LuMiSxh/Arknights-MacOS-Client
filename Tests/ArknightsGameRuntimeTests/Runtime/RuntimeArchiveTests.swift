@@ -114,36 +114,21 @@ struct RuntimeArchiveTests {
 		}
 	}
 
-	@Test
-	func rejectsAnEscapingSymlink() throws {
-		let temporary = try TemporaryDirectory("RuntimeArchiveSymlink")
+	@Test(arguments: [
+		(typeFlag: UInt8(0x32), name: "Libraries/bin/Arknights", linkName: "/etc/evil"),
+		(typeFlag: UInt8(0x31), name: "Libraries/bin/hard", linkName: "../../outside"),
+	])
+	func rejectsLinksOutsideTheArchive(typeFlag: UInt8, name: String, linkName: String) throws {
+		let temporary = try TemporaryDirectory("RuntimeArchiveLinks")
 		defer { temporary.remove() }
 		var builder = TarBuilder()
 		builder.directory("Libraries")
-		builder.append(name: "Libraries/bin/Arknights", typeFlag: 0x32, linkName: "/etc/evil")
+		builder.append(name: name, typeFlag: typeFlag, linkName: linkName)
 		builder.finish()
 		let archive = temporary.url.appending(path: "runtime.tar")
 		try builder.data.write(to: archive)
 
-		#expect(throws: RuntimeArchiveError.escapingLink("/etc/evil")) {
-			_ = try RuntimeArchive.extract(
-				at: archive,
-				into: temporary.url.appending(path: "staging", directoryHint: .isDirectory))
-		}
-	}
-
-	@Test
-	func rejectsAHardLinkOutsideTheArchive() throws {
-		let temporary = try TemporaryDirectory("RuntimeArchiveHardLink")
-		defer { temporary.remove() }
-		var builder = TarBuilder()
-		builder.directory("Libraries")
-		builder.append(name: "Libraries/bin/hard", typeFlag: 0x31, linkName: "../../outside")
-		builder.finish()
-		let archive = temporary.url.appending(path: "runtime.tar")
-		try builder.data.write(to: archive)
-
-		#expect(throws: RuntimeArchiveError.escapingLink("../../outside")) {
+		#expect(throws: RuntimeArchiveError.escapingLink(linkName)) {
 			_ = try RuntimeArchive.extract(
 				at: archive,
 				into: temporary.url.appending(path: "staging", directoryHint: .isDirectory))

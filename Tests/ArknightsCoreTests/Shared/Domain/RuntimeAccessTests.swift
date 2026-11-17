@@ -12,16 +12,15 @@ private func access(macOS major: Int) -> RuntimeAccess {
 }
 
 struct RuntimeAccessTests {
-	@Test
-	func x86IsDeniedOnMacOS28AndLater() {
-		#expect(!access(macOS: 28).allows(.x86))
-		#expect(!access(macOS: 29).allows(.x86))
+	@Test(arguments: [
+		(major: 27, lane: RuntimeLane.x86, allows: true),
+		(major: 28, lane: .x86, allows: false),
+		(major: 29, lane: .x86, allows: false),
+		(major: 15, lane: .arm, allows: false),
+		(major: 25, lane: .arm, allows: false),
+		(major: 26, lane: .arm, allows: true),
+	])
+	func accessFollowsTheLaneMacOSBounds(major: Int, lane: RuntimeLane, allows: Bool) {
+		#expect(access(macOS: major).allows(lane) == allows)
 	}
-
-	@Test
-	func armIsDeniedBeforeMacOS26() {
-		#expect(!access(macOS: 15).allows(.arm))
-		#expect(!access(macOS: 25).allows(.arm))
-	}
-
 }

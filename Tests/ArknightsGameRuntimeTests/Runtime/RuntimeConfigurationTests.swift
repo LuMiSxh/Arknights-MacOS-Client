@@ -43,33 +43,33 @@ struct RuntimeConfigurationTests {
 		}
 	}
 
-	@Test
-	func rejectsANonHTTPSArchiveURL() throws {
-		let configuration = try makeRuntimeConfiguration(
-			x86: makeRuntimeLane(url: "http://example.test/runtime.tar.gz"))
+	@Test(arguments: InvalidLaneConfiguration.allCases)
+	private func rejectsAnInvalidLaneConfiguration(scenario: InvalidLaneConfiguration) throws {
+		let configuration = try scenario.configuration()
 
 		#expect(throws: RuntimeConfigurationError.self) {
 			_ = try configuration.pinnedRuntime(for: .x86)
 		}
 	}
 
-	@Test
-	func rejectsAMalformedChecksum() throws {
-		let configuration = try makeRuntimeConfiguration(x86: makeRuntimeLane(sha256: "00"))
+	private enum InvalidLaneConfiguration: CaseIterable, Sendable {
+		case nonHTTPSArchiveURL
+		case malformedChecksum
+		case unsafeInterfacePath
 
-		#expect(throws: RuntimeConfigurationError.self) {
-			_ = try configuration.pinnedRuntime(for: .x86)
-		}
-	}
-
-	@Test
-	func rejectsAnUnsafeInterfacePath() throws {
-		var unsafe = makeRuntimeInterface()
-		unsafe["requiredFiles"] = ["C:/evil"]
-		let configuration = try makeRuntimeConfiguration(x86: makeRuntimeLane(interface: unsafe))
-
-		#expect(throws: RuntimeConfigurationError.self) {
-			_ = try configuration.pinnedRuntime(for: .x86)
+		func configuration() throws -> RuntimeConfiguration {
+			switch self {
+			case .nonHTTPSArchiveURL:
+				return try makeRuntimeConfiguration(
+					x86: makeRuntimeLane(url: "http://example.test/runtime.tar.gz"))
+			case .malformedChecksum:
+				return try makeRuntimeConfiguration(x86: makeRuntimeLane(sha256: "00"))
+			case .unsafeInterfacePath:
+				var unsafe = makeRuntimeInterface()
+				unsafe["requiredFiles"] = ["C:/evil"]
+				return try makeRuntimeConfiguration(
+					x86: makeRuntimeLane(interface: unsafe))
+			}
 		}
 	}
 }
