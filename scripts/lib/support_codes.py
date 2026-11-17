@@ -78,7 +78,7 @@ LEGACY_SUMMARY = "This code was replaced by more specific codes."
 LEGACY_SINGLE_SUMMARY = "This code was replaced by a new code."
 LEGACY_ORDER = 900
 # The launcher release that retired every legacy code.
-LEGACY_RETIRED_IN = "0.8.0"
+LEGACY_RETIRED_IN = "1.0.0"
 # The index keeps its prose by hand; the generator fills only the blocks it names.
 INDEX_PAGE = SUPPORT_CODE_ARTICLES / "README.md"
 INDEX_NAMESPACE = "support-codes"

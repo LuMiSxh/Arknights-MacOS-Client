@@ -91,9 +91,9 @@ Each code has its own page. The page title starts with the code.
 | [UI-IMG](ui-img.md) | Artwork image not usable | Choose an image that meets the size limits, then select it again. |
 <!-- support-codes:end codes -->
 
-## Codes before 0.8.0
+## Codes before 1.0.0
 
-Launcher 0.8.0 replaced these codes. Open the page for the new code.
+Launcher 1.0.0 replaced these codes. Open the page for the new code.
 
 <!-- support-codes:begin retired -->
 | Old code | New code |

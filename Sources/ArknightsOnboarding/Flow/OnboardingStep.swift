@@ -13,7 +13,7 @@ nonisolated enum OnboardingTravelDirection: Sendable {
 nonisolated enum OnboardingStep: Int, CaseIterable, Codable, Identifiable, Sendable {
 	case welcome = 10
 	case region = 11
-	// Added after the 0.8.0 steps, so a saved step keeps its meaning. Setup 1.0 reuses raw
+	// Added after the earlier 1.0 steps, so a saved step keeps its meaning. Setup 1.0 reuses raw
 	// value 16 for Install, so a step saved on the old Runtime step resumes there.
 	case install = 16
 	case display = 12
