@@ -151,6 +151,10 @@ package struct AppPaths: Sendable {
 		runtimeRoot.appending(path: lane.rawValue, directoryHint: .isDirectory)
 	}
 
+	package func runtimeDownloadsDirectory(for lane: RuntimeLane) -> URL {
+		runtimeDownloadsDirectory.appending(path: lane.rawValue, directoryHint: .isDirectory)
+	}
+
 	package func runtimeVersionDirectory(for lane: RuntimeLane, version: String) -> URL {
 		runtimeDirectory(for: lane)
 			.appending(path: version, directoryHint: .isDirectory)

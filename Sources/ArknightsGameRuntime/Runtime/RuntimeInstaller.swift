@@ -157,20 +157,41 @@ package struct RuntimeInstaller: Sendable {
 			// Replaces the tree in one step; a failure leaves the old version in place.
 			_ = try FileManager.default.replaceItemAt(versionDirectory, withItemAt: prepared)
 		}
+		bestEffort("Could not clean up older runtimes after install") {
+			try store.cleanup(pinned: [pin.lane: pin.version])
+		}
+		bestEffort("Could not remove downloaded runtime archives after install") {
+			try removeDownloadedArchives(for: pin.lane)
+		}
+
+		return InstalledRuntime(lane: pin.lane, version: pin.version, directory: versionDirectory)
+	}
+
+	/// Runs cleanup that must not fail an install that already succeeded.
+	private func bestEffort(_ context: String, _ work: () throws -> Void) {
 		if let log {
-			log.attempt("Could not clean up older runtimes after install") {
-				try store.cleanup(pinned: [pin.lane: pin.version])
-			}
+			log.attempt(context, work)
 		} else {
 			// best effort: cleanup must not fail an install that already succeeded.
 			do {
-				try store.cleanup(pinned: [pin.lane: pin.version])
+				try work()
 			} catch {
 				// No logger is available to record the failure.
 			}
 		}
+	}
 
-		return InstalledRuntime(lane: pin.lane, version: pin.version, directory: versionDirectory)
+	/// Deletes this lane's downloads and legacy loose partials at the downloads root. The lane lease
+	/// is held, so no other install writes this lane's subdirectory, and other lanes' `.part` files stay.
+	private func removeDownloadedArchives(for lane: RuntimeLane) throws {
+		let fileManager = FileManager.default
+		try fileManager.removeItem(at: paths.runtimeDownloadsDirectory(for: lane))
+		let entries = try fileManager.contentsOfDirectory(
+			at: paths.runtimeDownloadsDirectory, includingPropertiesForKeys: nil)
+		for entry in entries where entry.pathExtension == "part" {
+			guard try Self.isRegularFile(entry) else { continue }
+			try fileManager.removeItem(at: entry)
+		}
 	}
 
 	// MARK: - Download
@@ -182,7 +203,7 @@ package struct RuntimeInstaller: Sendable {
 		guard let remoteURL = pin.url else {
 			throw RuntimeInstallError.runtimeUnavailable(pin.lane)
 		}
-		let downloadsDirectory = paths.runtimeDownloadsDirectory
+		let downloadsDirectory = paths.runtimeDownloadsDirectory(for: pin.lane)
 		try FileManager.default.createDirectory(
 			at: downloadsDirectory, withIntermediateDirectories: true)
 		let archiveURL = downloadsDirectory.appending(path: "\(pin.sha256).part")

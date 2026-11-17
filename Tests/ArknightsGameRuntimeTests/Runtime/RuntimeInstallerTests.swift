@@ -159,6 +159,14 @@ struct RuntimeInstallerTests {
 		let oldVersion = paths.runtimeVersionDirectory(for: .x86, version: "0.9.0")
 		try FileManager.default.createDirectory(at: oldVersion, withIntermediateDirectories: true)
 
+		let legacyPart = paths.runtimeDownloadsDirectory.appending(path: "old.part")
+		let laneDownloads = paths.runtimeDownloadsDirectory(for: .x86)
+		let otherLanePart = paths.runtimeDownloadsDirectory(for: .arm).appending(path: "x.part")
+		try FileManager.default.createDirectory(
+			at: otherLanePart.deletingLastPathComponent(), withIntermediateDirectories: true)
+		try Data("legacy".utf8).write(to: legacyPart)
+		try Data("arm".utf8).write(to: otherLanePart)
+
 		let installed = try await installer.install(pin: makePin(archive: archive)) { _ in }
 
 		#expect(installed.lane == .x86)
@@ -179,6 +187,9 @@ struct RuntimeInstallerTests {
 			(try FileManager.default.destinationOfSymbolicLink(
 				atPath: installed.directory.appending(path: "bin/Arknights").path)) == "wine64")
 		#expect(!FileManager.default.fileExists(atPath: oldVersion.path))
+		#expect(!FileManager.default.fileExists(atPath: laneDownloads.path))
+		#expect(!FileManager.default.fileExists(atPath: legacyPart.path))
+		#expect(FileManager.default.fileExists(atPath: otherLanePart.path))
 
 		let manifest = try JSONDecoder().decode(
 			RuntimeManifest.self,
@@ -205,7 +216,8 @@ struct RuntimeInstallerTests {
 		await #expect(throws: RuntimeInstallError.hashMismatch) {
 			try await installer.install(pin: pin) { _ in }
 		}
-		let part = paths.runtimeDownloadsDirectory.appending(path: "\(pin.sha256).part")
+		let laneDownloads = paths.runtimeDownloadsDirectory(for: pin.lane)
+		let part = laneDownloads.appending(path: "\(pin.sha256).part")
 		#expect(!FileManager.default.fileExists(atPath: part.path))
 	}
 
@@ -228,9 +240,9 @@ struct RuntimeInstallerTests {
 		}
 		let paths = makePaths(temporary)
 		try FileManager.default.createDirectory(
-			at: paths.runtimeDownloadsDirectory, withIntermediateDirectories: true)
+			at: paths.runtimeDownloadsDirectory(for: .x86), withIntermediateDirectories: true)
 		try Data(prefix).write(
-			to: paths.runtimeDownloadsDirectory.appending(path: "\(pin.sha256).part"))
+			to: paths.runtimeDownloadsDirectory(for: .x86).appending(path: "\(pin.sha256).part"))
 		let installer = makeInstaller(paths: paths, route: route)
 
 		let installed = try await installer.install(pin: pin) { _ in }

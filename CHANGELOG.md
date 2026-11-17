@@ -46,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Gryphline Taiwan is now a stable server.
 - Fullscreen opens the game in its own macOS Space.
 - **Settings → Storage** shows the last measured sizes at once.
+- Runtime downloads are deleted after the runtime installs.
 - **Rendering** marks MetalFX unavailable when the runtime cannot use it.
 - Support codes use a short format, for example **IN-DSK**. Old codes link to their new pages.
 - The China (Bilibili) sign-in window stays above the game.
