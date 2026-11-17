@@ -96,6 +96,7 @@ package actor DiscordIPCConnection {
 		label: "com.lumisxh.arknights-client.discord-ipc.events")
 	private var descriptor: Int32 = -1
 	private var readSource: DispatchSourceRead?
+	private var isReadSourceSuspended = false
 	private var handshakeTimer: Task<Void, Never>?
 	private var buffer = Data()
 	private var handshakeContinuation: CheckedContinuation<Void, any Error>?
@@ -145,9 +146,8 @@ package actor DiscordIPCConnection {
 
 	deinit {
 		handshakeTimer?.cancel()
-		readSource?.cancel()
-		if descriptor >= 0 {
-			Darwin.close(descriptor)
+		if let readSource {
+			Self.cancel(readSource, wasSuspended: isReadSourceSuspended)
 		}
 	}
 
@@ -176,14 +176,31 @@ package actor DiscordIPCConnection {
 			Darwin.close(socketDescriptor)
 			throw DiscordIPCError.connectionClosed
 		}
+		if Task.isCancelled {
+			Darwin.close(socketDescriptor)
+			close(error: CancellationError())
+			throw CancellationError()
+		}
 		descriptor = socketDescriptor
 		installReadSource(descriptor: socketDescriptor)
-		try await withCheckedThrowingContinuation {
-			(continuation: CheckedContinuation<Void, any Error>) in
-			handshakeContinuation = continuation
-			startHandshakeTimer()
-			Task { await self.sendHandshake(handshake) }
+		// Every resumption nils `handshakeContinuation` first, so the READY, timeout, close, and
+		// cancellation paths cannot resume it twice. The cancel hop runs on the actor after the
+		// continuation is stored, because the body below stores it without suspending.
+		try await withTaskCancellationHandler {
+			try await withCheckedThrowingContinuation {
+				(continuation: CheckedContinuation<Void, any Error>) in
+				handshakeContinuation = continuation
+				startHandshakeTimer()
+				Task { await self.sendHandshake(handshake) }
+			}
+		} onCancel: {
+			Task { await self.cancelConnect() }
 		}
+	}
+
+	private func cancelConnect() {
+		guard handshakeContinuation != nil else { return }
+		close(error: CancellationError())
 	}
 
 	private func sendHandshake(_ frame: Data) async {
@@ -231,6 +248,9 @@ package actor DiscordIPCConnection {
 			guard let self else { return }
 			Task { await self.readAvailable() }
 		}
+		// Dispatch requires the descriptor to stay open until cancellation completes, so the
+		// source owns the only close.
+		source.setCancelHandler { Darwin.close(fd) }
 		readSource = source
 		source.resume()
 	}
@@ -290,16 +310,21 @@ package actor DiscordIPCConnection {
 		}
 	}
 
+	/// Ignores payloads that are not objects and fields of an unexpected type, so a stray message
+	/// never drops the connection. Only malformed JSON closes it.
 	private func handleJSON(_ payload: Data) {
 		do {
-			let event = try JSONDecoder().decode(DiscordIPCEvent.self, from: payload)
-			guard let name = event.evt else { return }
+			guard
+				let object = try JSONSerialization.jsonObject(with: payload) as? [String: Any],
+				let name = object["evt"] as? String
+			else { return }
 			switch name {
 			case "READY":
 				completeHandshake()
 			case "ERROR":
-				let code = event.data?.code ?? 0
-				let message = event.data?.message ?? "Discord refused the command"
+				let data = object["data"] as? [String: Any]
+				let code = data?["code"] as? Int ?? 0
+				let message = data?["message"] as? String ?? "Discord refused the command"
 				if handshakeContinuation != nil {
 					close(error: DiscordIPCError.discordError(code: code, message: message))
 				} else {
@@ -460,22 +485,34 @@ package actor DiscordIPCConnection {
 		}
 
 		// Keep the descriptor open until the offloaded write returns, so it never targets a reused fd.
+		// Suspending the source meanwhile stops level-triggered read events from queueing hops.
 		if isWritingToDescriptor {
 			isClosePending = true
+			if let readSource, !isReadSourceSuspended {
+				readSource.suspend()
+				isReadSourceSuspended = true
+			}
 		} else {
 			closeDescriptor()
 		}
 	}
 
+	/// Retires the read source; its cancel handler closes the descriptor.
 	private func closeDescriptor() {
 		isClosePending = false
 		if let readSource {
-			readSource.cancel()
+			Self.cancel(readSource, wasSuspended: isReadSourceSuspended)
 			self.readSource = nil
+			isReadSourceSuspended = false
 		}
-		if descriptor >= 0 {
-			Darwin.close(descriptor)
-			descriptor = -1
+		descriptor = -1
+	}
+
+	/// A suspended source runs its cancel handler only after a matching resume.
+	private static func cancel(_ source: DispatchSourceRead, wasSuspended: Bool) {
+		source.cancel()
+		if wasSuspended {
+			source.resume()
 		}
 	}
 
@@ -551,17 +588,6 @@ package actor DiscordIPCConnection {
 			maximumPayloadBytes: maximumPayloadBytes
 		)
 	}
-
-}
-
-private struct DiscordIPCEvent: Decodable {
-	let evt: String?
-	let data: DiscordIPCErrorData?
-}
-
-private struct DiscordIPCErrorData: Decodable {
-	let code: Int?
-	let message: String?
 }
 
 private struct Handshake: Encodable {
