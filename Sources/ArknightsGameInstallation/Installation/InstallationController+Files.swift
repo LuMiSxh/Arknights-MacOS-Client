@@ -58,37 +58,43 @@ extension InstallationController {
 		NSWorkspace.shared.activateFileViewerSelecting([installDirectory])
 	}
 
+	@concurrent
+	private static func trashDirectory(at directory: URL) async throws {
+		try FileManager.default.trashItem(at: directory, resultingItemURL: nil)
+	}
+
 	package func uninstallGame() {
 		guard canUninstallGame else { return }
 		guard FileManager.default.fileExists(atPath: installDirectory.path) else {
 			updateInstalledState()
 			return
 		}
+		let directory = installDirectory
 		let operationID = UUID()
 		let requestedRegion = region
 		guard let lease = lifecycle.begin(.maintaining(.uninstalling)) else { return }
 		lifecycle.setStatus(.movingToTrash)
 		log.info("Game uninstall requested")
-		NSWorkspace.shared.recycle([installDirectory]) { [weak self] _, error in
-			Task { @MainActor in
-				guard let self else { return }
-				self.lifecycle.end(lease)
-				if let error {
-					self.presentInstallationFailure(
-						error,
-						id: operationID,
-						operation: .uninstall,
-						region: requestedRegion
-					)
-				} else {
-					self.isInstalled = false
-					self.setRegionInstalled(requestedRegion, false)
-					self.hasPartialDownload = false
-					self.installedVersion = nil
-					self.isGameUpdateAvailable = false
-					self.lifecycle.setStatus(.uninstalled)
-				}
+		Task { [weak self, lifecycle = self.lifecycle] in
+			defer { lifecycle.end(lease) }
+			do {
+				try await Self.trashDirectory(at: directory)
+			} catch {
+				self?.presentInstallationFailure(
+					error,
+					id: operationID,
+					operation: .uninstall,
+					region: requestedRegion
+				)
+				return
 			}
+			guard let self else { return }
+			isInstalled = false
+			setRegionInstalled(requestedRegion, false)
+			hasPartialDownload = false
+			installedVersion = nil
+			isGameUpdateAvailable = false
+			lifecycle.setStatus(.uninstalled)
 		}
 	}
 

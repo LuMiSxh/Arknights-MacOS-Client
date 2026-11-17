@@ -211,9 +211,38 @@ struct HypergryphProfile: Sendable {
 	let launcherAppCode: String
 	let channel: String
 	let language: String
+	// Built once from the fixed launcher host instead of on every request.
+	let metadataURL: URL
+	let webMetadataURL: URL
 
-	var metadataURL: URL { URL(string: "https://\(launcherHost)/api/proxy/batch_proxy")! }
-	var webMetadataURL: URL { URL(string: "https://\(launcherHost)/api/proxy/web/batch_proxy")! }
+	init(
+		region: GameRegion,
+		launcherHost: String,
+		gameAppCode: String,
+		launcherAppCode: String,
+		channel: String,
+		language: String
+	) {
+		self.region = region
+		self.launcherHost = launcherHost
+		self.gameAppCode = gameAppCode
+		self.launcherAppCode = launcherAppCode
+		self.channel = channel
+		self.language = language
+		metadataURL = Self.apiURL(host: launcherHost, path: "/api/proxy/batch_proxy")
+		webMetadataURL = Self.apiURL(host: launcherHost, path: "/api/proxy/web/batch_proxy")
+	}
+
+	private static func apiURL(host: String, path: String) -> URL {
+		var components = URLComponents()
+		components.scheme = "https"
+		components.host = host
+		components.path = path
+		guard let url = components.url else {
+			preconditionFailure("Invalid Hypergryph launcher host: \(host)")
+		}
+		return url
+	}
 
 	@Sendable
 	func isAllowedMetadataURL(_ url: URL) -> Bool {
