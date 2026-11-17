@@ -18,7 +18,12 @@ extension PresetCatalogService {
 		}
 	}
 
-	package func imageData(for url: URL, cacheKey: String) async throws -> Data {
+	/// `priority` is `.interactive` only for downloads a user action waits on.
+	func imageData(
+		for url: URL,
+		cacheKey: String,
+		priority: PresetImageFetchLimiter.Priority = .background
+	) async throws -> Data {
 		await enforceImageCacheLimitIfNeeded()
 		let epoch = cacheEpoch
 		guard Self.isAllowedRemoteAssetURL(url) else {
@@ -42,7 +47,7 @@ extension PresetCatalogService {
 		var lastError: (any Error)?
 		for candidate in candidates {
 			do {
-				let data = try await fetchImageData(from: candidate)
+				let data = try await fetchImageData(from: candidate, priority: priority)
 				guard cacheEpoch == epoch else { throw CancellationError() }
 				await cacheImageData(data, at: cachedFile, epoch: epoch)
 				guard cacheEpoch == epoch else { throw CancellationError() }
@@ -89,7 +94,10 @@ extension PresetCatalogService {
 		}
 	}
 
-	private func fetchImageData(from url: URL) async throws -> Data {
+	private func fetchImageData(
+		from url: URL,
+		priority: PresetImageFetchLimiter.Priority
+	) async throws -> Data {
 		guard Self.isAllowedRemoteAssetURL(url) else {
 			throw CustomizationError.invalidRemoteAsset(url)
 		}
@@ -101,13 +109,17 @@ extension PresetCatalogService {
 		request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
 		let result: HTTPFetchResult
 		do {
-			result = try await fetcher.fetch(
-				[request],
-				policy: HTTPFetchPolicy(
-					maximumBytes: AppConstants.Presets.imageMaximumBytes,
-					attemptsPerCandidate: AppConstants.Presets.imageDownloadAttempts
+			let fetcher = fetcher
+			let request = request
+			result = try await imageFetchLimiter.run(priority: priority) {
+				try await fetcher.fetch(
+					[request],
+					policy: HTTPFetchPolicy(
+						maximumBytes: AppConstants.Presets.imageMaximumBytes,
+						attemptsPerCandidate: AppConstants.Presets.imageDownloadAttempts
+					)
 				)
-			)
+			}
 		} catch {
 			throw Self.presetFetchError(error)
 		}

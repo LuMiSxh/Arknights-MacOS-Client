@@ -14,6 +14,9 @@ package actor PresetCatalogService {
 	let wallpaperTagsURL: URL
 	let tagStore: WallpaperTagStore
 	let loader: BoundedHTTPDataLoader
+	let imageFetchLimiter = PresetImageFetchLimiter(
+		limit: AppConstants.Presets.imageFetchConcurrency
+	)
 	package let log: LauncherLog
 	var memoryCachedAvatars: [PresetAvatar]?
 	var memoryCachedWallpapers: [PresetWallpaper]?

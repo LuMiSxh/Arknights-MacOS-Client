@@ -308,7 +308,8 @@ package struct PresetGalleryView: View {
 		let taskDestination = destination
 		Task {
 			do {
-				let data = try await catalog.imageData(for: url, cacheKey: id)
+				let data = try await catalog.imageData(
+					for: url, cacheKey: id, priority: .interactive)
 				guard isCurrentApplication(id: id, destination: taskDestination) else { return }
 				await apply(data)
 				guard isCurrentApplication(id: id, destination: taskDestination) else { return }
