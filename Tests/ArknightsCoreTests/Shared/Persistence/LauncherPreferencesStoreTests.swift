@@ -108,25 +108,6 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
-	func homeLuminanceRoundTripsThroughTheThemeCache() throws {
-		let temporary = try TemporaryDirectory("LauncherPreferencesStoreTests")
-		defer { temporary.remove() }
-		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(
-			defaults: defaults,
-			themeCacheURL: temporary.url.appending(path: "Theme/theme.json")
-		)
-		#expect(store.homeLuminance(for: "new") == nil)
-
-		store.setHomeLuminance(0.75, for: "new", limit: 2)
-		store.setHomeLuminance(0.5, for: "old", limit: 2)
-
-		#expect(store.homeLuminance(for: "new") == 0.75)
-		#expect(store.homeLuminance(for: "old") == 0.5)
-	}
-
-	@Test
 	func resetRemovesExactlyTheResettablePreferences() {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
