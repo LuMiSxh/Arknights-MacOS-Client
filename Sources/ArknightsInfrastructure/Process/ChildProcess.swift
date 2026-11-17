@@ -29,23 +29,39 @@ package final class ChildProcess: @unchecked Sendable {
 		package let output: Data
 	}
 
-	/// A blocking wait. `result` is nil when the child did not exit after termination.
-	package struct SynchronousExit: Sendable {
-		package let timedOut: Bool
-		package let result: Result?
+	/// A blocking wait. `.timedOut` carries a result only when the child exited after termination.
+	package enum SynchronousExit: Sendable {
+		case exited(Result)
+		case timedOut(Result?)
+
+		// The runtime's quit waiter still reads the former stored fields.
+		package var timedOut: Bool {
+			if case .timedOut = self { true } else { false }
+		}
+		package var result: Result? {
+			switch self {
+			case .exited(let result): result
+			case .timedOut(let result): result
+			}
+		}
 	}
 
 	private typealias Continuation = CheckedContinuation<Result, any Error>
 
+	private enum Phase {
+		case idle
+		case starting
+		case running
+		case terminating
+		case finished
+	}
+
 	private struct State {
+		var phase = Phase.idle
 		var continuation: Continuation?
 		var output = Data()
 		var terminationStatus: Int32?
 		var outputReachedEnd: Bool
-		var hasStartRequested = false
-		var hasStarted = false
-		var isFinished = false
-		var hasRequestedTermination = false
 		var abortError: (any Error)?
 		var timeoutTask: Task<Void, Never>?
 		var exitSignal: DispatchSemaphore?
@@ -116,8 +132,8 @@ package final class ChildProcess: @unchecked Sendable {
 	package func start() throws {
 		let rejection = state.withLock { state -> (any Error)? in
 			if let error = state.abortError { return error }
-			if state.hasStartRequested { return ChildProcessAlreadyStarted() }
-			state.hasStartRequested = true
+			if state.phase != .idle { return ChildProcessAlreadyStarted() }
+			state.phase = .starting
 			state.exitSignal = DispatchSemaphore(value: 0)
 			return nil
 		}
@@ -157,7 +173,7 @@ package final class ChildProcess: @unchecked Sendable {
 			throw ChildProcessNotStarted()
 		}
 		if let outcome = state.withLock({ $0.outcome }) {
-			return SynchronousExit(timedOut: false, result: try outcome.get())
+			return .exited(try outcome.get())
 		}
 		let interval = DispatchTimeInterval(duration: timeout)
 		var timedOut = false
@@ -165,11 +181,13 @@ package final class ChildProcess: @unchecked Sendable {
 			timedOut = true
 			requestTermination()
 			guard exitSignal.wait(timeout: .now() + interval) == .success else {
-				return SynchronousExit(timedOut: true, result: nil)
+				return .timedOut(nil)
 			}
 		}
-		let outcome = state.withLock { $0.outcome }
-		return SynchronousExit(timedOut: timedOut, result: try outcome?.get())
+		let result = try state.withLock { $0.outcome }?.get()
+		if timedOut { return .timedOut(result) }
+		guard let result else { return .timedOut(nil) }
+		return .exited(result)
 	}
 
 	private func register<C: Clock>(
@@ -177,7 +195,7 @@ package final class ChildProcess: @unchecked Sendable {
 	) where C.Duration == Duration {
 		let immediate = state.withLock { state -> Swift.Result<Result, any Error>? in
 			if let outcome = state.outcome { return outcome }
-			if state.abortError == nil, !state.hasStarted {
+			if state.abortError == nil, state.phase == .idle || state.phase == .starting {
 				return .failure(ChildProcessNotStarted())
 			}
 			state.continuation = continuation
@@ -213,7 +231,7 @@ package final class ChildProcess: @unchecked Sendable {
 			try self.state.withLock { state in
 				if let error = state.abortError { throw error }
 				try self.process.run()
-				state.hasStarted = true
+				state.phase = .running
 			}
 		}
 		if let spawnGate {
@@ -226,10 +244,8 @@ package final class ChildProcess: @unchecked Sendable {
 	private func abort(with error: any Error) {
 		let shouldTerminate = state.withLock { state -> Bool in
 			if state.abortError == nil { state.abortError = error }
-			guard state.hasStarted, !state.isFinished, !state.hasRequestedTermination else {
-				return false
-			}
-			state.hasRequestedTermination = true
+			guard state.phase == .running else { return false }
+			state.phase = .terminating
 			return true
 		}
 		if shouldTerminate { process.terminate() }
@@ -238,10 +254,8 @@ package final class ChildProcess: @unchecked Sendable {
 
 	private func requestTermination() {
 		let shouldTerminate = state.withLock { state -> Bool in
-			guard state.hasStarted, !state.isFinished, !state.hasRequestedTermination else {
-				return false
-			}
-			state.hasRequestedTermination = true
+			guard state.phase == .running else { return false }
+			state.phase = .terminating
 			return true
 		}
 		if shouldTerminate { process.terminate() }
@@ -279,8 +293,8 @@ package final class ChildProcess: @unchecked Sendable {
 	// without a waiter, so a blocking wait can read it.
 	private func settle(_ decide: (State) -> Swift.Result<Result, any Error>?) {
 		let settled = state.withLock { state -> Settled? in
-			guard !state.isFinished, let outcome = decide(state) else { return nil }
-			state.isFinished = true
+			guard state.phase != .finished, let outcome = decide(state) else { return nil }
+			state.phase = .finished
 			state.outcome = outcome
 			let settled = Settled(
 				continuation: state.continuation,
