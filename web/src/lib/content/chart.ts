@@ -21,10 +21,9 @@ export const SUMMARY_METRICS = [
 	'resident_mib'
 ] as const;
 
-export const SUMMARY_METRIC_LABELS: Record<
-	(typeof SUMMARY_METRICS)[number],
-	string
-> = {
+export type SummaryMetric = (typeof SUMMARY_METRICS)[number];
+
+export const SUMMARY_METRIC_LABELS: Record<SummaryMetric, string> = {
 	cpu_percent: 'CPU',
 	gpu_device_percent: 'GPU',
 	resident_mib: 'Memory'
@@ -32,7 +31,7 @@ export const SUMMARY_METRIC_LABELS: Record<
 
 /** Memory reads better in GB; the rest are percentages. */
 export function formatMetricValue(
-	metric: (typeof SUMMARY_METRICS)[number],
+	metric: SummaryMetric,
 	value: number
 ): string {
 	return metric === 'resident_mib'
@@ -115,9 +114,8 @@ export interface BenchmarkDataset {
 	runs: BenchmarkRun[];
 }
 
+const CHART_METRIC_SET: ReadonlySet<string> = new Set(CHART_METRICS);
+
 export function isChartMetric(value: unknown): value is ChartMetric {
-	return (
-		typeof value === 'string' &&
-		(CHART_METRICS as readonly string[]).includes(value)
-	);
+	return typeof value === 'string' && CHART_METRIC_SET.has(value);
 }

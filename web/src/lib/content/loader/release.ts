@@ -1,9 +1,14 @@
-import type { InlineSegment, ReleaseItem, ReleaseNote } from '../types.js';
+import type {
+	InlineSegment,
+	ReleaseCategory,
+	ReleaseItem,
+	ReleaseNote
+} from '../types.js';
 
 const RELEASE_SECTION =
 	/^## \[(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\] - (\d{4}-\d{2}-\d{2})[ \t]*$([\s\S]*?)(?=^## |(?![\s\S]))/m;
 /** Categories fill the home page list in this order. */
-const CATEGORIES = ['Added', 'Changed', 'Fixed'] as const;
+const CATEGORIES: readonly ReleaseCategory[] = ['Added', 'Changed', 'Fixed'];
 /** The home page shows at most this many items. */
 const ITEM_LIMIT = 5;
 
@@ -15,6 +20,8 @@ export function readLatestRelease(markdown: string): ReleaseNote | null {
 	const section = RELEASE_SECTION.exec(markdown);
 	if (!section) return null;
 	const [, version, date, body] = section;
+	if (version === undefined || date === undefined || body === undefined)
+		return null;
 	const items: ReleaseItem[] = [];
 	for (const category of CATEGORIES) {
 		for (const text of listItems(categorySection(body, category))) {
@@ -30,7 +37,7 @@ export function readLatestRelease(markdown: string): ReleaseNote | null {
 	};
 }
 
-function categorySection(body: string, category: string): string {
+function categorySection(body: string, category: ReleaseCategory): string {
 	const pattern = new RegExp(
 		`^### ${category}[ \\t]*$([\\s\\S]*?)(?=^##|(?![\\s\\S]))`,
 		'm'
@@ -41,8 +48,8 @@ function categorySection(body: string, category: string): string {
 function listItems(markdown: string): string[] {
 	const items: string[] = [];
 	for (const line of markdown.split('\n')) {
-		const bullet = /^- (.*)$/.exec(line);
-		if (bullet) items.push(bullet[1].trim());
+		const bulletText = /^- (.*)$/.exec(line)?.[1];
+		if (bulletText !== undefined) items.push(bulletText.trim());
 		else if (items.length && /^\s+\S/.test(line))
 			items.push(`${items.pop()} ${line.trim()}`);
 	}

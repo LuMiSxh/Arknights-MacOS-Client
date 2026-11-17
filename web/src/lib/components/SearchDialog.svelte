@@ -39,6 +39,27 @@
 		return `search-result-${index}-${suffix.replace(/[^a-z\d]+/gi, '-')}`;
 	}
 
+	function isSearchEntry(value: unknown): value is SearchEntry {
+		return (
+			typeof value === 'object' &&
+			value !== null &&
+			'route' in value &&
+			typeof value.route === 'string' &&
+			'title' in value &&
+			typeof value.title === 'string' &&
+			'description' in value &&
+			typeof value.description === 'string' &&
+			'headings' in value &&
+			Array.isArray(value.headings) &&
+			'body' in value &&
+			typeof value.body === 'string'
+		);
+	}
+
+	function isSearchEntryList(value: unknown): value is SearchEntry[] {
+		return Array.isArray(value) && value.every(isSearchEntry);
+	}
+
 	function resetSearch() {
 		query = '';
 		selectedIndex = 0;
@@ -57,9 +78,9 @@
 			if (!response.ok)
 				throw new Error(`Search index: ${response.status}`);
 			const value: unknown = await response.json();
-			if (!Array.isArray(value))
+			if (!isSearchEntryList(value))
 				throw new Error('Search index is invalid');
-			entries = value as SearchEntry[];
+			entries = value;
 			loaded = true;
 		} catch {
 			failed = true;

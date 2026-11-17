@@ -2,7 +2,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
 import { ContentError, isRecord, parseFrontmatter } from '../frontmatter.js';
-import type { SourceDocument, SupportCodeRegistryEntry } from './model.js';
+import type {
+	SourceDocument,
+	SupportCodeDocument,
+	SupportCodeRegistryEntry
+} from './model.js';
 import { docsRoot, supportCodeRegistryPath } from './paths.js';
 import { routeForRelative, sourceName } from './routes.js';
 
@@ -60,7 +64,7 @@ function readSupportCodeRegistry(): SupportCodeRegistryEntry[] {
 }
 
 function validateSupportCodeRegistry(
-	documents: Map<string, { source: string; domain: string; route: string }>
+	documents: Map<string, SupportCodeDocument>
 ): void {
 	const registry = new Map<string, SupportCodeRegistryEntry>();
 	for (const entry of readSupportCodeRegistry()) {
@@ -116,10 +120,7 @@ function validateSupportCodeRegistry(
 }
 
 export function readSources(): SourceDocument[] {
-	const codes = new Map<
-		string,
-		{ source: string; domain: string; route: string }
-	>();
+	const codes = new Map<string, SupportCodeDocument>();
 	const documents = walkMarkdown(docsRoot).map((relative) => {
 		if (basename(relative).toLowerCase() === 'index.md') {
 			throw new ContentError(

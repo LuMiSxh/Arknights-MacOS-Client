@@ -110,7 +110,7 @@ function readFrontmatter(source: string, input: string): RawFrontmatter {
 
 	let parsed: unknown;
 	try {
-		parsed = parseYaml(match[1]);
+		parsed = parseYaml(match[1] ?? '');
 	} catch (cause) {
 		const message = cause instanceof Error ? cause.message : 'invalid YAML';
 		throw new ContentError(
@@ -189,6 +189,8 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 function isCalendarDate(value: string): boolean {
 	if (!ISO_DATE.test(value)) return false;
 	const [year, month, day] = value.split('-').map(Number);
+	if (year === undefined || month === undefined || day === undefined)
+		return false;
 	const date = new Date(Date.UTC(year, month - 1, day));
 	return (
 		date.getUTCFullYear() === year &&

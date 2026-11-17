@@ -13,7 +13,8 @@
 		type BenchmarkDataset,
 		type BenchmarkRun,
 		type ChartMetric,
-		type ChartSpec
+		type ChartSpec,
+		type SummaryMetric
 	} from '$lib/content/chart.js';
 
 	let { spec, dataset }: { spec: ChartSpec; dataset: BenchmarkDataset } =
@@ -118,7 +119,9 @@
 				{ label: 'Seconds' },
 				...chartRuns.map((run, index) => ({
 					label: run.label,
-					stroke: colors[(run.slot ?? index) % colors.length],
+					stroke:
+						colors[(run.slot ?? index) % colors.length] ??
+						labelStroke,
 					width: 2,
 					points: { show: false },
 					value: (_self: uPlot, value: number | null) =>
@@ -127,7 +130,7 @@
 			],
 			axes: [
 				{
-					label: compact ? undefined : 'Seconds',
+					...(compact ? {} : { label: 'Seconds' }),
 					labelFont: `500 ${font}`,
 					font,
 					size: xAxisSize,
@@ -138,7 +141,7 @@
 				},
 				{
 					// The unit is already in the chart header, so the compact axis drops its title.
-					label: compact ? undefined : chartUnit,
+					...(compact ? {} : { label: chartUnit }),
 					labelFont: `500 ${font}`,
 					font,
 					size: yAxisSize,
@@ -150,10 +153,7 @@
 		};
 	}
 
-	function meanOf(
-		run: BenchmarkRun,
-		key: (typeof SUMMARY_METRICS)[number]
-	): number | null {
+	function meanOf(run: BenchmarkRun, key: SummaryMetric): number | null {
 		const value = run.summary?.metrics?.[key]?.mean;
 		return typeof value === 'number' ? value : null;
 	}
@@ -223,7 +223,9 @@
 						{#each SUMMARY_METRICS as key (key)}
 							{@const value = meanOf(run, key)}
 							{@const reference =
-								index > 0 ? meanOf(runs[0], key) : null}
+								index > 0 && runs[0] !== undefined
+									? meanOf(runs[0], key)
+									: null}
 							<div>
 								<dt>{SUMMARY_METRIC_LABELS[key]}</dt>
 								<dd>

@@ -100,19 +100,19 @@ function editDistance(left: string, right: string): number {
 		(_, index) => index
 	);
 	for (let row = 1; row <= left.length; row += 1) {
-		let diagonal = previous[0];
+		let diagonal = previous[0] ?? 0;
 		previous[0] = row;
 		for (let column = 1; column <= right.length; column += 1) {
-			const above = previous[column];
+			const above = previous[column] ?? 0;
 			previous[column] = Math.min(
-				previous[column] + 1,
-				previous[column - 1] + 1,
+				(previous[column] ?? 0) + 1,
+				(previous[column - 1] ?? 0) + 1,
 				diagonal + (left[row - 1] === right[column - 1] ? 0 : 1)
 			);
 			diagonal = above;
 		}
 	}
-	return previous[right.length];
+	return previous[right.length] ?? 0;
 }
 
 function tokenMatch(query: string, candidate: string): number {
@@ -262,6 +262,7 @@ export function searchContent(
 				headingScore >= titleScore * 0.85 &&
 				headingScore >= descriptionScore * 1.4 &&
 				headingScore >= bodyScore * 1.25;
+			const excerptText = excerpt(entry.body, queryTokens);
 			return {
 				route: entry.route,
 				title: entry.title,
@@ -270,7 +271,7 @@ export function searchContent(
 				...(headingIsBestDestination
 					? { heading: bestHeading.heading }
 					: {}),
-				excerpt: excerpt(entry.body, queryTokens),
+				...(excerptText === undefined ? {} : { excerpt: excerptText }),
 				score
 			};
 		})

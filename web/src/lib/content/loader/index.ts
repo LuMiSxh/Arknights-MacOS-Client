@@ -4,7 +4,6 @@ import { dirname } from 'node:path';
 import { ContentError, parseFrontmatter } from '../frontmatter.js';
 import type {
 	BlogPost,
-	ContentDirectory,
 	ContentIndex,
 	ContentNeighbors,
 	ContentNode,
@@ -72,9 +71,10 @@ function loadIndex(): ContentIndex {
 			parent.documents.push(document);
 		}
 	}
-	root.readme = documents.find(
+	const rootReadme = documents.find(
 		(document) => document.relative.toLowerCase() === 'readme.md'
 	);
+	if (rootReadme !== undefined) root.readme = rootReadme;
 
 	const byRoute = new Map<string, ContentNode>();
 	sourceRoutes.set('CHANGELOG.md', '/changelog/');
@@ -126,7 +126,7 @@ function loadIndex(): ContentIndex {
 		validateLinks(document, sourceRoutes, renderedBySource);
 	const rootDirectory = buildDirectory(root, renderedBySource, byRoute);
 	const directories = [...byRoute.values()].filter(
-		(node): node is ContentDirectory => node.kind === 'directory'
+		(node) => node.kind === 'directory'
 	);
 
 	return {
@@ -140,8 +140,7 @@ function loadIndex(): ContentIndex {
 }
 
 export function getContent(): ContentIndex {
-	if (typeof process === 'undefined' || process.env.NODE_ENV !== 'production')
-		return loadIndex();
+	if (import.meta.env.DEV) return loadIndex();
 	return (cached ??= loadIndex());
 }
 

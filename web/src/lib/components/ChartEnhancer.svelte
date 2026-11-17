@@ -4,6 +4,7 @@
 	import { base } from '$app/paths';
 	import BenchmarkChart from './BenchmarkChart.svelte';
 	import type { BenchmarkDataset, ChartSpec } from '$lib/content/chart.js';
+	import { escapeHtml } from '$lib/content/html.js';
 
 	let { route }: { route: string } = $props();
 
@@ -16,6 +17,17 @@
 		);
 	}
 
+	function isBenchmarkDataset(value: unknown): value is BenchmarkDataset {
+		return (
+			typeof value === 'object' &&
+			value !== null &&
+			'schemaVersion' in value &&
+			typeof value.schemaVersion === 'number' &&
+			'runs' in value &&
+			Array.isArray(value.runs)
+		);
+	}
+
 	onMount(() => {
 		let cancelled = false;
 		const instances: Array<{
@@ -23,15 +35,6 @@
 			element: HTMLElement;
 		}> = [];
 		const cache = new Map<string, Promise<BenchmarkDataset>>();
-
-		function escapeHtml(value: string): string {
-			return value
-				.replaceAll('&', '&amp;')
-				.replaceAll('<', '&lt;')
-				.replaceAll('>', '&gt;')
-				.replaceAll('"', '&quot;')
-				.replaceAll("'", '&#39;');
-		}
 
 		function showError(block: HTMLElement, message: string): void {
 			block.innerHTML = `<p class="chart-status chart-error">${escapeHtml(message)}</p>`;
@@ -58,7 +61,11 @@
 							`Unable to load ${src} (HTTP ${response.status})`
 						);
 					}
-					return (await response.json()) as BenchmarkDataset;
+					const value: unknown = await response.json();
+					if (!isBenchmarkDataset(value)) {
+						throw new Error(`Invalid chart dataset for ${src}`);
+					}
+					return value;
 				});
 				cache.set(url, promise);
 			}

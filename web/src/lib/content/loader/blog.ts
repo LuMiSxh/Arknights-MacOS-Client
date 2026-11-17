@@ -27,6 +27,12 @@ export function readBlogSources(): BlogSource[] {
 			);
 		}
 		const [, fileDate, slug] = match;
+		if (fileDate === undefined || slug === undefined) {
+			throw new ContentError(
+				source,
+				'blog posts must be named YYYY-MM-DD-slug.md'
+			);
+		}
 		const parsed = parseBlogFrontmatter(
 			source,
 			readFileSync(resolve(blogRoot, name), 'utf8')

@@ -8,16 +8,9 @@
 	let { servers }: Props = $props();
 
 	// Groups the flat server list by publisher, keeping the setup assistant's order.
-	const publishers = $derived.by(() => {
-		const groups = new Map<string, Server[]>();
-		for (const server of servers) {
-			groups.set(server.publisher, [
-				...(groups.get(server.publisher) ?? []),
-				server
-			]);
-		}
-		return [...groups];
-	});
+	const publishers = $derived.by(() => [
+		...Map.groupBy(servers, (server) => server.publisher)
+	]);
 </script>
 
 <ul class="publishers">

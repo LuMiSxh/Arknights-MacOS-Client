@@ -1,5 +1,6 @@
 type ContentAudience = 'all' | 'developers' | 'users';
 export type SiteRoute = `/${string}`;
+export type ReleaseCategory = 'Added' | 'Changed' | 'Fixed';
 
 export interface DocumentMetadata {
 	title: string;
@@ -72,7 +73,7 @@ export interface InlineSegment {
 }
 
 export interface ReleaseItem {
-	category: 'Added' | 'Changed' | 'Fixed';
+	category: ReleaseCategory;
 	segments: InlineSegment[];
 }
 
