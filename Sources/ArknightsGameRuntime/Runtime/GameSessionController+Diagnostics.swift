@@ -84,7 +84,7 @@ extension GameSessionController {
 		log: LauncherLog,
 		in directory: URL = FileManager.default.homeDirectoryForCurrentUser
 			.appending(path: "Library/Logs/DiagnosticReports", directoryHint: .isDirectory),
-		window: TimeInterval = AppConstants.Logging.crashReportSearchWindow,
+		window: Duration = .seconds(AppConstants.Logging.crashReportSearchWindow),
 		fileManager: FileManager = .default
 	) -> String? {
 		// A missing folder means there are no crash reports, which is not an error.
@@ -120,7 +120,7 @@ extension GameSessionController {
 					return nil
 				}
 			}
-			.filter { abs($0.1.timeIntervalSince(date)) <= window }
+			.filter { Duration.seconds(abs($0.1.timeIntervalSince(date))) <= window }
 			.max { $0.1 < $1.1 }?
 			.0.path
 	}

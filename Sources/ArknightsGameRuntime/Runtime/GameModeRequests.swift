@@ -14,14 +14,14 @@ final class GameModeRequests: Sendable {
 
 	private let state = Mutex(State())
 	private let executable: URL
-	private let quitWaitSeconds: Double
+	private let quitWait: Duration
 
 	init(
 		executable: URL,
-		quitWaitSeconds: Double = AppConstants.Game.gameModeQuitWaitSeconds
+		quitWait: Duration = .seconds(AppConstants.Game.gameModeQuitWaitSeconds)
 	) {
 		self.executable = executable
-		self.quitWaitSeconds = quitWaitSeconds
+		self.quitWait = quitWait
 	}
 
 	private func makeProcess(on: Bool) -> ChildProcess {
@@ -111,7 +111,7 @@ final class GameModeRequests: Sendable {
 	// Returns nil when it never exits, because its exit status is then unavailable.
 	private func waitForQuit(_ process: ChildProcess, log: LauncherLog) -> ChildProcess.Result? {
 		do {
-			let exit = try process.waitSynchronously(timeout: .seconds(quitWaitSeconds))
+			let exit = try process.waitSynchronously(timeout: quitWait)
 			if exit.timedOut {
 				log.error("gamepolicyctl did not exit before quit; terminating it")
 			}

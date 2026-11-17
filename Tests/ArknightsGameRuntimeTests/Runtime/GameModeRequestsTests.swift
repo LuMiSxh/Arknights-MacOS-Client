@@ -33,7 +33,7 @@ struct GameModeRequestsTests {
 				while :; do :; done
 				""")
 		let log = LauncherLog(fileURL: directory.url.appending(path: "launcher.log"))
-		let requests = GameModeRequests(executable: fake, quitWaitSeconds: 0.3)
+		let requests = GameModeRequests(executable: fake, quitWait: .milliseconds(300))
 
 		requests.setGameModeBlocking(on: false, log: log)
 
@@ -64,7 +64,7 @@ struct GameModeRequestsTests {
 				printf '%s\\n' "$3" >> "\(trace.path)"
 				""")
 		let log = LauncherLog(fileURL: root.appending(path: "launcher.log"))
-		let requests = GameModeRequests(executable: fake, quitWaitSeconds: 0.2)
+		let requests = GameModeRequests(executable: fake, quitWait: .milliseconds(200))
 		let onRequest = Task { await requests.setGameMode(on: true, log: log) }
 		await waitForFile(at: started)
 		defer {
