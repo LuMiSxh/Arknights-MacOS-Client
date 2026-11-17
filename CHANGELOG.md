@@ -60,6 +60,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- The status pill's VoiceOver hint now says "servers", matching the help and Settings wording.
 - **Switch and Download** selects the new runtime when the download starts, so Home no longer offers **Play** for the old one.
 - Window size, fullscreen size, and Retina scale follow the display the game opens on.
 - The "Wine configuration is being updated" window no longer appears after a runtime update.
