@@ -162,6 +162,7 @@ package final class RuntimeSelectionController {
 		) async throws -> InstalledRuntime
 
 	package let paths: AppPaths
+	private let selectionStore: RuntimeSelectionStore
 	package let lifecycle: LauncherLifecycleStore
 	package let access: RuntimeAccess
 	package private(set) var selectedLane: RuntimeLane
@@ -228,6 +229,7 @@ package final class RuntimeSelectionController {
 
 	package init(
 		paths: AppPaths,
+		selectionStore: RuntimeSelectionStore,
 		lifecycle: LauncherLifecycleStore,
 		log: LauncherLog? = nil,
 		access: RuntimeAccess = RuntimeAccess(),
@@ -235,10 +237,11 @@ package final class RuntimeSelectionController {
 		installOperation: InstallOperation? = nil
 	) {
 		self.paths = paths
+		self.selectionStore = selectionStore
 		self.lifecycle = lifecycle
 		self.log = log
 		self.access = access
-		let store = RuntimeStore(paths: paths, log: log)
+		let store = RuntimeStore(paths: paths, selectionStore: selectionStore)
 		self.store = store
 		log?.attempt("Could not rebuild the runtime record") {
 			try store.recoverRecordIfNeeded()
@@ -262,7 +265,8 @@ package final class RuntimeSelectionController {
 		self.configuration = resolvedConfiguration
 		self.availableLanes = Self.offeredLanes(in: resolvedConfiguration, access: access)
 
-		let installer = RuntimeInstaller(paths: paths, access: access, log: log)
+		let installer = RuntimeInstaller(
+			paths: paths, selectionStore: selectionStore, access: access, log: log)
 		self.installOperation =
 			installOperation ?? { pin, progress in
 				try await installer.install(pin: pin, progress: progress)
@@ -315,9 +319,7 @@ package final class RuntimeSelectionController {
 		installedVersions = Self.installedVersions(in: store)
 		availableLanes = Self.offeredLanes(in: configuration, access: access)
 		do {
-			selectedLane = try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load(
-				access: access
-			).selected
+			selectedLane = try selectionStore.load(access: access).selected
 		} catch {
 			log?.error(
 				"Runtime selection could not be read; \(launcherDiagnosticDescription(for: error))")

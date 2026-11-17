@@ -95,5 +95,7 @@ package func makeInstalledRuntime(
 		try RuntimeSelectionStore(fileURL: selectionFile).save(
 			RuntimeSelection(selected: paths.runtimeLane))
 	}
-	try RuntimeStore(paths: paths).recordInstalled(lane: lane, version: version)
+	try RuntimeStore(
+		paths: paths, selectionStore: RuntimeSelectionStore(fileURL: selectionFile)
+	).recordInstalled(lane: lane, version: version)
 }

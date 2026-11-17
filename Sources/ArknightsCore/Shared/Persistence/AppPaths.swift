@@ -116,6 +116,8 @@ package struct AppPaths: Sendable {
 			selection = runtimeSelection
 		} else {
 			do {
+				// A lock-free read is safe here: `JSONFileStore.write` replaces the file
+				// atomically, so a concurrent writer never exposes a partial document.
 				selection = try RuntimeSelectionStore(fileURL: selectionFile).load(
 					access: runtimeAccess)
 			} catch {

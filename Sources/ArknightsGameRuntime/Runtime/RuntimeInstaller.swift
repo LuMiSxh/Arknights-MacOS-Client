@@ -69,6 +69,7 @@ package struct RuntimeInstaller: Sendable {
 
 	package init(
 		paths: AppPaths,
+		selectionStore: RuntimeSelectionStore,
 		access: RuntimeAccess = RuntimeAccess(),
 		session: URLSession = .shared,
 		log: LauncherLog? = nil
@@ -80,7 +81,7 @@ package struct RuntimeInstaller: Sendable {
 			configuration: session.configuration,
 			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
 		)
-		store = RuntimeStore(paths: paths, log: log)
+		store = RuntimeStore(paths: paths, selectionStore: selectionStore)
 	}
 
 	package func install(

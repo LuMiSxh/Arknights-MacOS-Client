@@ -46,6 +46,8 @@ package final class LauncherViewModel {
 	/// True after the pre-0.6 data deletion finishes, so the view can start setup.
 	package internal(set) var legacyDataDeletionCompleted = false
 	let paths: AppPaths
+	/// The single owner of `runtime.json`; every writer shares it.
+	let selectionStore: RuntimeSelectionStore
 	@ObservationIgnored var startupTask: Task<Bool, Never>?
 	@ObservationIgnored var startupOptions = StartupOptions()
 	@ObservationIgnored var storageMigrationFailureID: UUID?
@@ -92,7 +94,10 @@ package final class LauncherViewModel {
 
 		let launcherLog = LauncherLog(fileURL: paths.launcherLogFile)
 		log = launcherLog
-		StartupTimeline.shared.attach(launcherLog)
+		StartupTimeline.shared.attach(
+			launcherLog,
+			enabled: preferences.value(LauncherPreferencesStore.Key.debugLoggingEnabled)
+		)
 		let playtimeStatistics = PlaytimeStatisticsController(
 			fileURL: paths.playtimeStatistics,
 			log: launcherLog
@@ -100,8 +105,12 @@ package final class LauncherViewModel {
 		self.playtimeStatistics = playtimeStatistics
 		let lifecycle = LauncherLifecycleStore(log: launcherLog)
 		self.lifecycle = lifecycle
+		let selectionStore = RuntimeSelectionStore(
+			fileURL: paths.runtimeSelectionFile, log: launcherLog)
+		self.selectionStore = selectionStore
 		let runtimeSelection = RuntimeSelectionController(
 			paths: paths,
+			selectionStore: selectionStore,
 			lifecycle: lifecycle,
 			log: launcherLog
 		)

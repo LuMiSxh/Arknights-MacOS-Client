@@ -66,6 +66,7 @@ private func makeController(
 ) -> RuntimeSelectionController {
 	RuntimeSelectionController(
 		paths: paths,
+		selectionStore: RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile),
 		lifecycle: makeLifecycleStore(in: storage),
 		access: access,
 		configuration: configuration,

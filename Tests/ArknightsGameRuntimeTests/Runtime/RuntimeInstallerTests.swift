@@ -137,6 +137,7 @@ private func makePaths(_ temporary: TemporaryDirectory) -> AppPaths {
 private func makeInstaller(paths: AppPaths, route: StubURLProtocol.Route) -> RuntimeInstaller {
 	RuntimeInstaller(
 		paths: paths,
+		selectionStore: RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile),
 		access: RuntimeAccess(
 			macOSVersion: OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)
 		),

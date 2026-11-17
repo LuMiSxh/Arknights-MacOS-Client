@@ -4,15 +4,20 @@ import Darwin
 import Foundation
 import Synchronization
 
-/// Temporary startup instrumentation. Logs each launch milestone once, measured from the
-/// kernel's process start time, so a normal start can be checked against the one-second goal.
+/// Startup instrumentation. Logs each launch milestone once at debug level, measured from the
+/// kernel's process start time, so a start can be checked against the one-second goal.
 ///
-/// Remove this type with its call sites once startup is verified: `grep -rn StartupTimeline
-/// Sources` and `grep 'Startup:' ~/Library/Logs/com.lumisxh.arknights-client/launcher.log`.
+/// Milestones are buffered until `attach(_:enabled:)` and dropped when debug logging is off.
+/// Read them with `grep 'Startup:' ~/Library/Logs/com.lumisxh.arknights-client/launcher.log`.
 package final class StartupTimeline: Sendable {
+	private enum Sink {
+		case pending([String])
+		case log(LauncherLog)
+		case disabled
+	}
+
 	private struct State {
-		var log: LauncherLog?
-		var pending: [String] = []
+		var sink = Sink.pending([])
 		var loggedMessages: Set<String> = []
 	}
 
@@ -26,15 +31,15 @@ package final class StartupTimeline: Sendable {
 	}
 
 	/// Connects the shared timeline to the launcher log and flushes anything recorded earlier.
-	package func attach(_ log: LauncherLog) {
+	/// When `enabled` is false, earlier milestones are dropped and later ones are ignored.
+	package func attach(_ log: LauncherLog, enabled: Bool) {
 		let pending = state.withLock { state -> [String] in
-			state.log = log
-			let pending = state.pending
-			state.pending.removeAll()
-			return pending
+			guard case .pending(let lines) = state.sink else { return [] }
+			state.sink = enabled ? .log(log) : .disabled
+			return enabled ? lines : []
 		}
 		for line in pending {
-			log.info(line)
+			log.debug(line)
 		}
 	}
 
@@ -58,12 +63,17 @@ package final class StartupTimeline: Sendable {
 		let milliseconds = max(0, Int(Date().timeIntervalSince(startedAt) * 1000))
 		let line = "\(message) +\(milliseconds) ms"
 		state.withLock { state in
-			guard state.loggedMessages.insert(message).inserted else { return }
-			guard let log = state.log else {
-				state.pending.append(line)
+			switch state.sink {
+			case .disabled:
 				return
+			case .pending(var lines):
+				guard state.loggedMessages.insert(message).inserted else { return }
+				lines.append(line)
+				state.sink = .pending(lines)
+			case .log(let log):
+				guard state.loggedMessages.insert(message).inserted else { return }
+				log.debug(line)
 			}
-			log.info(line)
 		}
 	}
 

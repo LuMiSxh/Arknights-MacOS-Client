@@ -98,6 +98,7 @@ enum WinePrefixUpdateStamp {
 
 // Reads and writes `RuntimeMigrationState` inside the Wine prefix, importing the legacy
 // single-file revision/configuration markers older builds used before this schema existed.
+// Remove this legacy import in 1.1.
 struct RuntimeMigrationStore {
 	static let stateFileName = ".arknights-runtime-migrations.json"
 	static let legacyRevisionFileName = ".arknights-runtime-revision"

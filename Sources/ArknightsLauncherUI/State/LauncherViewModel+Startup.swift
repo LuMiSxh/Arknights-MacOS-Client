@@ -34,12 +34,14 @@ extension LauncherViewModel {
 	@concurrent
 	private static func migrateStorage(
 		paths: AppPaths,
+		selectionStore: RuntimeSelectionStore,
 		persistedInstallDirectories: [GameRegion: URL],
 		log: LauncherLog
 	) async -> LayoutMigrationResult {
 		let detector = RunningWineDetector(paths: paths)
 		return await LayoutMigrator.migrate(
 			paths: paths,
+			selectionStore: selectionStore,
 			persistedInstallDirectories: persistedInstallDirectories,
 			isWineRunning: { await detector.isRunning() },
 			log: log
@@ -64,7 +66,7 @@ extension LauncherViewModel {
 		if let currentLayout, currentLayout.failure == nil {
 			initialArtwork = startInitialArtworkRestore()
 		}
-		startupTask = Task { [paths, log] in
+		startupTask = Task { [paths, selectionStore, log] in
 			let migration: LayoutMigrationResult
 			if let currentLayout {
 				migration = currentLayout
@@ -72,6 +74,7 @@ extension LauncherViewModel {
 				StartupTimeline.shared.beginStep("storage migration")
 				migration = await Self.migrateStorage(
 					paths: paths,
+					selectionStore: selectionStore,
 					persistedInstallDirectories: persistedInstallDirectories,
 					log: log
 				)

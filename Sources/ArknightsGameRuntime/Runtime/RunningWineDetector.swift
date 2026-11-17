@@ -20,7 +20,10 @@ package struct RunningWineDetector: Sendable {
 		processPaths: @escaping ProcessPathSource = RunningWineDetector.liveProcessPaths
 	) {
 		roots = [
-			bundleURL.appending(path: "Contents/Resources/Runtime", directoryHint: .isDirectory),
+			bundleURL.appending(
+				path: AppConstants.Runtime.legacyBundledRuntimeRelativePath,
+				directoryHint: .isDirectory
+			),
 			paths.runtimeRoot,
 		]
 		self.processPaths = processPaths

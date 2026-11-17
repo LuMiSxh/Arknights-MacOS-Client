@@ -27,6 +27,7 @@ private struct SwitchFixture {
 		self.release = release
 		controller = RuntimeSelectionController(
 			paths: paths,
+			selectionStore: RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile),
 			lifecycle: makeLifecycleStore(in: temporary),
 			access: RuntimeAccess(
 				macOSVersion: OperatingSystemVersion(

@@ -60,6 +60,9 @@ package enum AppConstants {
 		package static let armLaneMinimumMacOSMajorVersion = 26
 		/// The last macOS major version with general Rosetta 2 support, so the x86_64 lane can run.
 		package static let x86LaneLastSupportedMacOSMajorVersion = 27
+		/// Runtime location bundled by releases 0.6 and 0.7; used only to detect their running
+		/// Wine during layout migration. Remove in 1.1 with the 0.6/0.7 migration.
+		package static let legacyBundledRuntimeRelativePath = "Contents/Resources/Runtime"
 	}
 
 	package enum Icon {
