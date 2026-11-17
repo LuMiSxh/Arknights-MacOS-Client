@@ -277,8 +277,6 @@ package struct RuntimeInstaller: Sendable {
 						))
 				}
 			}
-		} catch is CancellationError {
-			throw CancellationError()
 		} catch let error as HTTPTransportError {
 			throw RuntimeInstallError.downloadFailed(String(describing: error))
 		}
@@ -421,14 +419,24 @@ package struct RuntimeInstaller: Sendable {
 
 	static func sha256Hex(at url: URL) throws -> String {
 		let handle = try FileHandle(forReadingFrom: url)
+		let descriptor = handle.fileDescriptor
 		var hasher = SHA256()
+		var buffer = [UInt8](repeating: 0, count: AppConstants.IO.checksumBufferSize)
 		while true {
-			guard let data = try handle.read(upToCount: AppConstants.IO.checksumBufferSize),
-				!data.isEmpty
-			else { break }
-			hasher.update(data: data)
+			let count = try buffer.withUnsafeMutableBytes { raw -> Int in
+				while true {
+					let count = Darwin.read(descriptor, raw.baseAddress, raw.count)
+					if count >= 0 { return count }
+					if errno == EINTR { continue }
+					throw POSIXError(.init(rawValue: errno) ?? .EIO)
+				}
+			}
+			guard count > 0 else { break }
+			buffer.withUnsafeBytes { bytes in
+				hasher.update(bufferPointer: UnsafeRawBufferPointer(rebasing: bytes[0..<count]))
+			}
 		}
-		return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+		return hasher.finalize().hexString
 	}
 
 	private static func isContained(_ url: URL, in root: URL) -> Bool {
