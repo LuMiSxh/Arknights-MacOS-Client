@@ -5,7 +5,6 @@ import Foundation
 
 actor ProgressCounter {
 	private let totalBytes: Int64
-	private let totalFiles: Int
 	private let clock: ElapsedTime
 	private var downloadedBytes: Int64
 	private var networkDownloadedBytes: Int64 = 0
@@ -19,14 +18,12 @@ actor ProgressCounter {
 
 	init(
 		totalBytes: Int64,
-		totalFiles: Int,
 		downloadedBytes: Int64 = 0,
 		completedFiles: Int = 0,
 		sequence: UInt64 = 0,
 		clock: any Clock<Duration> = ContinuousClock()
 	) {
 		self.totalBytes = totalBytes
-		self.totalFiles = totalFiles
 		let elapsed = ElapsedTime(clock)
 		self.clock = elapsed
 		self.downloadedBytes = downloadedBytes
@@ -97,8 +94,6 @@ actor ProgressCounter {
 			downloadedBytes: downloadedBytes,
 			totalBytes: totalBytes,
 			completedFiles: completedFiles,
-			totalFiles: totalFiles,
-			currentFile: file,
 			networkDownloadedBytes: networkDownloadedBytes,
 			transferRateBytesPerSecond: snapshot.bytesPerSecond,
 			isTransferStalled: snapshot.isStalled,

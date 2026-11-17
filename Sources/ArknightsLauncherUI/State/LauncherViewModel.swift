@@ -214,7 +214,6 @@ package final class LauncherViewModel {
 			settings: settings,
 			intelTranslation: intelTranslation,
 			paths: paths,
-			preferences: preferences,
 			log: launcherLog,
 			gameCompatibilityManager: resolvedCompatibilityManager,
 			playtimeStatistics: playtimeStatistics,

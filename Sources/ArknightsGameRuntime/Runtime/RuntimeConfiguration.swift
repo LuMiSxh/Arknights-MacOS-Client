@@ -3,7 +3,7 @@
 import ArknightsCore
 import Foundation
 
-package enum RuntimeConfigurationError: Error, Equatable, Sendable {
+enum RuntimeConfigurationError: Error, Equatable, Sendable {
 	case unsupportedSchema(Int)
 	case missingLane(RuntimeLane)
 	case invalidPin(lane: RuntimeLane, reason: String)

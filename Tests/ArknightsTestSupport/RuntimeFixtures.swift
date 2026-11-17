@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsGameRuntime
 import Foundation
+
+@testable import ArknightsGameRuntime
 
 /// A runtime manifest interface for runtime configuration tests.
 package func makeRuntimeInterface(

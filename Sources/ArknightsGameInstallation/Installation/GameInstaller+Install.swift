@@ -94,7 +94,6 @@ extension GameInstaller {
 		}
 		let counter = ProgressCounter(
 			totalBytes: progressBaseline.totalBytes,
-			totalFiles: progressBaseline.totalFiles,
 			downloadedBytes: progressBaseline.downloadedBytes,
 			completedFiles: progressBaseline.completedFiles,
 			sequence: verification.lastSequence
@@ -102,8 +101,7 @@ extension GameInstaller {
 		if pendingFiles.isEmpty {
 			try Task.checkCancellation()
 			try saveState(configuration: configuration, manifest: manifest, to: installationRoot)
-			return InstallResult(
-				downloadedFiles: 0, downloadedBytes: 0, installDirectory: installDirectory)
+			return InstallResult(downloadedFiles: 0, downloadedBytes: 0)
 		}
 		await progress(await counter.current(file: pendingFiles[0].path))
 		let reuse = await reuseSession(for: region, target: installationRoot)
@@ -141,8 +139,7 @@ extension GameInstaller {
 		)
 		return InstallResult(
 			downloadedFiles: pendingFiles.count,
-			downloadedBytes: downloadedBytes,
-			installDirectory: installDirectory
+			downloadedBytes: downloadedBytes
 		)
 	}
 }

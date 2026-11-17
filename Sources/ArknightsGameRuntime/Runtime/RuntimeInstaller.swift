@@ -8,7 +8,7 @@ import Darwin
 import Foundation
 
 /// Failures while downloading, verifying, extracting, and installing a pinned runtime.
-package enum RuntimeInstallError: Error, Equatable, Sendable {
+enum RuntimeInstallError: Error, Equatable, Sendable {
 	case hashMismatch
 	case sizeMismatch(expected: Int, actual: Int)
 	case insufficientDiskSpace(required: Int64, available: Int64)

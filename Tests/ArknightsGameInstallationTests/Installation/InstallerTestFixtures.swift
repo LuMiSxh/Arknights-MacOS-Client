@@ -120,7 +120,6 @@ extension InstallerFixture {
 				installDirectory: installDirectory,
 				counter: ProgressCounter(
 					totalBytes: item.byteCount,
-					totalFiles: 1,
 					downloadedBytes: Int64(baseline)
 				),
 				progress: { update in await recorder.record(update) }

@@ -3,7 +3,7 @@
 import ArknightsCore
 import Foundation
 
-package enum DiskCapacityError: LauncherDiagnosticError, Sendable {
+enum DiskCapacityError: LauncherDiagnosticError, Sendable {
 	case noExistingAncestor(URL)
 	case resourceValuesUnavailable(URL)
 	case resourceValuesReadFailed(URL, String)

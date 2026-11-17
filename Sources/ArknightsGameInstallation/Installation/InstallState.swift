@@ -3,7 +3,7 @@
 import ArknightsCore
 import Foundation
 
-package struct InstalledState: Codable, Sendable {
+struct InstalledState: Codable, Sendable {
 	let schemaVersion: Int
 	let version: String
 	let basis: String

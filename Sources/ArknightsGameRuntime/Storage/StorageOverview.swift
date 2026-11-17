@@ -40,7 +40,7 @@ struct StorageUsage: Equatable, Identifiable, Sendable {
 	var id: String { location.category.id }
 }
 
-package struct StorageOverviewContext: Equatable, Sendable {
+struct StorageOverviewContext: Equatable, Sendable {
 	package let region: GameRegion
 
 	let persistedInstallDirectories: [GameRegion: URL]
@@ -100,7 +100,7 @@ enum StorageOverviewResolver {
 		]
 	}
 
-	static func placeholderLocations(context: StorageOverviewContext) -> [StorageLocation] {
+	static func placeholderLocations() -> [StorageLocation] {
 		let games = GameRegion.allCases.map {
 			StorageLocation(category: .game($0), urls: [])
 		}

@@ -52,7 +52,6 @@ package final class GameSessionController {
 	let settings: LauncherPreferencesController
 	let intelTranslation: IntelTranslationController
 	package let paths: AppPaths
-	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
 	let gameCompatibilityManager: GameCompatibilityManager
 	let playtimeStatistics: PlaytimeStatisticsController
@@ -83,7 +82,6 @@ package final class GameSessionController {
 		settings: LauncherPreferencesController,
 		intelTranslation: IntelTranslationController,
 		paths: AppPaths,
-		preferences: LauncherPreferencesStore,
 		log: LauncherLog,
 		gameCompatibilityManager: GameCompatibilityManager,
 		playtimeStatistics: PlaytimeStatisticsController,
@@ -95,7 +93,6 @@ package final class GameSessionController {
 		self.settings = settings
 		self.intelTranslation = intelTranslation
 		self.paths = paths
-		self.preferences = preferences
 		self.log = log
 		self.gameCompatibilityManager = gameCompatibilityManager
 		let runtimePaths = paths

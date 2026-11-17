@@ -10,7 +10,7 @@ import Observation
 @Observable
 package final class StorageOverviewController {
 	private(set) var usages: [StorageUsage]
-	package private(set) var isMeasuring = false
+	private(set) var isMeasuring = false
 
 	let lifecycle: LauncherLifecycleStore
 	private let paths: AppPaths
@@ -140,7 +140,7 @@ package final class StorageOverviewController {
 	private func displayedUsages(for context: StorageOverviewContext) -> [StorageUsage] {
 		let key = StorageOverviewCacheKey(context: context)
 		let cached = cachedEntries.first { $0.key == key }?.usages ?? []
-		return StorageOverviewResolver.placeholderLocations(context: context).map { location in
+		return StorageOverviewResolver.placeholderLocations().map { location in
 			let entry = cached.first { $0.categoryID == location.category.id }
 			return StorageUsage(
 				location: location,

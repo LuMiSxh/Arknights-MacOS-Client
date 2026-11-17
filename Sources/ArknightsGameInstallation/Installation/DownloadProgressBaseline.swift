@@ -6,7 +6,6 @@ import Foundation
 // jump backward when Repair or Resume restarts.
 struct DownloadProgressBaseline: Sendable {
 	let totalBytes: Int64
-	let totalFiles: Int
 	let downloadedBytes: Int64
 	let completedFiles: Int
 
@@ -23,7 +22,6 @@ struct DownloadProgressBaseline: Sendable {
 			: []
 		let measuredFiles = isIncompleteInstallation ? manifestFiles : pendingFiles
 		totalBytes = try GameInstaller.totalByteCount(of: measuredFiles)
-		totalFiles = measuredFiles.count
 		completedFiles = reusedFiles.count
 		var downloadedBytes = try GameInstaller.totalByteCount(of: reusedFiles)
 		for item in pendingFiles {

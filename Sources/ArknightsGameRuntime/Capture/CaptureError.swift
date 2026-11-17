@@ -4,7 +4,7 @@ import ArknightsCore
 import Foundation
 
 /// Why a screenshot could not be taken or saved.
-package enum CaptureError: LocalizedError, LauncherDiagnosticError, SupportCodeProviding, Sendable {
+enum CaptureError: LocalizedError, LauncherDiagnosticError, SupportCodeProviding, Sendable {
 	case permissionDenied
 	case noGameWindow
 	case captureFailed(String)

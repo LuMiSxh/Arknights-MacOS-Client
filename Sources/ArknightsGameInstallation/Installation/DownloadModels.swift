@@ -6,8 +6,6 @@ package struct DownloadProgress: Equatable, Sendable {
 	package let downloadedBytes: Int64
 	package let totalBytes: Int64
 	let completedFiles: Int
-	let totalFiles: Int
-	let currentFile: String
 	// Bytes received from the network during this installation operation. Resumed and
 	// already-present bytes are deliberately excluded.
 	let networkDownloadedBytes: Int64
@@ -24,8 +22,6 @@ package struct DownloadProgress: Equatable, Sendable {
 		downloadedBytes: Int64,
 		totalBytes: Int64,
 		completedFiles: Int,
-		totalFiles: Int,
-		currentFile: String,
 		networkDownloadedBytes: Int64 = 0,
 		transferRateBytesPerSecond: Double? = nil,
 		isTransferStalled: Bool = false,
@@ -35,8 +31,6 @@ package struct DownloadProgress: Equatable, Sendable {
 		self.downloadedBytes = downloadedBytes
 		self.totalBytes = totalBytes
 		self.completedFiles = completedFiles
-		self.totalFiles = totalFiles
-		self.currentFile = currentFile
 		self.networkDownloadedBytes = networkDownloadedBytes
 		self.transferRateBytesPerSecond = transferRateBytesPerSecond
 		self.isTransferStalled = isTransferStalled
@@ -53,5 +47,4 @@ package struct DownloadProgress: Equatable, Sendable {
 package struct InstallResult: Sendable {
 	let downloadedFiles: Int
 	package let downloadedBytes: Int64
-	let installDirectory: URL
 }

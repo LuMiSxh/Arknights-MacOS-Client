@@ -146,9 +146,7 @@ actor ControllableInstaller: GameInstalling {
 			DownloadProgress(
 				downloadedBytes: 50,
 				totalBytes: 100,
-				completedFiles: 1,
-				totalFiles: 2,
-				currentFile: "game.zip"
+				completedFiles: 1
 			))
 	}
 	func acknowledgeCancellation() {
@@ -159,8 +157,7 @@ actor ControllableInstaller: GameInstalling {
 		installationResponse?.resume(
 			returning: InstallResult(
 				downloadedFiles: 1,
-				downloadedBytes: 100,
-				installDirectory: URL(filePath: "/tmp/Arknights-Global")
+				downloadedBytes: 100
 			)
 		)
 		installationResponse = nil

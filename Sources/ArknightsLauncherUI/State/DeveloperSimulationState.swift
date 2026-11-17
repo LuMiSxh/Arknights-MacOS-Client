@@ -122,8 +122,6 @@ import CoreGraphics
 				downloadedBytes: Int64((Double(totalBytes) * progress.fraction).rounded()),
 				totalBytes: totalBytes,
 				completedFiles: Int(Double(totalFiles) * progress.fraction),
-				totalFiles: totalFiles,
-				currentFile: "Arknights_Data/data.unity3d",
 				transferRateBytesPerSecond: !isVerifying && transfer == .known ? 3_500_000 : nil,
 				isTransferStalled: !isVerifying && transfer == .stalled,
 				isVerifying: isVerifying
