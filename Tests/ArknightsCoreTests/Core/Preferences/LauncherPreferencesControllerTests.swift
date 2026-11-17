@@ -14,7 +14,8 @@ struct LauncherPreferencesControllerTests {
 	func resetToDefaultsDoesNotRequestUpdateChecks() {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesControllerTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
+		let store = LauncherPreferencesStore(
+			defaults: defaults, themeCacheURL: makeUnusedThemeCacheURL())
 		store.set(false, for: Key.automaticLauncherUpdates)
 		store.set(false, for: Key.automaticGameUpdates)
 		store.set(false, for: Key.announcementsEnabled)

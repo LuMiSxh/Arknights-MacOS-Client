@@ -71,7 +71,7 @@ package final class LauncherViewModel {
 		installer: (any GameInstalling)? = nil,
 		paths: AppPaths = AppPaths(),
 		artworkCache: ArtworkCache? = nil,
-		preferences: LauncherPreferencesStore = LauncherPreferencesStore(),
+		preferences: LauncherPreferencesStore,
 		announcementService: LauncherAnnouncementService = LauncherAnnouncementService(),
 		launcherIconManager: LauncherIconManager? = nil,
 		presetCatalog: PresetCatalogService? = nil,

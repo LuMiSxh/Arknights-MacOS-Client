@@ -188,7 +188,7 @@ package struct LauncherPreferencesStore {
 
 	package init(
 		defaults: UserDefaults = .standard,
-		themeCacheURL: URL = AppPaths().themeCache,
+		themeCacheURL: URL,
 		log: LauncherLog? = nil
 	) {
 		self.defaults = defaults

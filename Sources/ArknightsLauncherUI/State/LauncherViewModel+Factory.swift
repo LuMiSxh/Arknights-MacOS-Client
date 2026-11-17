@@ -34,7 +34,8 @@ extension LauncherViewModel {
 				defaults.removePersistentDomain(forName: suiteName)
 				return LauncherViewModel(
 					paths: paths,
-					preferences: LauncherPreferencesStore(defaults: defaults),
+					preferences: LauncherPreferencesStore(
+						defaults: defaults, themeCacheURL: paths.themeCache),
 					arguments: arguments
 				)
 			}
@@ -43,7 +44,7 @@ extension LauncherViewModel {
 		PreferencesMigrator().migrate(.standard, themeCacheURL: paths.themeCache)
 		return LauncherViewModel(
 			paths: paths,
-			preferences: LauncherPreferencesStore(),
+			preferences: LauncherPreferencesStore(themeCacheURL: paths.themeCache),
 			arguments: arguments
 		)
 	}

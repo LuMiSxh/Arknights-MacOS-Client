@@ -41,3 +41,9 @@ package func makeLifecycleStore(in storage: TemporaryDirectory) -> LauncherLifec
 	let fileURL = storage.url.appending(path: "Lifecycle.\(UUID().uuidString).log")
 	return LauncherLifecycleStore(log: LauncherLog(fileURL: fileURL))
 }
+
+/// A theme cache path for a store whose test never reads or writes the cache.
+package func makeUnusedThemeCacheURL() -> URL {
+	FileManager.default.temporaryDirectory.appending(
+		path: "UnusedThemeCache.\(UUID().uuidString)")
+}

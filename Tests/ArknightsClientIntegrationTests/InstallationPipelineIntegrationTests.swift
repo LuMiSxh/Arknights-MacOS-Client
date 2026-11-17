@@ -118,7 +118,8 @@ struct InstallationPipelineIntegrationTests {
 		)
 		#expect(!completedOnboarding.isPresented)
 
-		let reloadedPreferences = LauncherPreferencesStore(defaults: environment.defaults)
+		let reloadedPreferences = LauncherPreferencesStore(
+			defaults: environment.defaults, themeCacheURL: environment.paths.themeCache)
 		#expect(reloadedPreferences.selectedRegion() == .global)
 		#expect(
 			reloadedPreferences.installDirectory(

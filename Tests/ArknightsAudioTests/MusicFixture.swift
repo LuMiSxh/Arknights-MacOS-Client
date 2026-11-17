@@ -167,7 +167,8 @@ struct MusicFixture {
 		controller = BackgroundMusicController(
 			lifecycle: LauncherLifecycleStore(log: LauncherLog(fileURL: paths.launcherLogFile)),
 			settings: LauncherPreferencesController(
-				store: LauncherPreferencesStore(defaults: defaults)
+				store: LauncherPreferencesStore(
+					defaults: defaults, themeCacheURL: paths.themeCache)
 			),
 			launcherIconManager: LauncherIconManager(
 				setBundleIcon: { _ in true },

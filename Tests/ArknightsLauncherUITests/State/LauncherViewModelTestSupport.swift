@@ -43,7 +43,8 @@ func makeModel(
 	)
 	prepareStorage?(paths)
 	let defaults = UserDefaults(suiteName: "LauncherViewModelTests.\(UUID().uuidString)")!
-	let preferences = LauncherPreferencesStore(defaults: defaults)
+	let preferences = LauncherPreferencesStore(
+		defaults: defaults, themeCacheURL: paths.themeCache)
 	preferences.set(false, for: LauncherPreferencesStore.Key.automaticGameUpdates)
 	preferences.set(false, for: LauncherPreferencesStore.Key.automaticLauncherUpdates)
 	preferences.set(false, for: LauncherPreferencesStore.Key.announcementsEnabled)

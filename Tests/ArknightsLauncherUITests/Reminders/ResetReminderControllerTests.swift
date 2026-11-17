@@ -90,7 +90,8 @@ private final class Harness {
 		self.installed = installed
 		let defaults = UserDefaults(suiteName: suiteName)!
 		settings = LauncherPreferencesController(
-			store: LauncherPreferencesStore(defaults: defaults))
+			store: LauncherPreferencesStore(
+				defaults: defaults, themeCacheURL: makeUnusedThemeCacheURL()))
 		var box: Harness?
 		controller = ResetReminderController(
 			scheduler: scheduler,

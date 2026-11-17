@@ -20,7 +20,8 @@ struct LauncherPreferencesStoreTests {
 	func launchOptionsPreserveValidStoredFieldsAndRoundTrip() throws {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
+		let store = LauncherPreferencesStore(
+			defaults: defaults, themeCacheURL: makeUnusedThemeCacheURL())
 		defaults.set(
 			Data(
 				#"{"displayMode":"borderlessWindow","resolution":"9999x9999","usesGameMode":true}"#
@@ -68,7 +69,8 @@ struct LauncherPreferencesStoreTests {
 	private func screenshotShortcutRoundTripsThroughStorage(_ testCase: StoredShortcutCase) {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
+		let store = LauncherPreferencesStore(
+			defaults: defaults, themeCacheURL: makeUnusedThemeCacheURL())
 
 		store.setScreenshotShortcut(testCase.shortcut)
 
@@ -80,7 +82,8 @@ struct LauncherPreferencesStoreTests {
 	func installDirectoryMigrationPreservesSeparateRegionalUserChoices() {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
+		let store = LauncherPreferencesStore(
+			defaults: defaults, themeCacheURL: makeUnusedThemeCacheURL())
 		let legacyGlobal = URL(filePath: "/tmp/Legacy-Global", directoryHint: .isDirectory)
 		let legacyJapan = URL(filePath: "/tmp/Legacy-Japan", directoryHint: .isDirectory)
 		let fallback = URL(filePath: "/tmp/Fallback", directoryHint: .isDirectory)
@@ -127,7 +130,8 @@ struct LauncherPreferencesStoreTests {
 	func resetRemovesExactlyTheResettablePreferences() {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
+		let store = LauncherPreferencesStore(
+			defaults: defaults, themeCacheURL: makeUnusedThemeCacheURL())
 		for preference in Key.all {
 			defaults.set("stored", forKey: preference.name)
 		}

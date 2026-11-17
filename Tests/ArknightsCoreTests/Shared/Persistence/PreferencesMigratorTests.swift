@@ -161,9 +161,11 @@ struct PreferencesMigratorTests {
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		defaults.set(Data(json.utf8), forKey: LauncherPreferencesStore.Key.gameLaunchOptions)
 
-		PreferencesMigrator().migrate(
-			defaults, themeCacheURL: makeThemeCacheURL("LaunchOptions"))
+		let themeCacheURL = makeThemeCacheURL("LaunchOptions")
+		PreferencesMigrator().migrate(defaults, themeCacheURL: themeCacheURL)
 
-		#expect(LauncherPreferencesStore(defaults: defaults).launchOptions() == expected)
+		#expect(
+			LauncherPreferencesStore(defaults: defaults, themeCacheURL: themeCacheURL)
+				.launchOptions() == expected)
 	}
 }

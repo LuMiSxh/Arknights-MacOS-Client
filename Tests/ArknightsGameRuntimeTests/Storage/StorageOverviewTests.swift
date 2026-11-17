@@ -21,7 +21,8 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 	)
 	let (defaults, suiteName) = makeIsolatedDefaults("StorageOverviewTests")
 	defer { defaults.removePersistentDomain(forName: suiteName) }
-	let preferences = LauncherPreferencesStore(defaults: defaults)
+	let preferences = LauncherPreferencesStore(
+		defaults: defaults, themeCacheURL: paths.themeCache)
 	let customJapan = root.appending(path: "External/Arknights-Japan")
 	preferences.setInstallDirectory(customJapan, for: .japan)
 	let browserCache = paths.winePrefix(for: .yostar).appending(

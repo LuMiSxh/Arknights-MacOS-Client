@@ -35,7 +35,8 @@ struct IntegrationTestEnvironment {
 		let isolated = makeIsolatedDefaults("ArknightsClientIntegrationTests")
 		defaults = isolated.defaults
 		defaultsSuiteName = isolated.suiteName
-		preferences = LauncherPreferencesStore(defaults: defaults)
+		preferences = LauncherPreferencesStore(
+			defaults: defaults, themeCacheURL: paths.themeCache)
 		session = route.session
 	}
 

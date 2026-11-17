@@ -65,7 +65,9 @@ private final class Fixture {
 		lifecycle = makeLifecycleStore(in: storage)
 		(defaults, suiteName) = makeIsolatedDefaults("ScreenshotHotKeyLifecycleTests")
 		settings = LauncherPreferencesController(
-			store: LauncherPreferencesStore(defaults: defaults))
+			store: LauncherPreferencesStore(
+				defaults: defaults,
+				themeCacheURL: temporary.url.appending(path: "Theme/theme.json")))
 		settings.screenshotShortcut = shortcut
 		let registrations = self.registrations
 		let (gate, continuation) = AsyncStream<Void>.makeStream(
