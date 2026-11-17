@@ -8,7 +8,7 @@ package struct BoundedHTTPDataLoader: Sendable {
 	private let redirectValidator: (@Sendable (URL) -> Bool)?
 
 	package init(
-		session: URLSession = .shared,
+		configuration: URLSessionConfiguration,
 		maximumBufferedBytes: Int,
 		redirectValidator: @escaping @Sendable (URL) -> Bool = {
 			$0.scheme?.lowercased() == "https"
@@ -16,9 +16,24 @@ package struct BoundedHTTPDataLoader: Sendable {
 	) {
 		self.redirectValidator = redirectValidator
 		self.session = HTTPChunkSession(
-			configuration: session.configuration,
+			configuration: configuration,
 			redirectValidator: redirectValidator,
 			maximumBufferedBytes: maximumBufferedBytes
+		)
+	}
+
+	/// Uses only `session.configuration`; pass `configuration:` when the session is not shared.
+	package init(
+		session: URLSession = .shared,
+		maximumBufferedBytes: Int,
+		redirectValidator: @escaping @Sendable (URL) -> Bool = {
+			$0.scheme?.lowercased() == "https"
+		}
+	) {
+		self.init(
+			configuration: session.configuration,
+			maximumBufferedBytes: maximumBufferedBytes,
+			redirectValidator: redirectValidator
 		)
 	}
 

@@ -64,7 +64,7 @@ package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @uncheck
 	private let maximumBufferedBytes: Int
 	private let delegateQueue: OperationQueue
 	private let subscribers = Mutex<[Int: Subscriber]>([:])
-	private var session: URLSession!
+	private var session: URLSession?
 
 	package init(
 		configuration: URLSessionConfiguration,
@@ -95,6 +95,9 @@ package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @uncheck
 		let (events, continuation) = AsyncThrowingStream<HTTPChunkEvent, any Error>.makeStream(
 			bufferingPolicy: .unbounded
 		)
+		guard let session = session else {
+			preconditionFailure("HTTPChunkSession cannot stream without its session")
+		}
 		let task = session.dataTask(with: request)
 		let identifier = task.taskIdentifier
 		subscribers.withLock {
