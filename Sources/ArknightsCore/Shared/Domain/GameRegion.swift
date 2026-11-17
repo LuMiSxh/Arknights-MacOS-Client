@@ -159,21 +159,44 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		}
 	}
 
-	package var apiBaseURL: URL {
-		switch self {
-		case .global: Self.yostarAPIURL("https://api-launcher-en.yo-star.com")
-		case .japan: Self.yostarAPIURL("https://api-launcher-jp.yo-star.com")
-		case .korea: Self.yostarAPIURL("https://api-launcher-kr.yo-star.com")
-		case .taiwan, .china, .chinaBilibili:
-			preconditionFailure("This region has no Yostar launcher API")
+}
+
+/// The Yostar-published servers, the only ones with a Yostar launcher API. Narrow a
+/// `GameRegion` here before reaching a Yostar endpoint.
+package enum YostarRegion: Sendable {
+	case global
+	case japan
+	case korea
+
+	package init?(_ region: GameRegion) {
+		switch region {
+		case .global: self = .global
+		case .japan: self = .japan
+		case .korea: self = .korea
+		case .taiwan, .china, .chinaBilibili: return nil
 		}
 	}
 
-	private static func yostarAPIURL(_ string: String) -> URL {
+	package var region: GameRegion {
+		switch self {
+		case .global: .global
+		case .japan: .japan
+		case .korea: .korea
+		}
+	}
+
+	package var apiBaseURL: URL {
+		switch self {
+		case .global: Self.url("https://api-launcher-en.yo-star.com")
+		case .japan: Self.url("https://api-launcher-jp.yo-star.com")
+		case .korea: Self.url("https://api-launcher-kr.yo-star.com")
+		}
+	}
+
+	private static func url(_ string: String) -> URL {
 		guard let url = URL(string: string) else {
 			preconditionFailure("Invalid Yostar API base URL: \(string)")
 		}
 		return url
 	}
-
 }

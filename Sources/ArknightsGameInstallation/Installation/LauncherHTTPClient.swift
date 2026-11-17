@@ -29,9 +29,10 @@ struct LauncherHTTPClient: Sendable {
 		maximumBytes: Int,
 		operation: String,
 		region: GameRegion,
+		fallbackURL: URL,
 		redirectValidator: @escaping @Sendable (URL) -> Bool
 	) async throws -> (Data, HTTPURLResponse) {
-		let url = request.url ?? region.apiBaseURL
+		let url = request.url ?? fallbackURL
 		do {
 			let result = try await fetcher.fetch(
 				[request],

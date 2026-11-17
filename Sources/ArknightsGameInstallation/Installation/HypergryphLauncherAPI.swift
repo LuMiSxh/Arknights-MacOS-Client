@@ -117,6 +117,7 @@ actor HypergryphLauncherAPI {
 			maximumBytes: maximumManifestResponseBytes,
 			operation: "manifest download",
 			region: profile.region,
+			fallbackURL: fileBaseURL.appending(path: "game_files"),
 			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: profile.region)
 		)
 		let decrypted = try HypergryphManifestCipher.decrypt(encrypted)
@@ -184,6 +185,7 @@ actor HypergryphLauncherAPI {
 			maximumBytes: maximumAPIResponseBytes,
 			operation: "metadata request",
 			region: profile.region,
+			fallbackURL: url,
 			redirectValidator: profile.isAllowedMetadataURL
 		)
 		return try JSONDecoder().decode(HypergryphBatchResponse.self, from: data)

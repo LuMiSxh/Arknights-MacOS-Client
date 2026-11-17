@@ -51,7 +51,7 @@ package actor LauncherAPI {
 			return try await hypergryph.gameConfiguration(for: profile)
 		}
 		return try await request(
-			region: region,
+			region: try yostarRegion(region),
 			path: "/api/launcher/game/config",
 			operation: "game configuration"
 		)
@@ -62,7 +62,7 @@ package actor LauncherAPI {
 			return try await hypergryph.branding(for: profile)
 		}
 		return try await request(
-			region: region,
+			region: try yostarRegion(region),
 			path: "/api/launcher/base/config",
 			operation: "launcher branding"
 		)
@@ -73,7 +73,7 @@ package actor LauncherAPI {
 			return try await hypergryph.cdnConfiguration(for: profile)
 		}
 		return try await request(
-			region: region,
+			region: try yostarRegion(region),
 			path: "/api/launcher/advanced/game/download/cdn",
 			operation: "CDN configuration"
 		)
@@ -94,8 +94,9 @@ package actor LauncherAPI {
 		for configuration: GameConfiguration,
 		region: GameRegion
 	) async throws -> ManifestLocation {
+		let yostarRegion = try yostarRegion(region)
 		var components = URLComponents(
-			url: region.apiBaseURL.appending(path: "/api/launcher/game/config/json"),
+			url: yostarRegion.apiBaseURL.appending(path: "/api/launcher/game/config/json"),
 			resolvingAgainstBaseURL: false
 		)
 		components?.queryItems = [
@@ -106,12 +107,12 @@ package actor LauncherAPI {
 			throw client.requestError(
 				operation: "manifest location",
 				region: region,
-				url: region.apiBaseURL,
+				url: yostarRegion.apiBaseURL,
 				reason: "could not construct the request URL"
 			)
 		}
 		let location: ManifestLocation = try await request(
-			region: region,
+			region: yostarRegion,
 			url: locationURL,
 			operation: "manifest location"
 		)
@@ -129,6 +130,7 @@ package actor LauncherAPI {
 			maximumBytes: maximumManifestResponseBytes,
 			operation: "manifest download",
 			region: region,
+			fallbackURL: url,
 			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: region)
 		)
 		do {
@@ -155,8 +157,16 @@ package actor LauncherAPI {
 		return "{\"head\":\(head),\"sign\":\"\(signature)\"}"
 	}
 
+	// Every region routed here is Yostar; the guard keeps the API surface total.
+	private func yostarRegion(_ region: GameRegion) throws -> YostarRegion {
+		guard let yostarRegion = YostarRegion(region) else {
+			throw LauncherError.invalidResponse
+		}
+		return yostarRegion
+	}
+
 	private func request<Value: Decodable>(
-		region: GameRegion,
+		region: YostarRegion,
 		path: String,
 		operation: String
 	) async throws -> Value {
@@ -168,19 +178,22 @@ package actor LauncherAPI {
 	}
 
 	private func request<Value: Decodable>(
-		region: GameRegion,
+		region: YostarRegion,
 		url: URL,
 		operation: String
 	) async throws -> Value {
+		let gameRegion = region.region
 		var request = URLRequest(url: url)
-		request.setValue(authorizationHeader(region: region), forHTTPHeaderField: "Authorization")
+		request.setValue(
+			authorizationHeader(region: gameRegion), forHTTPHeaderField: "Authorization")
 		request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Content-Type")
 		let (data, response) = try await client.data(
 			for: request,
 			maximumBytes: maximumAPIResponseBytes,
 			operation: operation,
-			region: region,
-			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: region)
+			region: gameRegion,
+			fallbackURL: url,
+			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: gameRegion)
 		)
 		let envelope: APIEnvelope<Value>
 		do {
@@ -188,7 +201,7 @@ package actor LauncherAPI {
 		} catch {
 			throw client.requestError(
 				operation: operation,
-				region: region,
+				region: gameRegion,
 				url: url,
 				statusCode: response.statusCode,
 				reason: "decoding failed: \(error.localizedDescription)"
@@ -201,7 +214,7 @@ package actor LauncherAPI {
 			)
 			throw client.requestError(
 				operation: operation,
-				region: region,
+				region: gameRegion,
 				url: url,
 				statusCode: response.statusCode,
 				reason: "API envelope code \(envelope.code): \(envelope.msg ?? "Unknown error")",
