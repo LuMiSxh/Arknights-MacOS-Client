@@ -15,6 +15,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import quote, unquote, urlparse
 
 from lib import sparkle_appcast
@@ -30,9 +31,12 @@ from lib.project_config import (
     sparkle_archive_names,
 )
 
+if TYPE_CHECKING:
+    from lib.github_release import GitHubRelease
+
 
 def select_sources(
-    releases: list[dict],
+    releases: list[GitHubRelease],
     *,
     current_version: str,
     stem: str,

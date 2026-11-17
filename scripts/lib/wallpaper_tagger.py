@@ -44,13 +44,13 @@ class TaggingError(Exception):
     """One wallpaper could not be tagged. The run continues without it."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SuggestedTag:
     name: str
     known: bool
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class WallpaperSuggestion:
     wallpaper_id: str
     tags: tuple[SuggestedTag, ...]

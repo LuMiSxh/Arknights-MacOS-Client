@@ -18,7 +18,7 @@ PAGE_SIZE = 50
 MAX_PAGES = 10
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class GalleryWallpaper:
     id: str
     title: str

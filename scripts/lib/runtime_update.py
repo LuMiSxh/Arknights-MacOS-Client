@@ -165,7 +165,7 @@ def fetch_provenance(fetch: Fetch, tag: str) -> dict[str, Any]:
     return provenance
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class LaneRelease:
     """The runtime fragment and the verified assets of one lane of a release."""
 

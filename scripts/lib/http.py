@@ -7,6 +7,8 @@ import urllib.parse
 import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass
+from email.message import Message
+from typing import IO
 
 
 class HttpError(OSError):
@@ -16,13 +18,21 @@ class HttpError(OSError):
 class HttpsOnlyRedirectHandler(urllib.request.HTTPRedirectHandler):
     """Refuse a redirect to a non-HTTPS target before the request follows it."""
 
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: IO[bytes],
+        code: int,
+        msg: str,
+        headers: Message,
+        newurl: str,
+    ) -> urllib.request.Request | None:
         if urllib.parse.urlparse(newurl).scheme != "https":
             raise HttpError(f"request redirected to a non-HTTPS URL: {newurl}")
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Response:
     body: bytes
     content_type: str

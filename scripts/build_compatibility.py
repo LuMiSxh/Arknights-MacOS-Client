@@ -9,7 +9,7 @@ import sys
 import tempfile
 import tomllib
 from pathlib import Path
-from typing import Any
+from typing import Literal, NotRequired, TypedDict
 
 from lib.common import (
     BUILD_DIR,
@@ -23,7 +23,24 @@ from lib.common import (
 from lib.console import child_output, success
 
 BuildResult = tuple[Path, ...]
-MANIFEST = PROJECT_DIR / "RuntimeSupport/support.toml"
+SUPPORT_ROOT = PROJECT_DIR / "RuntimeSupport"
+MANIFEST = SUPPORT_ROOT / "support.toml"
+
+type ArtifactKind = Literal["windows-library", "windows-executable", "macos-library"]
+
+
+class Artifact(TypedDict):
+    kind: ArtifactKind
+    source: str
+    output: str
+    arguments: NotRequired[list[str]]
+    frameworks: NotRequired[list[str]]
+
+
+class Component(TypedDict):
+    name: str
+    directory: str
+    artifacts: list[Artifact]
 
 
 def compile_windows(source: Path, destination: Path, *arguments: str) -> None:
@@ -67,7 +84,7 @@ def validate_macho_universal(path: Path) -> None:
         fail(f"expected a universal Mach-O file: {path}")
 
 
-def load_components() -> list[dict[str, Any]]:
+def load_components() -> list[Component]:
     try:
         with MANIFEST.open("rb") as file:
             return tomllib.load(file)["components"]
@@ -75,53 +92,52 @@ def load_components() -> list[dict[str, Any]]:
         fail(f"unable to read compatibility manifest: {error}")
 
 
-def compile_artifact(source: Path, destination: Path, artifact: dict[str, Any]) -> None:
+def compile_artifact(source: Path, destination: Path, artifact: Artifact) -> None:
     kind = artifact["kind"]
     arguments = artifact.get("arguments", [])
-    if kind.startswith("windows-"):
-        shared = kind == "windows-library"
-        if not shared and kind != "windows-executable":
+    match kind:
+        case "windows-library" | "windows-executable":
+            shared = kind == "windows-library"
+            compile_windows(
+                source,
+                destination,
+                *("-shared",) if shared else (),
+                *arguments,
+            )
+            validate_pe(destination, dll=shared)
+        case "macos-library":
+            frameworks = [
+                argument
+                for framework in artifact.get("frameworks", [])
+                for argument in ("-framework", framework)
+            ]
+            run(
+                [
+                    "xcrun",
+                    "--sdk",
+                    "macosx",
+                    "clang",
+                    "-arch",
+                    "x86_64",
+                    "-arch",
+                    "arm64",
+                    "-O2",
+                    "-dynamiclib",
+                    *arguments,
+                    *frameworks,
+                    source,
+                    "-o",
+                    destination,
+                ]
+            )
+            validate_macho_universal(destination)
+        case _:
             fail(f"unknown compatibility artifact kind: {kind}")
-        compile_windows(
-            source,
-            destination,
-            *("-shared",) if shared else (),
-            *arguments,
-        )
-        validate_pe(destination, dll=shared)
-        return
-    if kind != "macos-library":
-        fail(f"unknown compatibility artifact kind: {kind}")
-    frameworks = [
-        argument
-        for framework in artifact.get("frameworks", [])
-        for argument in ("-framework", framework)
-    ]
-    run(
-        [
-            "xcrun",
-            "--sdk",
-            "macosx",
-            "clang",
-            "-arch",
-            "x86_64",
-            "-arch",
-            "arm64",
-            "-O2",
-            "-dynamiclib",
-            *arguments,
-            *frameworks,
-            source,
-            "-o",
-            destination,
-        ]
-    )
-    validate_macho_universal(destination)
 
 
-def build_component(output_root: Path, component: dict[str, Any]) -> BuildResult:
+def build_component(output_root: Path, component: Component) -> BuildResult:
     directory = component["directory"]
-    source_directory = PROJECT_DIR / "RuntimeSupport" / directory
+    source_directory = SUPPORT_ROOT / directory
     destination = output_root / directory
     remove_path(destination)
     destination.mkdir(parents=True, exist_ok=True)

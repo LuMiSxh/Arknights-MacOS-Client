@@ -84,7 +84,7 @@ INDEX_PAGE = SUPPORT_CODE_ARTICLES / "README.md"
 INDEX_NAMESPACE = "support-codes"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SupportCodeEntry:
     code: str
     swift_name: str
@@ -109,7 +109,7 @@ class SupportCodeEntry:
         return (list(DOMAIN_PREFIXES).index(self.domain), self.code)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Catalog:
     entries: tuple[SupportCodeEntry, ...]
 

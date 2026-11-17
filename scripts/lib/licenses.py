@@ -19,7 +19,7 @@ import zlib
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, cast
 from urllib.parse import urlparse
 
 from lib.common import ScriptError, fail, safe_relative_path
@@ -31,15 +31,22 @@ from lib.generated_blocks import (
 from lib.project_config import load_project_configuration
 
 SCHEMA_VERSION = 1
-VERIFIED = "verified"
-UNVERIFIED = "unverified"
-APP_SCOPE = "app"
-WEBSITE_SCOPE = "website"
-RUNTIME_REFERENCE_SCOPE = "runtime-reference"
-RUNTIME_SCOPE = "runtime"
+
+type Status = Literal["verified", "unverified"]
+type Scope = Literal["app", "website", "runtime-reference", "runtime"]
+type Ecosystem = Literal["swiftpm", "npm"]
+
+VERIFIED: Status = "verified"
+UNVERIFIED: Status = "unverified"
+APP_SCOPE: Scope = "app"
+WEBSITE_SCOPE: Scope = "website"
+RUNTIME_REFERENCE_SCOPE: Scope = "runtime-reference"
+RUNTIME_SCOPE: Scope = "runtime"
+SWIFTPM: Ecosystem = "swiftpm"
+NPM: Ecosystem = "npm"
 RUNTIME_TEXTS_BLOCK = "runtime-texts"
-CLIENT_SCOPES = (APP_SCOPE, WEBSITE_SCOPE, RUNTIME_REFERENCE_SCOPE)
-ECOSYSTEMS = ("swiftpm", "npm")
+CLIENT_SCOPES: tuple[Scope, ...] = (APP_SCOPE, WEBSITE_SCOPE, RUNTIME_REFERENCE_SCOPE)
+ECOSYSTEMS: tuple[Ecosystem, ...] = (SWIFTPM, NPM)
 
 LICENSE_DIRECTORY = Path("docs/legal/licenses")
 CLIENT_INDEX = LICENSE_DIRECTORY / "index.json"
@@ -59,7 +66,7 @@ RELEASE_ASSET_PATTERN = re.compile(
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Component:
     """One third-party or bundled component and its license evidence."""
 
@@ -68,12 +75,12 @@ class Component:
     spdx: str
     source: str
     files: tuple[str, ...]
-    status: str
-    scope: str
+    status: Status
+    scope: Scope
     basis: str | None = None
     notice: str | None = None
     candidates: tuple[str, ...] = ()
-    ecosystem: str | None = None
+    ecosystem: Ecosystem | None = None
     package: str | None = None
     paths: tuple[str, ...] = ()
     note: str | None = None
@@ -84,7 +91,7 @@ class Component:
         return self.status == VERIFIED
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RuntimeLegal:
     """The license index, notice, and directory a runtime archive carries."""
 
@@ -125,7 +132,7 @@ def runtime_component(manifest: Mapping[str, Any], key: str) -> tuple[str, str] 
 def parse_components(
     raw: object,
     label: str,
-    scopes: tuple[str, ...],
+    scopes: tuple[Scope, ...],
     problems: list[str],
     manifest: Mapping[str, Any] | None = None,
 ) -> tuple[Component, ...]:
@@ -194,12 +201,12 @@ def parse_components(
                     spdx=text["spdx"] or "",
                     source=source or "",
                     files=files,
-                    status=text["status"] or "",
-                    scope=text["scope"],
+                    status=cast("Status", text["status"] or ""),
+                    scope=cast("Scope", text["scope"]),
                     basis=text["basis"],
                     notice=text["notice"],
                     candidates=candidates,
-                    ecosystem=ecosystem,
+                    ecosystem=cast("Ecosystem | None", ecosystem),
                     package=package,
                     paths=paths,
                     note=text["note"],
@@ -317,7 +324,7 @@ def check_inventory(root: Path, components: tuple[Component, ...]) -> list[str]:
     """Cross-check the client index against the files that declare what ships."""
     problems: list[str] = []
     pins = swiftpm_pins(root)
-    packages = {c.package: c for c in components if c.ecosystem == "swiftpm"}
+    packages = {c.package: c for c in components if c.ecosystem == SWIFTPM}
     for identity, version in sorted(pins.items()):
         entry = packages.get(identity)
         if entry is None:
@@ -334,7 +341,7 @@ def check_inventory(root: Path, components: tuple[Component, ...]) -> list[str]:
     )
 
     manifest = read_json(root / "web/package.json")
-    shipped = {c.package: c for c in components if c.ecosystem == "npm"}
+    shipped = {c.package: c for c in components if c.ecosystem == NPM}
     versions = website_dependencies(root)
     for name in sorted(manifest["dependencies"]):
         if name not in shipped:

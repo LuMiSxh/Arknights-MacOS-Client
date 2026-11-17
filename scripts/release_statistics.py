@@ -4,6 +4,7 @@
 """Show app-delivery statistics for published GitHub releases."""
 
 import json
+from typing import TYPE_CHECKING
 
 from lib.common import ScriptError, fail, output, require_command, run_main
 from lib.project_config import (
@@ -12,11 +13,14 @@ from lib.project_config import (
     sparkle_archive_names,
 )
 
+if TYPE_CHECKING:
+    from lib.github_release import GitHubRelease
+
 COLUMNS = ("Version", "DMG/manual", "Sparkle", "Recipe")
 
 
 def release_downloads(
-    pages: list[list[dict]], *, display_name: str
+    pages: list[list[GitHubRelease]], *, display_name: str
 ) -> list[tuple[str, int, int, int]]:
     """Return (version, DMG, Sparkle, recipe) downloads per published release."""
     stem = github_asset_stem(display_name).lower()

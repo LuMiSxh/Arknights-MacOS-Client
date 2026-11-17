@@ -14,16 +14,21 @@ build generates uses `deflate` (raw deflate of UTF-8 text).
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal, cast
 
 from lib.licenses import BUNDLE_NOTICES_NAME
 from lib.project_config import ProjectConfiguration
 
 SWIFT_REGISTRY_SUBPATH = Path("Shared/Resources/BundledResource.swift")
 
-ORIGIN_APP = "app"
-ORIGIN_PACKAGE = "package"
-IDENTITY = "identity"
-DEFLATE = "deflate"
+type ResourceKind = Literal["file", "directory"]
+type ResourceOrigin = Literal["app", "package"]
+type ResourceEncoding = Literal["identity", "deflate"]
+
+ORIGIN_APP: ResourceOrigin = "app"
+ORIGIN_PACKAGE: ResourceOrigin = "package"
+IDENTITY: ResourceEncoding = "identity"
+DEFLATE: ResourceEncoding = "deflate"
 
 _DECLARATION = re.compile(
     r"static\s+let\s+\w+\s*=\s*BundledResource\(\s*"
@@ -32,10 +37,10 @@ _DECLARATION = re.compile(
     r"(?:,\s*encoding:\s*\.(?P<encoding>identity|deflate))?\s*\)"
 )
 
-ResourceKey = tuple[str, str, str, str]
+type ResourceKey = tuple[str, ResourceKind, ResourceOrigin, ResourceEncoding]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class StagedResource:
     """One file or directory in `Contents/Resources`.
 
@@ -45,9 +50,9 @@ class StagedResource:
     """
 
     path: str
-    kind: str
-    origin: str
-    encoding: str = IDENTITY
+    kind: ResourceKind
+    origin: ResourceOrigin
+    encoding: ResourceEncoding = IDENTITY
     source: str | None = None
     swift_reads: bool = True
 
@@ -112,9 +117,9 @@ def swift_registry(source: str) -> tuple[ResourceKey, ...]:
     return tuple(
         (
             match["path"],
-            match["kind"],
-            match["origin"],
-            match["encoding"] or IDENTITY,
+            cast("ResourceKind", match["kind"]),
+            cast("ResourceOrigin", match["origin"]),
+            cast("ResourceEncoding", match["encoding"] or IDENTITY),
         )
         for match in _DECLARATION.finditer(source)
     )
