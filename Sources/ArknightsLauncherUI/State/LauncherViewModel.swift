@@ -92,6 +92,7 @@ package final class LauncherViewModel {
 
 		let launcherLog = LauncherLog(fileURL: paths.launcherLogFile)
 		log = launcherLog
+		StartupTimeline.shared.attach(launcherLog)
 		let playtimeStatistics = PlaytimeStatisticsController(
 			fileURL: paths.playtimeStatistics,
 			log: launcherLog

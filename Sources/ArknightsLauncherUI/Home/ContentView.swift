@@ -191,12 +191,16 @@ package struct ContentView: View {
 			}
 			.aceWarningConfirmation(model: model)
 			.onAppear {
+				StartupTimeline.shared.mark("window appeared")
 				registerOpenSettings(requestSettings)
 				registerQuitPresentationQuery {
 					presentation.blockingDestination(
 						hasPendingPopup: model.communication.popup != nil)
 				}
 				registerQuitDismissal(dismissPresentationForQuit)
+			}
+			.onChange(of: model.gameSession.canLaunch, initial: true) { _, canLaunch in
+				if canLaunch { StartupTimeline.shared.mark("home interactive") }
 			}
 			// `initial` presents a failure raised during launcher start, such as RT-BND.
 			.onChange(of: model.lifecycle.state.presentation.failure, initial: true) { _, failure in

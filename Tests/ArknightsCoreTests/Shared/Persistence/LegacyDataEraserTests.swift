@@ -54,4 +54,7 @@ func erasingLegacyDataKeepsSymlinkTargetsAndWritesTheNewLayout() throws {
 		try JSONSerialization.jsonObject(
 			with: Data(contentsOf: paths.layoutFile)) as? [String: Int]
 	#expect(document?["schemaVersion"] == AppConstants.Storage.layoutSchemaVersion)
+	#expect(
+		fileManager.fileExists(atPath: paths.artworkDirectory.path),
+		"A fresh layout keeps the folder that holds custom artwork and icons")
 }

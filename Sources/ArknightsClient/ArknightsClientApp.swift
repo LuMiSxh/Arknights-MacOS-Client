@@ -308,7 +308,9 @@ struct ArknightsClientApp: App {
 	@State private var onboarding: OnboardingCoordinator
 
 	init() {
+		StartupTimeline.shared.mark("app entry")
 		let model = LauncherViewModel.makeDefault()
+		StartupTimeline.shared.mark("composition done")
 		_model = State(wrappedValue: model)
 		#if DEBUG
 			let initialMusicTitle = model.developerAccessibilityMusicTitle

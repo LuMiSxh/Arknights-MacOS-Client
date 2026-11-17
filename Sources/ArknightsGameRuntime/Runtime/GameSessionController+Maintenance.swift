@@ -23,7 +23,12 @@ extension GameSessionController {
 			runtimeName = nil
 			metalFXSpatialUpscalingSupported = false
 			installedRuntime = nil
-			log.error("Runtime discovery failed: \(error.localizedDescription)")
+			let message = "Runtime discovery failed: \(error.localizedDescription)"
+			if WineRuntimeDiscoveryError.isNotInstalled(error) {
+				log.info(message)
+			} else {
+				log.error(message)
+			}
 		}
 	}
 

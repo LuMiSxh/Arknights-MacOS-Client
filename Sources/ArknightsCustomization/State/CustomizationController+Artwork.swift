@@ -135,12 +135,15 @@ extension CustomizationController {
 	// available while the active region refreshes in the background.
 	package func restoreInitialArtwork(for region: GameRegion) async {
 		let hasCustomArtwork = await loadCustomArtwork()
+		var usedCache = hasCustomArtwork
 		if !hasCustomArtwork, !hasPersistedCustomArtwork, !artworkMutationInFlight,
 			let token = beginPassiveArtworkLoad()
 		{
-			await restoreInitialOfficialArtwork(for: region, token: token)
+			usedCache = await restoreInitialOfficialArtwork(for: region, token: token)
 		}
-		await restoreOfficialLogo(for: region).value
+		// The wordmark is not part of the startup cover, so it loads while the cover goes away.
+		restoreOfficialLogo(for: region)
+		StartupTimeline.shared.artworkVisible(cached: usedCache)
 	}
 
 	// Clears any previous region's wordmark before a refresh can load the selected region's asset.
@@ -170,23 +173,25 @@ extension CustomizationController {
 	private func restoreInitialOfficialArtwork(
 		for region: GameRegion,
 		token: TaskSlot.Token
-	) async {
+	) async -> Bool {
 		do {
 			let cached = try await Self.cachedActiveArtwork(in: artworkCache, for: region)
 			guard ownsPassiveArtworkLoad(token),
 				self.region() == region,
 				!hasPersistedCustomArtwork,
 				let cached
-			else { return }
+			else { return false }
 			setHeroArtwork(
 				NSImage(cgImage: cached.image, size: .zero),
 				themeCacheKey: Self.officialThemeCacheKey(
 					for: region, artworkCacheKey: cached.cacheKey)
 			)
+			return true
 		} catch {
 			log.error(
 				"Failed to load cached artwork for \(region.displayName): \(error.localizedDescription)"
 			)
+			return false
 		}
 	}
 

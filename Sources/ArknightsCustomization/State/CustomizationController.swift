@@ -87,6 +87,8 @@ package final class CustomizationController {
 
 	package func markInitialArtworkLoadComplete() {
 		hasCompletedInitialArtworkLoad = true
+		// This flag is the only gate on the black startup cover in `ContentView`.
+		StartupTimeline.shared.mark("presented")
 	}
 
 	package convenience init(

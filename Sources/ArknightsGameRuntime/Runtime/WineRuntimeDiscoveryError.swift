@@ -8,6 +8,14 @@ enum WineRuntimeDiscoveryError: LocalizedError, Sendable {
 	case unreadableConfiguration(URL, String)
 	case invalidConfiguration(URL, String)
 
+	/// No runtime is installed yet, which is the normal state before the player installs one.
+	static func isNotInstalled(_ error: any Error) -> Bool {
+		guard let discovery = error as? WineRuntimeDiscoveryError,
+			case .missingRuntime = discovery
+		else { return false }
+		return true
+	}
+
 	var errorDescription: String? {
 		switch self {
 		case .missingRuntime(let url):

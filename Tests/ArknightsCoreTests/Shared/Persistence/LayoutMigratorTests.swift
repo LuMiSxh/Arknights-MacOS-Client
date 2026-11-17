@@ -134,6 +134,7 @@ func a07LayoutMigratesToTheFlatLayoutAndTheMarkerComesLast() async throws {
 	#expect(!fixture.exists(fixture.legacyGame(.global)))
 	#expect(fixture.exists(fixture.paths.winePrefix(for: .yostar, lane: .x86)))
 	#expect(!fixture.exists(prefix))
+	#expect(!fixture.exists(fixture.support.appending(path: "Yostar")))
 	#expect(fixture.exists(fixture.paths.customArtwork))
 	#expect(!fixture.exists(fixture.paths.legacyCustomArtworkDirectory))
 	#expect(fixture.exists(fixture.paths.playtimeStatistics))
@@ -407,6 +408,41 @@ func aFreshInstallWritesTheLayoutMarker() async throws {
 	#expect(result.failure == nil)
 	#expect(!result.requiresLegacyDataNotice)
 	#expect(try layoutSchema(fixture.paths.layoutFile) == AppConstants.Storage.layoutSchemaVersion)
+	#expect(FileManager.default.fileExists(atPath: fixture.paths.artworkDirectory.path))
+}
+
+@Test
+func aCurrentLayoutRemovesOnlyMetadataLeftoversAndKeepsArtwork() async throws {
+	let fixture = try MigrationFixture("LayoutMigratorCurrentLayoutTests")
+	defer { fixture.temporary.remove() }
+	try fixture.write(
+		"{\"schemaVersion\": \(AppConstants.Storage.layoutSchemaVersion)}",
+		to: fixture.paths.layoutFile)
+	let yostar = fixture.support.appending(path: "Yostar", directoryHint: .isDirectory)
+	try fixture.write("", to: yostar.appending(path: ".DS_Store"))
+	try fixture.makeDirectory(yostar.appending(path: "Global", directoryHint: .isDirectory))
+	let gryphline = fixture.support.appending(path: "Gryphline", directoryHint: .isDirectory)
+	try fixture.makeDirectory(gryphline)
+	let hypergryph = fixture.support.appending(path: "Hypergryph", directoryHint: .isDirectory)
+	try fixture.write("keep", to: hypergryph.appending(path: "data/keep"))
+
+	let result = await LayoutMigrator.migrate(
+		paths: fixture.paths,
+		persistedInstallDirectories: [:],
+		isWineRunning: {
+			Issue.record("A current layout must not scan for a running Wine process")
+			return true
+		}
+	)
+
+	#expect(result.failure == nil, "\(String(describing: result.failure))")
+	#expect(!fixture.exists(yostar))
+	#expect(!fixture.exists(gryphline))
+	#expect(fixture.exists(hypergryph.appending(path: "data/keep")))
+	#expect(FileManager.default.fileExists(atPath: fixture.paths.artworkDirectory.path))
+
+	let covered = LayoutMigrator.migrateCurrentLayout(paths: fixture.paths)
+	#expect(covered?.failure == nil, "\(String(describing: covered?.failure))")
 }
 
 @Test

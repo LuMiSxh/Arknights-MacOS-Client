@@ -15,6 +15,7 @@ extension CustomizationController {
 			accentColor = LauncherVisuals.cyan
 			updateDynamicAppIcon(hue: nil)
 			_ = startOperatorPresetIconRefresh(hue: nil)
+			StartupTimeline.shared.mark("theme colors applied")
 			return
 		}
 		let themeCacheKey = activeThemeCacheKey
@@ -33,6 +34,7 @@ extension CustomizationController {
 			applyThemeAccent(cachedAccent)
 			updateDynamicAppIcon(hue: cachedAccent.hue)
 			_ = startOperatorPresetIconRefresh(hue: cachedAccent.hue)
+			StartupTimeline.shared.mark("theme colors applied")
 			return
 		}
 
@@ -59,6 +61,7 @@ extension CustomizationController {
 			self.applyThemeAccent(resolvedAccent)
 			self.updateDynamicAppIcon(hue: resolvedAccent?.hue)
 			await self.startOperatorPresetIconRefresh(hue: resolvedAccent?.hue).value
+			StartupTimeline.shared.mark("theme colors applied")
 		}
 	}
 

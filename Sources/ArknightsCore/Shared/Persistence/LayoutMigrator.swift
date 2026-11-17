@@ -36,6 +36,7 @@ enum LayoutMigrationError: Error, Equatable, Sendable, CustomStringConvertible {
 	case removeFailed(URL, String)
 	case linkRewriteFailed(URL, String)
 	case cannotWriteLayout(URL, String)
+	case cannotCreateDirectory(URL, String)
 
 	var description: String {
 		switch self {
@@ -57,6 +58,8 @@ enum LayoutMigrationError: Error, Equatable, Sendable, CustomStringConvertible {
 			"Could not rewrite the drive link \(url.path): \(reason)"
 		case .cannotWriteLayout(let url, let reason):
 			"Could not write the layout file \(url.path): \(reason)"
+		case .cannotCreateDirectory(let url, let reason):
+			"Could not create the directory \(url.path): \(reason)"
 		}
 	}
 }
@@ -97,13 +100,13 @@ package enum LayoutMigrator {
 		log: LauncherLog? = nil,
 		fileManager: FileManager = .default
 	) async -> LayoutMigrationResult {
+		if let finished = migrateCurrentLayout(paths: paths, fileManager: fileManager) {
+			return finished
+		}
 		do {
 			// Cache files keep their names, so moving them into the parent `Artwork` folder lets
 			// the launcher reuse its downloaded artwork instead of downloading it again.
 			try migrateLegacyArtworkCache(paths: paths, fileManager: fileManager)
-			if try layoutIsCurrent(at: paths.layoutFile, fileManager: fileManager) {
-				return LayoutMigrationResult(installDirectoriesToUpdate: [:])
-			}
 			if try hasPre06Layout(paths: paths, fileManager: fileManager) {
 				return LayoutMigrationResult(
 					installDirectoriesToUpdate: [:], requiresLegacyDataNotice: true)
@@ -160,8 +163,31 @@ package enum LayoutMigrator {
 
 			try rewriteDriveLinks(paths: paths, moves: moves, fileManager: fileManager)
 			try removeDevelopmentLeftovers(paths: paths, fileManager: fileManager)
+			try removeMetadataOnlyPublisherDirectories(paths: paths, fileManager: fileManager)
 			try writeLayout(paths: paths, fileManager: fileManager)
 			return LayoutMigrationResult(installDirectoriesToUpdate: updates)
+		} catch {
+			return LayoutMigrationResult(installDirectoriesToUpdate: [:], failure: error)
+		}
+	}
+
+	/// The layout-current fast path for a start that has nothing to migrate.
+	///
+	/// It reads the marker and finishes cleanup a completed migration may have left behind. It
+	/// never scans the process list and never waits, so callers on the main thread can use it
+	/// before the first run-loop turn. Returns `nil` when the full migration must run.
+	package static func migrateCurrentLayout(
+		paths: AppPaths,
+		fileManager: FileManager = .default
+	) -> LayoutMigrationResult? {
+		do {
+			guard try layoutIsCurrent(at: paths.layoutFile, fileManager: fileManager) else {
+				return nil
+			}
+			try migrateLegacyArtworkCache(paths: paths, fileManager: fileManager)
+			try removeMetadataOnlyPublisherDirectories(paths: paths, fileManager: fileManager)
+			try ensureArtworkDirectory(paths: paths, fileManager: fileManager)
+			return LayoutMigrationResult(installDirectoriesToUpdate: [:])
 		} catch {
 			return LayoutMigrationResult(installDirectoriesToUpdate: [:], failure: error)
 		}
@@ -216,6 +242,7 @@ package enum LayoutMigrator {
 			throw LayoutMigrationError.cannotWriteLayout(
 				paths.layoutFile, error.localizedDescription)
 		}
+		try ensureArtworkDirectory(paths: paths, fileManager: fileManager)
 		do {
 			try fileManager.createDirectory(
 				at: paths.applicationSupportRoot, withIntermediateDirectories: true)
@@ -262,6 +289,21 @@ package enum LayoutMigrator {
 			if try nodeState(at: entry) == .directory { return true }
 		}
 		return false
+	}
+
+	// The pre-1.0 layout kept game and environment folders under a publisher directory. Once their
+	// contents moved, Finder metadata can be all that is left; a folder with real content stays.
+	private static func removeMetadataOnlyPublisherDirectories(
+		paths: AppPaths,
+		fileManager: FileManager
+	) throws {
+		for publisher in GamePublisher.allCases {
+			let url = paths.applicationSupportRoot.appending(
+				path: publisher.storageDirectoryName, directoryHint: .isDirectory)
+			guard try nodeState(at: url) == .directory else { continue }
+			guard try isMetadataOnly(url, fileManager: fileManager) else { continue }
+			try removeIfPresent(url, fileManager: fileManager)
+		}
 	}
 
 	private static func removeMetadataOnlyTrees(
@@ -333,8 +375,7 @@ package enum LayoutMigrator {
 			}
 		}
 
-		let artworkRoot = paths.applicationSupportRoot.appending(
-			path: "Artwork", directoryHint: .isDirectory)
+		let artworkRoot = paths.artworkDirectory
 		if try nodeState(at: paths.legacyCustomArtworkDirectory) == .directory {
 			let entries: [URL]
 			do {
@@ -594,6 +635,8 @@ package enum LayoutMigrator {
 		fileManager: FileManager
 	) throws {
 		let source = paths.legacyArtworkDownloadCache
+		// Later starts have nothing to move; one stat avoids walking the cache path components.
+		guard try nodeState(at: source) != .absent else { return }
 		try validatePathComponents(of: source, under: paths.cacheRoot)
 		switch try nodeState(at: source) {
 		case .absent:
@@ -635,6 +678,27 @@ package enum LayoutMigrator {
 			}
 		}
 		try removeIfPresent(source, fileManager: fileManager)
+	}
+
+	// Customized artwork, icons, and the logo source live in `Artwork`, so the folder exists on
+	// every start and customization only has to write its files.
+	private static func ensureArtworkDirectory(
+		paths: AppPaths,
+		fileManager: FileManager
+	) throws {
+		let url = paths.artworkDirectory
+		switch try nodeState(at: url) {
+		case .absent:
+			do {
+				try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+			} catch {
+				throw LayoutMigrationError.cannotCreateDirectory(url, error.localizedDescription)
+			}
+		case .directory:
+			break
+		case .file:
+			throw LayoutMigrationError.unsafeNode(url)
+		}
 	}
 
 	private static func removeIfPresent(_ url: URL, fileManager: FileManager) throws {

@@ -176,9 +176,14 @@ package final class GameEnvironmentRefreshController {
 				isRequested = false
 			}
 		} catch {
-			log.error(
-				"Game environment update skipped; runtime unavailable: \(launcherDiagnosticDescription(for: error))"
-			)
+			let message =
+				"Game environment update skipped; runtime unavailable: "
+				+ "\(launcherDiagnosticDescription(for: error))"
+			if WineRuntimeDiscoveryError.isNotInstalled(error) {
+				log.info(message)
+			} else {
+				log.error(message)
+			}
 		}
 		// A stale lease cannot set idle, but the pass must still free the controller for the next one.
 		if slot.owns(token) {

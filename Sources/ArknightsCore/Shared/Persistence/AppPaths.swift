@@ -410,25 +410,30 @@ package struct AppPaths: Sendable {
 				|| error.code == CocoaError.fileReadNoSuchFile.rawValue)
 	}
 
+	/// Holds the user's chosen artwork, app icon, and logo source.
+	var artworkDirectory: URL {
+		applicationSupportRoot.appending(path: "Artwork", directoryHint: .isDirectory)
+	}
+
 	package var customArtwork: URL {
-		applicationSupportRoot.appending(path: "Artwork/artwork")
+		artworkDirectory.appending(path: "artwork")
 	}
 
 	package var customAppIcon: URL {
-		applicationSupportRoot.appending(path: "Artwork/app-icon")
+		artworkDirectory.appending(path: "app-icon")
 	}
 
 	package var customGameIcon: URL {
-		applicationSupportRoot.appending(path: "Artwork/game-icon")
+		artworkDirectory.appending(path: "game-icon")
 	}
 
 	package var operatorPresetAvatar: URL {
-		applicationSupportRoot.appending(path: "Artwork/operator-avatar-source")
+		artworkDirectory.appending(path: "operator-avatar-source")
 	}
 
 	/// The pre-0.8 custom artwork folder, flat in the new layout.
 	var legacyCustomArtworkDirectory: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom", directoryHint: .isDirectory)
+		artworkDirectory.appending(path: "Custom", directoryHint: .isDirectory)
 	}
 
 	/// A cache folder that pre-0.8 builds wrote; the migration deletes it.

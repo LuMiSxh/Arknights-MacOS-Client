@@ -53,18 +53,38 @@ extension LauncherViewModel {
 		// Startup runs from idle. Without a lease the migration still runs.
 		let activityLease = lifecycle.begin(.maintaining(.migratingStorage))
 		lifecycle.setStatus(.migratingStorage)
+		// A current layout costs one marker read and a short cleanup, so it runs before the first
+		// task turn: the main actor is busy composing the window until then.
+		StartupTimeline.shared.beginStep("storage check")
+		let currentLayout = LayoutMigrator.migrateCurrentLayout(paths: paths)
+		StartupTimeline.shared.endStep("storage check")
+		// The migration leaves the artwork cache alone once the layout is current, so the hero and
+		// theme restore overlaps the window composition instead of waiting behind the migration.
+		var initialArtwork: Task<Void, Never>?
+		if let currentLayout, currentLayout.failure == nil {
+			initialArtwork = startInitialArtworkRestore()
+		}
 		startupTask = Task { [paths, log] in
-			let migration = await Self.migrateStorage(
-				paths: paths,
-				persistedInstallDirectories: persistedInstallDirectories,
-				log: log
-			)
+			let migration: LayoutMigrationResult
+			if let currentLayout {
+				migration = currentLayout
+			} else {
+				StartupTimeline.shared.beginStep("storage migration")
+				migration = await Self.migrateStorage(
+					paths: paths,
+					persistedInstallDirectories: persistedInstallDirectories,
+					log: log
+				)
+				StartupTimeline.shared.endStep("storage migration")
+			}
 			// Moves that succeeded stay moved, so their preferences must follow even on failure.
+			StartupTimeline.shared.beginStep("preferences")
 			preferences.updateInstallDirectories(
 				migration.installDirectoriesToUpdate,
 				replacing: persistedInstallDirectories
 			)
 			installation.reloadInstallDirectory()
+			StartupTimeline.shared.endStep("preferences")
 			if let activityLease { lifecycle.end(activityLease) }
 			if migration.requiresLegacyDataNotice {
 				presentLegacyDataNotice()
@@ -81,8 +101,19 @@ extension LauncherViewModel {
 				customization.markInitialArtworkLoadComplete()
 				return false
 			}
+			StartupTimeline.shared.beginStep("runtime refresh")
 			gameSession.refreshRuntime()
-			return await runStartupWork()
+			StartupTimeline.shared.endStep("runtime refresh")
+			return await runStartupWork(initialArtwork: initialArtwork)
+		}
+	}
+
+	private func startInitialArtworkRestore() -> Task<Void, Never> {
+		StartupTimeline.shared.beginStep("initial artwork")
+		let region = installation.region
+		return Task { [customization] in
+			await customization.restoreInitialArtwork(for: region)
+			StartupTimeline.shared.endStep("initial artwork")
 		}
 	}
 
@@ -163,28 +194,58 @@ extension LauncherViewModel {
 			diagnostic: "Application storage migration: \(launcherError.diagnosticDescription)")
 	}
 
-	private func runStartupWork() async -> Bool {
-		await customization.restoreInitialArtwork(for: installation.region)
+	private func runStartupWork(initialArtwork: Task<Void, Never>? = nil) async -> Bool {
+		if let initialArtwork {
+			await initialArtwork.value
+		} else {
+			StartupTimeline.shared.beginStep("initial artwork")
+			await customization.restoreInitialArtwork(for: installation.region)
+			StartupTimeline.shared.endStep("initial artwork")
+		}
 		customization.markInitialArtworkLoadComplete()
+
+		StartupTimeline.shared.beginStep("custom app icon")
 		_ = await customization.loadCustomAppIcon()
+		StartupTimeline.shared.endStep("custom app icon")
+
+		StartupTimeline.shared.beginStep("installed state")
 		await installation.updateInstalledState().value
+		StartupTimeline.shared.endStep("installed state")
+
+		StartupTimeline.shared.beginStep("intel translation")
 		_ = await intelTranslation.refreshAvailability()
+		StartupTimeline.shared.endStep("intel translation")
+
+		StartupTimeline.shared.beginStep("metadata refresh")
 		let refreshTask = refreshController.startRefresh()
 		await refreshTask.value
+		StartupTimeline.shared.endStep("metadata refresh")
+
 		if settings.automaticallyChecksLauncherUpdates {
+			StartupTimeline.shared.beginStep("launcher update probe")
 			_ = await communication.checkLauncherUpdates(presentUpdate: true).value
+			StartupTimeline.shared.endStep("launcher update probe")
 		}
 		if settings.announcementsEnabled {
+			StartupTimeline.shared.beginStep("announcements")
 			communication.checkAnnouncements(isEnabled: true)
+			StartupTimeline.shared.endStep("announcements")
 		}
 		if startupOptions.launchOnStart {
+			StartupTimeline.shared.beginStep("launch request")
 			gameSession.launch()
+			StartupTimeline.shared.endStep("launch request")
 		} else if startupOptions.installOnLaunch, installation.canInstall {
+			StartupTimeline.shared.beginStep("installation request")
 			installation.startInstallation(
 				launchAfterCompletion: startupOptions.launchAfterInstall)
+			StartupTimeline.shared.endStep("installation request")
 		}
 		// Prefixes left stale by an earlier runtime update migrate in the background.
+		StartupTimeline.shared.beginStep("prefix refresh request")
 		environmentRefresh.requestRefresh()
+		StartupTimeline.shared.endStep("prefix refresh request")
+		StartupTimeline.shared.mark("startup work done")
 		return true
 	}
 }
