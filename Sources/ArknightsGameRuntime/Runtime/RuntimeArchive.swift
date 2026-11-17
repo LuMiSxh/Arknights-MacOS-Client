@@ -86,10 +86,18 @@ enum RuntimeArchive {
 
 		while true {
 			if inputOffset >= inputRemaining, !reachedEnd {
-				if let data = try input.read(upToCount: inputBuffer.count), !data.isEmpty {
-					inputRemaining = data.count
+				let descriptor = input.fileDescriptor
+				let count = try inputBuffer.withUnsafeMutableBytes { raw -> Int in
+					while true {
+						let count = Darwin.read(descriptor, raw.baseAddress, raw.count)
+						if count >= 0 { return count }
+						if errno == EINTR { continue }
+						throw POSIXError(.init(rawValue: errno) ?? .EIO)
+					}
+				}
+				if count > 0 {
+					inputRemaining = count
 					inputOffset = 0
-					data.copyBytes(to: &inputBuffer, count: data.count)
 				} else {
 					reachedEnd = true
 				}
@@ -110,7 +118,12 @@ enum RuntimeArchive {
 			inputOffset = inputRemaining - Int(stream.avail_in)
 
 			if produced > 0 {
-				try output.write(contentsOf: Data(outputBuffer[0..<produced]))
+				try outputBuffer.withUnsafeBytes { bytes in
+					try writeAll(
+						UnsafeRawBufferPointer(rebasing: bytes[0..<produced]),
+						to: output.fileDescriptor
+					)
+				}
 			}
 			if status == Z_STREAM_END { break }
 			if status == Z_OK || status == Z_BUF_ERROR {
@@ -190,15 +203,15 @@ enum RuntimeArchive {
 				try validateLinkTarget(
 					resolvedLink, sourceDirectory: components.dropLast(), isSymlink: true)
 				try createParents(components.dropLast(), under: destination)
-				let target = try destinationPath(for: components, under: destination)
+				let target = destinationPath(for: components, under: destination)
 				guard Darwin.symlink(resolvedLink, target) == 0 else {
 					throw POSIXError(.init(rawValue: errno) ?? .EIO)
 				}
 			case 0x31:  // '1' hard link
 				try validateLinkTarget(resolvedLink, sourceDirectory: [], isSymlink: false)
 				try createParents(components.dropLast(), under: destination)
-				let target = try destinationPath(for: components, under: destination)
-				let linkTarget = try destinationPath(
+				let target = destinationPath(for: components, under: destination)
+				let linkTarget = destinationPath(
 					for: pathComponents(of: resolvedLink), under: destination)
 				guard Darwin.link(linkTarget, target) == 0 else {
 					throw POSIXError(.init(rawValue: errno) ?? .EIO)
@@ -231,7 +244,7 @@ enum RuntimeArchive {
 		into destination: URL
 	) throws {
 		try createParents(components.dropLast(), under: destination)
-		let fileURL = try destinationPath(for: components, under: destination)
+		let fileURL = destinationPath(for: components, under: destination)
 		let descriptor = Darwin.open(
 			fileURL, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
 			S_IRUSR | S_IWUSR
@@ -252,18 +265,11 @@ enum RuntimeArchive {
 		while remaining > 0 {
 			let chunk = min(256 * 1_024, remaining)
 			let data = try readBlock(from: handle, count: chunk)
+			guard !data.isEmpty else {
+				throw RuntimeArchiveError.invalidHeader("truncated tar entry")
+			}
 			try data.withUnsafeBytes { buffer in
-				guard let baseAddress = buffer.baseAddress else { return }
-				var written = 0
-				while written < buffer.count {
-					let count = Darwin.write(
-						descriptor, baseAddress.advanced(by: written), buffer.count - written)
-					if count < 0 {
-						if errno == EINTR { continue }
-						throw POSIXError(.init(rawValue: errno) ?? .EIO)
-					}
-					written += count
-				}
+				try writeAll(buffer, to: descriptor)
 			}
 			remaining -= data.count
 		}
@@ -302,9 +308,7 @@ enum RuntimeArchive {
 
 	private static func destinationPath(
 		for components: [String], under destination: URL
-	) throws
-		-> String
-	{
+	) -> String {
 		destination.path + "/" + components.joined(separator: "/")
 	}
 
@@ -363,6 +367,22 @@ enum RuntimeArchive {
 	private static func readHeader(from handle: FileHandle) throws -> Data {
 		if let data = try handle.read(upToCount: 512), !data.isEmpty { return data }
 		return Data()
+	}
+
+	// Writes the whole buffer, retrying short writes and EINTR.
+	private static func writeAll(_ bytes: UnsafeRawBufferPointer, to descriptor: Int32) throws {
+		guard let baseAddress = bytes.baseAddress else { return }
+		var written = 0
+		while written < bytes.count {
+			let count = Darwin.write(
+				descriptor, baseAddress.advanced(by: written), bytes.count - written)
+			if count < 0 {
+				if errno == EINTR { continue }
+				throw POSIXError(.init(rawValue: errno) ?? .EIO)
+			}
+			guard count > 0 else { throw POSIXError(.EIO) }
+			written += count
+		}
 	}
 
 	private static func readBlock(from handle: FileHandle, count: Int) throws -> Data {
