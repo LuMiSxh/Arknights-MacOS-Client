@@ -10,7 +10,7 @@ struct CachedPresetImage: View {
 	var contentMode: ContentMode = .fill
 	var placeholderIcon: String = "photo"
 
-	// Both call sites render into small grid cells (avatars at 104pt, wallpapers at 105pt
+	// Both call sites render into small grid cells (avatars at 104pt, wallpapers at 104pt
 	// tall), but some official wallpapers have no distinct thumbnail from Yostar and no CDN
 	// resize option, so the cache can hand back the full multi-thousand-pixel original.
 	// Decoding straight to a bounded thumbnail keeps peak memory and decode cost down

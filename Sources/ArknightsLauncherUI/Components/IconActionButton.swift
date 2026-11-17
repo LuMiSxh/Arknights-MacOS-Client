@@ -45,19 +45,7 @@ struct IconActionButton: View {
 	var body: some View {
 		Button(role: role, action: action) {
 			Image(systemName: systemImage)
-				.font(
-					.system(
-						size: min(
-							max(
-								size / LauncherTokens.Control.iconButtonSize
-									* LauncherTokens.Control.iconButtonGlyphSize,
-								15
-							),
-							20
-						),
-						weight: .medium
-					)
-				)
+				.font(LauncherTokens.Typography.iconButtonGlyph(for: size))
 				.frame(width: size, height: size)
 				.contentShape(Circle())
 				.modifier(

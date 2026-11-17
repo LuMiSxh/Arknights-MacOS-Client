@@ -118,7 +118,7 @@ struct LauncherUpdateView: View {
 				.accessibilityLabel(Text("Downloading update…"))
 				.accessibilityValue(Text(downloadProgressText))
 			Text(downloadProgressText)
-				.font(.caption.monospacedDigit())
+				.font(LauncherTokens.Typography.progressCaption)
 				.foregroundStyle(theme.textSecondary)
 		}
 	}
@@ -130,7 +130,7 @@ struct LauncherUpdateView: View {
 				.accessibilityLabel(Text("Preparing update…"))
 				.accessibilityValue(Text(percentageText))
 			Text(percentageText)
-				.font(.caption.monospacedDigit())
+				.font(LauncherTokens.Typography.progressCaption)
 				.foregroundStyle(theme.textSecondary)
 		}
 	}

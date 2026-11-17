@@ -176,17 +176,11 @@ struct LauncherHUDView: View {
 	}
 
 	private var hasVersionPill: Bool {
-		settings.showsGameVersion && versionText != "—"
+		settings.showsGameVersion && installation.gameVersionText != nil
 	}
 
 	private var hasStatusPill: Bool {
-		settings.showsServerResetCountdown
-	}
-
-	private var versionText: String {
-		installation.installedVersion
-			?? installation.configuration?.gameLatestVersion
-			?? "—"
+		StatusHUDPill.shows(for: settings)
 	}
 
 	private var stateAnimation: Animation? {

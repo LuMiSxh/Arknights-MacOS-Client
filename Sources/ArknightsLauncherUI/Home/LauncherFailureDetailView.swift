@@ -15,6 +15,7 @@ struct LauncherFailureDetailView: View {
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var didCopySupportCode = false
+	private static let troubleshootingMaxWidth: CGFloat = 640
 
 	init(
 		failure: LauncherFailurePresentation,
@@ -102,7 +103,7 @@ struct LauncherFailureDetailView: View {
 				if let troubleshootingMarkdown {
 					SettingsHairline()
 					MarkdownDocument(source: troubleshootingMarkdown, style: .compact)
-						.frame(maxWidth: 640, alignment: .leading)
+						.frame(maxWidth: Self.troubleshootingMaxWidth, alignment: .leading)
 				}
 			}
 			.textSelection(.enabled)

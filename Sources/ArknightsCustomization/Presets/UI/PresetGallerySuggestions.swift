@@ -56,7 +56,7 @@ struct PresetGallerySuggestions: View {
 			}
 		}
 		.scrollClipDisabled()
-		.padding(.bottom, suggestions.isEmpty ? 0 : 8)
+		.padding(.bottom, suggestions.isEmpty ? 0 : LauncherTokens.Spacing.control)
 		.animation(
 			LauncherMotion.animation(.state, reduceMotion: reduceMotion),
 			value: suggestions.map(\.id)
@@ -70,6 +70,7 @@ private struct PresetGallerySuggestionChip: View {
 	let suggestion: PresetGallerySuggestion
 	let onSelect: (String) -> Void
 	@FocusState private var isFocused: Bool
+	private static let chipMaxWidth: CGFloat = 220
 
 	var body: some View {
 		Button {
@@ -86,7 +87,7 @@ private struct PresetGallerySuggestionChip: View {
 			}
 			.padding(.horizontal, LauncherTokens.Spacing.content)
 			.padding(.vertical, LauncherTokens.Spacing.control)
-			.frame(maxWidth: 220, alignment: .leading)
+			.frame(maxWidth: Self.chipMaxWidth, alignment: .leading)
 			.contentShape(Capsule())
 			.adaptiveControlForeground(
 				isFocused ? theme.accentInk : theme.textSecondary,

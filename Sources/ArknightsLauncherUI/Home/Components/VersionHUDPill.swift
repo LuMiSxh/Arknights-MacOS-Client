@@ -28,7 +28,7 @@ struct VersionHUDPill: View {
 			isExpanded: $isExpanded
 		) {
 			Text(versionText)
-				.font(.caption.monospacedDigit().weight(.medium))
+				.font(LauncherTokens.Typography.hudPillCaption)
 				.foregroundStyle(theme.textSecondary)
 				.lineLimit(1)
 				.truncationMode(.tail)
@@ -67,7 +67,7 @@ struct VersionHUDPill: View {
 	}
 
 	private var versionText: String {
-		installation.installedVersion ?? installation.configuration?.gameLatestVersion ?? "—"
+		installation.gameVersionText ?? "—"
 	}
 
 	private var updateStatus: String {
@@ -83,5 +83,12 @@ struct VersionHUDPill: View {
 	private var updateStatusIcon: String {
 		if lifecycle.state.refresh.isChecking { return "arrow.trianglehead.2.clockwise" }
 		return installation.isGameUpdateAvailable ? "arrow.down.circle" : "checkmark.circle"
+	}
+}
+
+extension InstallationController {
+	/// Installed game version, or the latest version the launcher knows, when either exists.
+	var gameVersionText: String? {
+		installedVersion ?? configuration?.gameLatestVersion
 	}
 }

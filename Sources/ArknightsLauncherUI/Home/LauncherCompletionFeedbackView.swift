@@ -9,6 +9,10 @@ struct LauncherCompletionFeedbackView: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isVisible = false
 	@State private var isRippling = false
+	private static let rippleLineWidth: CGFloat = 1.5
+	private static let rippleStartScale: CGFloat = 0.6
+	private static let rippleEndScale: CGFloat = 2.6
+	private static let rippleOpacity: Double = 0.75
 
 	var body: some View {
 		Group {
@@ -25,9 +29,9 @@ struct LauncherCompletionFeedbackView: View {
 		.background {
 			if !reduceMotion {
 				Circle()
-					.stroke(theme.successInk, lineWidth: 1.5)
-					.scaleEffect(isRippling ? 2.6 : 0.6)
-					.opacity(isRippling ? 0 : 0.75)
+					.stroke(theme.successInk, lineWidth: Self.rippleLineWidth)
+					.scaleEffect(isRippling ? Self.rippleEndScale : Self.rippleStartScale)
+					.opacity(isRippling ? 0 : Self.rippleOpacity)
 			}
 		}
 		.accessibilityHidden(true)

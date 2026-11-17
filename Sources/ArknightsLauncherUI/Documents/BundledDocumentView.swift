@@ -92,7 +92,7 @@ struct BundledDocumentView: View {
 		ThemedModalView(
 			title: document.title,
 
-			width: LauncherTokens.Layout.documentModalWidth,
+			width: LauncherTokens.Layout.modalWidth,
 			height: LauncherTokens.Layout.documentModalHeight
 		) {
 			switch loadState {

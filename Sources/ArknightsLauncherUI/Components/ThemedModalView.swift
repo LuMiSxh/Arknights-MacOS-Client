@@ -23,8 +23,8 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 
 		width: CGFloat,
 		height: CGFloat,
-		minimumWidth: CGFloat = 480,
-		minimumHeight: CGFloat = 320,
+		minimumWidth: CGFloat = LauncherTokens.Layout.modalMinimumWidth,
+		minimumHeight: CGFloat = LauncherTokens.Layout.modalMinimumHeight,
 		@ViewBuilder content: () -> Content,
 		@ViewBuilder actions: () -> Actions
 	) {

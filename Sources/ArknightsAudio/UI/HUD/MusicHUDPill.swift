@@ -16,6 +16,8 @@ package struct MusicHUDPill: View {
 		AppConstants.Music.titleLineHeight
 	@ScaledMetric(relativeTo: .caption) private var collapsedPlayerHeight =
 		AppConstants.Music.collapsedPlayerHeight
+	private static let expandedSpacing: CGFloat = 9
+	private static let titleStackSpacing: CGFloat = 1
 
 	package init(
 		settings: LauncherPreferencesController,
@@ -40,7 +42,7 @@ package struct MusicHUDPill: View {
 				iconFont: .caption2.weight(.medium),
 				toggleNoun: "music controls",
 				accessibilityValue: musicTitle,
-				expandedSpacing: 9,
+				expandedSpacing: Self.expandedSpacing,
 				sizing: HUDPillSizing(
 					collapsedHeight: collapsedPlayerHeight,
 					collapsedMaxWidth: AppConstants.Music.expandedPlayerWidth,
@@ -50,7 +52,7 @@ package struct MusicHUDPill: View {
 				),
 				isExpanded: $isExpanded
 			) {
-				VStack(alignment: .leading, spacing: 1) {
+				VStack(alignment: .leading, spacing: Self.titleStackSpacing) {
 					OverflowingMusicTitle(title: musicTitle)
 						.font(.caption.monospaced().weight(.medium))
 						.foregroundStyle(theme.textSecondary)

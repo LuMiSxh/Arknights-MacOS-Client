@@ -30,11 +30,11 @@ struct CustomWindowSizeRow: View {
 		) {
 			HStack(spacing: LauncherTokens.Spacing.control) {
 				ThemedTextField("Width", text: $widthText, leadingText: "W")
-					.frame(width: 96)
+					.frame(width: LauncherTokens.Layout.windowSizeFieldWidth)
 				Text("×")
 					.foregroundStyle(theme.textSecondary)
 				ThemedTextField("Height", text: $heightText, leadingText: "H")
-					.frame(width: 96)
+					.frame(width: LauncherTokens.Layout.windowSizeFieldWidth)
 				CapsuleActionButton(
 					title: "Measure With a Window…", systemImage: "ruler", tone: .neutral,
 					presentation: .compact

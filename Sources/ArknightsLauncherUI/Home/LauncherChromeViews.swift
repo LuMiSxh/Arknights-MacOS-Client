@@ -25,8 +25,16 @@ struct ArknightsWordmark: View {
 					.transition(wordmarkTransition)
 			}
 		}
-		.frame(width: 244, height: 68, alignment: .leading)
-		.shadow(color: .black.opacity(0.46), radius: 9, y: 3)
+		.frame(
+			width: LauncherTokens.Layout.wordmarkWidth,
+			height: LauncherTokens.Layout.wordmarkHeight,
+			alignment: .leading
+		)
+		.shadow(
+			color: LauncherVisuals.Shade.wordmarkShadow,
+			radius: LauncherTokens.Layout.wordmarkShadowRadius,
+			y: LauncherTokens.Layout.wordmarkShadowYOffset
+		)
 		.padding(.trailing, LauncherTokens.Spacing.page)
 		.animation(wordmarkAnimation, value: wordmarkIdentity)
 		.accessibilityElement(children: .ignore)
@@ -69,7 +77,7 @@ struct ArknightsWordmark: View {
 	}
 
 	private var wordmarkTransition: AnyTransition {
-		reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.98))
+		.materialize(reduceMotion: reduceMotion, scale: 0.98)
 	}
 }
 
@@ -84,7 +92,7 @@ struct LauncherPopupView: View {
 		ThemedModalView(
 			title: popup.title,
 
-			width: 620,
+			width: LauncherTokens.Layout.popupWidth,
 			height: popupHeight
 		) {
 			Group {
@@ -125,7 +133,11 @@ struct LauncherPopupView: View {
 	}
 
 	private var popupHeight: CGFloat {
-		guard contentHeight > 0 else { return 430 }
-		return min(max(contentHeight + 160, 320), 600)
+		guard contentHeight > 0 else { return LauncherTokens.Layout.popupDefaultHeight }
+		return min(
+			max(
+				contentHeight + LauncherTokens.Layout.popupContentInset,
+				LauncherTokens.Layout.modalMinimumHeight),
+			LauncherTokens.Layout.popupMaximumHeight)
 	}
 }

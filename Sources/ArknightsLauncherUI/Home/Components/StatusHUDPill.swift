@@ -15,12 +15,17 @@ struct StatusHUDPill: View {
 	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
-		if settings.showsServerResetCountdown {
+		if Self.shows(for: settings) {
 			// Countdowns show whole minutes, so redrawing on minute boundaries keeps them exact.
 			TimelineView(.everyMinute) { context in
 				pill(now: context.date)
 			}
 		}
+	}
+
+	/// Shared with the Home HUD so the pill and its row spacing appear together.
+	static func shows(for settings: LauncherPreferencesController) -> Bool {
+		settings.showsServerResetCountdown
 	}
 
 	private func pill(now: Date) -> some View {
@@ -40,7 +45,7 @@ struct StatusHUDPill: View {
 			isExpanded: $isExpanded
 		) {
 			Text(countdown(for: installation.region, now: now))
-				.font(.caption.monospacedDigit().weight(.medium))
+				.font(LauncherTokens.Typography.hudPillCaption)
 				.foregroundStyle(theme.textSecondary)
 				.lineLimit(2)
 				.truncationMode(.tail)
@@ -96,7 +101,7 @@ struct StatusHUDPill: View {
 				.accessibilityAddTraits(
 					region == installation.region ? .isSelected : []
 				)
-				.accessibilityHint(Text("Switch between installed regions"))
+				.accessibilityHint(Text("Switch between installed servers"))
 			}
 		}
 		.padding(.horizontal, LauncherTokens.Spacing.control)
@@ -115,7 +120,7 @@ struct StatusHUDPill: View {
 					)
 					.fixedSize(horizontal: false, vertical: true)
 				Text(countdown)
-					.font(.caption.monospacedDigit().weight(.medium))
+					.font(LauncherTokens.Typography.hudPillCaption)
 					.adaptiveControlForeground(
 						theme.textSecondary,
 						disabledTint: theme.textTertiary

@@ -14,32 +14,29 @@ struct LauncherArtworkView: View {
 	@State private var hasShownArtworkBefore = false
 
 	var body: some View {
-		GeometryReader { proxy in
-			ZStack {
-				if let image {
-					Image(nsImage: image)
-						.resizable()
-						.scaledToFill()
-						.id(artworkIdentity)
-						.transition(artworkTransition)
-						.accessibilityLabel("Arknights artwork")
-				} else {
-					fallbackArtwork
-						.id(artworkIdentity)
-						.transition(artworkTransition)
-						.accessibilityHidden(true)
-				}
+		ZStack {
+			if let image {
+				Image(nsImage: image)
+					.resizable()
+					.scaledToFill()
+					.id(artworkIdentity)
+					.transition(artworkTransition)
+					.accessibilityLabel("Arknights artwork")
+			} else {
+				fallbackArtwork
+					.id(artworkIdentity)
+					.transition(artworkTransition)
+					.accessibilityHidden(true)
 			}
-			.frame(width: proxy.size.width, height: proxy.size.height)
-			.clipped()
-			.animation(
-				hasShownArtworkBefore
-					? LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion) : nil,
-				value: artworkIdentity
-			)
-			.onChange(of: artworkIdentity, initial: true) { _, _ in
-				if image != nil { hasShownArtworkBefore = true }
-			}
+		}
+		.clipped()
+		.animation(
+			hasShownArtworkBefore
+				? LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion) : nil,
+			value: artworkIdentity
+		)
+		.onChange(of: artworkIdentity, initial: true) { _, _ in
+			if image != nil { hasShownArtworkBefore = true }
 		}
 	}
 
@@ -51,15 +48,19 @@ struct LauncherArtworkView: View {
 		.materialize(reduceMotion: reduceMotion, scale: 1.03)
 	}
 
+	private static let fallbackStripeWidth: CGFloat = 620
+	private static let fallbackStripeHeight: CGFloat = 8
+
 	private var fallbackArtwork: some View {
 		ZStack {
 			theme.sheetSolid
 			Text("A")
 				.font(LauncherTokens.Typography.fallbackWordmark)
-				.foregroundStyle(.white.opacity(0.07))
+				.foregroundStyle(
+					.white.opacity(LauncherVisuals.Shade.fallbackWordmarkOpacity))
 			Rectangle()
 				.fill(accentColor.opacity(0.4))
-				.frame(width: 620, height: 8)
+				.frame(width: Self.fallbackStripeWidth, height: Self.fallbackStripeHeight)
 				.rotationEffect(.degrees(-42))
 		}
 	}

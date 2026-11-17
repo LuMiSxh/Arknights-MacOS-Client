@@ -15,6 +15,6 @@ struct PresetGalleryLoadingView: View {
 				.font(.caption)
 				.foregroundStyle(theme.textSecondary)
 		}
-		.frame(maxWidth: .infinity, minHeight: 240)
+		.frame(maxWidth: .infinity, minHeight: LauncherTokens.Layout.galleryPlaceholderMinHeight)
 	}
 }

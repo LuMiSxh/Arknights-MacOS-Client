@@ -19,6 +19,12 @@ struct IntegrationSettingsPage: View {
 		(.minutes120, "2 hours before"),
 	]
 
+	private static let musicURLMinimumWidth: CGFloat = 220
+	private static let musicURLIdealWidth: CGFloat = 252
+	private static let musicURLMaximumWidth: CGFloat = 280
+	private static let volumeSliderWidth: CGFloat = 140
+	private static let volumeLabelMinimumWidth: CGFloat = 36
+
 	private var regionsSummary: String {
 		let selected = reminders.availableRegions.filter(settings.resetReminderRegions.contains)
 		switch selected.count {
@@ -102,7 +108,11 @@ struct IntegrationSettingsPage: View {
 							text: $settings.launcherMusicURL,
 							systemImage: "link",
 						)
-						.frame(minWidth: 220, idealWidth: 252, maxWidth: 280)
+						.frame(
+							minWidth: Self.musicURLMinimumWidth,
+							idealWidth: Self.musicURLIdealWidth,
+							maxWidth: Self.musicURLMaximumWidth
+						)
 					}
 					SettingsHairline()
 					SettingsActionRow(
@@ -117,7 +127,7 @@ struct IntegrationSettingsPage: View {
 								value: $settings.launcherMusicVolume,
 								range: 0...1,
 								step: 0.05,
-								width: 140
+								width: Self.volumeSliderWidth
 							)
 							.accessibilityLabel("Volume")
 							.accessibilityValue(
@@ -134,9 +144,9 @@ struct IntegrationSettingsPage: View {
 
 								"\(Int(settings.launcherMusicVolume * 100))%"
 							)
-							.font(.caption.monospacedDigit())
+							.font(LauncherTokens.Typography.progressCaption)
 							.foregroundStyle(theme.textSecondary)
-							.frame(minWidth: 36, alignment: .trailing)
+							.frame(minWidth: Self.volumeLabelMinimumWidth, alignment: .trailing)
 						}
 					}
 					SettingsHairline()

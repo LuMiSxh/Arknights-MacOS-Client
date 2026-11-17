@@ -5,6 +5,14 @@ import SwiftUI
 
 private let applyingLabel = "Applying…"
 
+private enum AvatarGridMetrics {
+	static let minimumColumnWidth: CGFloat = 120
+	static let maximumColumnWidth: CGFloat = 140
+	static let labelWidth: CGFloat = 128
+	static let shadowRadius: CGFloat = 4
+	static let shadowYOffset: CGFloat = 2
+}
+
 struct PresetAvatarGrid: View {
 	@Environment(\.launcherTheme) private var theme
 	let catalog: PresetCatalogService
@@ -13,7 +21,11 @@ struct PresetAvatarGrid: View {
 	let onSelect: (PresetAvatar) -> Void
 
 	private let columns = [
-		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: LauncherTokens.Spacing.panel)
+		GridItem(
+			.adaptive(
+				minimum: AvatarGridMetrics.minimumColumnWidth,
+				maximum: AvatarGridMetrics.maximumColumnWidth),
+			spacing: LauncherTokens.Spacing.panel)
 	]
 
 	var body: some View {
@@ -33,7 +45,10 @@ struct PresetAvatarGrid: View {
 								contentMode: .fit,
 								placeholderIcon: "person.crop.square"
 							)
-							.frame(width: 104, height: 104)
+							.frame(
+								width: LauncherTokens.Layout.presetAvatarTileSize,
+								height: LauncherTokens.Layout.presetAvatarTileSize
+							)
 							.background(theme.groupFill)
 							.clipShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel))
 							if isApplying {
@@ -48,7 +63,10 @@ struct PresetAvatarGrid: View {
 									RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel))
 							}
 						}
-						.frame(width: 104, height: 104)
+						.frame(
+							width: LauncherTokens.Layout.presetAvatarTileSize,
+							height: LauncherTokens.Layout.presetAvatarTileSize
+						)
 						.overlay {
 							RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
 								.strokeBorder(
@@ -59,18 +77,20 @@ struct PresetAvatarGrid: View {
 						.shadow(
 							color: LauncherVisuals.opaqueDim.opacity(
 								LauncherVisuals.Shade.artworkShadowOpacity),
-							radius: 4, x: 0, y: 2)
+							radius: AvatarGridMetrics.shadowRadius,
+							x: 0,
+							y: AvatarGridMetrics.shadowYOffset)
 						Text(avatar.name)
 							.font(.caption.weight(.medium))
 							.lineLimit(2)
 							.truncationMode(.tail)
 							.foregroundStyle(isApplying ? theme.accentInk : theme.textPrimary)
-							.frame(maxWidth: 128)
+							.frame(maxWidth: AvatarGridMetrics.labelWidth)
 					}
 					.padding(.vertical, LauncherTokens.Spacing.compact)
 					.frame(maxWidth: .infinity)
 					.contentShape(Rectangle())
-					.opacity(isBlocked ? 0.46 : 1)
+					.opacity(isBlocked ? LauncherVisuals.Control.blockedOpacity : 1)
 				}
 				.buttonStyle(ActionPressStyle(intensity: .subtle))
 				.keyboardFocusIndicator(
@@ -127,7 +147,7 @@ struct PresetWallpaperGrid: View {
 								placeholderIcon: "photo"
 							)
 							.frame(minWidth: 0, maxWidth: .infinity)
-							.frame(height: 104)
+							.frame(height: LauncherTokens.Layout.presetThumbnailHeight)
 							.clipped()
 							.clipShape(RoundedRectangle(cornerRadius: thumbnailRadius))
 							if isApplying {
@@ -146,7 +166,7 @@ struct PresetWallpaperGrid: View {
 								.clipShape(RoundedRectangle(cornerRadius: thumbnailRadius))
 							}
 						}
-						.frame(height: 104)
+						.frame(height: LauncherTokens.Layout.presetThumbnailHeight)
 						.background(
 							theme.trackFill, in: .rect(cornerRadius: thumbnailRadius))
 						Text(wp.displayTitle)
@@ -168,7 +188,7 @@ struct PresetWallpaperGrid: View {
 								lineWidth: LauncherTokens.Control.borderWidth
 							)
 					}
-					.opacity(isBlocked ? 0.46 : 1)
+					.opacity(isBlocked ? LauncherVisuals.Control.blockedOpacity : 1)
 				}
 				.buttonStyle(ActionPressStyle(intensity: .subtle))
 				.keyboardFocusIndicator(

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 struct PresetGalleryEmptyView: View {
@@ -14,6 +15,6 @@ struct PresetGalleryEmptyView: View {
 				Image(systemName: systemImage)
 			}
 		}
-		.frame(maxWidth: .infinity, minHeight: 240)
+		.frame(maxWidth: .infinity, minHeight: LauncherTokens.Layout.galleryPlaceholderMinHeight)
 	}
 }

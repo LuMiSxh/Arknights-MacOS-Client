@@ -9,6 +9,8 @@ struct OperatorIconStylePreview: View {
 	let avatar: PresetAvatar?
 	let accentHue: Double?
 	@Environment(\.launcherTheme) private var theme
+	private static let previewMinimumWidth: CGFloat = 284
+	private static let previewMaximumWidth: CGFloat = 360
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.panel) {
@@ -43,7 +45,7 @@ struct OperatorIconStylePreview: View {
 			}
 		}
 		.padding(LauncherTokens.Spacing.panel)
-		.frame(minWidth: 284, maxWidth: 360)
+		.frame(minWidth: Self.previewMinimumWidth, maxWidth: Self.previewMaximumWidth)
 	}
 
 	private func styleLabel(

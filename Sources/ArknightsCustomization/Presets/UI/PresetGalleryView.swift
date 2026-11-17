@@ -110,12 +110,12 @@ package struct PresetGalleryView: View {
 						}
 					}
 					.padding(.horizontal, LauncherTokens.Spacing.page)
-					.padding(.bottom, 64)
+					.padding(.bottom, LauncherTokens.Spacing.galleryFooterInset)
 				}
-				.contentMargins(.top, 8, for: .scrollIndicators)
-				.contentMargins(.bottom, 24, for: .scrollIndicators)
+				.contentMargins(.top, LauncherTokens.Spacing.control, for: .scrollIndicators)
+				.contentMargins(.bottom, LauncherTokens.Spacing.page, for: .scrollIndicators)
 			}
-			FloatingActionFooterFade(height: 56)
+			FloatingActionFooterFade(height: LauncherTokens.Layout.footerFadeHeight)
 			FloatingActionBar {
 				FloatingDoneButton {
 					dismiss()
@@ -124,7 +124,10 @@ package struct PresetGalleryView: View {
 			.padding(.trailing, LauncherTokens.Spacing.page)
 			.padding(.bottom, LauncherTokens.Spacing.panel)
 		}
-		.frame(width: 760, height: 572)
+		.frame(
+			width: LauncherTokens.Layout.modalWidth,
+			height: LauncherTokens.Layout.presetGalleryModalHeight
+		)
 		// The sheet is key while it is open, so the presenting window's theme reads as inactive.
 		// Resolving the theme here, in the sheet's own window, keeps the accent.
 		.launcherTheme(accent: customization.accentColor)

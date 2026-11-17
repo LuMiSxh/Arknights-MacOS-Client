@@ -327,7 +327,7 @@ package struct ContentView: View {
 			if model.settings.showsBranding {
 				ArknightsWordmark(
 					logo: model.customization.officialLogo, region: model.installation.region
-				).padding(.top, 32)
+				).padding(.top, LauncherTokens.Layout.homeTopBarTopPadding)
 					.environment(\.colorScheme, brandingColorScheme)
 					.launcherAnimation(.state, value: brandingColorScheme)
 			}
@@ -338,11 +338,14 @@ package struct ContentView: View {
 				tone: .neutral,
 				foreground: .primary,
 				surface: .hud,
-				size: 40,
-				hitTargetSize: 44,
+				size: LauncherTokens.Control.homeSettingsButtonSize,
+				hitTargetSize: LauncherTokens.Control.minimumHitTarget,
 				action: requestSettings
 			)
-			.frame(minWidth: 44, minHeight: 44)
+			.frame(
+				minWidth: LauncherTokens.Control.minimumHitTarget,
+				minHeight: LauncherTokens.Control.minimumHitTarget
+			)
 			.keyboardShortcut(",", modifiers: .command)
 			.accessibilityHint(Text("Open launcher settings"))
 			.help("Open launcher settings")

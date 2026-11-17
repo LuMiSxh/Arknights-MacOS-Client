@@ -26,7 +26,7 @@ struct RuntimeProgressLabel: View {
 			}
 			if let detail {
 				Text(detail)
-					.font(.caption.monospacedDigit())
+					.font(LauncherTokens.Typography.progressCaption)
 					.foregroundStyle(theme.textSecondary)
 			}
 		}

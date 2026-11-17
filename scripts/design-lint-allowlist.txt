@@ -7,10 +7,8 @@
 # raw-glass, system-font, font-weight, detached-task, off-grid-spacing.
 
 
-# Launcher home: artwork scrims, readability gradients, and HUD shadows; not yet on theme tokens.
+# Launcher home: the fallback artwork letter tint over the fallback surface.
 Sources/ArknightsLauncherUI/Home/LauncherArtworkView.swift:raw-color:1
-Sources/ArknightsLauncherUI/Home/LauncherChromeViews.swift:raw-color:1
-Sources/ArknightsLauncherUI/Home/LauncherReadabilityField.swift:raw-color:2
 
 # Shared controls: HUD shadow and bottom fade over artwork; no theme role matches the alpha.
 Sources/ArknightsCore/Shared/UI/Components/ExpandableHUDPill.swift:raw-color:1

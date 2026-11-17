@@ -40,11 +40,14 @@ package struct FloatingActionFooterFade: View {
 /// capsule-like; expanded action groups use a fixed-radius rounded rectangle.
 package struct FloatingActionBar<Content: View>: View {
 
-	var spacing: CGFloat = 12
+	var spacing: CGFloat = LauncherTokens.Spacing.content
 	@ViewBuilder package let content: Content
 	@State private var contentHeight: CGFloat = 0
 
-	package init(spacing: CGFloat = 12, @ViewBuilder content: () -> Content) {
+	package init(
+		spacing: CGFloat = LauncherTokens.Spacing.content,
+		@ViewBuilder content: () -> Content
+	) {
 		self.spacing = spacing
 		self.content = content()
 	}
@@ -70,14 +73,15 @@ package struct FloatingActionBar<Content: View>: View {
 	}
 
 	private var isExpanded: Bool {
-		contentHeight > 56
+		contentHeight > LauncherTokens.Layout.footerFadeHeight
 	}
 
-	private var barShape: RoundedRectangle {
-		RoundedRectangle(
-			cornerRadius: isExpanded ? LauncherTokens.Radius.panel : 999,
-			style: .continuous
-		)
+	private var barShape: AnyShape {
+		isExpanded
+			? AnyShape(
+				RoundedRectangle(
+					cornerRadius: LauncherTokens.Radius.panel, style: .continuous))
+			: AnyShape(Capsule())
 	}
 }
 
