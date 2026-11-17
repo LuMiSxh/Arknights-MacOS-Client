@@ -112,7 +112,7 @@ struct OnboardingInstallView: View {
 			parts.append("Version \(pin.version)")
 		}
 		parts.append(
-			"\(ByteCountFormatter.string(fromByteCount: Int64(pin.sizeBytes), countStyle: .file)) download"
+			"\(DownloadProgressFormatting.byteCount(Int64(pin.sizeBytes))) download"
 		)
 		parts.append("Requires \(macOSVersion(pin.minimumMacOS)) or later")
 		return parts.joined(separator: " · ")
@@ -168,6 +168,6 @@ private struct RuntimeProgressPanel: View {
 			progress.totalBytes > 0
 		else { return nil }
 		return
-			"\(ByteCountFormatter.string(fromByteCount: progress.downloadedBytes, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: progress.totalBytes, countStyle: .file))"
+			"\(DownloadProgressFormatting.byteCount(progress.downloadedBytes)) of \(DownloadProgressFormatting.byteCount(progress.totalBytes))"
 	}
 }

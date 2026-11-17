@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
 import Darwin
 import Foundation
 
@@ -53,7 +54,9 @@ struct WinePrefixLegacyLibraryCleaner: Sendable {
 		do {
 			names = try fileManager.contentsOfDirectory(atPath: directory.path)
 		} catch {
-			if !Self.isMissing(error) { report.failures.append("\(error.localizedDescription)") }
+			if !GameShimIO.isMissingFile(error) {
+				report.failures.append("\(error.localizedDescription)")
+			}
 			return report
 		}
 		for name in names.sorted() {
@@ -90,11 +93,5 @@ struct WinePrefixLegacyLibraryCleaner: Sendable {
 		try handle.close()
 		return header.starts(with: Self.peStubMarker)
 			&& Data(header.dropFirst(Self.builtinMarkerOffset)) == Self.builtinMarker
-	}
-
-	private static func isMissing(_ error: Error) -> Bool {
-		(error as? CocoaError)?.code == .fileReadNoSuchFile
-			|| (error as? CocoaError)?.code == .fileNoSuchFile
-			|| (error as? POSIXError)?.code == .ENOENT
 	}
 }

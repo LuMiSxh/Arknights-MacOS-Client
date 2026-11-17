@@ -6,7 +6,7 @@ import Foundation
 
 // Shared file primitives for `GameCompatibilityComponent`s. Components keep their own
 // orchestration and error messages.
-enum GameShimIO {
+package enum GameShimIO {
 	// Best-effort work never rethrows. Without a logger, a failure is dropped.
 	static func attempt(_ context: String, log: LauncherLog?, _ work: () throws -> Void) {
 		do {
@@ -17,7 +17,7 @@ enum GameShimIO {
 	}
 
 	// A missing optional link is the normal state, so callers log only other read failures.
-	static func isMissingFile(_ error: Error) -> Bool {
+	package static func isMissingFile(_ error: Error) -> Bool {
 		if let cocoaError = error as? CocoaError {
 			return cocoaError.code == .fileNoSuchFile || cocoaError.code == .fileReadNoSuchFile
 		}

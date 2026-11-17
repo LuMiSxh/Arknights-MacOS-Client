@@ -41,7 +41,7 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 		case .missingConfiguration:
 			"Game information has not loaded yet. Refresh the launcher and try again."
 		case .insufficientDiskSpace(let required, let available):
-			"Arknights needs about \(ByteCountFormatter.string(fromByteCount: required, countStyle: .file)) free, but only \(ByteCountFormatter.string(fromByteCount: available, countStyle: .file)) is available. Free up space and try again."
+			"Arknights needs about \(DownloadProgressFormatting.byteCount(required)) free, but only \(DownloadProgressFormatting.byteCount(available)) is available. Free up space and try again."
 		}
 	}
 

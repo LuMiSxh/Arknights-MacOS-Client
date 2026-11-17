@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
 import ArknightsInfrastructure
 import Foundation
 
@@ -174,11 +175,7 @@ struct RuntimeMigrationStore {
 	private func removeIfPresent(at url: URL) throws {
 		do {
 			try fileManager.removeItem(at: url)
-		} catch let error as CocoaError
-			where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile
-		{
-			return
-		} catch let error as POSIXError where error.code == .ENOENT {
+		} catch let error where GameShimIO.isMissingFile(error) {
 			return
 		}
 	}

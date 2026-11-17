@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
 import Foundation
 import SwiftUI
 
@@ -194,6 +195,6 @@ package struct StorageOverviewPage: View {
 	private func sizeText(for usage: StorageUsage) -> String {
 		guard usage.exists else { return "None" }
 		guard let byteCount = usage.byteCount else { return "Unavailable" }
-		return ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
+		return DownloadProgressFormatting.byteCount(byteCount)
 	}
 }
