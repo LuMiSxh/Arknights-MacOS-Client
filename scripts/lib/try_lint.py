@@ -14,6 +14,8 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from lib.allowlist import code_of, load_allowlist
+
 TRY_LINT_SOURCE_ROOTS = (
     Path("Sources/ArknightsInfrastructure"),
     Path("Sources/ArknightsGameInstallation"),
@@ -23,24 +25,15 @@ TRY_LINT_ALLOWLIST = Path("scripts/try-lint-allowlist.txt")
 RULE = "silent-try"
 BEST_EFFORT_MARKER = "// best effort:"
 SILENT_TRY = re.compile(r"\btry\?")
-# Allowlist entries look like `path:silent-try:count`; the count is at least 1.
-ENTRY = re.compile(rf"([^:]+):{RULE}:([1-9][0-9]*)")
-# Masking strings before cutting comments keeps a `//` inside a string from hiding the line.
-_STRING_LITERAL = re.compile(r'"(?:\\.|[^"\\])*"')
-_LINE_COMMENT = re.compile(r"//.*")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Violation:
     """One unmarked `try?` in a Swift source file."""
 
     path: str
     line: int
     text: str
-
-
-def _code_of(line: str) -> str:
-    return _LINE_COMMENT.sub("", _STRING_LITERAL.sub('""', line))
 
 
 def scan(root: Path) -> list[Violation]:
@@ -51,7 +44,7 @@ def scan(root: Path) -> list[Violation]:
             relative = path.relative_to(root).as_posix()
             lines = path.read_text(encoding="utf-8").splitlines()
             for number, line in enumerate(lines, start=1):
-                if not SILENT_TRY.search(_code_of(line)):
+                if not SILENT_TRY.search(code_of(line)):
                     continue
                 previous = lines[number - 2] if number > 1 else ""
                 if BEST_EFFORT_MARKER in line or BEST_EFFORT_MARKER in previous:
@@ -60,42 +53,27 @@ def scan(root: Path) -> list[Violation]:
     return violations
 
 
-def _load_allowlist(path: Path) -> tuple[dict[str, int], list[str]]:
+def _load_allowlist(path: Path) -> tuple[dict[tuple[str, str], int], list[str]]:
     """Return the expected count for each path and one problem for each malformed line."""
-    if not path.is_file():
-        return {}, [f"{path.name}: allowlist is missing"]
-    expected: dict[str, int] = {}
-    problems: list[str] = []
-    for number, raw in enumerate(
-        path.read_text(encoding="utf-8").splitlines(), start=1
-    ):
-        entry = raw.strip()
-        if not entry or entry.startswith("#"):
-            continue
-        parsed = ENTRY.fullmatch(entry)
-        if parsed is None:
-            problems.append(
-                f"{path.name}:{number}: expected path:{RULE}:count, got {entry!r}"
-            )
-        elif parsed[1] in expected:
-            problems.append(f"{path.name}:{number}: duplicate entry {entry}")
-        else:
-            expected[parsed[1]] = int(parsed[2])
-    return expected, problems
+    return load_allowlist(
+        path,
+        rules=frozenset({RULE}),
+        expected_message="{name}:{number}: expected path:{rule}:count, got {entry!r}",
+    )
 
 
 def check(root: Path) -> list[str]:
     """Return one message for each unmarked `try?` beyond its allowlist count, and each stale entry."""
     expected, problems = _load_allowlist(root / TRY_LINT_ALLOWLIST)
     violations = scan(root)
-    found = Counter(violation.path for violation in violations)
+    found = Counter((violation.path, RULE) for violation in violations)
     for violation in violations:
-        if found[violation.path] > expected.get(violation.path, 0):
+        if found[(violation.path, RULE)] > expected.get((violation.path, RULE), 0):
             problems.append(
                 f"{violation.path}:{violation.line}: {RULE}: {violation.text}"
             )
-    for path, allowed in sorted(expected.items()):
-        actual = found.get(path, 0)
+    for (path, _), allowed in sorted(expected.items()):
+        actual = found.get((path, RULE), 0)
         if actual == 0:
             problems.append(
                 f"{path}:{RULE}: allowlist entry matches no violation; remove it"

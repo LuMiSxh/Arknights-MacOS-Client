@@ -8,7 +8,7 @@ import subprocess
 import sys
 from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
-from typing import NoReturn
+from typing import NoReturn, TypeGuard
 
 from lib.console import child_output, error, warning
 
@@ -101,14 +101,19 @@ def remove_path(path: Path) -> None:
         shutil.rmtree(path)
 
 
+def is_safe_relative_path(value: object) -> TypeGuard[str]:
+    """Return True when `value` is a relative path with safe components and characters."""
+    return (
+        isinstance(value, str)
+        and len(value) <= 240
+        and not value.startswith("/")
+        and all(component not in {"", ".", ".."} for component in value.split("/"))
+        and re.fullmatch(r"[A-Za-z0-9._/+\-]+", value) is not None
+    )
+
+
 def safe_relative_path(value: object, error_message: str) -> str:
-    if (
-        not isinstance(value, str)
-        or len(value) > 240
-        or value.startswith("/")
-        or any(component in {"", ".", ".."} for component in value.split("/"))
-        or re.fullmatch(r"[A-Za-z0-9._/+\-]+", value) is None
-    ):
+    if not is_safe_relative_path(value):
         raise ValueError(error_message)
     return value
 

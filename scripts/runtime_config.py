@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from lib.common import BUILD_DIR, PROJECT_DIR, fail
+from lib.common import BUILD_DIR, PROJECT_DIR, fail, is_safe_relative_path
 from lib.console import warning
 
 SCHEMA_VERSION = 3
@@ -23,20 +23,20 @@ MAXIMUM_RUNTIME_ARCHIVE_BYTES = 600 * 1_024 * 1_024
 PREPARED_REVISION_FILE = ".arknights-runtime-archive-sha256"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RuntimeSymlink:
     path: PurePosixPath
     target: PurePosixPath
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DXMTLayout:
     payload_directory: PurePosixPath
     destinations: tuple[tuple[str, str], ...]
     libraries: tuple[str, ...]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RuntimeFeatures:
     hardware_cursor: bool
     metal_fx_spatial_upscaling: bool
@@ -50,7 +50,7 @@ class RuntimeFeatures:
         }
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RuntimeLayout:
     archive_wine_directory: PurePosixPath
     archive_dxmt_directory: PurePosixPath
@@ -75,7 +75,7 @@ class RuntimeLayout:
         return (*self.executables, *self.required_regular_files)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PinnedRuntime:
     """One runtime archive pinned for one lane.
 
@@ -95,7 +95,7 @@ class PinnedRuntime:
         return bool(self.url) and bool(self.sha256) and self.size_bytes > 0
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RuntimeLaneConfiguration:
     """The pinned runtime, interface, and provenance of one architecture."""
 
@@ -108,7 +108,7 @@ class RuntimeLaneConfiguration:
     provenance: Mapping[str, Any]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RuntimeConfiguration:
     raw: dict[str, Any]
     lanes: Mapping[str, RuntimeLaneConfiguration]
@@ -394,12 +394,9 @@ def _safe_component(value: object) -> bool:
 
 
 def _safe_list_path(value: str, key: str) -> PurePosixPath:
-    path = PurePosixPath(value)
-    if path.is_absolute() or any(
-        component in ("", ".", "..") for component in path.parts
-    ):
+    if not is_safe_relative_path(value):
         fail(f"runtime configuration path must be safe and relative: {key}")
-    return path
+    return PurePosixPath(value)
 
 
 def _read_lane(config: dict[str, Any], name: str) -> RuntimeLaneConfiguration:

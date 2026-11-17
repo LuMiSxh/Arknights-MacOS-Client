@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from lib.common import PROJECT_DIR, fail, output, require_file
+from lib.common import PROJECT_DIR, fail, is_safe_relative_path, output, require_file
 
 ARCHITECTURE_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 SPARKLE_DELTA_SOURCE_COUNT = 3
@@ -65,7 +65,7 @@ def release_page_url(repository: str, version: str) -> str:
     return f"https://github.com/{repository}/releases/tag/v{version}"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ProductMetadata:
     """Product properties declared by the app's Info.plist."""
 
@@ -86,7 +86,7 @@ class ProductMetadata:
         return f"{self.icon_file}.icns"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PackageMetadata:
     """Build properties resolved by SwiftPM's package manifest evaluation."""
 
@@ -105,7 +105,7 @@ class PackageMetadata:
         return versions[identity]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ProjectConfiguration:
     """Validated metadata and paths derived from both project declarations."""
 
@@ -341,14 +341,9 @@ def _safe_component(value: str, name: str) -> str:
 
 
 def _safe_relative_path(value: str, name: str) -> Path:
-    path = PurePosixPath(value)
-    if (
-        path.is_absolute()
-        or not path.parts
-        or any(part in {"", ".", ".."} for part in path.parts)
-    ):
+    if not is_safe_relative_path(value):
         fail(f"{name} must be a safe relative path")
-    return Path(*path.parts)
+    return Path(*PurePosixPath(value).parts)
 
 
 def _architecture(value: str) -> str:

@@ -13,6 +13,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from lib.allowlist import code_of, load_allowlist
 from lib.project_config import (
     DESIGN_LINT_ALLOWLIST,
     DESIGN_LINT_EXCLUDED_DIRECTORIES,
@@ -59,14 +60,9 @@ OFF_GRID_SPACING = re.compile(
 )
 ALLOWED_SMALL_SPACING = frozenset({1.0, 2.0})
 KNOWN_RULES = frozenset({*RULES, OFF_GRID_RULE})
-# Allowlist entries look like `path:rule:count`; the count is at least 1.
-ENTRY = re.compile(r"([^:]+):([a-z-]+):([1-9][0-9]*)")
-# Masking strings before cutting comments keeps a `//` inside a string from hiding the line.
-_STRING_LITERAL = re.compile(r'"(?:\\.|[^"\\])*"')
-_LINE_COMMENT = re.compile(r"//.*")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Violation:
     """One line in a scanned Swift file that matches a rule."""
 
@@ -74,10 +70,6 @@ class Violation:
     line: int
     rule: str
     text: str
-
-
-def _code_of(line: str) -> str:
-    return _LINE_COMMENT.sub("", _STRING_LITERAL.sub('""', line))
 
 
 def _has_off_grid_spacing(code: str) -> bool:
@@ -106,7 +98,7 @@ def scan(root: Path) -> list[Violation]:
         relative = path.relative_to(root).as_posix()
         lines = path.read_text(encoding="utf-8").splitlines()
         for number, line in enumerate(lines, start=1):
-            code = _code_of(line)
+            code = code_of(line)
             for rule, pattern in rules:
                 if pattern.search(code):
                     violations.append(Violation(relative, number, rule, line.strip()))
@@ -119,27 +111,14 @@ def scan(root: Path) -> list[Violation]:
 
 def _load_allowlist(path: Path) -> tuple[dict[tuple[str, str], int], list[str]]:
     """Return the expected count for each `(path, rule)` and one problem per malformed line."""
-    if not path.is_file():
-        return {}, [f"{path.name}: allowlist is missing"]
-    expected: dict[tuple[str, str], int] = {}
-    problems: list[str] = []
-    for number, raw in enumerate(
-        path.read_text(encoding="utf-8").splitlines(), start=1
-    ):
-        entry = raw.strip()
-        if not entry or entry.startswith("#"):
-            continue
-        parsed = ENTRY.fullmatch(entry)
-        if parsed is None or parsed[2] not in KNOWN_RULES:
-            problems.append(
-                f"{path.name}:{number}: expected path:rule:count with a known rule "
-                f"and a count of at least 1, got {entry!r}"
-            )
-        elif (parsed[1], parsed[2]) in expected:
-            problems.append(f"{path.name}:{number}: duplicate entry {entry}")
-        else:
-            expected[(parsed[1], parsed[2])] = int(parsed[3])
-    return expected, problems
+    return load_allowlist(
+        path,
+        rules=KNOWN_RULES,
+        expected_message=(
+            "{name}:{number}: expected path:rule:count with a known rule "
+            "and a count of at least 1, got {entry!r}"
+        ),
+    )
 
 
 def check(root: Path) -> list[str]:
