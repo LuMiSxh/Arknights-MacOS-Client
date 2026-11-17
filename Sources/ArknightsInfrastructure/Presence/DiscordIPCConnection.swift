@@ -83,26 +83,37 @@ package struct DiscordIPCButton: Encodable, Equatable, Sendable {
 
 /// Opens Discord's local IPC socket, performs the handshake, and sends activity updates.
 ///
-/// One instance owns one socket. The caller creates a new connection for each attempt. State is
-/// confined to `queue`; async methods return through checked continuations resumed on that queue.
-// `@unchecked`: all mutable state below is read and written only on `queue` (serial).
-package final class DiscordIPCConnection: @unchecked Sendable {
-	private let queue = DispatchQueue(label: "com.lumisxh.arknights-client.discord-ipc")
+/// One instance owns one socket. The caller creates a new connection for each attempt. The actor
+/// confines the socket state machine; a dispatch source delivers reads and blocking socket work
+/// runs on concurrent helpers.
+package actor DiscordIPCConnection {
 	private let maximumPayloadBytes: Int
 	private let handshakeTimeout: Duration
 	private let clock: any Clock<Duration>
 	private let reportProtocolError: @Sendable (String) -> Void
 	private let openSocket: @Sendable () throws -> Int32
+	private let sourceQueue = DispatchQueue(
+		label: "com.lumisxh.arknights-client.discord-ipc.events")
 	private var descriptor: Int32 = -1
 	private var readSource: DispatchSourceRead?
 	private var handshakeTimer: Task<Void, Never>?
 	private var buffer = Data()
 	private var handshakeContinuation: CheckedContinuation<Void, any Error>?
 	private var disconnectContinuations: [CheckedContinuation<Void, Never>] = []
+	private var pendingWrites: [PendingWrite] = []
+	private var isDrainingWrites = false
+	private var isWritingToDescriptor = false
+	private var isClosePending = false
 	private var isClosed = false
 	private var isReady = false
 
-	package convenience init(
+	private struct PendingWrite {
+		let data: Data
+		let continuation: CheckedContinuation<Void, any Error>
+	}
+
+	// Actors cannot have convenience initializers, so both initializers set the stored properties.
+	package init(
 		maximumPayloadBytes: Int,
 		handshakeTimeout: Duration,
 		socketURLs: [URL]? = nil,
@@ -110,13 +121,11 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 		reportProtocolError: @escaping @Sendable (String) -> Void = { _ in }
 	) {
 		let urls = socketURLs ?? DiscordIPCSocket.candidateURLs()
-		self.init(
-			maximumPayloadBytes: maximumPayloadBytes,
-			handshakeTimeout: handshakeTimeout,
-			clock: clock,
-			reportProtocolError: reportProtocolError,
-			openSocket: { try Self.openSocket(at: urls) }
-		)
+		self.maximumPayloadBytes = maximumPayloadBytes
+		self.handshakeTimeout = handshakeTimeout
+		self.clock = clock
+		self.reportProtocolError = reportProtocolError
+		self.openSocket = { try Self.openSocket(at: urls) }
 	}
 
 	// Tests supply a socketpair descriptor because the test harness denies bind(2).
@@ -137,6 +146,9 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 	deinit {
 		handshakeTimer?.cancel()
 		readSource?.cancel()
+		if descriptor >= 0 {
+			Darwin.close(descriptor)
+		}
 	}
 
 	/// Longest wait for a full socket buffer to drain before a write fails.
@@ -148,32 +160,37 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 			clientID: clientID,
 			maximumPayloadBytes: maximumPayloadBytes
 		)
+		try await beginConnect(handshake)
+	}
+
+	private func beginConnect(_ handshake: Data) async throws {
+		guard !isClosed else { throw DiscordIPCError.connectionClosed }
+		let socketDescriptor: Int32
+		do {
+			socketDescriptor = try await Self.openedDescriptor(by: openSocket)
+		} catch {
+			close(error: error)
+			throw error
+		}
+		guard !isClosed else {
+			Darwin.close(socketDescriptor)
+			throw DiscordIPCError.connectionClosed
+		}
+		descriptor = socketDescriptor
+		installReadSource(descriptor: socketDescriptor)
 		try await withCheckedThrowingContinuation {
 			(continuation: CheckedContinuation<Void, any Error>) in
-			beginConnect(handshake, continuation: continuation)
+			handshakeContinuation = continuation
+			startHandshakeTimer()
+			Task { await self.sendHandshake(handshake) }
 		}
 	}
 
-	private func beginConnect(
-		_ handshake: Data,
-		continuation: CheckedContinuation<Void, any Error>
-	) {
-		queue.async { [self] in
-			guard !isClosed else {
-				continuation.resume(throwing: DiscordIPCError.connectionClosed)
-				return
-			}
-			do {
-				let fd = try openSocket()
-				descriptor = fd
-				installReadSource(descriptor: fd)
-				try writeFrame(handshake)
-				handshakeContinuation = continuation
-				startHandshakeTimer()
-			} catch {
-				closeLocked(error: error)
-				continuation.resume(throwing: error)
-			}
+	private func sendHandshake(_ frame: Data) async {
+		do {
+			try await writeFrame(frame)
+		} catch {
+			close(error: error)
 		}
 	}
 
@@ -184,66 +201,42 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 			pid: pid,
 			maximumPayloadBytes: maximumPayloadBytes
 		)
-		try await withCheckedThrowingContinuation {
-			(continuation: CheckedContinuation<Void, any Error>) in
-			writeActivity(frame, continuation: continuation)
-		}
-	}
-
-	private func writeActivity(
-		_ frame: Data,
-		continuation: CheckedContinuation<Void, any Error>
-	) {
-		queue.async { [self] in
-			guard !isClosed, isReady else {
-				continuation.resume(throwing: DiscordIPCError.connectionClosed)
-				return
-			}
-			do {
-				try writeFrame(frame)
-				continuation.resume()
-			} catch {
-				closeLocked(error: error)
-				continuation.resume(throwing: error)
-			}
+		guard !isClosed, isReady else { throw DiscordIPCError.connectionClosed }
+		do {
+			try await writeFrame(frame)
+		} catch {
+			close(error: error)
+			throw error
 		}
 	}
 
 	/// Returns when Discord closes the socket or the caller disconnects.
 	package func waitForDisconnect() async {
 		await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-			queue.async { [self] in
-				if isClosed {
-					continuation.resume()
-				} else {
-					disconnectContinuations.append(continuation)
-				}
+			if isClosed {
+				continuation.resume()
+			} else {
+				disconnectContinuations.append(continuation)
 			}
 		}
 	}
 
 	package func disconnect() async {
-		await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-			queue.async { [self] in
-				closeLocked(error: nil)
-				continuation.resume()
-			}
-		}
+		close(error: nil)
 	}
 
 	private func installReadSource(descriptor fd: Int32) {
-		let source = DispatchSource.makeReadSource(fileDescriptor: fd, queue: queue)
+		let source = DispatchSource.makeReadSource(fileDescriptor: fd, queue: sourceQueue)
 		source.setEventHandler { [weak self] in
-			self?.readAvailable()
-		}
-		source.setCancelHandler {
-			close(fd)
+			guard let self else { return }
+			Task { await self.readAvailable() }
 		}
 		readSource = source
 		source.resume()
 	}
 
-	private func readAvailable() {
+	/// Drains the non-blocking socket; the source delivers readiness and hops into the actor.
+	private func readAvailable() async {
 		while !isClosed {
 			var chunk = Data(count: 4_096)
 			let count = chunk.withUnsafeMutableBytes { bytes in
@@ -256,26 +249,27 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 						from: &buffer,
 						maximumPayloadBytes: maximumPayloadBytes
 					) {
-						handle(frame)
+						await handle(frame)
+						if isClosed { return }
 					}
 				} catch {
-					closeLocked(error: error)
+					close(error: error)
 					return
 				}
 				continue
 			}
 			if count == 0 {
-				closeLocked(error: DiscordIPCError.connectionClosed)
+				close(error: DiscordIPCError.connectionClosed)
 				return
 			}
 			if errno == EINTR { continue }
 			if errno == EAGAIN || errno == EWOULDBLOCK { return }
-			closeLocked(error: DiscordIPCError.readFailed(errno))
+			close(error: DiscordIPCError.readFailed(errno))
 			return
 		}
 	}
 
-	private func handle(_ frame: DiscordIPCFrame) {
+	private func handle(_ frame: DiscordIPCFrame) async {
 		switch frame.opcode {
 		case .frame:
 			handleJSON(frame.payload)
@@ -285,12 +279,12 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 					DiscordIPCFrame(opcode: .pong, payload: frame.payload),
 					maximumPayloadBytes: maximumPayloadBytes
 				)
-				try writeFrame(pong)
+				try await writeFrame(pong)
 			} catch {
-				closeLocked(error: error)
+				close(error: error)
 			}
 		case .close:
-			closeLocked(error: DiscordIPCError.connectionClosed)
+			close(error: DiscordIPCError.connectionClosed)
 		case .handshake, .pong:
 			break
 		}
@@ -298,19 +292,16 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 
 	private func handleJSON(_ payload: Data) {
 		do {
-			guard
-				let object = try JSONSerialization.jsonObject(with: payload) as? [String: Any],
-				let event = object["evt"] as? String
-			else { return }
-			switch event {
+			let event = try JSONDecoder().decode(DiscordIPCEvent.self, from: payload)
+			guard let name = event.evt else { return }
+			switch name {
 			case "READY":
 				completeHandshake()
 			case "ERROR":
-				let data = object["data"] as? [String: Any]
-				let code = data?["code"] as? Int ?? 0
-				let message = data?["message"] as? String ?? "Discord refused the command"
+				let code = event.data?.code ?? 0
+				let message = event.data?.message ?? "Discord refused the command"
 				if handshakeContinuation != nil {
-					closeLocked(error: DiscordIPCError.discordError(code: code, message: message))
+					close(error: DiscordIPCError.discordError(code: code, message: message))
 				} else {
 					reportProtocolError("Discord reported error \(code): \(message)")
 				}
@@ -318,7 +309,7 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 				break
 			}
 		} catch {
-			closeLocked(error: DiscordIPCError.invalidMessage)
+			close(error: DiscordIPCError.invalidMessage)
 		}
 	}
 
@@ -340,25 +331,26 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 			} catch {
 				return
 			}
-			self?.queue.async { [weak self] in
-				guard let self, handshakeContinuation != nil else { return }
-				closeLocked(error: DiscordIPCError.handshakeTimedOut)
-			}
+			await self?.handshakeDidTimeOut()
 		}
 	}
 
-	/// Blocks the connection queue until the socket accepts more bytes, for at most the stall bound.
-	private func waitUntilWritable() throws {
-		var pollDescriptor = pollfd(fd: descriptor, events: Int16(POLLOUT), revents: 0)
-		while true {
-			let ready = poll(&pollDescriptor, 1, Self.writeStallTimeoutMilliseconds)
-			if ready > 0 { return }
-			if ready == 0 { throw DiscordIPCError.writeFailed(ETIMEDOUT) }
-			if errno != EINTR { throw DiscordIPCError.writeFailed(errno) }
-		}
+	private func handshakeDidTimeOut() {
+		guard handshakeContinuation != nil else { return }
+		close(error: DiscordIPCError.handshakeTimedOut)
 	}
 
-	private func writeFrame(_ frame: Data) throws {
+	/// Opens the socket off the cooperative pool because `connect(2)` may block.
+	@concurrent
+	private static func openedDescriptor(
+		by openSocket: @Sendable () throws -> Int32
+	) async throws -> Int32 {
+		try openSocket()
+	}
+
+	/// Writes every byte off the cooperative pool, polling when the full socket buffer drains.
+	@concurrent
+	private static func writeAll(_ frame: Data, to descriptor: Int32) async throws {
 		try frame.withUnsafeBytes { bytes in
 			guard let baseAddress = bytes.baseAddress else { return }
 			var offset = 0
@@ -371,7 +363,7 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 				if count < 0 {
 					if errno == EINTR { continue }
 					if errno == EAGAIN || errno == EWOULDBLOCK {
-						try waitUntilWritable()
+						try waitUntilWritable(descriptor)
 						continue
 					}
 					throw DiscordIPCError.writeFailed(errno)
@@ -382,19 +374,79 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 		}
 	}
 
-	private func closeLocked(error: (any Error)?) {
+	/// Blocks the writing helper until the socket accepts more bytes, for at most the stall bound.
+	private static func waitUntilWritable(_ descriptor: Int32) throws {
+		var pollDescriptor = pollfd(fd: descriptor, events: Int16(POLLOUT), revents: 0)
+		while true {
+			let ready = poll(&pollDescriptor, 1, writeStallTimeoutMilliseconds)
+			if ready > 0 { return }
+			if ready == 0 { throw DiscordIPCError.writeFailed(ETIMEDOUT) }
+			if errno != EINTR { throw DiscordIPCError.writeFailed(errno) }
+		}
+	}
+
+	/// Queues a frame so writes reach the socket one at a time.
+	private func writeFrame(_ frame: Data) async throws {
+		try await withCheckedThrowingContinuation {
+			(continuation: CheckedContinuation<Void, any Error>) in
+			guard !isClosed else {
+				continuation.resume(throwing: DiscordIPCError.connectionClosed)
+				return
+			}
+			pendingWrites.append(PendingWrite(data: frame, continuation: continuation))
+			guard !isDrainingWrites else { return }
+			isDrainingWrites = true
+			Task { await self.drainWrites() }
+		}
+	}
+
+	private func drainWrites() async {
+		while let write = pendingWrites.first {
+			pendingWrites.removeFirst()
+			guard !isClosed, descriptor >= 0 else {
+				let error = DiscordIPCError.connectionClosed
+				write.continuation.resume(throwing: error)
+				failPendingWrites(with: error)
+				isDrainingWrites = false
+				return
+			}
+			isWritingToDescriptor = true
+			do {
+				try await Self.writeAll(write.data, to: descriptor)
+			} catch {
+				isWritingToDescriptor = false
+				if isClosePending {
+					closeDescriptor()
+				}
+				close(error: error)
+				write.continuation.resume(throwing: error)
+				failPendingWrites(with: error)
+				isDrainingWrites = false
+				return
+			}
+			isWritingToDescriptor = false
+			write.continuation.resume()
+			if isClosePending {
+				closeDescriptor()
+			}
+		}
+		isDrainingWrites = false
+	}
+
+	private func failPendingWrites(with error: any Error) {
+		let pending = pendingWrites
+		pendingWrites.removeAll()
+		for write in pending {
+			write.continuation.resume(throwing: error)
+		}
+	}
+
+	private func close(error: (any Error)?) {
 		guard !isClosed else { return }
 		isClosed = true
 		isReady = false
 		handshakeTimer?.cancel()
 		handshakeTimer = nil
-		if let readSource {
-			readSource.cancel()
-			self.readSource = nil
-		} else if descriptor >= 0 {
-			close(descriptor)
-		}
-		descriptor = -1
 		buffer.removeAll(keepingCapacity: false)
 
 		let handshake = handshakeContinuation
@@ -405,6 +457,25 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 		disconnectContinuations.removeAll()
 		for waiter in waiters {
 			waiter.resume()
+		}
+
+		// Keep the descriptor open until the offloaded write returns, so it never targets a reused fd.
+		if isWritingToDescriptor {
+			isClosePending = true
+		} else {
+			closeDescriptor()
+		}
+	}
+
+	private func closeDescriptor() {
+		isClosePending = false
+		if let readSource {
+			readSource.cancel()
+			self.readSource = nil
+		}
+		if descriptor >= 0 {
+			Darwin.close(descriptor)
+			descriptor = -1
 		}
 	}
 
@@ -428,7 +499,7 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 			setsockopt(
 				fd, SOL_SOCKET, SO_NOSIGPIPE, &noSignal, socklen_t(MemoryLayout<Int32>.size)) == 0
 		else {
-			close(fd)
+			Darwin.close(fd)
 			return nil
 		}
 
@@ -447,7 +518,7 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 		}
 		let flags = fcntl(fd, F_GETFL)
 		guard connected, flags >= 0, fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0 else {
-			close(fd)
+			Darwin.close(fd)
 			return nil
 		}
 		return fd
@@ -481,6 +552,16 @@ package final class DiscordIPCConnection: @unchecked Sendable {
 		)
 	}
 
+}
+
+private struct DiscordIPCEvent: Decodable {
+	let evt: String?
+	let data: DiscordIPCErrorData?
+}
+
+private struct DiscordIPCErrorData: Decodable {
+	let code: Int?
+	let message: String?
 }
 
 private struct Handshake: Encodable {

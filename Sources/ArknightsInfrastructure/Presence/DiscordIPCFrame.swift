@@ -28,7 +28,10 @@ struct DiscordIPCFrame: Equatable, Sendable {
 enum DiscordIPCFrameCodec {
 	static let headerByteCount = 8
 
-	static func encode(_ frame: DiscordIPCFrame, maximumPayloadBytes: Int) throws -> Data {
+	static func encode(
+		_ frame: DiscordIPCFrame,
+		maximumPayloadBytes: Int
+	) throws(DiscordIPCFrameError) -> Data {
 		guard frame.payload.count <= maximumPayloadBytes else {
 			throw DiscordIPCFrameError.payloadTooLarge(maximumBytes: maximumPayloadBytes)
 		}
@@ -46,7 +49,7 @@ enum DiscordIPCFrameCodec {
 	static func decode(
 		from buffer: inout Data,
 		maximumPayloadBytes: Int
-	) throws -> DiscordIPCFrame? {
+	) throws(DiscordIPCFrameError) -> DiscordIPCFrame? {
 		guard buffer.count >= headerByteCount else { return nil }
 		let opcodeValue = readLittleEndian(buffer, at: 0)
 		let payloadLength = Int(readLittleEndian(buffer, at: 4))
@@ -59,7 +62,7 @@ enum DiscordIPCFrameCodec {
 		let frameByteCount = headerByteCount + payloadLength
 		guard buffer.count >= frameByteCount else { return nil }
 		let payload = Data(buffer.dropFirst(headerByteCount).prefix(payloadLength))
-		buffer = Data(buffer.dropFirst(frameByteCount))
+		buffer.removeFirst(frameByteCount)
 		return DiscordIPCFrame(opcode: opcode, payload: payload)
 	}
 
