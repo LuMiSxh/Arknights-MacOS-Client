@@ -113,7 +113,9 @@ package struct RuntimeStore: Sendable {
 
 	private func hasValidManifest(at directory: URL) -> Bool {
 		do {
-			let data = try Data(contentsOf: directory.appending(path: "RUNTIME.json"))
+			let data = try BoundedFileReader.readRegularFile(
+				at: directory.appending(path: "RUNTIME.json"),
+				maximumBytes: AppConstants.Game.runtimeMigrationStateMaximumBytes)
 			return try JSONSerialization.jsonObject(with: data) is [String: Any]
 		} catch {
 			// An unreadable or malformed manifest means this directory is not a usable install.
