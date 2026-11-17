@@ -33,10 +33,6 @@ actor ProgressCounter {
 		lastEmission = elapsed.now
 	}
 
-	func current(file: String) -> DownloadProgress {
-		progress(file: file)
-	}
-
 	func remove(
 		bytes: Int64,
 		networkBytes: Int64 = 0,
@@ -46,7 +42,7 @@ actor ProgressCounter {
 		networkDownloadedBytes = max(0, networkDownloadedBytes - networkBytes)
 		estimator.reset()
 		lastEmission = clock.now
-		return progress(file: file)
+		return current(file: file)
 	}
 
 	// The bytes advance progress and the completed-file count, not the rate or network total,
@@ -55,7 +51,7 @@ actor ProgressCounter {
 		downloadedBytes += bytes
 		completedFiles += 1
 		lastEmission = clock.now
-		return progress(file: file)
+		return current(file: file)
 	}
 
 	func add(bytes: Int64, file: String, force: Bool = false) -> DownloadProgress? {
@@ -77,17 +73,17 @@ actor ProgressCounter {
 			return nil
 		}
 		lastEmission = now
-		return progress(file: file)
+		return current(file: file)
 	}
 
 	// Byte progress stays accurate. Only the rate restarts, on a CDN retry or a stalled stream.
 	func resetRate(file: String) -> DownloadProgress {
 		estimator.reset()
 		lastEmission = clock.now
-		return progress(file: file)
+		return current(file: file)
 	}
 
-	private func progress(file: String) -> DownloadProgress {
+	func current(file: String) -> DownloadProgress {
 		sequence &+= 1
 		let snapshot = estimator.snapshot()
 		return DownloadProgress(

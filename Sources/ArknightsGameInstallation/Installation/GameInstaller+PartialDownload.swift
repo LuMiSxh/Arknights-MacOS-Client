@@ -21,6 +21,15 @@ final class PartialDownload {
 	var resumeMetadata: InstallerResumeMetadata?
 	private var isClosed = false
 
+	// Every rollback names the bytes it discards, so the counter and the `.part` file agree.
+	enum Rollback {
+		case resumeStateMismatch(counted: Int64)
+		case overlongPartial
+		case restart(counted: Int64)
+		case overflow(counted: Int64, network: Int64)
+		case receivedRange(truncatingTo: UInt64, counted: Int64, synchronizes: Bool)
+	}
+
 	init(
 		item: ManifestFile,
 		partial: InstallerFile,
@@ -59,27 +68,34 @@ final class PartialDownload {
 	}
 
 	// The single rollback path. It takes the discarded bytes out of the shared counter.
-	// `reportsProgress` is `false` when the counter never included those bytes.
-	func discardBytes(
-		truncatingTo offset: UInt64 = 0,
-		counted: Int64 = 0,
-		network: Int64 = 0,
-		reportsProgress: Bool = true,
-		rewinds: Bool = false,
-		synchronizes: Bool = false
-	) async throws {
-		try await GameInstaller.rollBack(
-			handle,
-			of: item,
-			truncatingTo: offset,
-			counted: counted,
-			network: network,
-			reportsProgress: reportsProgress,
-			rewinds: rewinds,
-			synchronizes: synchronizes,
-			counter: counter,
-			progress: progress
-		)
+	func discardBytes(_ rollback: Rollback) async throws {
+		switch rollback {
+		case .resumeStateMismatch(let counted):
+			try await GameInstaller.rollBack(
+				handle, of: item, truncatingTo: 0, counted: counted, network: 0,
+				reportsProgress: counted > 0 && counted <= item.byteCount,
+				rewinds: false, synchronizes: false, counter: counter, progress: progress)
+		case .overlongPartial:
+			try await GameInstaller.rollBack(
+				handle, of: item, truncatingTo: 0, counted: 0, network: 0,
+				reportsProgress: false, rewinds: false, synchronizes: false,
+				counter: counter, progress: progress)
+		case .restart(let counted):
+			try await GameInstaller.rollBack(
+				handle, of: item, truncatingTo: 0, counted: counted, network: 0,
+				reportsProgress: true, rewinds: true, synchronizes: false,
+				counter: counter, progress: progress)
+		case .overflow(let counted, let network):
+			try await GameInstaller.rollBack(
+				handle, of: item, truncatingTo: 0, counted: counted, network: network,
+				reportsProgress: true, rewinds: false, synchronizes: false,
+				counter: counter, progress: progress)
+		case .receivedRange(let truncatingTo, let counted, let synchronizes):
+			try await GameInstaller.rollBack(
+				handle, of: item, truncatingTo: truncatingTo, counted: counted,
+				network: counted, reportsProgress: true, rewinds: false,
+				synchronizes: synchronizes, counter: counter, progress: progress)
+		}
 	}
 }
 
@@ -166,16 +182,13 @@ extension GameInstaller {
 			!ManifestChecksum.matches(priorMetadata.manifestHash, expected: item.hash)
 		{
 			let existingBytes = download.existingBytes
-			try await download.discardBytes(
-				counted: existingBytes,
-				reportsProgress: existingBytes <= item.byteCount && existingBytes > 0
-			)
+			try await download.discardBytes(.resumeStateMismatch(counted: existingBytes))
 			download.existingBytes = 0
 			try download.metadataFile.unlink()
 			download.resumeMetadata = nil
 		}
 		if download.existingBytes > item.byteCount {
-			try await download.discardBytes(reportsProgress: false)
+			try await download.discardBytes(.overlongPartial)
 			download.existingBytes = 0
 		}
 	}

@@ -96,7 +96,7 @@ extension GameInstaller {
 			else { throw LauncherError.invalidResponse }
 			if download.existingBytes > 0 {
 				// The server ignored the range, so the whole file restarts from zero.
-				try await download.discardBytes(counted: download.existingBytes, rewinds: true)
+				try await download.discardBytes(.restart(counted: download.existingBytes))
 				download.existingBytes = 0
 			}
 			transfer.rangeBaseBytes = 0
@@ -128,7 +128,7 @@ extension GameInstaller {
 			ManifestChecksum.matches(priorMetadata.manifestHash, expected: item.hash)
 		{
 			if !priorMetadata.matchesEntity(responseMetadata) {
-				try await download.discardBytes(counted: download.existingBytes, rewinds: true)
+				try await download.discardBytes(.restart(counted: download.existingBytes))
 				download.existingBytes = 0
 				try download.metadataFile.unlink()
 				download.resumeMetadata = nil
@@ -155,9 +155,7 @@ extension GameInstaller {
 		let (receivedBytes, overflow) = accumulatedBytes.addingReportingOverflow(incomingBytes)
 		guard !overflow, receivedBytes <= item.byteCount else {
 			try await download.discardBytes(
-				counted: accumulatedBytes,
-				network: transfer.newlyDownloaded
-			)
+				.overflow(counted: accumulatedBytes, network: transfer.newlyDownloaded))
 			throw InstallerError.downloadedSizeMismatch(
 				path: item.path,
 				expected: item.byteCount,
@@ -201,10 +199,9 @@ extension GameInstaller {
 		synchronizes: Bool = false
 	) async throws {
 		try await download.discardBytes(
-			truncatingTo: UInt64(transfer.rangeBaseBytes),
-			counted: transfer.newlyDownloaded,
-			network: transfer.newlyDownloaded,
-			synchronizes: synchronizes
-		)
+			.receivedRange(
+				truncatingTo: UInt64(transfer.rangeBaseBytes),
+				counted: transfer.newlyDownloaded,
+				synchronizes: synchronizes))
 	}
 }
