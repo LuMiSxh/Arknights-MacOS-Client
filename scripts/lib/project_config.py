@@ -17,6 +17,9 @@ SPARKLE_DELTA_SOURCE_COUNT = 3
 # Releases up to 0.6.x shipped `.zip` update archives; newer ones ship `.tar.xz`.
 # Sparkle 2.9.6, the oldest shipped updater, extracts both.
 SPARKLE_ARCHIVE_SUFFIXES = (".tar.xz", ".zip")
+# Sparkle treats clients below build 18 (0.6.0) as informational-only, because newer
+# releases cannot migrate their data.
+MINIMUM_MIGRATABLE_BUILD = 18
 # Support-code outputs, relative to the repository root. `support-codes.json` generates them.
 SUPPORT_CODE_CATALOG = Path("support-codes.json")
 SUPPORT_CODE_ARTICLES = Path("docs/help/errors")
@@ -55,6 +58,11 @@ def github_asset_stem(display_name: str) -> str:
 def github_asset_name(filename: str) -> str:
     """Return the filename GitHub stores when a release asset is uploaded."""
     return re.sub(r"[^A-Za-z0-9._-]+", ".", filename)
+
+
+def release_page_url(repository: str, version: str) -> str:
+    """Return the GitHub release page URL for a version tag."""
+    return f"https://github.com/{repository}/releases/tag/v{version}"
 
 
 @dataclass(frozen=True)

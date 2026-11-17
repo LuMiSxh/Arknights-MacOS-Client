@@ -2,6 +2,7 @@
 
 import json
 import subprocess
+import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from pathlib import Path
 
@@ -64,6 +65,98 @@ def appcast_with_delta(directory: Path) -> Path:
     )
     (directory / "Example Client42-41.delta").write_bytes(b"delta")
     return appcast
+
+
+def appcast_without_delta(directory: Path) -> Path:
+    appcast = directory / "appcast.xml"
+    appcast.write_text(
+        f'<rss xmlns:sparkle="{NAMESPACE}"><channel>'
+        "<item><sparkle:version>16</sparkle:version>"
+        '<enclosure url="https://h/v0.5.2/old.tar.xz" /></item>'
+        "<item><sparkle:version>30</sparkle:version>"
+        '<enclosure url="https://h/v0.8.0/new.tar.xz" /></item>'
+        "</channel></rss>\n"
+    )
+    return appcast
+
+
+def test_finalize_annotates_the_newest_item_and_signs_without_deltas(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[tuple[list[object], dict[str, object]]] = []
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(sparkle_deltas.subprocess, "run", fake_run)
+    appcast = appcast_without_delta(tmp_path)
+    info_link = "https://github.com/owner/repo/releases/tag/v0.8.0"
+
+    published = sparkle_deltas.finalize_deltas(
+        tmp_path,
+        appcast,
+        tmp_path / "dist",
+        Path("/tools/sign_update"),
+        "SECRET",
+        minimum_build=18,
+        info_link=info_link,
+    )
+
+    assert published == []
+    text = appcast.read_text()
+    assert "<sparkle:belowVersion>18</sparkle:belowVersion>" in text
+    assert info_link in text
+    root = ET.fromstring(text)
+    oldest, newest = root.findall("./channel/item")
+    below = newest.find(
+        f"{{{NAMESPACE}}}informationalUpdate/{{{NAMESPACE}}}belowVersion"
+    )
+    assert below is not None
+    assert below.text == "18"
+    assert oldest.find(f"{{{NAMESPACE}}}informationalUpdate") is None
+    command, kwargs = calls[0]
+    assert command == [
+        Path("/tools/sign_update"),
+        "--ed-key-file",
+        "-",
+        "--disable-signing-warning",
+        appcast,
+    ]
+    assert kwargs["input"] == b"SECRET"
+
+
+def test_finalize_signs_a_feed_without_deltas_or_gate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[list[object]] = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(sparkle_deltas.subprocess, "run", fake_run)
+    appcast = appcast_without_delta(tmp_path)
+
+    published = sparkle_deltas.finalize_deltas(
+        tmp_path, appcast, tmp_path / "dist", Path("/tools/sign_update"), "SECRET"
+    )
+
+    assert published == []
+    assert calls[0][-1] == appcast
+
+
+def test_finalize_requires_an_info_link_for_the_gate(tmp_path: Path) -> None:
+    appcast = appcast_without_delta(tmp_path)
+    with pytest.raises(RuntimeError, match="information link"):
+        sparkle_deltas.finalize_deltas(
+            tmp_path,
+            appcast,
+            tmp_path / "dist",
+            Path("x"),
+            "K",
+            minimum_build=18,
+        )
 
 
 def test_finalize_renames_deltas_rewrites_urls_and_resigns(

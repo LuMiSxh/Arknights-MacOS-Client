@@ -218,7 +218,9 @@ jobs:
             --directory "$update_directory" \
             --appcast "$update_directory/appcast.xml" \
             --output dist \
-            --sign-update "$sign_update"
+            --sign-update "$sign_update" \
+            --repository "$GITHUB_REPOSITORY" \
+            --release-version "$RELEASE_VERSION"
           uv run --locked --no-dev scripts/validate_sparkle_keys.py \
             --plist "dist/$APP_NAME/Contents/Info.plist" \
             --sign-update "$sign_update" \

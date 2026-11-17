@@ -14,21 +14,21 @@ import json
 import os
 import shutil
 import subprocess
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import quote, unquote, urlparse
 
+from lib import sparkle_appcast
 from lib.common import ScriptError, fail, run, run_main
 from lib.console import info, success, warning
 from lib.project_config import (
+    MINIMUM_MIGRATABLE_BUILD,
     SPARKLE_ARCHIVE_SUFFIXES,
     SPARKLE_DELTA_SOURCE_COUNT,
     github_asset_name,
     load_project_configuration,
+    release_page_url,
     sparkle_archive_names,
 )
-
-DELTAS_TAG = "{http://www.andymatuschak.org/xml-namespaces/sparkle}deltas"
 
 
 def select_sources(
@@ -139,24 +139,32 @@ def sign_appcast(sign_update: Path, private_key: str, appcast: Path) -> None:
 
 
 def finalize_deltas(
-    directory: Path, appcast: Path, output: Path, sign_update: Path, private_key: str
+    directory: Path,
+    appcast: Path,
+    output: Path,
+    sign_update: Path,
+    private_key: str,
+    *,
+    minimum_build: int | None = None,
+    info_link: str | None = None,
 ) -> list[Path]:
-    """Publish referenced deltas under GitHub-safe names and refresh the feed signature."""
+    """Publish deltas, add the informational gate, and refresh the feed signature."""
     content = appcast.read_bytes()
-    try:
-        root = ET.fromstring(content)
-    except ET.ParseError as error:
-        fail(f"could not parse generated Sparkle appcast: {error}")
+    root = sparkle_appcast.parse(content, "generated")
+    if minimum_build is not None:
+        if info_link is None:
+            fail("the appcast informational gate needs an information link")
+        sparkle_appcast.annotate_update_gate(root, minimum_build, info_link)
+        content = sparkle_appcast.serialize(root)
     names = [
         Path(unquote(urlparse(enclosure.get("url", "")).path)).name
-        for deltas in root.iter(DELTAS_TAG)
+        for deltas in root.iter(sparkle_appcast.DELTAS_TAG)
         for enclosure in deltas
     ]
-    if not names:
-        return []
     if not private_key:
-        fail("SPARKLE_ED25519_PRIVATE_KEY is required to sign the delta appcast")
-    output.mkdir(parents=True, exist_ok=True)
+        fail("SPARKLE_ED25519_PRIVATE_KEY is required to sign the appcast")
+    if names:
+        output.mkdir(parents=True, exist_ok=True)
     published: list[Path] = []
     for name in names:
         if not name.endswith(".delta") or not (directory / name).is_file():
@@ -180,6 +188,8 @@ def finalize(arguments: argparse.Namespace) -> None:
         arguments.output,
         arguments.sign_update,
         os.environ.get("SPARKLE_ED25519_PRIVATE_KEY", ""),
+        minimum_build=MINIMUM_MIGRATABLE_BUILD,
+        info_link=release_page_url(arguments.repository, arguments.release_version),
     )
     if published:
         success(f"Published {len(published)} Sparkle delta update(s)")
@@ -206,6 +216,8 @@ def main() -> None:
     finalize_parser.add_argument("--appcast", type=Path, required=True)
     finalize_parser.add_argument("--output", type=Path, required=True)
     finalize_parser.add_argument("--sign-update", type=Path, required=True)
+    finalize_parser.add_argument("--repository", required=True)
+    finalize_parser.add_argument("--release-version", required=True)
     finalize_parser.set_defaults(handler=finalize)
     arguments = parser.parse_args()
     arguments.handler(arguments)
