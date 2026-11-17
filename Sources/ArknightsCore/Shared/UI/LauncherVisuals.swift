@@ -27,6 +27,8 @@ package enum LauncherVisuals {
 		package static let hudSurfaceOpacity = 0.52
 		static let chromaticHoverOpacity = 0.05
 		package static let inactiveSelectionOpacity = 0.45
+		/// Content faded behind an item that is applying in the preset gallery.
+		package static let blockedOpacity = 0.46
 
 		package static func disabledForegroundOpacity(for contrast: ColorSchemeContrast) -> Double {
 			contrast == .increased
@@ -41,6 +43,22 @@ package enum LauncherVisuals {
 		package static let loadingScrimOpacity = 0.65
 		/// Shadow under preset artwork tiles.
 		package static let artworkShadowOpacity = 0.3
+		/// Shadow under the Home wordmark.
+		package static let wordmarkShadow = Color.black.opacity(0.46)
+		/// Opacity of the letter drawn when no artwork is available.
+		package static let fallbackWordmarkOpacity = 0.07
+	}
+
+	/// Gradient stops and opacities for the readability scrim under the Home branding.
+	package enum ReadabilityScrim {
+		package static let dark: [Color] = [
+			.black, .black.opacity(0.68), .black.opacity(0.2), .clear,
+		]
+		package static let light: [Color] = [
+			.white, .white.opacity(0.68), .white.opacity(0.2), .clear,
+		]
+		package static let normalOpacity = 0.86
+		package static let reducedTransparencyOpacity = 0.96
 	}
 
 	/// Shadow opacities for the shared surface kinds.
