@@ -17,7 +17,7 @@ package struct HotKeyCombination: Hashable, Sendable {
 	}
 
 	package static let keyCodeS = UInt32(kVK_ANSI_S)
-	package static let keyCodeF13 = UInt32(kVK_F13)
+	static let keyCodeF13 = UInt32(kVK_F13)
 
 	package let keyCode: UInt32
 	package let modifiers: Modifiers

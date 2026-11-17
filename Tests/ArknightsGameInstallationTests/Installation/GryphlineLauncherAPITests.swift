@@ -28,14 +28,12 @@ struct GryphlineLauncherAPITests {
 		}
 
 		let configuration = GameConfiguration(
-			gameLowestVersion: "72.0.0",
 			gameLatestVersion: "72.0.0",
 			gameLatestFilePath:
 				"https://ak-tw.hg-cdn.com/uiCaUeGDB2htwXSv/72.0/update/6/6/Windows/"
 				+ "72.0.0_WGEc8hYsFKsF7NMt/files",
 			gameStartExeName: "Arknights.exe",
 			gameStartParams: [],
-			gameUninstallScript: "",
 			decompressionSize: "41163MB"
 		)
 

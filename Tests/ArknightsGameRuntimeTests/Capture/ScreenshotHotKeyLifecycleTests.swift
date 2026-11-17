@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsInfrastructure
 import ArknightsTestSupport
 import CoreGraphics
 import Foundation
@@ -9,6 +8,7 @@ import Synchronization
 import Testing
 
 @testable import ArknightsGameRuntime
+@testable import ArknightsInfrastructure
 
 /// The shortcut the controller tests record: the F13 key on its own.
 private let f13Shortcut = ScreenshotShortcut.custom(

@@ -27,7 +27,7 @@ package struct HTTPFetchResult: Sendable {
 	package let data: Data
 	package let response: HTTPURLResponse
 	/// The candidate that produced this result.
-	package let request: URLRequest
+	let request: URLRequest
 }
 
 package enum HTTPFetchError: Error, Sendable {

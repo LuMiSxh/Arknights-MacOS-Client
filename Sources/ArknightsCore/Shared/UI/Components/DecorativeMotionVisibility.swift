@@ -128,22 +128,23 @@ package struct WindowVisibilityReader: NSViewRepresentable {
 		self.visibility = visibility
 	}
 
-	package func makeNSView(context: Context) -> WindowVisibilityTrackingView {
+	package func makeNSView(context: Context) -> NSView {
 		WindowVisibilityTrackingView(visibility: visibility)
 	}
 
-	package func updateNSView(_ nsView: WindowVisibilityTrackingView, context: Context) {
-		nsView.visibility = visibility
-		nsView.attachIfNeeded()
+	package func updateNSView(_ nsView: NSView, context: Context) {
+		guard let trackingView = nsView as? WindowVisibilityTrackingView else { return }
+		trackingView.visibility = visibility
+		trackingView.attachIfNeeded()
 	}
 }
 
 @MainActor
-package final class WindowVisibilityTrackingView: NSView {
+final class WindowVisibilityTrackingView: NSView {
 	var visibility: DecorativeMotionVisibility
 	private weak var observedWindow: NSWindow?
 
-	package init(visibility: DecorativeMotionVisibility) {
+	init(visibility: DecorativeMotionVisibility) {
 		self.visibility = visibility
 		super.init(frame: .zero)
 		isHidden = true
@@ -153,12 +154,12 @@ package final class WindowVisibilityTrackingView: NSView {
 		fatalError("init(coder:) has not been implemented")
 	}
 
-	package override func viewDidMoveToWindow() {
+	override func viewDidMoveToWindow() {
 		super.viewDidMoveToWindow()
 		attachIfNeeded()
 	}
 
-	package override func removeFromSuperview() {
+	override func removeFromSuperview() {
 		visibility.detach()
 		observedWindow = nil
 		super.removeFromSuperview()

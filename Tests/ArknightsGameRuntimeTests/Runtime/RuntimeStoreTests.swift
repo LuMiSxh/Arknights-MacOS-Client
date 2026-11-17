@@ -33,7 +33,7 @@ struct RuntimeStoreTests {
 
 		let reloaded = AppPaths(applicationSupportDirectory: temporary.url)
 		#expect(reloaded.runtimeLane == .x86)
-		#expect(reloaded.winePrefix.lastPathComponent == "yostar-x86")
+		#expect(reloaded.winePrefix(for: .yostar).lastPathComponent == "yostar-x86")
 	}
 
 	@Test

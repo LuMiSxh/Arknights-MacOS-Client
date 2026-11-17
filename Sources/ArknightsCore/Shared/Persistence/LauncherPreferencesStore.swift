@@ -185,7 +185,6 @@ package struct LauncherPreferencesStore {
 
 	package let defaults: UserDefaults
 	private let themeCache: ThemeCacheStore
-	private let log: LauncherLog?
 
 	// Derived theme values belong in Caches; resolved once and injectable for tests.
 	private static let defaultThemeCacheURL = AppPaths().themeCache
@@ -196,7 +195,6 @@ package struct LauncherPreferencesStore {
 		log: LauncherLog? = nil
 	) {
 		self.defaults = defaults
-		self.log = log
 		themeCache = ThemeCacheStore(
 			file: ThemeCacheFile(
 				url: themeCacheURL ?? Self.defaultThemeCacheURL,

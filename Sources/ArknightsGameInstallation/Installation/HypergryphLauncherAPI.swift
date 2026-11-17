@@ -46,12 +46,10 @@ actor HypergryphLauncherAPI {
 		}
 		let megabytes = totalBytes / 1_000_000 + (totalBytes % 1_000_000 == 0 ? 0 : 1)
 		return GameConfiguration(
-			gameLowestVersion: latest.version,
 			gameLatestVersion: latest.version,
 			gameLatestFilePath: latest.package.filePath.absoluteString,
 			gameStartExeName: "Arknights.exe",
 			gameStartParams: [],
-			gameUninstallScript: "",
 			decompressionSize: "\(megabytes)MB"
 		)
 	}
@@ -86,7 +84,6 @@ actor HypergryphLauncherAPI {
 		return LauncherBranding(
 			launcherBackgroundImage: image.url,
 			launcherBackgroundImageCRC64: image.md5.isEmpty ? nil : image.md5,
-			copyrightInformation: nil,
 			privacyPolicy: nil,
 			userAgreement: nil,
 			noticePopOpen: false,

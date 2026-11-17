@@ -192,12 +192,10 @@ import ArknightsGameRuntime
 		}
 
 		private static let developerConfiguration = GameConfiguration(
-			gameLowestVersion: "041.0.0",
 			gameLatestVersion: "042.0.0",
 			gameLatestFilePath: "client.zip",
 			gameStartExeName: "Arknights",
 			gameStartParams: [],
-			gameUninstallScript: "uninstall.exe",
 			decompressionSize: "38 GB"
 		)
 	}

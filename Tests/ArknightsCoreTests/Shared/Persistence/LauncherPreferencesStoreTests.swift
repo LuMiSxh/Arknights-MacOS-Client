@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import ArknightsInfrastructure
 import ArknightsTestSupport
 import Foundation
 import Testing
 
 @testable import ArknightsCore
+@testable import ArknightsInfrastructure
 
 private typealias Key = LauncherPreferencesStore.Key
 

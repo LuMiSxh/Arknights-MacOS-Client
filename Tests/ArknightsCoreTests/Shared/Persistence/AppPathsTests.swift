@@ -27,7 +27,7 @@ func winePrefixesFollowRegionOwnershipAndCacheEnumerationFailsLoudly() throws {
 		libraryDirectory: root.appending(path: "Library")
 	)
 	#expect(paths.winePrefix(for: .chinaBilibili) == paths.winePrefix(for: .china))
-	#expect(paths.winePrefix(for: .taiwan) == paths.gryphlineWinePrefix)
+	#expect(paths.winePrefix(for: .taiwan) == paths.winePrefix(for: .gryphline))
 
 	let missingPrefix = root.appending(path: "MissingCacheUsers", directoryHint: .isDirectory)
 	#expect(try AppPaths.gameCacheDirectories(winePrefix: missingPrefix).isEmpty)
@@ -55,13 +55,13 @@ func runtimeLanesUseSeparateWinePrefixes() throws {
 	let x86 = paths(.x86)
 	let arm = paths(.arm)
 
-	#expect(x86.winePrefix.lastPathComponent == "yostar-x86")
-	#expect(arm.winePrefix.lastPathComponent == "yostar-arm")
-	#expect(x86.winePrefix != arm.winePrefix)
+	#expect(x86.winePrefix(for: .yostar).lastPathComponent == "yostar-x86")
+	#expect(arm.winePrefix(for: .yostar).lastPathComponent == "yostar-arm")
+	#expect(x86.winePrefix(for: .yostar) != arm.winePrefix(for: .yostar))
 	#expect(x86.winePrefix(for: .china) != arm.winePrefix(for: .china))
 	#expect(x86.winePrefix(for: .taiwan) != arm.winePrefix(for: .taiwan))
 	#expect(x86.gameInstall(for: .global) == arm.gameInstall(for: .global))
-	#expect(x86.winePrefix(for: .global, lane: .arm) == arm.winePrefix)
+	#expect(x86.winePrefix(for: .global, lane: .arm) == arm.winePrefix(for: .yostar))
 }
 
 @Test
@@ -102,6 +102,6 @@ func missingSelectionDefaultsToARMWhateverTheRuntimeTreesHold() throws {
 	)
 
 	#expect(paths.runtimeLane == .arm)
-	#expect(paths.winePrefix.lastPathComponent == "yostar-arm")
+	#expect(paths.winePrefix(for: .yostar).lastPathComponent == "yostar-arm")
 	#expect(paths.installedRuntimeVersion(for: .arm) == nil)
 }

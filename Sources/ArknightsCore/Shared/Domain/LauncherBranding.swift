@@ -5,7 +5,6 @@ import Foundation
 package struct LauncherBranding: Decodable, Sendable {
 	package let launcherBackgroundImage: URL?
 	package let launcherBackgroundImageCRC64: String?
-	package let copyrightInformation: String?
 	package let privacyPolicy: URL?
 	package let userAgreement: URL?
 	package let noticePopOpen: Bool?
@@ -14,7 +13,6 @@ package struct LauncherBranding: Decodable, Sendable {
 	enum CodingKeys: String, CodingKey {
 		case launcherBackgroundImage = "launcherBackgroundImg"
 		case launcherBackgroundImageCRC64 = "launcherBackgroundImgCrc64"
-		case copyrightInformation
 		case privacyPolicy
 		case userAgreement
 		case noticePopOpen
@@ -24,7 +22,6 @@ package struct LauncherBranding: Decodable, Sendable {
 	package init(
 		launcherBackgroundImage: URL?,
 		launcherBackgroundImageCRC64: String?,
-		copyrightInformation: String?,
 		privacyPolicy: URL?,
 		userAgreement: URL?,
 		noticePopOpen: Bool?,
@@ -32,7 +29,6 @@ package struct LauncherBranding: Decodable, Sendable {
 	) {
 		self.launcherBackgroundImage = launcherBackgroundImage
 		self.launcherBackgroundImageCRC64 = launcherBackgroundImageCRC64
-		self.copyrightInformation = copyrightInformation
 		self.privacyPolicy = privacyPolicy
 		self.userAgreement = userAgreement
 		self.noticePopOpen = noticePopOpen
@@ -49,8 +45,6 @@ package struct LauncherBranding: Decodable, Sendable {
 
 		launcherBackgroundImageCRC64 = try container.decodeIfPresent(
 			String.self, forKey: .launcherBackgroundImageCRC64)
-		copyrightInformation = try container.decodeIfPresent(
-			String.self, forKey: .copyrightInformation)
 
 		privacyPolicy = try container.decodeIfPresent(String.self, forKey: .privacyPolicy)
 			.flatMap { $0.isEmpty ? nil : URL(string: $0) }

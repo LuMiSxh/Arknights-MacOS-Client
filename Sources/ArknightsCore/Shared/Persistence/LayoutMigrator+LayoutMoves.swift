@@ -79,7 +79,6 @@ extension LayoutMigrator {
 	/// sits at the destination, which stays as it is.
 	static func preflight(
 		_ move: Move,
-		fileManager: FileManager,
 		log: LauncherLog?
 	) throws -> Bool {
 		guard try nodeState(at: move.source) != .absent else { return false }

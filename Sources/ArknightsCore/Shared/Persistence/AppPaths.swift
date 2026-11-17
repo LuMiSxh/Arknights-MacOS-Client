@@ -29,9 +29,6 @@ package struct AppPaths: Sendable {
 	/// Where screenshots go unless the user picks a folder: `Pictures/Arknights`. Visible to the
 	/// user, unlike the support root.
 	package let screenshotsDirectory: URL
-	package let winePrefix: URL
-	let chinaWinePrefix: URL
-	let gryphlineWinePrefix: URL
 	/// The selected runtime lane. Every publisher prefix and derived cache uses it.
 	package let runtimeLane: RuntimeLane
 	/// A problem reading `runtimeSelectionFile`, when the file exists but is unusable.
@@ -129,22 +126,6 @@ package struct AppPaths: Sendable {
 		}
 		runtimeLaneDiagnostic = diagnostic
 		runtimeLane = selection.selected
-		let environmentRoot = applicationSupportRoot.appending(
-			path: "Environments",
-			directoryHint: .isDirectory
-		)
-		winePrefix = environmentRoot.appending(
-			path: Self.environmentDirectoryName(for: .yostar, lane: selection.selected),
-			directoryHint: .isDirectory
-		)
-		chinaWinePrefix = environmentRoot.appending(
-			path: Self.environmentDirectoryName(for: .hypergryph, lane: selection.selected),
-			directoryHint: .isDirectory
-		)
-		gryphlineWinePrefix = environmentRoot.appending(
-			path: Self.environmentDirectoryName(for: .gryphline, lane: selection.selected),
-			directoryHint: .isDirectory
-		)
 	}
 
 	private static func environmentDirectoryName(

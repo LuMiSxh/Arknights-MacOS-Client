@@ -32,7 +32,6 @@ actor ConfigurationRefreshAPI: LauncherAPIProviding {
 		LauncherBranding(
 			launcherBackgroundImage: nil,
 			launcherBackgroundImageCRC64: nil,
-			copyrightInformation: nil,
 			privacyPolicy: nil,
 			userAgreement: nil,
 			noticePopOpen: false,
@@ -53,11 +52,9 @@ actor ConfigurationRefreshAPI: LauncherAPIProviding {
 }
 
 private let testConfiguration = GameConfiguration(
-	gameLowestVersion: "1.0.0",
 	gameLatestVersion: "2.0.0",
 	gameLatestFilePath: "game.zip",
 	gameStartExeName: "Arknights",
 	gameStartParams: [],
-	gameUninstallScript: "uninstall.exe",
 	decompressionSize: "1 GB"
 )

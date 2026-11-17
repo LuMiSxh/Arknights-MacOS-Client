@@ -24,7 +24,7 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 	let preferences = LauncherPreferencesStore(defaults: defaults)
 	let customJapan = root.appending(path: "External/Arknights-Japan")
 	preferences.setInstallDirectory(customJapan, for: .japan)
-	let browserCache = paths.winePrefix.appending(
+	let browserCache = paths.winePrefix(for: .yostar).appending(
 		path: "drive_c/users/crossover/AppData/Local/cache", directoryHint: .isDirectory)
 	try FileManager.default.createDirectory(at: browserCache, withIntermediateDirectories: true)
 

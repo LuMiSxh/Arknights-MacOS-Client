@@ -121,7 +121,7 @@ package enum LayoutMigrator {
 				try validatePathComponents(of: move.source, under: paths.applicationSupportRoot)
 				try validatePathComponents(
 					of: move.destination, under: paths.applicationSupportRoot)
-				if try preflight(move, fileManager: fileManager, log: log) {
+				if try preflight(move, log: log) {
 					moves.append(move)
 				}
 			}

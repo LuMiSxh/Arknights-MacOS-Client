@@ -117,11 +117,9 @@ private func makeInstallationFixture(
 }
 
 private let testGameConfiguration = GameConfiguration(
-	gameLowestVersion: "1.0.0",
 	gameLatestVersion: "2.0.0",
 	gameLatestFilePath: "game.zip",
 	gameStartExeName: "Arknights",
 	gameStartParams: [],
-	gameUninstallScript: "uninstall.exe",
 	decompressionSize: "1 GB"
 )
