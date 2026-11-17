@@ -10,6 +10,7 @@ package enum AppConstants {
 		package static let installerStagingDirectoryName = ".arknights-client-install-staging"
 		package static let installerResumeMetadataMaximumBytes = 16 * 1_024
 		package static let runtimeMigrationStateMaximumBytes = 64 * 1_024
+		package static let runtimeManifestMaximumBytes = 64 * 1_024
 		package static let userDirectoryConfigurationMaximumBytes = 64 * 1_024
 		package static let vuplexOfficialHelperMaximumBytes = 5 * 1_024 * 1_024
 		package static let vuplexShimMaximumBytes = 1 * 1_024 * 1_024
