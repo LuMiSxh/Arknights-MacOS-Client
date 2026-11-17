@@ -125,9 +125,7 @@ private final class LauncherLogWriter: @unchecked Sendable {
 			flattened.append(scalar.properties.generalCategory == .control ? " " : scalar)
 		}
 		let sanitized = boundedMessage(String(flattened))
-		// ISO8601DateFormatter rounded to the nearest millisecond; the format style truncates.
-		// The half-millisecond offset keeps timestamps identical to earlier log files.
-		let timestamp = timestampStyle.format(date.addingTimeInterval(0.0005))
+		let timestamp = timestampStyle.format(date)
 		let line = "\(timestamp) [\(level.rawValue)] \(sanitized)\n"
 		let bytes = Array(line.utf8)
 		do {
