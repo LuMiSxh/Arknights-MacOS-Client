@@ -83,8 +83,6 @@ package struct RuntimeConfiguration: Decodable, Sendable {
 	private static let supportedSchemaVersion = 3
 
 	let schemaVersion: Int
-	let architecture: RuntimeLane
-	let prefixRevision: Int
 	let lanes: Lanes
 
 	package static func bundled() throws -> RuntimeConfiguration {
