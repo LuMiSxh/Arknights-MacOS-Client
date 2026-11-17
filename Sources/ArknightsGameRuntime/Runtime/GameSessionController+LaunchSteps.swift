@@ -22,12 +22,11 @@ struct LaunchRequest {
 	let requestedAt: Date
 }
 
-struct LaunchPreflight: Sendable {
-	let executableExists: Bool
-	// Nil when the executable is missing, so the runtime was never discovered.
-	let runtime: Result<WineRuntime, any Error>?
-	// Nil when no runtime was available to ask.
-	let pendingMigration: Result<Bool, any Error>?
+enum LaunchPreflight: Sendable {
+	case missingExecutable
+	case runtimeUnavailable(any Error)
+	// The migration check needs a discovered runtime, so it runs only in this case.
+	case ready(runtime: WineRuntime, pendingMigration: Result<Bool, any Error>)
 }
 
 // A launch that owns its lease and session. Every later step revalidates `request.id`.
@@ -54,20 +53,19 @@ extension GameSessionController {
 		compatibilityManager: GameCompatibilityManager
 	) async -> LaunchPreflight {
 		guard FileManager.default.fileExists(atPath: executable.path) else {
-			return LaunchPreflight(executableExists: false, runtime: nil, pendingMigration: nil)
+			return .missingExecutable
 		}
-		let runtime = Result {
-			try Self.discoverRuntime(
+		let runtime: WineRuntime
+		do {
+			runtime = try Self.discoverRuntime(
 				paths: paths, lane: lane, compatibilityManager: compatibilityManager)
-		}
-		guard case .success(let discovered) = runtime else {
-			return LaunchPreflight(executableExists: true, runtime: runtime, pendingMigration: nil)
+		} catch {
+			return .runtimeUnavailable(error)
 		}
 		let migration = Result {
-			try discovered.hasPendingMigration(prefixDirectory: prefixDirectory)
+			try runtime.hasPendingMigration(prefixDirectory: prefixDirectory)
 		}
-		return LaunchPreflight(
-			executableExists: true, runtime: runtime, pendingMigration: migration)
+		return .ready(runtime: runtime, pendingMigration: migration)
 	}
 
 	private func ownsPendingLaunch(_ id: UUID) -> Bool {
@@ -96,35 +94,32 @@ extension GameSessionController {
 	// No suspension happens here, so the idle check and the lease claim are atomic.
 	private func beginLease(_ request: LaunchRequest, preflight: LaunchPreflight) -> LaunchContext?
 	{
-		guard preflight.executableExists else {
+		let runtime: WineRuntime
+		let pendingMigration: Result<Bool, any Error>
+		switch preflight {
+		case .missingExecutable:
 			presentLaunchFailure(
 				GameRuntimeError.gameNotInstalled(request.executable), request: request)
 			return nil
-		}
-		let runtime: WineRuntime
-		switch preflight.runtime {
-		case .success(let discovered)?:
-			runtime = discovered
-		case .failure(let error)?:
+		case .runtimeUnavailable(let error):
 			runtimeName = nil
 			log.error("Runtime discovery failed: \(error.localizedDescription)")
 			presentLaunchFailure(error, operation: .runtimeDiscovery, request: request)
 			return nil
-		case nil:
-			return nil
+		case .ready(let discovered, let migration):
+			runtime = discovered
+			pendingMigration = migration
 		}
 		guard lifecycle.state.readiness.intelTranslation.allowsWine else {
 			presentLaunchFailure(intelTranslation.launchError, request: request)
 			return nil
 		}
 		let hasPendingMigration: Bool
-		switch preflight.pendingMigration {
-		case .success(let pending)?:
+		switch pendingMigration {
+		case .success(let pending):
 			hasPendingMigration = pending
-		case .failure(let error)?:
+		case .failure(let error):
 			presentLaunchFailure(error, operation: .runtimeDiscovery, request: request)
-			return nil
-		case nil:
 			return nil
 		}
 		let initialActivity: LauncherActivity =

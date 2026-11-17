@@ -56,7 +56,7 @@ extension WineRuntime {
 		let current = configuration.registryState(in: prefixDirectory, log: log)
 		let preciseScrollingValue = Self.normalizedScrollingRegistryData
 		var entries: [WineRegistryEntry] = []
-		if current?.retinaMode != configuration.registryValue {
+		if current?.retinaMode != configuration.retinaEnabled {
 			entries.append(
 				WineRegistryEntry(
 					key: Self.macDriverRegistryKey,
@@ -74,7 +74,7 @@ extension WineRuntime {
 				)
 			)
 		}
-		if current?.usePreciseScrolling != preciseScrollingValue {
+		if current?.usePreciseScrolling != false {
 			entries.append(
 				WineRegistryEntry(
 					key: Self.macDriverRegistryKey,

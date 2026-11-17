@@ -61,23 +61,27 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 
 		let macDriverSection = "[Software\\\\Wine\\\\Mac Driver]"
 		let desktopSection = "[Control Panel\\\\Desktop]"
+		let retinaModePrefix = "\"RetinaMode\"=\""
+		let preciseScrollingPrefix = "\"UsePreciseScrolling\"=\""
+		let logPixelsPrefix = "\"LogPixels\"=dword:"
 		var section = ""
-		var retinaMode: String?
+		var retinaMode: Bool?
 		var configuredLogPixels: Int?
-		var usePreciseScrolling: String?
+		var usePreciseScrolling: Bool?
 		for line in contents.split(separator: "\n", omittingEmptySubsequences: false) {
 			if line.hasPrefix("["), let closingBracket = line.firstIndex(of: "]") {
 				section = String(line[...closingBracket])
 				continue
 			}
-			if section == macDriverSection && line.hasPrefix("\"RetinaMode\"=\"") {
-				retinaMode = line.dropFirst(14).dropLast().lowercased()
+			if section == macDriverSection, line.hasPrefix(retinaModePrefix) {
+				retinaMode = Self.registryBool(line.dropFirst(retinaModePrefix.count).dropLast())
 			}
-			if section == macDriverSection && line.hasPrefix("\"UsePreciseScrolling\"=\"") {
-				usePreciseScrolling = String(line.dropFirst(23).dropLast().lowercased())
+			if section == macDriverSection, line.hasPrefix(preciseScrollingPrefix) {
+				usePreciseScrolling = Self.registryBool(
+					line.dropFirst(preciseScrollingPrefix.count).dropLast())
 			}
-			if section == desktopSection && line.hasPrefix("\"LogPixels\"=dword:") {
-				configuredLogPixels = Int(line.dropFirst(18), radix: 16)
+			if section == desktopSection, line.hasPrefix(logPixelsPrefix) {
+				configuredLogPixels = Int(line.dropFirst(logPixelsPrefix.count), radix: 16)
 			}
 		}
 		return WineDisplayRegistryState(
@@ -86,10 +90,19 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 			usePreciseScrolling: usePreciseScrolling
 		)
 	}
+
+	// Wine stores these values as the quoted strings "y" and "n".
+	private static func registryBool(_ value: Substring) -> Bool? {
+		switch value.lowercased() {
+		case "y": true
+		case "n": false
+		default: nil
+		}
+	}
 }
 
 struct WineDisplayRegistryState: Equatable, Sendable {
-	let retinaMode: String?
+	let retinaMode: Bool?
 	let logPixels: Int?
-	let usePreciseScrolling: String?
+	let usePreciseScrolling: Bool?
 }
