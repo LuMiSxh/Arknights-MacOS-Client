@@ -4,7 +4,7 @@ import ArknightsCore
 import ArknightsInfrastructure
 import Foundation
 
-enum RuntimeStoreError: Error, Equatable, Sendable {
+package enum RuntimeStoreError: Error, Equatable, Sendable {
 	case cannotRemoveSelectedLane(RuntimeLane)
 	case laneNotAllowed(RuntimeLane)
 }
@@ -15,7 +15,7 @@ enum RuntimeStoreError: Error, Equatable, Sendable {
 /// rebuilt from the version directories that hold a valid `RUNTIME.json`. Every write goes through
 /// `RuntimeSelectionStore.update` on the shared owner, so concurrent writers never drop each
 /// other's entries.
-struct RuntimeStore: Sendable {
+package struct RuntimeStore: Sendable {
 	package let paths: AppPaths
 
 	private let selectionStore: RuntimeSelectionStore

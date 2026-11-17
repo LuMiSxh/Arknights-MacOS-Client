@@ -3,7 +3,7 @@
 import ArknightsCore
 import Foundation
 
-@testable import ArknightsGameRuntime
+import ArknightsGameRuntime
 
 /// A runtime manifest interface for runtime configuration tests.
 package func makeRuntimeInterface(
