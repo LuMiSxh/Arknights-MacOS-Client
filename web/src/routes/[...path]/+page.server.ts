@@ -1,11 +1,11 @@
 import { error } from '@sveltejs/kit';
+import { breadcrumbTrail } from '$lib/content/breadcrumbs.js';
 import {
 	contentAtRoute,
 	contentEntries,
 	contentNeighbors,
 	getContent
 } from '$lib/content/loader/index.js';
-import type { SiteRoute } from '$lib/content/types.js';
 
 export const prerender = true;
 
@@ -22,17 +22,9 @@ export function load({ params }: { params: { path?: string } }) {
 	const content = contentAtRoute(route);
 	if (!content) error(404, 'Documentation page not found');
 	const { byRoute } = getContent();
-	const segments = route.split('/').filter(Boolean);
-	const breadcrumbs = segments.map((segment, index) => {
-		const breadcrumbRoute: SiteRoute = `/${segments.slice(0, index + 1).join('/')}/`;
-		return {
-			title:
-				byRoute.get(breadcrumbRoute)?.title ??
-				segment
-					.replaceAll('-', ' ')
-					.replace(/\b\w/g, (character) => character.toUpperCase()),
-			route: breadcrumbRoute
-		};
-	});
+	const breadcrumbs = breadcrumbTrail(route).map((crumb) => ({
+		...crumb,
+		title: byRoute.get(crumb.route)?.title ?? crumb.title
+	}));
 	return { content, neighbors: contentNeighbors(route), breadcrumbs };
 }

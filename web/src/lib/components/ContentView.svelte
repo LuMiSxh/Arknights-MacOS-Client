@@ -5,16 +5,16 @@
 	import ChartEnhancer from './ChartEnhancer.svelte';
 	import MermaidEnhancer from './MermaidEnhancer.svelte';
 	import PageMetadata from './PageMetadata.svelte';
-	import type {
-		ContentNeighbors,
-		ContentNode,
-		SiteRoute
-	} from '$lib/content/types.js';
+	import {
+		breadcrumbTrail as buildBreadcrumbs,
+		type Breadcrumb
+	} from '$lib/content/breadcrumbs.js';
+	import type { ContentNeighbors, ContentNode } from '$lib/content/types.js';
 
 	interface Props {
 		content: ContentNode;
 		neighbors?: ContentNeighbors;
-		breadcrumbs?: Array<{ title: string; route: SiteRoute }>;
+		breadcrumbs?: Breadcrumb[];
 	}
 
 	let { content, neighbors = {}, breadcrumbs = [] }: Props = $props();
@@ -46,22 +46,10 @@
 	);
 	const hasMermaid = $derived(content.html.includes('data-mermaid'));
 	const hasCharts = $derived(content.html.includes('data-chart'));
-	const breadcrumbTrail = $derived.by(
-		(): Array<{ title: string; route: SiteRoute }> => {
-			if (breadcrumbs.length) return breadcrumbs;
-			const segments = content.route.split('/').filter(Boolean);
-			return segments.map((segment, index) => ({
-				title:
-					index === segments.length - 1
-						? content.title
-						: segment
-								.replaceAll('-', ' ')
-								.replace(/\b\w/g, (character) =>
-									character.toUpperCase()
-								),
-				route: `/${segments.slice(0, index + 1).join('/')}/`
-			}));
-		}
+	const breadcrumbTrail = $derived.by((): Breadcrumb[] =>
+		breadcrumbs.length
+			? breadcrumbs
+			: buildBreadcrumbs(content.route, content.title)
 	);
 
 	function syncActiveHeading() {

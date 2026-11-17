@@ -5,7 +5,8 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import '../app.css';
 	import type { LayoutProps } from './$types';
-	import { normalizeBasePath, repositoryUrl } from '$lib/site.js';
+	import { repositoryUrl, resolveBasePath } from '$lib/site.js';
+	import type { SiteRoute } from '$lib/content/types.js';
 	import SearchDialog from '$lib/components/SearchDialog.svelte';
 	import SiteBackdrop from '$lib/components/SiteBackdrop.svelte';
 	import SiteRail from '$lib/components/SiteRail.svelte';
@@ -17,15 +18,11 @@
 	const currentPath = $derived(data.pathname);
 	const appIconUrl = asset('/AppIcon-128.png');
 	const faviconUrl = asset('/favicon.ico');
-	const configuredBasePath = normalizeBasePath(
-		typeof process !== 'undefined' && process.env.BASE_PATH
-			? process.env.BASE_PATH
-			: base
-	);
+	const configuredBasePath = resolveBasePath(base);
 	let searchOpen = $state(false);
 	const isHome = $derived(isExact('/'));
 	// The rail lists only the documentation tree. Every other page, including the 404 page, stays full width.
-	const railRoutes: readonly string[] = [
+	const railRoutes: readonly SiteRoute[] = [
 		'/installation/',
 		'/help/',
 		'/performance/'

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import { absoluteSiteUrl, normalizeBasePath } from '$lib/site.js';
+	import { absoluteSiteUrl, resolveBasePath } from '$lib/site.js';
 
 	interface Props {
 		title: string;
@@ -10,11 +10,7 @@
 	}
 
 	let { title, description, path, robots }: Props = $props();
-	const configuredBasePath = normalizeBasePath(
-		typeof process !== 'undefined' && process.env.BASE_PATH
-			? process.env.BASE_PATH
-			: base
-	);
+	const configuredBasePath = resolveBasePath(base);
 
 	const canonicalUrl = $derived(absoluteSiteUrl(path, configuredBasePath));
 	const socialImageUrl = $derived(

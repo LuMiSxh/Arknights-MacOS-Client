@@ -4,11 +4,7 @@
 	import PublisherCards from '$lib/components/PublisherCards.svelte';
 
 	import { servers } from '$lib/servers.js';
-	import {
-		absoluteSiteUrl,
-		normalizeBasePath,
-		releaseUrl
-	} from '$lib/site.js';
+	import { absoluteSiteUrl, releaseUrl, resolveBasePath } from '$lib/site.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -16,11 +12,7 @@
 	const version = $derived(data.release?.version);
 	const description =
 		'Play Arknights PC on an Apple silicon Mac with this free, unofficial launcher. Supports macOS 15 or later.';
-	const basePath = normalizeBasePath(
-		typeof process !== 'undefined' && process.env.BASE_PATH
-			? process.env.BASE_PATH
-			: base
-	);
+	const basePath = resolveBasePath(base);
 	const homeUrl = absoluteSiteUrl('/', basePath);
 	const structuredData = $derived(
 		JSON.stringify({
