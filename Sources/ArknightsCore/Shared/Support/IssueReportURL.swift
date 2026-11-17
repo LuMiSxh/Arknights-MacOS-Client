@@ -31,8 +31,8 @@ package enum IssueReportURL {
 		context: SupportContext? = nil,
 		source: IssueReportSource
 	) -> URL {
-		var components = URLComponents(
-			string: "https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new")!
+		var components = StaticURL.components(
+			"https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new")
 		var items = [
 			URLQueryItem(name: "template", value: "problem-report.yml"),
 			URLQueryItem(name: "version", value: appVersion),
@@ -52,7 +52,7 @@ package enum IssueReportURL {
 		}
 		items.append(URLQueryItem(name: "source", value: source.rawValue))
 		components.queryItems = items
-		return components.url!
+		return StaticURL.url(components)
 	}
 
 	/// The macOS, chip, and memory line that a report carries. The diagnostics bundle shares it.

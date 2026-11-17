@@ -230,10 +230,9 @@ package enum AppConstants {
 		/// The repository's current tag manifest, so tags for new wallpapers ship without a release.
 		/// App-owned, so it follows `main` on purpose and is not pinned. Bound: `wallpaperTagsMaximumBytes`.
 		/// Fallback: the bundled and cached tags.
-		package static let wallpaperTagsURL = URL(
-			string:
-				"https://raw.githubusercontent.com/LuMiSxh/Arknights-MacOS-Client/main/Sources/ArknightsCore/Resources/WallpaperTags.json"
-		)!
+		package static let wallpaperTagsURL = StaticURL.url(
+			"https://raw.githubusercontent.com/LuMiSxh/Arknights-MacOS-Client/main/Sources/ArknightsCore/Resources/WallpaperTags.json"
+		)
 		package static let imageMaximumBytes = 24 * 1_024 * 1_024
 		package static let imageCacheMaximumBytes: Int64 = 256 * 1_024 * 1_024
 		/// Downloaded artwork and logos; least recently used files go first.

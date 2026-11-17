@@ -84,7 +84,7 @@ package final class LauncherLog: Sendable {
 private final class LauncherLogWriter: @unchecked Sendable {
 	private let fileURL: URL
 	private let fileManager = FileManager.default
-	private let formatter = ISO8601DateFormatter()
+	private let timestampStyle = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
 	private let maximumFileSize: Int
 	private let maximumMessageBytes: Int
 	private var descriptor: Int32 = -1
@@ -105,7 +105,6 @@ private final class LauncherLogWriter: @unchecked Sendable {
 		self.fileURL = fileURL
 		self.maximumFileSize = maximumFileSize
 		self.maximumMessageBytes = maximumMessageBytes
-		formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 	}
 
 	deinit {
@@ -126,7 +125,10 @@ private final class LauncherLogWriter: @unchecked Sendable {
 			flattened.append(scalar.properties.generalCategory == .control ? " " : scalar)
 		}
 		let sanitized = boundedMessage(String(flattened))
-		let line = "\(formatter.string(from: date)) [\(level.rawValue)] \(sanitized)\n"
+		// ISO8601DateFormatter rounded to the nearest millisecond; the format style truncates.
+		// The half-millisecond offset keeps timestamps identical to earlier log files.
+		let timestamp = timestampStyle.format(date.addingTimeInterval(0.0005))
+		let line = "\(timestamp) [\(level.rawValue)] \(sanitized)\n"
 		let bytes = Array(line.utf8)
 		do {
 			do {

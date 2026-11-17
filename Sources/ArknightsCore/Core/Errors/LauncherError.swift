@@ -88,7 +88,7 @@ package enum LauncherError: LocalizedError, LauncherDiagnosticError, Sendable {
 		case .invalidResponse: "The game service returned an invalid response."
 		case .server(let code, let message): "Game service API error \(code): \(message)"
 		case .remoteContentTooLarge(let url, let maximumBytes):
-			"Remote content from \(url.host ?? url.absoluteString) exceeded the \(ByteCountFormatter.string(fromByteCount: Int64(maximumBytes), countStyle: .file)) limit."
+			"Remote content from \(url.host ?? url.absoluteString) exceeded the \(maximumBytes.formatted(.byteCount(style: .file))) limit."
 		case .storageMigrationFailed(let diagnostic):
 			"Application storage migration failed: \(diagnostic)"
 		}

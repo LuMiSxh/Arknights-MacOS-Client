@@ -43,7 +43,7 @@ extension LayoutMigrator {
 					at: paths.legacyCustomArtworkDirectory, includingPropertiesForKeys: nil)
 			} catch {
 				throw LayoutMigrationError.cannotInspect(
-					paths.legacyCustomArtworkDirectory, errno)
+					paths.legacyCustomArtworkDirectory, reason: inspectionReason(for: error))
 			}
 			for entry in entries {
 				moves.append(
@@ -164,7 +164,8 @@ extension LayoutMigrator {
 				entries = try fileManager.contentsOfDirectory(
 					at: dosDevices, includingPropertiesForKeys: [.isSymbolicLinkKey])
 			} catch {
-				throw LayoutMigrationError.cannotInspect(dosDevices, errno)
+				throw LayoutMigrationError.cannotInspect(
+					dosDevices, reason: inspectionReason(for: error))
 			}
 			for entry in entries {
 				let values: URLResourceValues

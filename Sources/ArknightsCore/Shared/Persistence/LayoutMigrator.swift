@@ -28,7 +28,7 @@ package struct LayoutMigrationResult: Sendable {
 enum LayoutMigrationError: Error, Equatable, Sendable, CustomStringConvertible {
 	case unsafeNode(URL)
 	case conflictingDirectories(URL, URL)
-	case cannotInspect(URL, Int32)
+	case cannotInspect(URL, reason: String)
 	case moveFailed(URL, URL, String)
 	case invalidLayout(URL, String)
 	case unsupportedSchema(URL, Int)
@@ -43,8 +43,8 @@ enum LayoutMigrationError: Error, Equatable, Sendable, CustomStringConvertible {
 			"Unsafe non-file or symbolic-link node: \(url.path)"
 		case .conflictingDirectories(let old, let new):
 			"Both the old and the new location exist: \(old.path) and \(new.path)"
-		case .cannotInspect(let url, let error):
-			"Could not inspect storage node \(url.path) (errno \(error))"
+		case .cannotInspect(let url, let reason):
+			"Could not inspect storage node \(url.path): \(reason)"
 		case .moveFailed(let old, let new, let reason):
 			"Could not move \(old.path) to \(new.path): \(reason)"
 		case .invalidLayout(let url, let reason):

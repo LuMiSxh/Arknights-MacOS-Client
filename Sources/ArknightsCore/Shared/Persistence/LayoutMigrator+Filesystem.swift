@@ -37,13 +37,22 @@ extension LayoutMigrator {
 		guard result == 0 else {
 			let error = errno
 			if error == ENOENT { return .absent }
-			throw LayoutMigrationError.cannotInspect(url, error)
+			throw LayoutMigrationError.cannotInspect(url, reason: "errno \(error)")
 		}
 		switch status.st_mode & S_IFMT {
 		case S_IFDIR: return .directory
 		case S_IFREG: return .file
 		default: return nil
 		}
+	}
+
+	// `FileManager` wraps the POSIX failure in a Cocoa error; report the code it carries.
+	static func inspectionReason(for error: any Error) -> String {
+		let nsError = error as NSError
+		if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+			return "errno \(underlying.code)"
+		}
+		return nsError.localizedDescription
 	}
 
 	static func validatePathComponents(of url: URL, under root: URL) throws {

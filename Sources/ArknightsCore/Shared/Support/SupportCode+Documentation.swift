@@ -42,20 +42,14 @@ extension SupportCode {
 	}
 
 	private static func resolveDocumentationLinks(in markdown: String) -> String {
-		let expression = try! NSRegularExpression(
-			pattern: #"\]\(((?![A-Za-z][A-Za-z0-9+.-]*:|#)[^)]+)\)"#
-		)
-		let output = NSMutableString(string: markdown)
-		let matches = expression.matches(
-			in: markdown,
-			range: NSRange(markdown.startIndex..., in: markdown)
-		)
-		for match in matches.reversed() {
-			let target = output.substring(with: match.range(at: 1))
+		let expression = #/\]\(((?![A-Za-z][A-Za-z0-9+.-]*:|#)[^)]+)\)/#
+		var output = markdown
+		for match in markdown.matches(of: expression).reversed() {
+			let target = String(match.output.1)
 			guard let url = documentationURL(for: target) else { continue }
-			output.replaceCharacters(in: match.range(at: 1), with: url.absoluteString)
+			output.replaceSubrange(match.range, with: "](\(url.absoluteString))")
 		}
-		return output as String
+		return output
 	}
 
 	private static func documentationURL(for target: String) -> URL? {

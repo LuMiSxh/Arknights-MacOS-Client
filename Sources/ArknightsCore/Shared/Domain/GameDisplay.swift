@@ -11,6 +11,18 @@ package enum GameRenderingMode: String, CaseIterable, Codable, Sendable {
 	case standard
 }
 
+/// Aspect-ratio groups in the order `windowPresets` lists them.
+package enum AspectGroup: Int, Comparable {
+	case sixteenByNine
+	case sixteenByTen
+	case fourByThree
+	case other
+
+	package static func < (lhs: Self, rhs: Self) -> Bool {
+		lhs.rawValue < rhs.rawValue
+	}
+}
+
 package struct GameDisplaySize: Codable, Hashable, Sendable {
 	package let width: Int
 	package let height: Int
@@ -30,13 +42,13 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 		(1024, 768), (1280, 960), (1440, 1080), (1600, 1200),
 	].map { GameDisplaySize(width: $0.0, height: $0.1) }
 
-	/// The aspect-ratio group of a window preset: 0 for 16:9, 1 for 16:10, 2 for 4:3, 3 otherwise.
-	package var aspectGroup: Int {
+	/// The aspect-ratio group of a window preset.
+	package var aspectGroup: AspectGroup {
 		switch (width * 9 == height * 16, width * 10 == height * 16, width * 3 == height * 4) {
-		case (true, _, _): 0
-		case (_, true, _): 1
-		case (_, _, true): 2
-		default: 3
+		case (true, _, _): .sixteenByNine
+		case (_, true, _): .sixteenByTen
+		case (_, _, true): .fourByThree
+		default: .other
 		}
 	}
 

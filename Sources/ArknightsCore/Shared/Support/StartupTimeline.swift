@@ -24,10 +24,14 @@ package final class StartupTimeline: Sendable {
 	package static let shared = StartupTimeline()
 
 	private let state = Mutex(State())
-	private let startedAt: Date
+	private let clock = ContinuousClock()
+	private let origin: ContinuousClock.Instant
+	private let originMilliseconds: Int
 
 	private init() {
-		startedAt = Self.processStartDate() ?? Date()
+		origin = clock.now
+		let startedAt = Self.processStartDate() ?? Date()
+		originMilliseconds = max(0, Int(Date().timeIntervalSince(startedAt) * 1000))
 	}
 
 	/// Connects the shared timeline to the launcher log and flushes anything recorded earlier.
@@ -60,7 +64,10 @@ package final class StartupTimeline: Sendable {
 	}
 
 	private func record(_ message: String) {
-		let milliseconds = max(0, Int(Date().timeIntervalSince(startedAt) * 1000))
+		let elapsed = origin.duration(to: clock.now)
+		let milliseconds =
+			originMilliseconds + Int(elapsed.components.seconds * 1000)
+			+ Int(elapsed.components.attoseconds / 1_000_000_000_000_000)
 		let line = "\(message) +\(milliseconds) ms"
 		state.withLock { state in
 			switch state.sink {

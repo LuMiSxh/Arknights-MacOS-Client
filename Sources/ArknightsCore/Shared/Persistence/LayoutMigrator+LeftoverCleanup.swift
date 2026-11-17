@@ -126,7 +126,8 @@ extension LayoutMigrator {
 				entries = try fileManager.contentsOfDirectory(
 					at: url, includingPropertiesForKeys: nil)
 			} catch {
-				throw LayoutMigrationError.cannotInspect(url, errno)
+				throw LayoutMigrationError.cannotInspect(
+					url, reason: inspectionReason(for: error))
 			}
 			guard entries.isEmpty else { return }
 			try removeIfPresent(url, fileManager: fileManager)
@@ -166,7 +167,8 @@ extension LayoutMigrator {
 			entries = try fileManager.contentsOfDirectory(
 				at: source, includingPropertiesForKeys: nil)
 		} catch {
-			throw LayoutMigrationError.cannotInspect(source, errno)
+			throw LayoutMigrationError.cannotInspect(
+				source, reason: inspectionReason(for: error))
 		}
 		for entry in entries {
 			let target = destination.appending(path: entry.lastPathComponent)

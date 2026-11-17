@@ -34,7 +34,8 @@ extension LayoutMigrator {
 			entries = try fileManager.contentsOfDirectory(
 				at: directory, includingPropertiesForKeys: nil)
 		} catch {
-			throw LayoutMigrationError.cannotInspect(directory, errno)
+			throw LayoutMigrationError.cannotInspect(
+				directory, reason: inspectionReason(for: error))
 		}
 		for entry in entries where entry.lastPathComponent.hasPrefix("Arknights-") {
 			if try nodeState(at: entry) == .directory { return true }

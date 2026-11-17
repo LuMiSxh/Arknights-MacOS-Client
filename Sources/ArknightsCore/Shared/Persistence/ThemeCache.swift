@@ -61,6 +61,7 @@ final class ThemeCacheStore: Sendable {
 	private struct State: Sendable {
 		var document: ThemeCacheDocument
 		var tick: UInt64
+		var generation: UInt64 = 0
 		/// Recency uses a monotonic counter so a clock change can never reorder the entries.
 		var accentRecency: [String: UInt64]
 		var luminanceRecency: [String: UInt64]
@@ -68,6 +69,8 @@ final class ThemeCacheStore: Sendable {
 
 	private let file: ThemeCacheFile
 	private let state: Mutex<State>
+	/// Serializes writes so an older document can never replace a newer one.
+	private let persistedGeneration = Mutex<UInt64>(0)
 
 	init(file: ThemeCacheFile) {
 		self.file = file
@@ -100,9 +103,9 @@ final class ThemeCacheStore: Sendable {
 	}
 
 	func setAccent(_ accent: ThemeCacheDocument.Accent?, for key: String) {
-		state.withLock { state in
+		let write = state.withLock { state -> (document: ThemeCacheDocument, generation: UInt64)? in
 			guard accent != nil || state.document.accents.contains(where: { $0.key == key })
-			else { return }
+			else { return nil }
 			state.document.accents.removeAll { $0.key == key }
 			state.accentRecency[key] = nil
 			if let accent {
@@ -111,8 +114,10 @@ final class ThemeCacheStore: Sendable {
 				state.accentRecency[key] = state.tick
 				Self.evictAccents(&state, limit: AppConstants.Theme.themeAccentCacheLimit)
 			}
-			persistLocked(state.document)
+			state.generation += 1
+			return (state.document, state.generation)
 		}
+		if let write { persist(write.document, generation: write.generation) }
 	}
 
 	func luminance(for identity: String) -> Double? {
@@ -126,15 +131,17 @@ final class ThemeCacheStore: Sendable {
 	}
 
 	func setLuminance(_ score: Double, for identity: String, limit: Int) {
-		state.withLock { state in
+		let write = state.withLock { state -> (document: ThemeCacheDocument, generation: UInt64) in
 			state.document.luminance.removeAll { $0.identity == identity }
 			state.tick += 1
 			state.document.luminance.append(
 				ThemeCacheDocument.Luminance(identity: identity, score: score))
 			state.luminanceRecency[identity] = state.tick
 			Self.evictLuminance(&state, limit: limit)
-			persistLocked(state.document)
+			state.generation += 1
+			return (state.document, state.generation)
 		}
+		persist(write.document, generation: write.generation)
 	}
 
 	private static func evictAccents(_ state: inout State, limit: Int) {
@@ -165,16 +172,20 @@ final class ThemeCacheStore: Sendable {
 		Set(entries.sorted { $0.rank < $1.rank }.prefix(excess).map(\.key))
 	}
 
-	// Kept under the lock: `JSONFileStore.write` encodes and atomically replaces a file capped
-	// at 64 KiB, so serializing it guarantees two mutations never persist out of order.
-	private func persistLocked(_ document: ThemeCacheDocument) {
-		do {
-			try file.write(document)
-		} catch {
-			file.log?.error(
-				"Failed to write the theme cache at \(file.url.path): "
-					+ launcherDiagnosticDescription(for: error)
-			)
+	// Writers serialize here, so a slower, older document never replaces a newer one. Reads keep
+	// using `state` while the file is encoded and replaced.
+	private func persist(_ document: ThemeCacheDocument, generation: UInt64) {
+		persistedGeneration.withLock { lastPersisted in
+			guard generation > lastPersisted else { return }
+			do {
+				try file.write(document)
+				lastPersisted = generation
+			} catch {
+				file.log?.error(
+					"Failed to write the theme cache at \(file.url.path): "
+						+ launcherDiagnosticDescription(for: error)
+				)
+			}
 		}
 	}
 }
