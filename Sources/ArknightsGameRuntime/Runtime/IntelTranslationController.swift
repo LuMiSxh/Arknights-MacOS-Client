@@ -101,6 +101,13 @@ package final class IntelTranslationController {
 		)
 	}
 
+	// A stale awaiter must not clear the handle of a newer installation.
+	private func clearInstallation(ownedBy operationID: UUID) {
+		guard installationID == operationID else { return }
+		installationTask = nil
+		installationID = nil
+	}
+
 	@discardableResult
 	package func installRosetta() async -> IntelTranslationState {
 		guard lifecycle.state.readiness.intelTranslation == .rosettaMissing else {
@@ -122,8 +129,7 @@ package final class IntelTranslationController {
 
 		do {
 			let result = try await task.value
-			installationTask = nil
-			installationID = nil
+			clearInstallation(ownedBy: operationID)
 			let output = Self.boundedDiagnostics(result.output)
 			log.info(
 				"Rosetta installation finished; status=\(result.status) output=\(output)")
@@ -141,13 +147,11 @@ package final class IntelTranslationController {
 			lifecycle.state.readiness.rosettaInstallation = .idle
 			return await refreshAvailability(force: true)
 		} catch is CancellationError {
-			installationTask = nil
-			installationID = nil
+			clearInstallation(ownedBy: operationID)
 			lifecycle.state.readiness.rosettaInstallation = .idle
 			return lifecycle.state.readiness.intelTranslation
 		} catch {
-			installationTask = nil
-			installationID = nil
+			clearInstallation(ownedBy: operationID)
 			let message =
 				"Apple’s Rosetta installer could not start. Use the Terminal command below or check the launcher log for details."
 			lifecycle.state.readiness.rosettaInstallation = .failed(message)
