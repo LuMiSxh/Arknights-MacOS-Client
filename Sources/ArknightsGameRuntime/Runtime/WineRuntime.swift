@@ -257,18 +257,7 @@ struct WineRuntime: Sendable {
 	) async throws -> WineLaunch {
 		let launchStarted = ContinuousClock.now
 		let fileManager = FileManager.default
-		try fileManager.createDirectory(at: prefixDirectory, withIntermediateDirectories: true)
-		try fileManager.createDirectory(
-			at: prefixDirectory.appending(path: "home", directoryHint: .isDirectory),
-			withIntermediateDirectories: true
-		)
-		for directory in Self.isolatedEnvironmentDirectories(prefixDirectory: prefixDirectory) {
-			try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-		}
-		try Self.writeIsolatedUserDirectoryConfiguration(
-			prefixDirectory: prefixDirectory,
-			fileManager: fileManager
-		)
+		try Self.ensurePrefixSkeleton(at: prefixDirectory, fileManager: fileManager)
 		var mutablePrefixDirectory = prefixDirectory
 		var prefixValues = URLResourceValues()
 		prefixValues.isExcludedFromBackup = true
@@ -285,18 +274,8 @@ struct WineRuntime: Sendable {
 			?? prefixDirectory.deletingLastPathComponent().appending(
 				path: publisher.runtimeLogFileName
 			)
-		try fileManager.createDirectory(
-			at: logURL.deletingLastPathComponent(),
-			withIntermediateDirectories: true
-		)
-		if !fileManager.fileExists(atPath: logURL.path) {
-			guard fileManager.createFile(atPath: logURL.path, contents: nil) else {
-				throw InstallerError.cannotCreateFile(logURL)
-			}
-		}
-		let logHandle = try FileHandle(forWritingTo: logURL)
+		let logHandle = try Self.openRuntimeLog(at: logURL, fileManager: fileManager)
 		defer { logHandle.closeFile() }
-		try logHandle.seekToEnd()
 		RuntimePerformanceLog.write(
 			stage: "filesystem", since: launchStarted, to: logHandle, log: log)
 		let compatibilityChanges: GameCompatibilityChanges

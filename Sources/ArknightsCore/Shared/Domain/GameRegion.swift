@@ -118,6 +118,18 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 
 	package var publisher: GamePublisher { clientProfile.publisher }
 
+	/// The stable folder name for this server under `Games`. It never changes after release.
+	package var serverIdentifier: String {
+		switch self {
+		case .global: "global"
+		case .japan: "japan"
+		case .korea: "korea"
+		case .taiwan: "taiwan"
+		case .china: "china"
+		case .chinaBilibili: "china-bilibili"
+		}
+	}
+
 	package var publisherName: String {
 		switch publisher {
 		case .yostar: "Yostar"

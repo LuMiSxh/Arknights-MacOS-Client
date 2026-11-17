@@ -32,11 +32,13 @@ package enum LauncherPresentationDestination: Equatable, Identifiable {
 enum LauncherConfirmation: Equatable, Identifiable {
 	case rosetta
 	case repair(UUID)
+	case deleteLegacyData(UUID)
 
 	var id: String {
 		switch self {
 		case .rosetta: "rosetta"
 		case .repair(let id): "repair-\(id.uuidString)"
+		case .deleteLegacyData(let id): "delete-legacy-data-\(id.uuidString)"
 		}
 	}
 }
@@ -47,12 +49,22 @@ struct LauncherPresentationArbiter {
 
 	mutating func request(_ destination: LauncherPresentationDestination) {
 		if let current {
+			// A new value for the same failure (progress, a retryable error) updates the sheet
+			// instead of being dropped as an equal-priority request.
+			if destination.id == current.id {
+				self.current = destination
+				return
+			}
 			guard destination.priority > current.priority else { return }
 			queued = destination
 			self.current = nil
 			return
 		}
 		if let queued {
+			if destination.id == queued.id {
+				self.queued = destination
+				return
+			}
 			if destination.priority > queued.priority { self.queued = destination }
 			return
 		}

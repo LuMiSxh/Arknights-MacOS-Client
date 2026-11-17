@@ -80,7 +80,7 @@ package struct RuntimeInstaller: Sendable {
 			configuration: session.configuration,
 			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
 		)
-		store = RuntimeStore(paths: paths)
+		store = RuntimeStore(paths: paths, log: log)
 	}
 
 	package func install(
@@ -88,10 +88,8 @@ package struct RuntimeInstaller: Sendable {
 		progress: @escaping ProgressHandler
 	) async throws -> InstalledRuntime {
 		try guardPin(pin)
-		let laneDirectory = paths.runtimeDirectory(for: pin.lane)
-		return try await withInstallLease(at: laneDirectory) { _ in
-			try await installHoldingLease(
-				pin: pin, laneDirectory: laneDirectory, progress: progress)
+		return try await withInstallLease(at: paths.runtimeLeaseDirectory(for: pin.lane)) { _ in
+			try await installHoldingLease(pin: pin, progress: progress)
 		}
 	}
 
@@ -108,11 +106,10 @@ package struct RuntimeInstaller: Sendable {
 
 	private func installHoldingLease(
 		pin: PinnedRuntime,
-		laneDirectory: URL,
 		progress: @escaping ProgressHandler
 	) async throws -> InstalledRuntime {
 		let downloadedBytes = Int64(pin.sizeBytes)
-		try checkDiskSpace(pin, at: laneDirectory)
+		try checkDiskSpace(pin, at: paths.runtimeRoot)
 
 		let partURL = try await download(pin, progress: progress)
 
@@ -147,16 +144,17 @@ package struct RuntimeInstaller: Sendable {
 			RuntimeInstallProgress(
 				downloadedBytes: downloadedBytes, totalBytes: downloadedBytes,
 				phase: .installing))
-		let versionDirectory = laneDirectory.appending(
-			path: pin.version, directoryHint: .isDirectory)
+		let versionDirectory = paths.runtimeVersionDirectory(
+			for: pin.lane, version: pin.version)
 		try FileManager.default.createDirectory(
-			at: laneDirectory, withIntermediateDirectories: true)
+			at: paths.runtimeRoot, withIntermediateDirectories: true)
 		do {
 			try FileManager.default.moveItem(at: prepared, to: versionDirectory)
 		} catch CocoaError.fileWriteFileExists {
 			// Replaces the tree in one step; a failure leaves the old version in place.
 			_ = try FileManager.default.replaceItemAt(versionDirectory, withItemAt: prepared)
 		}
+		try store.recordInstalled(lane: pin.lane, version: pin.version)
 		bestEffort("Could not clean up older runtimes after install") {
 			try store.cleanup(pinned: [pin.lane: pin.version])
 		}

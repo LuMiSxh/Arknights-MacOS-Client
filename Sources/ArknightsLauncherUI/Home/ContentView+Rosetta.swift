@@ -24,6 +24,9 @@ extension ContentView {
 			presentation.dismissCurrent()
 			repairFailureID = failure.id
 			confirmation = .repair(failure.id)
+		case .deleteDataFolderConfirmationRequired:
+			presentation.dismissCurrent()
+			confirmation = .deleteLegacyData(failure.id)
 		case .rosettaConfirmationRequired:
 			presentation.dismissCurrent()
 			confirmation = .rosetta

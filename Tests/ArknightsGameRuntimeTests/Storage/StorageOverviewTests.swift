@@ -41,7 +41,7 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 	)
 	#expect(
 		locations.first { $0.category == .compatibilityRuntime }?.urls.first?.path
-			== paths.runtimeDirectory(for: .x86).path
+			== paths.runtimeRoot.path
 	)
 	#expect(
 		locations.first { $0.category == .browserCache }?.urls.first?.resolvingSymlinksInPath()

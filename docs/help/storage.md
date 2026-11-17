@@ -6,9 +6,9 @@ order: 30
 
 # Storage
 
-Each server keeps its own game files. Servers from the same publisher share one **game environment** (Wine prefix) for the selected runtime. Each runtime keeps its own game environment.
+Each server keeps its own game files in a folder named after the server. Servers from the same publisher share one **game environment** (Wine prefix) for the selected runtime. Each runtime keeps its own game environment.
 
-The x86_64 runtime uses `Prefix`. The ARM64 runtime uses `Prefix-ARM64`. Both folders sit in the same publisher folder. A switch keeps both game environments.
+Game environments are named after their publisher and architecture. The x86_64 runtime uses `Environments/<publisher>-x86`. The ARM64 runtime uses `Environments/<publisher>-arm`. A switch keeps both game environments.
 
 The launcher downloads one runtime for the selected architecture. To choose, switch, or remove a runtime, see [Game runtime](runtime.md).
 
@@ -16,17 +16,17 @@ The launcher downloads one runtime for the selected architecture. To choose, swi
 
 Paths start with `~/Library/Application Support/com.lumisxh.arknights-client/` unless noted.
 
-| What                                  | Location                                                                                        |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Yostar games and game environment     | `Yostar/Global`, `Yostar/Japan`, `Yostar/Korea`, `Yostar/Prefix`, `Yostar/Prefix-ARM64`         |
-| Gryphline game and game environment   | `Gryphline/Taiwan`, `Gryphline/Prefix`, `Gryphline/Prefix-ARM64`                                |
-| Hypergryph games and game environment | `Hypergryph/China`, `Hypergryph/China-Bilibili`, `Hypergryph/Prefix`, `Hypergryph/Prefix-ARM64` |
-| Custom icons and artwork              | `Artwork/Custom`                                                                                |
-| Playtime statistics                   | `playtime-v1.json` (local only, never uploaded)                                                 |
-| Storage measurements                  | `storage-overview-cache.json` (local only; safe to delete)                                      |
-| Caches                                | `~/Library/Caches/com.lumisxh.arknights-client/`                                                |
-| Runtimes                              | `Runtimes/x86`, `Runtimes/arm`                                                                  |
-| Logs                                  | `~/Library/Logs/com.lumisxh.arknights-client/`                                                  |
+| What                 | Location                                                                                       |
+| -------------------- | ---------------------------------------------------------------------------------------------- |
+| Games                | `Games/global`, `Games/japan`, `Games/korea`, `Games/taiwan`, `Games/china`, `Games/china-bilibili` |
+| Game environments    | `Environments/yostar-x86`, `Environments/yostar-arm`, `Environments/gryphline-x86`, `Environments/gryphline-arm`, `Environments/hypergryph-x86`, `Environments/hypergryph-arm` |
+| Custom icons and artwork | `Artwork/`                                                                                 |
+| Playtime statistics  | `playtime.json` (local only, never uploaded)                                                   |
+| Runtimes             | `Runtimes/<lane>-<version>`, for example `Runtimes/x86-1.0.0`                                  |
+| Runtime downloads    | `Downloads/<lane>`                                                                             |
+| Folder layout record | `layout.json` (do not edit)                                                                    |
+| Caches               | `~/Library/Caches/com.lumisxh.arknights-client/`                                               |
+| Logs                 | `~/Library/Logs/com.lumisxh.arknights-client/`                                                 |
 
 A custom installation location replaces only the game folder of that server. **Settings → Storage** shows the space each part uses. macOS backups exclude game folders and game environments.
 
@@ -81,6 +81,10 @@ Removing only the app keeps game files, game environments, caches, and logs.
 
 ## After a launcher update
 
-Some updates rename the standard game folders to a new layout on the first start. Nothing downloads again. Custom locations are never touched.
+This version moves data from launcher versions 0.6 and 0.7 to the new folder layout on the first start. Nothing downloads again. Custom locations are never touched.
+
+If the launcher shows **Quit the game first**, quit the game and choose **Try Again**.
 
 If the launcher reports a conflict, do not delete or merge either folder. [Report the problem](README.md#report-a-problem) with the launcher message.
+
+If the data folder comes from a launcher older than 0.6, the launcher shows **Data from an old launcher version**. Choose **Delete Data Folder**, then confirm **Delete**. The launcher removes its old data and starts a fresh setup. You do not need to relaunch it. Games installed in a custom folder are not deleted.

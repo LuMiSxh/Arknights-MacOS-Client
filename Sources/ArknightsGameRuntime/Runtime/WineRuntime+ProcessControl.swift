@@ -110,6 +110,9 @@ extension WineRuntime {
 		process.environment = shutdownEnvironment(prefixDirectory: prefixDirectory)
 		process.standardOutput = FileHandle.nullDevice
 		process.standardError = FileHandle.nullDevice
+		// Blocking is intentional: applicationShouldTerminate needs wineserver gone before it returns.
+		// Foundation runs terminationHandler on its own queue, never the main actor, so waiting on
+		// the main thread cannot deadlock. Both waits are bounded by AppConstants.Timeouts.
 		let terminated = DispatchSemaphore(value: 0)
 		process.terminationHandler = { _ in terminated.signal() }
 		do {

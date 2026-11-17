@@ -43,8 +43,7 @@ package struct LauncherPreferencesStore {
 
 	package enum Key {
 		/// Every fixed `UserDefaults` name this store owns. Case names match the stored strings.
-		/// Per-value families such as `dynamicThemeAccent.<cacheKey>` and `installPath.<region>`
-		/// are built by `installPath(for:)` and the accent methods.
+		/// Per-value families such as `installPath.<region>` are built by `installPath(for:)`.
 		enum Name: String, CaseIterable {
 			case automaticLauncherUpdates
 			case automaticGameUpdates
@@ -74,8 +73,6 @@ package struct LauncherPreferencesStore {
 			case acknowledgedACEWarningRegions
 			case resetReminderTiming
 			case resetReminderRegions
-			case dynamicThemeAccent = "dynamicThemeAccent.v4"
-			case homeLuminanceCache
 			case lastAppliedDynamicIconHue
 
 			case preferencesMigrationVersion
@@ -144,8 +141,6 @@ package struct LauncherPreferencesStore {
 		static let acknowledgedACEWarningRegions = Name.acknowledgedACEWarningRegions.rawValue
 		static let resetReminderTiming = Name.resetReminderTiming.rawValue
 		static let resetReminderRegions = Name.resetReminderRegions.rawValue
-		package static let dynamicThemeAccent = Name.dynamicThemeAccent.rawValue
-		package static let homeLuminanceCache = Name.homeLuminanceCache.rawValue
 		package static let lastAppliedDynamicIconHue = Name.lastAppliedDynamicIconHue.rawValue
 
 		static let preferencesMigrationVersion = Name.preferencesMigrationVersion.rawValue
@@ -157,7 +152,7 @@ package struct LauncherPreferencesStore {
 		static let brandingTheme = Name.brandingTheme.rawValue
 
 		// Every persisted name this store owns. Per-value families such as
-		// `dynamicThemeAccent.<cacheKey>` are written under dynamic names and are not listed here.
+		// `installPath.<region>` are written under dynamic names and are not listed here.
 		package static let all: [any StoredPreference] =
 			[
 				automaticLauncherUpdates, automaticGameUpdates, announcementsEnabled,
@@ -183,16 +178,30 @@ package struct LauncherPreferencesStore {
 				RawKey(preferencesMigrationVersion, resettable: false),
 				RawKey(onboardingCompletedSchemaVersion, resettable: false),
 				RawKey(onboardingCurrentStep, resettable: false),
-				RawKey(homeLuminanceCache, resettable: false),
 				RawKey(lastAppliedDynamicIconHue, resettable: false),
 			] + GameRegion.allCases.map { RawKey(installPath(for: $0), resettable: false) }
 			+ RuntimePatch.allCases.map { runtimePatchEnabled($0) }
 	}
 
 	package let defaults: UserDefaults
+	private let themeCache: ThemeCacheStore
+	private let log: LauncherLog?
 
-	package init(defaults: UserDefaults = .standard) {
+	// Derived theme values belong in Caches; resolved once and injectable for tests.
+	private static let defaultThemeCacheURL = AppPaths().themeCache
+
+	package init(
+		defaults: UserDefaults = .standard,
+		themeCacheURL: URL? = nil,
+		log: LauncherLog? = nil
+	) {
 		self.defaults = defaults
+		self.log = log
+		themeCache = ThemeCacheStore(
+			file: ThemeCacheFile(
+				url: themeCacheURL ?? Self.defaultThemeCacheURL,
+				log: log
+			))
 	}
 
 	package func value<Value>(_ key: ScalarKey<Value>) -> Value {
@@ -372,63 +381,55 @@ package struct LauncherPreferencesStore {
 		defaults.set(Array(regions).sorted(), forKey: Key.acknowledgedACEWarningRegions)
 	}
 
-	// Region, install locations, announcement history, and theme caches are kept: they are
-	// registered with `resettable: false` in `Key.all`.
+	// Region, install locations, and announcement history are kept: they are registered with
+	// `resettable: false` in `Key.all`.
 	func removeResettablePreferences() {
 		for preference in Key.all where preference.resettable {
 			defaults.removeObject(forKey: preference.name)
 		}
 	}
 
-	package func dynamicThemeAccent(for cacheKey: String) -> ThemeAccentSnapshot? {
-		guard
-			let values = defaults.dictionary(forKey: "\(Key.dynamicThemeAccent).\(cacheKey)"),
-			let hue = values["hue"] as? Double,
-			let saturation = values["saturation"] as? Double,
-			let brightness = values["brightness"] as? Double
-		else { return nil }
+	package nonisolated func dynamicThemeAccent(for cacheKey: String) -> ThemeAccentSnapshot? {
+		guard let accent = themeCache.accent(for: cacheKey) else { return nil }
 		let snapshot = ThemeAccentSnapshot(
-			hue: hue,
-			saturation: saturation,
-			brightness: brightness
+			hue: accent.hue,
+			saturation: accent.saturation,
+			brightness: accent.brightness
 		)
 		return snapshot.isValid ? snapshot : nil
 	}
 
-	package func setDynamicThemeAccent(_ snapshot: ThemeAccentSnapshot?, for cacheKey: String) {
-		let key = "\(Key.dynamicThemeAccent).\(cacheKey)"
+	package nonisolated func setDynamicThemeAccent(
+		_ snapshot: ThemeAccentSnapshot?,
+		for cacheKey: String
+	) {
 		guard let snapshot else {
-			defaults.removeObject(forKey: key)
+			themeCache.setAccent(nil, for: cacheKey)
 			return
 		}
-		defaults.set(
-			[
-				"hue": snapshot.hue,
-				"saturation": snapshot.saturation,
-				"brightness": snapshot.brightness,
-			],
-			forKey: key
+		themeCache.setAccent(
+			ThemeCacheDocument.Accent(
+				key: cacheKey,
+				hue: snapshot.hue,
+				saturation: snapshot.saturation,
+				brightness: snapshot.brightness
+			),
+			for: cacheKey
 		)
 	}
 
-	// Records are ordered oldest first. Each identity carries its algorithm version, so a version
-	// bump is a miss rather than a stale hit.
-	package func homeLuminance(for identity: String) -> Double? {
-		homeLuminanceRecords().first { $0.identity == identity }?.score
+	// Each identity carries its algorithm version, so a version bump is a miss rather than a stale hit.
+	package nonisolated func homeLuminance(for identity: String) -> Double? {
+		themeCache.luminance(for: identity)
 	}
 
-	// Moves the identity to the newest end and drops the oldest records beyond `limit`.
-	package func setHomeLuminance(_ score: Double, for identity: String, limit: Int) {
-		var records = homeLuminanceRecords().filter { $0.identity != identity }
-		records.append(HomeLuminanceRecord(identity: identity, score: score))
-		defaults.set(
-			Array(records.suffix(limit)).map(\.storageValue),
-			forKey: Key.homeLuminanceCache)
-	}
-
-	private func homeLuminanceRecords() -> [HomeLuminanceRecord] {
-		(defaults.array(forKey: Key.homeLuminanceCache) as? [[String: Any]] ?? [])
-			.compactMap(HomeLuminanceRecord.init(storageValue:))
+	// Records the identity as the most recently used and drops the least recent beyond `limit`.
+	package nonisolated func setHomeLuminance(
+		_ score: Double,
+		for identity: String,
+		limit: Int
+	) {
+		themeCache.setLuminance(score, for: identity, limit: limit)
 	}
 
 	/// The hue last persisted to the app bundle's icon via `NSWorkspace.setIcon`.
@@ -447,26 +448,4 @@ package struct LauncherPreferencesStore {
 	private func acknowledgedACEWarningRegions() -> Set<String> {
 		Set(defaults.stringArray(forKey: Key.acknowledgedACEWarningRegions) ?? [])
 	}
-}
-
-/// One cached Home luminance score, stored as `["identity": String, "score": Double]` so the
-/// existing preference format keeps working.
-private struct HomeLuminanceRecord: Codable, Equatable, Sendable {
-	let identity: String
-	let score: Double
-
-	init(identity: String, score: Double) {
-		self.identity = identity
-		self.score = score
-	}
-
-	init?(storageValue: Any) {
-		guard let values = storageValue as? [String: Any],
-			let identity = values["identity"] as? String,
-			let score = values["score"] as? Double
-		else { return nil }
-		self.init(identity: identity, score: score)
-	}
-
-	var storageValue: [String: Any] { ["identity": identity, "score": score] }
 }

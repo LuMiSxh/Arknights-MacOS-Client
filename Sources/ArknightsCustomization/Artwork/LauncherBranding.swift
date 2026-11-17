@@ -93,6 +93,7 @@ package actor ArtworkCache {
 		guard isCurrentImageRequest(requestID, region: region) else { return nil }
 
 		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+		try pruneCache(incomingBytes: Int64(data.count), preserving: cachedURL)
 		try data.write(to: cachedURL, options: .atomic)
 		try persistActiveCacheKey(safeKey, for: region)
 		return data
@@ -126,6 +127,7 @@ package actor ArtworkCache {
 		)
 
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+		try pruneCache(incomingBytes: Int64(data.count), preserving: cachedURL)
 		try data.write(to: cachedURL, options: .atomic)
 		return data
 	}
@@ -160,6 +162,16 @@ package actor ArtworkCache {
 
 	private nonisolated func officialLogoCacheURL(for region: GameRegion) -> URL {
 		directory.appending(path: "official-arknights-logo-" + region.rawValue + ".png")
+	}
+
+	private nonisolated func pruneCache(incomingBytes: Int64, preserving target: URL) throws {
+		try CacheDirectoryPruner.enforceLimit(
+			at: directory,
+			maximumBytes: AppConstants.Presets.artworkCacheMaximumBytes,
+			incomingBytes: incomingBytes,
+			preserving: target,
+			pathExtensions: ["jpg", "png"]
+		)
 	}
 
 	private nonisolated func cachedImageURL(for cacheKey: String) -> URL {

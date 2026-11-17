@@ -86,12 +86,7 @@ enum StorageOverviewResolver {
 			),
 			StorageLocation(
 				category: .compatibilityRuntime,
-				urls: RuntimeLane.allCases.map {
-					paths.runtimeDirectory(for: $0)
-				} + [
-					paths.runtimeDownloadsDirectory,
-					paths.runtimeStagingRoot,
-				]
+				urls: [paths.runtimeRoot, paths.runtimeDownloadsDirectory]
 			),
 			StorageLocation(
 				category: .dxmtCache,

@@ -39,9 +39,10 @@ extension LauncherViewModel {
 				)
 			}
 		#endif
-		PreferencesMigrator().migrate(.standard)
+		let paths = AppPaths()
+		PreferencesMigrator().migrate(.standard, themeCacheURL: paths.themeCache)
 		return LauncherViewModel(
-			paths: AppPaths(),
+			paths: paths,
 			preferences: LauncherPreferencesStore(),
 			arguments: arguments
 		)

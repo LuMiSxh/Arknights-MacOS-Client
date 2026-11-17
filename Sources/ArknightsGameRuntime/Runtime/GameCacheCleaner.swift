@@ -13,8 +13,7 @@ enum GameCacheCleaner {
 			guard
 				try AppPaths.isSafeCacheDirectory(
 					directory,
-					inside: winePrefix.resolvingSymlinksInPath().standardizedFileURL,
-					fileManager: fileManager
+					inside: winePrefix.resolvingSymlinksInPath().standardizedFileURL
 				)
 			else { continue }
 			do {

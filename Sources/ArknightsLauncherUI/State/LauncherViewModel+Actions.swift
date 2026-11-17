@@ -143,6 +143,7 @@ extension LauncherViewModel: LauncherActions {
 	}
 
 	package func stopGameForApplicationTermination() {
+		environmentRefresh.cancelForApplicationTermination()
 		gameSession.stopGameForApplicationTermination()
 	}
 

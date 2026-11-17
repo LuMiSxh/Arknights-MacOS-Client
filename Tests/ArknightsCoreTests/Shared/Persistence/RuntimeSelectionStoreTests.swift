@@ -26,7 +26,7 @@ struct RuntimeSelectionStoreTests {
 		let temporary = try TemporaryDirectory("RuntimeSelectionStoreDefaultTests")
 		defer { temporary.remove() }
 		let store = RuntimeSelectionStore(
-			fileURL: temporary.url.appending(path: "runtime-selection.json"))
+			fileURL: temporary.url.appending(path: "runtime.json"))
 
 		#expect(try store.load(access: access(macOS: major)).selected == expected)
 	}
@@ -36,9 +36,30 @@ struct RuntimeSelectionStoreTests {
 		let temporary = try TemporaryDirectory("RuntimeSelectionStorePersistedTests")
 		defer { temporary.remove() }
 		let store = RuntimeSelectionStore(
-			fileURL: temporary.url.appending(path: "runtime-selection.json"))
+			fileURL: temporary.url.appending(path: "runtime.json"))
 		try store.save(RuntimeSelection(selected: .x86))
 
 		#expect(try store.load(access: access(macOS: 28)).selected == .x86)
+	}
+
+	@Test
+	func installedVersionsRoundTripAsAJSONObject() throws {
+		let temporary = try TemporaryDirectory("RuntimeSelectionStoreVersionsTests")
+		defer { temporary.remove() }
+		let url = temporary.url.appending(path: "runtime.json")
+		let store = RuntimeSelectionStore(fileURL: url)
+		try store.save(
+			RuntimeSelection(
+				selected: .arm,
+				installedVersions: [.x86: "1.0.0", .arm: "1.0.0-rc1"]))
+
+		let loaded = try store.load()
+		#expect(loaded.selected == .arm)
+		#expect(loaded.installedVersion(for: .x86) == "1.0.0")
+		#expect(loaded.installedVersion(for: .arm) == "1.0.0-rc1")
+		let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
+		let root = try #require(object as? [String: Any])
+		let installed = try #require(root["installed"] as? [String: String])
+		#expect(installed == ["x86": "1.0.0", "arm": "1.0.0-rc1"])
 	}
 }

@@ -43,6 +43,12 @@ extension LauncherViewModel {
 		installation.onMetadataRefreshCancellationRequested = { [weak self] in
 			self?.refreshController.cancelForInstallationStart()
 		}
+		runtimeSelection.onRuntimeInstalled = { [weak self] in
+			self?.environmentRefresh.requestRefresh()
+		}
+		gameSession.yieldMaintenanceToLaunch = { [weak self] in
+			await self?.environmentRefresh.cancelAndWait()
+		}
 		installation.onLaunchRequested = { [weak self] in
 			self?.gameSession.launch()
 		}

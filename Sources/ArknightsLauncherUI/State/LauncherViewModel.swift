@@ -17,6 +17,7 @@ package final class LauncherViewModel {
 	package let installation: InstallationController
 	package let runtimeSelection: RuntimeSelectionController
 	let gameSession: GameSessionController
+	let environmentRefresh: GameEnvironmentRefreshController
 	package let intelTranslation: IntelTranslationController
 	let customization: CustomizationController
 	package let communication: LauncherCommunicationController
@@ -42,10 +43,15 @@ package final class LauncherViewModel {
 	#endif
 	var pendingACEWarningRegion: GameRegion?
 	package internal(set) var isSavingDiagnostics = false
+	/// True after the pre-0.6 data deletion finishes, so the view can start setup.
+	package internal(set) var legacyDataDeletionCompleted = false
 	let paths: AppPaths
 	@ObservationIgnored var startupTask: Task<Bool, Never>?
 	@ObservationIgnored var startupOptions = StartupOptions()
 	@ObservationIgnored var storageMigrationFailureID: UUID?
+	/// Set by the app composition to the sheet-aware quit path.
+	@ObservationIgnored package var requestApplicationQuit: @MainActor () -> Void = {}
+	@ObservationIgnored var legacyDataDeletionTask: Task<Void, Never>?
 
 	@ObservationIgnored let runtimeInstallSlot = TaskSlot()
 
@@ -208,6 +214,22 @@ package final class LauncherViewModel {
 			}
 		)
 		self.gameSession = gameSession
+		environmentRefresh = GameEnvironmentRefreshController(
+			lifecycle: lifecycle,
+			paths: paths,
+			compatibilityManager: resolvedCompatibilityManager,
+			lane: { [weak runtimeSelection] in
+				runtimeSelection?.selectedLane ?? paths.runtimeLane
+			},
+			installedRegions: { [weak installation] in installation?.installedRegions ?? [] },
+			gameDirectory: { [preferences] region in
+				preferences.installDirectory(for: region, default: paths.gameInstall(for: region))
+			},
+			isLaunchPendingOrActive: { [weak gameSession] in
+				gameSession?.isLaunchPendingOrActive ?? false
+			},
+			log: launcherLog
+		)
 		runtimeSelection.isLaunchInProgress = { [weak gameSession] in
 			gameSession?.isLaunchPendingOrActive ?? false
 		}

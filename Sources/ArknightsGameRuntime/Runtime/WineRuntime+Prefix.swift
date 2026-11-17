@@ -121,8 +121,8 @@ extension WineRuntime {
 	) throws -> Bool {
 		let wineInf = runtimeRoot.appending(path: WinePrefixUpdateStamp.wineInfRelativePath)
 		guard fileManager.fileExists(atPath: wineInf.path),
-			let modified = try fileManager.attributesOfItem(atPath: wineInf.path)[.modificationDate]
-				as? Date
+			let modified = try wineInf.resourceValues(forKeys: [.contentModificationDateKey])
+				.contentModificationDate
 		else { return false }
 		let stampURL = prefixDirectory.appending(path: WinePrefixUpdateStamp.fileName)
 		let contents: String?
@@ -209,6 +209,8 @@ extension WineRuntime {
 			)
 		}
 		for migration in plan.pending {
+			// A yielding caller stops between steps; the persisted state then resumes the rest.
+			try Task.checkCancellation()
 			let stepStarted = Date()
 			log?.debug("Running prefix migration: \(migration)")
 			switch migration {

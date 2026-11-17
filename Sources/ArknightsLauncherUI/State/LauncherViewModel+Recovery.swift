@@ -23,6 +23,10 @@ extension LauncherViewModel {
 			logRecovery(action: action, result: "ignored-stale")
 			return .ignored
 		}
+		guard !failure.isBusy else {
+			logRecovery(action: action, result: "ignored-busy")
+			return .ignored
+		}
 		guard failure.actions.contains(action) else {
 			logRecovery(action: action, result: "ignored-not-allowed")
 			return .ignored
@@ -101,6 +105,22 @@ extension LauncherViewModel {
 			return .completed
 		case .repair:
 			return .repairConfirmationRequired
+		case .deleteDataFolder:
+			logRecovery(action: action, result: "confirmation-required")
+			return .deleteDataFolderConfirmationRequired
+		case .tryAgain:
+			guard
+				retryStorageMigration(failureID: failureID)
+					|| retryLegacyDataDeletion(failureID: failureID)
+			else {
+				logRecovery(action: action, result: "ignored-ineligible")
+				return .ignored
+			}
+			return .completed
+		case .quit:
+			logRecovery(action: action, result: "requested")
+			requestApplicationQuit()
+			return .completed
 		case .installRosetta:
 			guard failure.context.operation == .intelTranslationPreflight,
 				lifecycle.state.readiness.intelTranslation == .rosettaMissing,

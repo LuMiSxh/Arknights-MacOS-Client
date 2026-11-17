@@ -42,8 +42,10 @@ package struct AppPaths: Sendable {
 	package let runtimeDownloadsDirectory: URL
 	/// Where a runtime archive extracts before it is installed.
 	package let runtimeStagingRoot: URL
-	/// The only persisted runtime choice, written atomically.
+	/// The persisted runtime document: the selected lane and installed versions, written atomically.
 	package let runtimeSelectionFile: URL
+	/// Records the Application Support layout version. A missing file means the 0.6/0.7 layout.
+	package let layoutFile: URL
 
 	package init(
 		fileManager: FileManager = .default,
@@ -92,11 +94,11 @@ package struct AppPaths: Sendable {
 			path: "Runtimes",
 			directoryHint: .isDirectory
 		)
-		runtimeDownloadsDirectory = runtimeRoot.appending(
-			path: ".downloads",
+		runtimeDownloadsDirectory = applicationSupportRoot.appending(
+			path: "Downloads",
 			directoryHint: .isDirectory
 		)
-		runtimeStagingRoot = runtimeRoot.appending(
+		runtimeStagingRoot = runtimeDownloadsDirectory.appending(
 			path: ".staging",
 			directoryHint: .isDirectory
 		)
@@ -104,6 +106,9 @@ package struct AppPaths: Sendable {
 			path: AppConstants.Runtime.runtimeSelectionFilename
 		)
 		runtimeSelectionFile = selectionFile
+		layoutFile = applicationSupportRoot.appending(
+			path: AppConstants.Storage.layoutFilename
+		)
 
 		let selection: RuntimeSelection
 		var diagnostic: String?
@@ -122,19 +127,29 @@ package struct AppPaths: Sendable {
 		}
 		runtimeLaneDiagnostic = diagnostic
 		runtimeLane = selection.selected
-		let prefixName = selection.selected.prefixDirectoryName
-		winePrefix = applicationSupportRoot.appending(
-			path: "Yostar/\(prefixName)",
+		let environmentRoot = applicationSupportRoot.appending(
+			path: "Environments",
 			directoryHint: .isDirectory
 		)
-		chinaWinePrefix = applicationSupportRoot.appending(
-			path: "Hypergryph/\(prefixName)",
+		winePrefix = environmentRoot.appending(
+			path: Self.environmentDirectoryName(for: .yostar, lane: selection.selected),
 			directoryHint: .isDirectory
 		)
-		gryphlineWinePrefix = applicationSupportRoot.appending(
-			path: "Gryphline/\(prefixName)",
+		chinaWinePrefix = environmentRoot.appending(
+			path: Self.environmentDirectoryName(for: .hypergryph, lane: selection.selected),
 			directoryHint: .isDirectory
 		)
+		gryphlineWinePrefix = environmentRoot.appending(
+			path: Self.environmentDirectoryName(for: .gryphline, lane: selection.selected),
+			directoryHint: .isDirectory
+		)
+	}
+
+	private static func environmentDirectoryName(
+		for publisher: GamePublisher,
+		lane: RuntimeLane
+	) -> String {
+		"\(publisher.rawValue)-\(lane.rawValue)"
 	}
 
 	private static func userDomainDirectory(
@@ -147,118 +162,77 @@ package struct AppPaths: Sendable {
 		return url
 	}
 
-	package func runtimeDirectory(for lane: RuntimeLane) -> URL {
-		runtimeRoot.appending(path: lane.rawValue, directoryHint: .isDirectory)
-	}
-
 	package func runtimeDownloadsDirectory(for lane: RuntimeLane) -> URL {
 		runtimeDownloadsDirectory.appending(path: lane.rawValue, directoryHint: .isDirectory)
 	}
 
 	package func runtimeVersionDirectory(for lane: RuntimeLane, version: String) -> URL {
-		runtimeDirectory(for: lane)
-			.appending(path: version, directoryHint: .isDirectory)
+		Self.runtimeVersionDirectory(in: runtimeRoot, lane: lane, version: version)
 	}
 
-	/// The installed version for `lane`, taken from the version directory that holds `RUNTIME.json`.
-	package func installedRuntimeVersion(
+	private static func runtimeVersionDirectory(
+		in runtimeRoot: URL,
+		lane: RuntimeLane,
+		version: String
+	) -> URL {
+		runtimeRoot.appending(
+			path: "\(lane.rawValue)-\(version)", directoryHint: .isDirectory)
+	}
+
+	/// The per-lane lease directory. It exists only to hold the install lock.
+	package func runtimeLeaseDirectory(for lane: RuntimeLane) -> URL {
+		runtimeRoot.appending(path: ".leases", directoryHint: .isDirectory)
+			.appending(path: lane.rawValue, directoryHint: .isDirectory)
+	}
+
+	/// The installed version for `lane`, taken from the runtime document.
+	package func installedRuntimeVersion(for lane: RuntimeLane) -> String? {
+		Self.installedRuntimeVersion(for: lane, selectionFile: runtimeSelectionFile)
+	}
+
+	private static func installedRuntimeVersion(
 		for lane: RuntimeLane,
-		fileManager: FileManager = .default
+		selectionFile: URL
 	) -> String? {
-		Self.installedRuntimeVersion(
-			in: runtimeDirectory(for: lane), fileManager: fileManager)
+		do {
+			return try RuntimeSelectionStore(fileURL: selectionFile).load()
+				.installedVersion(for: lane)
+		} catch {
+			return nil
+		}
 	}
 
 	/// The selected lane's installed `RUNTIME.json`, or `nil` when no runtime is installed.
-	package func activeRuntimeConfigurationURL(
-		for lane: RuntimeLane? = nil,
-		fileManager: FileManager = .default
-	) -> URL? {
-		installedRuntimeConfigurationURL(
-			for: lane ?? runtimeLane, fileManager: fileManager)
+	package func activeRuntimeConfigurationURL(for lane: RuntimeLane? = nil) -> URL? {
+		installedRuntimeConfigurationURL(for: lane ?? runtimeLane)
 	}
 
-	package func installedRuntimeConfigurationURL(
-		for lane: RuntimeLane,
-		fileManager: FileManager = .default
-	) -> URL? {
-		guard let version = installedRuntimeVersion(for: lane, fileManager: fileManager) else {
-			return nil
-		}
+	package func installedRuntimeConfigurationURL(for lane: RuntimeLane) -> URL? {
+		guard let version = installedRuntimeVersion(for: lane) else { return nil }
 		return runtimeVersionDirectory(for: lane, version: version)
 			.appending(path: "RUNTIME.json")
 	}
 
-	/// Both lanes' installed manifests, used by storage and diagnostics.
+	/// Both lanes' installed manifests, used by diagnostics.
 	package static func installedRuntimeConfigurationURLs(
-		in runtimeRoot: URL,
-		fileManager: FileManager = .default
+		applicationSupportRoot: URL
 	) -> [(lane: RuntimeLane, url: URL)] {
-		RuntimeLane.allCases.compactMap { lane in
-			let laneDirectory = runtimeRoot.appending(
-				path: lane.rawValue, directoryHint: .isDirectory)
-			guard let version = installedRuntimeVersion(in: laneDirectory, fileManager: fileManager)
+		let runtimeRoot = applicationSupportRoot.appending(
+			path: "Runtimes", directoryHint: .isDirectory)
+		let selectionFile = applicationSupportRoot.appending(
+			path: AppConstants.Runtime.runtimeSelectionFilename)
+		return RuntimeLane.allCases.compactMap { lane in
+			guard let version = installedRuntimeVersion(for: lane, selectionFile: selectionFile)
 			else { return nil }
-			let url = laneDirectory.appending(path: version, directoryHint: .isDirectory)
+			let url = runtimeVersionDirectory(in: runtimeRoot, lane: lane, version: version)
 				.appending(path: "RUNTIME.json")
 			return (lane, url)
 		}
 	}
 
-	private static func installedRuntimeVersion(
-		in laneDirectory: URL,
-		fileManager: FileManager
-	) -> String? {
-		let entries: [URL]
-		do {
-			entries = try fileManager.contentsOfDirectory(
-				at: laneDirectory,
-				includingPropertiesForKeys: [
-					.isDirectoryKey, .isSymbolicLinkKey, .contentModificationDateKey,
-				]
-			)
-		} catch {
-			return nil
-		}
-		var newest: (version: String, modified: Date)?
-		for entry in entries {
-			let values: URLResourceValues
-			do {
-				values = try entry.resourceValues(forKeys: [
-					.isDirectoryKey, .isSymbolicLinkKey, .contentModificationDateKey,
-				])
-			} catch {
-				continue
-			}
-			guard values.isDirectory == true, values.isSymbolicLink != true else { continue }
-			guard
-				fileManager.fileExists(
-					atPath: entry.appending(path: "RUNTIME.json").path)
-			else { continue }
-			let modified = values.contentModificationDate ?? .distantPast
-			if let current = newest {
-				if modified > current.modified {
-					newest = (entry.lastPathComponent, modified)
-				}
-			} else {
-				newest = (entry.lastPathComponent, modified)
-			}
-		}
-		return newest?.version
-	}
-
 	package func gameInstall(for region: GameRegion) -> URL {
-		let regionName =
-			switch region {
-			case .global: "Global"
-			case .japan: "Japan"
-			case .korea: "Korea"
-			case .taiwan: "Taiwan"
-			case .china: "China"
-			case .chinaBilibili: "China-Bilibili"
-			}
-		return applicationSupportRoot.appending(
-			path: "\(region.publisher.storageDirectoryName)/\(regionName)",
+		applicationSupportRoot.appending(
+			path: "Games/\(region.serverIdentifier)",
 			directoryHint: .isDirectory
 		)
 	}
@@ -278,7 +252,7 @@ package struct AppPaths: Sendable {
 	/// The publisher prefix of either lane. Storage and cleanup see both lanes.
 	package func winePrefix(for publisher: GamePublisher, lane: RuntimeLane) -> URL {
 		applicationSupportRoot.appending(
-			path: "\(publisher.storageDirectoryName)/\(lane.prefixDirectoryName)",
+			path: "Environments/\(Self.environmentDirectoryName(for: publisher, lane: lane))",
 			directoryHint: .isDirectory
 		)
 	}
@@ -321,11 +295,16 @@ package struct AppPaths: Sendable {
 	package static let windowsUnityLogPath = "L:\\unity.log"
 
 	package var artworkCache: URL {
-		cacheRoot.appending(path: "Artwork/Downloaded", directoryHint: .isDirectory)
+		cacheRoot.appending(path: "Artwork", directoryHint: .isDirectory)
 	}
 
 	package var presetGalleryCache: URL {
-		cacheRoot.appending(path: "PresetGallery", directoryHint: .isDirectory)
+		cacheRoot.appending(path: "Presets", directoryHint: .isDirectory)
+	}
+
+	/// Derived theme values (artwork accents, home luminance); rebuilt when missing.
+	package var themeCache: URL {
+		cacheRoot.appending(path: "Theme/theme.json")
 	}
 
 	package func dxmtCache(for region: GameRegion, lane: RuntimeLane) -> URL {
@@ -351,7 +330,7 @@ package struct AppPaths: Sendable {
 		let dxmt = winePrefix.appending(
 			path: "home/.cache/dxmt", directoryHint: .isDirectory)
 		var directories: [URL] = []
-		if try isSafeCacheDirectory(dxmt, inside: prefix, fileManager: fileManager) {
+		if try isSafeCacheDirectory(dxmt, inside: prefix) {
 			directories.append(dxmt)
 		}
 		let usersDirectory = winePrefix.appending(
@@ -388,7 +367,7 @@ package struct AppPaths: Sendable {
 			guard values.isDirectory == true, values.isSymbolicLink != true else { continue }
 			let cache = entry.appending(
 				path: "AppData/Local/cache", directoryHint: .isDirectory)
-			if try isSafeCacheDirectory(cache, inside: prefix, fileManager: fileManager) {
+			if try isSafeCacheDirectory(cache, inside: prefix) {
 				directories.append(cache)
 			}
 		}
@@ -397,10 +376,8 @@ package struct AppPaths: Sendable {
 
 	package static func isSafeCacheDirectory(
 		_ url: URL,
-		inside prefix: URL,
-		fileManager: FileManager = .default
+		inside prefix: URL
 	) throws -> Bool {
-		_ = fileManager
 		let values: URLResourceValues
 		do {
 			values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
@@ -434,23 +411,38 @@ package struct AppPaths: Sendable {
 	}
 
 	package var customArtwork: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom/artwork")
+		applicationSupportRoot.appending(path: "Artwork/artwork")
 	}
 
 	package var customAppIcon: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom/app-icon")
+		applicationSupportRoot.appending(path: "Artwork/app-icon")
 	}
 
 	package var customGameIcon: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom/game-icon")
+		applicationSupportRoot.appending(path: "Artwork/game-icon")
 	}
 
 	package var operatorPresetAvatar: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom/operator-avatar-source")
+		applicationSupportRoot.appending(path: "Artwork/operator-avatar-source")
+	}
+
+	/// The pre-0.8 custom artwork folder, flat in the new layout.
+	var legacyCustomArtworkDirectory: URL {
+		applicationSupportRoot.appending(path: "Artwork/Custom", directoryHint: .isDirectory)
+	}
+
+	/// A cache folder that pre-0.8 builds wrote; the migration deletes it.
+	var legacyArtworkDownloadCache: URL {
+		cacheRoot.appending(path: "Artwork/Downloaded", directoryHint: .isDirectory)
+	}
+
+	/// A cache folder that pre-0.8 builds wrote; the migration deletes it.
+	var legacyPresetGalleryCache: URL {
+		cacheRoot.appending(path: "PresetGallery", directoryHint: .isDirectory)
 	}
 
 	package var storageOverviewCache: URL {
-		applicationSupportRoot.appending(path: AppConstants.Storage.overviewCacheFilename)
+		cacheRoot.appending(path: "Storage/overview.json")
 	}
 
 	package var playtimeStatistics: URL {

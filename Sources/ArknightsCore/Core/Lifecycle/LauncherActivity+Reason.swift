@@ -15,6 +15,7 @@ extension LauncherActivity {
 			case .removingRuntime: "Wait for the runtime removal to finish."
 			case .updatingLauncher: "Wait for the launcher update to finish."
 			case .migratingStorage: "Wait for the storage move to finish."
+			case .updatingGameEnvironments: "Wait for the game environment update to finish."
 			}
 		case .installing:
 			"Wait for the download to finish."

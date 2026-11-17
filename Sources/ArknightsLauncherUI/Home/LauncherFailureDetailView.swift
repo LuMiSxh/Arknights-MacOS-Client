@@ -52,7 +52,7 @@ struct LauncherFailureDetailView: View {
 
 	var body: some View {
 		ThemedModalView(
-			title: "Needs attention",
+			title: failure.title ?? "Needs attention",
 			subtitle: failure.message,
 			width: failure.code == nil
 				? LauncherTokens.Layout.failureSheetWidth
@@ -90,6 +90,15 @@ struct LauncherFailureDetailView: View {
 					}
 				}
 
+				if failure.isBusy {
+					SettingsHairline()
+					HStack(spacing: LauncherTokens.Spacing.content) {
+						ProgressView()
+							.controlSize(.small)
+						Text("Deleting old launcher data…")
+					}
+				}
+
 				if let troubleshootingMarkdown {
 					SettingsHairline()
 					MarkdownDocument(source: troubleshootingMarkdown, style: .compact)
@@ -99,12 +108,16 @@ struct LauncherFailureDetailView: View {
 			.textSelection(.enabled)
 		} actions: {
 			footerActions
+				.disabled(failure.isBusy)
 		}
 		.task {
 			troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
 				.map(Self.recoveryMarkdown)
 		}
-		.onExitCommand(perform: dismissFailure)
+		.onExitCommand {
+			guard failure.showsDismissAction else { return }
+			dismissFailure()
+		}
 	}
 
 	private func dismissFailure() {
@@ -167,6 +180,30 @@ struct LauncherFailureDetailView: View {
 				tone: failure.actions.contains(.retry) ? .neutral : .accent
 			)
 		}
+		if failure.actions.contains(.deleteDataFolder) {
+			recoveryButton(
+				action: .deleteDataFolder,
+				title: "Delete Data Folder",
+				systemImage: "trash",
+				tone: .danger
+			)
+		}
+		if failure.actions.contains(.tryAgain) {
+			recoveryButton(
+				action: .tryAgain,
+				title: "Try Again",
+				systemImage: "arrow.clockwise",
+				tone: .accent
+			)
+		}
+		if failure.actions.contains(.quit) {
+			recoveryButton(
+				action: .quit,
+				title: "Quit",
+				systemImage: "power",
+				tone: .neutral
+			)
+		}
 	}
 
 	@ViewBuilder
@@ -190,13 +227,16 @@ struct LauncherFailureDetailView: View {
 		}
 	}
 
+	@ViewBuilder
 	private var dismissButton: some View {
-		CapsuleActionButton(
-			title: "Done",
-			tone: .neutral,
-			action: dismissFailure
-		)
-		.keyboardShortcut(.cancelAction)
+		if failure.showsDismissAction {
+			CapsuleActionButton(
+				title: "Done",
+				tone: .neutral,
+				action: dismissFailure
+			)
+			.keyboardShortcut(.cancelAction)
+		}
 	}
 
 	private var helpMenu: some View {
@@ -233,6 +273,7 @@ struct LauncherFailureDetailView: View {
 		if failure.actions.contains(.installRosetta) { return .installRosetta }
 		if failure.actions.contains(.retry) { return .retry }
 		if failure.actions.contains(.repair) { return .repair }
+		if failure.actions.contains(.tryAgain) { return .tryAgain }
 		return nil
 	}
 }

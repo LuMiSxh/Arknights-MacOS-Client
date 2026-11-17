@@ -14,6 +14,7 @@ struct WinePrefixLegacyLibraryCleaner: Sendable {
 	// Wine writes this string at offset 0x40 of every builtin DLL it installs into a prefix.
 	static let builtinMarker = Data("Wine builtin DLL".utf8)
 	static let builtinMarkerOffset = 0x40
+	static let peStubMarker = Data("MZ".utf8)
 
 	/// The module directory that proves `runtimeRoot` is a real runtime, so a wrong root never
 	/// reads as "no i386". The ARM runtime ships `i386-windows`, so it is probed against the native
@@ -87,7 +88,7 @@ struct WinePrefixLegacyLibraryCleaner: Sendable {
 			try handle.read(upToCount: Self.builtinMarkerOffset + Self.builtinMarker.count)
 			?? Data()
 		try handle.close()
-		return header.starts(with: Data("MZ".utf8))
+		return header.starts(with: Self.peStubMarker)
 			&& Data(header.dropFirst(Self.builtinMarkerOffset)) == Self.builtinMarker
 	}
 

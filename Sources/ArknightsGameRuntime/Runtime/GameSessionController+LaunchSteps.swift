@@ -77,6 +77,8 @@ extension GameSessionController {
 	// Runs the preflight, then claims the lease. Only one launch may be pending at a time.
 	func startLaunch(_ request: LaunchRequest) async {
 		defer { if pendingLaunchID == request.id { pendingLaunchID = nil } }
+		// The pending marker already blocks a restart of the maintenance, so the lease stays free.
+		if isYieldingMaintenance { await yieldMaintenanceToLaunch() }
 		let preflight = await Self.preflight(
 			executable: request.executable,
 			prefixDirectory: request.prefixDirectory,

@@ -207,6 +207,8 @@ package final class RuntimeSelectionController {
 	package var selectedLaneState: RuntimeLaneState { state(for: selectedLane) }
 	/// True while a game launch is pending or a session owns the runtime. Set by the composition root.
 	@ObservationIgnored package var isLaunchInProgress: () -> Bool = { false }
+	/// Called after a runtime installs, so prefixes of the lane can migrate. Set by the composition root.
+	@ObservationIgnored package var onRuntimeInstalled: (() -> Void)?
 	package var allowsX86: Bool { access.allows(.x86) }
 	package var allowsARM64: Bool { access.allows(.arm) }
 
@@ -236,8 +238,11 @@ package final class RuntimeSelectionController {
 		self.lifecycle = lifecycle
 		self.log = log
 		self.access = access
-		let store = RuntimeStore(paths: paths)
+		let store = RuntimeStore(paths: paths, log: log)
 		self.store = store
+		log?.attempt("Could not rebuild the runtime record") {
+			try store.recoverRecordIfNeeded()
+		}
 		self.selectedLane = paths.runtimeLane
 		self.installedVersions = Self.installedVersions(in: store)
 
@@ -304,6 +309,9 @@ package final class RuntimeSelectionController {
 	}
 
 	package func refresh() {
+		log?.attempt("Could not rebuild the runtime record") {
+			try store.recoverRecordIfNeeded()
+		}
 		installedVersions = Self.installedVersions(in: store)
 		availableLanes = Self.offeredLanes(in: configuration, access: access)
 		do {
@@ -393,7 +401,15 @@ package final class RuntimeSelectionController {
 				task.cancel()
 			}
 			log?.info("Runtime installed; lane=\(lane.rawValue) version=\(installed.version)")
+			do {
+				try store.recordInstalled(lane: installed.lane, version: installed.version)
+			} catch {
+				present(.installFailure(error, lane: lane))
+				refresh()
+				return false
+			}
 			refresh()
+			if installOwner.owns(token) { onRuntimeInstalled?() }
 			return installOwner.owns(token)
 		} catch is CancellationError {
 			// A pause is not a failure: the partial archive stays and no failure is presented.

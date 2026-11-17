@@ -7,6 +7,12 @@ import Testing
 
 @testable import ArknightsCore
 
+private func makeThemeCacheURL(_ label: String) -> URL {
+	FileManager.default.temporaryDirectory
+		.appending(path: "\(label)-\(UUID().uuidString)", directoryHint: .isDirectory)
+		.appending(path: "theme.json")
+}
+
 @MainActor
 struct PreferencesMigratorTests {
 	@Test
@@ -21,8 +27,8 @@ struct PreferencesMigratorTests {
 		])
 		defaults.set(1, forKey: LauncherPreferencesStore.Key.preferencesMigrationVersion)
 
-		migrator.migrate(defaults)
-		migrator.migrate(defaults)
+		migrator.migrate(defaults, themeCacheURL: makeThemeCacheURL("CustomSteps"))
+		migrator.migrate(defaults, themeCacheURL: makeThemeCacheURL("CustomSteps"))
 
 		#expect(ran.withLock { $0 } == [2, 3])
 		#expect(
@@ -30,32 +36,58 @@ struct PreferencesMigratorTests {
 	}
 
 	@Test
-	func legacyThemeAccentsAreRemovedAndCurrentOnesStay() {
+	func retiredThemeAndRetinaKeysAreRemovedForAnOlderInstall() {
 		let (defaults, suiteName) = makeIsolatedDefaults("PreferencesMigratorTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
-		// Installs that already ran the pre-v2 cleanup still hold HSB accents under v2.
+		// 0.7.1 recorded version 2 and never ran the 0.8 development steps.
 		defaults.set(2, forKey: LauncherPreferencesStore.Key.preferencesMigrationVersion)
 		defaults.set(["hue": 0.1], forKey: "dynamicThemeAccent.v2.legacy-cache")
-		store.setDynamicThemeAccent(
-			ThemeAccentSnapshot(hue: 0.6, saturation: 0.8, brightness: 0.9), for: "current-cache")
+		defaults.set(["hue": 0.2], forKey: "dynamicThemeAccent.v4.current-cache")
+		defaults.set([["identity": "old", "score": 0.5]], forKey: "homeLuminanceCache")
+		defaults.set(true, forKey: "forceDisableRetina")
 
-		PreferencesMigrator().migrate(defaults)
+		PreferencesMigrator().migrate(
+			defaults, themeCacheURL: makeThemeCacheURL("RetiredTheme"))
 
 		#expect(defaults.object(forKey: "dynamicThemeAccent.v2.legacy-cache") == nil)
-		#expect(store.dynamicThemeAccent(for: "current-cache")?.hue == 0.6)
+		#expect(defaults.object(forKey: "dynamicThemeAccent.v4.current-cache") == nil)
+		#expect(defaults.object(forKey: "homeLuminanceCache") == nil)
+		#expect(defaults.object(forKey: "forceDisableRetina") == nil)
 	}
 
 	@Test
-	func retiredRetinaOverrideIsRemoved() {
+	func validLegacyThemeValuesMoveIntoTheThemeCache() throws {
+		let temporary = try TemporaryDirectory("PreferencesMigratorTests")
+		defer { temporary.remove() }
 		let (defaults, suiteName) = makeIsolatedDefaults("PreferencesMigratorTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		defaults.set(3, forKey: LauncherPreferencesStore.Key.preferencesMigrationVersion)
-		defaults.set(true, forKey: "forceDisableRetina")
+		// 0.8 development builds kept these values in preferences before the theme file existed.
+		defaults.set(2, forKey: LauncherPreferencesStore.Key.preferencesMigrationVersion)
+		defaults.set(
+			["hue": 0.2, "saturation": 0.5, "brightness": 0.9],
+			forKey: "dynamicThemeAccent.v4.current-cache")
+		let identity = "\(AppConstants.Theme.homeLuminanceVersion).art"
+		defaults.set(
+			[
+				["identity": identity, "score": 0.5],
+				["identity": "homeLuminance.v0.old", "score": 0.7],
+			],
+			forKey: "homeLuminanceCache")
+		let url = temporary.url.appending(path: "Theme/theme.json")
 
-		PreferencesMigrator().migrate(defaults)
+		PreferencesMigrator().migrate(defaults, themeCacheURL: url)
 
-		#expect(defaults.object(forKey: "forceDisableRetina") == nil)
+		let store = LauncherPreferencesStore(defaults: defaults, themeCacheURL: url)
+		#expect(store.dynamicThemeAccent(for: "current-cache")?.hue == 0.2)
+		#expect(store.homeLuminance(for: identity) == 0.5)
+		#expect(store.homeLuminance(for: "homeLuminance.v0.old") == nil)
+		#expect(defaults.object(forKey: "homeLuminanceCache") == nil)
+	}
+
+	@Test
+	func stepsAreOrderedByIncreasingVersion() {
+		let steps = PreferencesMigrator.steps
+		#expect(zip(steps, steps.dropFirst()).allSatisfy { $0.version < $1.version })
 	}
 
 	@Test(arguments: [
@@ -129,7 +161,8 @@ struct PreferencesMigratorTests {
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		defaults.set(Data(json.utf8), forKey: LauncherPreferencesStore.Key.gameLaunchOptions)
 
-		PreferencesMigrator().migrate(defaults)
+		PreferencesMigrator().migrate(
+			defaults, themeCacheURL: makeThemeCacheURL("LaunchOptions"))
 
 		#expect(LauncherPreferencesStore(defaults: defaults).launchOptions() == expected)
 	}

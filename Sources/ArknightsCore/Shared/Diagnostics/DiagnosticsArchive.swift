@@ -19,7 +19,7 @@ package struct DiagnosticsArchive: Sendable {
 	private let redaction: DiagnosticsRedaction
 	private let log: LauncherLog
 	private let runtimeConfigurationURL: URL?
-	private let runtimeRoot: URL
+	private let applicationSupportRoot: URL
 	// `FileManager`'s shared query methods are thread-safe; the SDK does not mark the type Sendable.
 	nonisolated(unsafe) private let fileManager: FileManager
 
@@ -33,7 +33,7 @@ package struct DiagnosticsArchive: Sendable {
 		directory: URL,
 		redaction: DiagnosticsRedaction,
 		log: LauncherLog,
-		runtimeRoot: URL,
+		applicationSupportRoot: URL,
 		runtimeConfigurationURL: URL? = nil,
 		fileManager: FileManager = .default
 	) {
@@ -47,7 +47,7 @@ package struct DiagnosticsArchive: Sendable {
 		self.redaction = redaction
 		self.log = log
 		self.runtimeConfigurationURL = runtimeConfigurationURL
-		self.runtimeRoot = runtimeRoot
+		self.applicationSupportRoot = applicationSupportRoot
 		self.fileManager = fileManager
 	}
 
@@ -106,7 +106,7 @@ package struct DiagnosticsArchive: Sendable {
 			return []
 		}
 		let installed = AppPaths.installedRuntimeConfigurationURLs(
-			in: runtimeRoot, fileManager: fileManager)
+			applicationSupportRoot: applicationSupportRoot)
 		if installed.isEmpty {
 			return [.init(archivePath: archiveName, content: .file(runtimeConfiguration))]
 		}

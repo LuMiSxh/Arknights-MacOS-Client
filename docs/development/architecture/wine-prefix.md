@@ -20,9 +20,10 @@ is the only source of prefix locations.
 ## Prefix topology
 
 Each publisher family has its own prefix: Yostar (Global, Japan, Korea), Gryphline (Taiwan), and
-Hypergryph (China and China (Bilibili)). Each runtime lane also has its own prefix: the x86 lane uses
-`Prefix`, and the native ARM64 lane uses `Prefix-ARM64`. Windows-side state, logins, registry, and
-processes never mix across families or lanes. A lane switch keeps the other lane's environment.
+Hypergryph (China and China (Bilibili)). Each runtime lane also has its own prefix under
+`Environments/<publisher>-<lane>`: the x86 lane uses `<publisher>-x86`, and the native ARM64 lane uses
+`<publisher>-arm`. Windows-side state, logins, registry, and processes never mix across families or
+lanes. A lane switch keeps the other lane's environment.
 [Storage](../../help/storage.md#where-files-live) lists the default paths.
 
 - Resolve the active path with `AppPaths.winePrefix(for:)`. Never select a directory name in other code.
@@ -36,7 +37,7 @@ processes never mix across families or lanes. A lane switch keeps the other lane
 The launcher owns this structure inside Wine's prefix:
 
 ```text
-{Yostar,Gryphline,Hypergryph}/{Prefix,Prefix-ARM64}/
+Environments/{yostar,gryphline,hypergryph}-{x86,arm}/
 ├── .arknights-runtime-migrations.json
 ├── dosdevices/
 │   ├── c: -> ../drive_c
@@ -130,6 +131,15 @@ Replay rules:
 - Missing or stale DXMT files invalidate `install-dxmt` and every later step.
 - A new migration ID runs only that step.
 - Legacy single-file markers (version 0.1) are imported once and removed.
+
+A runtime update leaves every prefix holding APFS clones of the previous runtime, so the old files stay on
+disk until the prefix migrates. `GameEnvironmentRefreshController` runs the same plan in the background
+for each installed publisher's existing prefix of the selected lane. It starts after a runtime install and
+at app start, only while the launcher is idle, through `refreshPrefixIfPending`. That method wraps
+`preparePrefixIfNeeded` with a spawn gate and a prefix-wide shutdown. The pass holds a
+`.maintaining(.updatingGameEnvironments)` lease, runs one prefix at a time, and never creates a prefix.
+A game launch cancels the pass. The shutdown (`wineserver -k`, then `-w`) still completes before the lease
+ends. State is saved after each step, so a cancelled prefix resumes at its first incomplete step.
 
 `prefixRevision` is a revision of the prefix contract, not the runtime version. Do not increment it when
 Wine or DXMT changes, because the archive checksum already changes the effective revision. Increment it

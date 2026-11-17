@@ -40,7 +40,11 @@ package final class GameSessionController {
 		!applicationTerminationRequested
 			&& installation.isInstalled && runtimeName != nil
 			&& intelTranslation.allowsWine
-			&& lifecycle.activity == .idle
+			&& (lifecycle.activity == .idle || isYieldingMaintenance)
+	}
+	/// Background game environment updates give way to a launch instead of blocking it.
+	var isYieldingMaintenance: Bool {
+		lifecycle.activity == .maintaining(.updatingGameEnvironments)
 	}
 
 	let lifecycle: LauncherLifecycleStore
@@ -63,6 +67,8 @@ package final class GameSessionController {
 	@ObservationIgnored var currentRuntimeLane: @MainActor () -> RuntimeLane
 	@ObservationIgnored var session: ActiveGameSession?
 	@ObservationIgnored var applicationTerminationRequested = false
+	/// Cancels background maintenance and returns once it released the launcher. Set by the composition root.
+	@ObservationIgnored package var yieldMaintenanceToLaunch: @MainActor () async -> Void = {}
 	/// Orders Game Mode requests: each one awaits the previous one, so `off` never overtakes `on`.
 	@ObservationIgnored var gameModeChain: Task<Void, Never>?
 	// Launch that passed the click guard but has no session yet. Blocks a second launch.

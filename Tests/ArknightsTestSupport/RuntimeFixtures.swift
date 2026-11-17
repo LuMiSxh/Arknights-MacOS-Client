@@ -90,4 +90,10 @@ package func makeInstalledRuntime(
 	try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 	try Data(#"{"architecture":"\#(lane.rawValue)"}"#.utf8).write(
 		to: directory.appending(path: "RUNTIME.json"))
+	let selectionFile = paths.runtimeSelectionFile
+	if !FileManager.default.fileExists(atPath: selectionFile.path) {
+		try RuntimeSelectionStore(fileURL: selectionFile).save(
+			RuntimeSelection(selected: paths.runtimeLane))
+	}
+	try RuntimeStore(paths: paths).recordInstalled(lane: lane, version: version)
 }

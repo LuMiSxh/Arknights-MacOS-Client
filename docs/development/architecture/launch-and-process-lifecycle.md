@@ -20,7 +20,8 @@ Browser helpers and Wine child processes therefore cannot look like a ready or s
 
 After a launcher update changes the Application Support layout, a path migration runs before normal
 readiness. **Play**, installation, and maintenance stay blocked until it completes or shows a blocking
-recovery message. It is separate from the per-prefix Wine and DXMT migration. See
+recovery message or the **Data from an old launcher version** notice. It is separate from the
+per-prefix Wine and DXMT migration. See
 [Data and persistence](data-and-persistence.md#application-support-layout-migration).
 
 ## Launch process
@@ -225,6 +226,10 @@ does not reset an active launch or installation.
 Each call checks the lease token. A stale lease is a no-op: it cannot change the activity or set
 `Idle`. After a game session, `Idle` comes only after prefix-wide shutdown completes. A direct
 game-process exit does not set `Idle`. `finishGameSession` is the only path that publishes **Idle**.
+
+`.maintaining(.updatingGameEnvironments)` is the one activity that a launch preempts. The launch
+cancels the pass through `yieldMaintenanceToLaunch` and waits until the pass releases its lease after
+shutdown. All other activities still block a launch. A pending launch also blocks a restart of the pass.
 
 `ActiveGameSession` holds all state of the current session. The controller replaces it as a whole and
 sets it to `nil` when the session finishes. A stale session ID cannot finish a newer session.

@@ -9,7 +9,7 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0]
 
 > [!IMPORTANT]
 > Huge thanks to @riverfog7 for providing this client with an [ARM runtime](https://github.com/riverfog7/wine-build-new)!
@@ -47,10 +47,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fullscreen opens the game in its own macOS Space.
 - **Settings → Storage** shows the last measured sizes at once.
 - Runtime downloads are deleted after the runtime installs.
+- The launcher stores games, game environments, runtimes, downloads, artwork, and playtime in one flat folder layout under Application Support.
+- Launcher versions before 0.6 can no longer be upgraded in place. The launcher detects their data and offers **Delete Data Folder** to remove it and set up again.
+- After a runtime update, the launcher updates the game environment of every installed server in the background.
 - **Rendering** marks MetalFX unavailable when the runtime cannot use it.
 - Support codes use a short format, for example **IN-DSK**. Old codes link to their new pages.
 - The China (Bilibili) sign-in window stays above the game.
 - The launcher remembers when you mute the music, and playlists start on a random track.
+- Preset gallery images, preset catalogs, and launcher artwork now share one cache policy; the least recently used files are removed first.
+- Theme accents and Home brightness scores are now cached on disk and rebuild once after updating.
 - Rebuilt the website in the launcher's design.
 
 ### Fixed
@@ -64,6 +69,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The **Needs attention** dialog responds after an error appears while Settings is open.
 - Download verification uses less memory and CPU.
 - A slow Game Mode helper no longer stops the launcher from quitting.
+- An installed-state file from a newer launcher version is now reported as unreadable instead of being misread.
 
 ### Removed
 

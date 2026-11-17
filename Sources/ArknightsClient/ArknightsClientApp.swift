@@ -89,6 +89,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		requestQuit(isSystemInitiated: false)
 	}
 
+	/// A button in a modal notice, which must close the sheet before AppKit accepts quitting.
+	func requestQuitFromApplication() {
+		requestQuit(isSystemInitiated: false)
+	}
+
 	private func requestQuit(isSystemInitiated: Bool) {
 		if !isSystemInitiated, let installationID = launcherUpdater?.installationID {
 			guard launcherUpdater?.canTerminateForUpdate == true else { return }
@@ -342,10 +347,13 @@ struct ArknightsClientApp: App {
 			.onChange(of: model.settings.launcherAppearance, initial: true) { _, appearance in
 				NSApp.appearance = appearance.nsAppearance
 			}
-			.onAppear {
+			.onAppear { [appDelegate] in
 				appDelegate.model = model
 				appDelegate.launcherUpdater = model.communication.launcherUpdater
 				appDelegate.stopGame = { model.actions.stopGameForApplicationTermination() }
+				model.requestApplicationQuit = { [weak appDelegate] in
+					appDelegate?.requestQuitFromApplication()
+				}
 				NSApp.activate(ignoringOtherApps: true)
 			}
 		}

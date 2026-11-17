@@ -68,4 +68,6 @@ package enum MaintenanceActivity: Equatable, Sendable {
 	case removingRuntime
 	case updatingLauncher
 	case migratingStorage
+	/// Background prefix migration for installed servers. A game launch cancels it.
+	case updatingGameEnvironments
 }

@@ -127,6 +127,6 @@ struct RuntimeSelectionSwitchTests {
 			try fixture.controller.selectForDownload(lane: .arm)
 		}
 		#expect(fixture.controller.selectedLane == .x86)
-		#expect(!FileManager.default.fileExists(atPath: fixture.paths.runtimeSelectionFile.path))
+		#expect(try fixture.persistedLane == .x86)
 	}
 }

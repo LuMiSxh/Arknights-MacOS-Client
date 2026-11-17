@@ -93,10 +93,10 @@ One launcher release serves both architectures. The architecture is a user choic
 
 A lane is one runtime architecture. The x86 lane runs the WineCX and DXMT binaries through Rosetta 2. The arm lane runs native ARM64 Wine with FEX and Mesa.
 
-| Lane  | Minimum macOS | Wine prefix    | Runtime content        |
-| ----- | ------------- | -------------- | ---------------------- |
-| `x86` | 15.0          | `Prefix`       | WineCX, DXMT, MoltenVK |
-| `arm` | 26.0          | `Prefix-ARM64` | Wine, FEX, Mesa, DXMT  |
+| Lane  | Minimum macOS | Game environment             | Runtime content        |
+| ----- | ------------- | ---------------------------- | ---------------------- |
+| `x86` | 15.0          | `Environments/<publisher>-x86` | WineCX, DXMT, MoltenVK |
+| `arm` | 26.0          | `Environments/<publisher>-arm` | Wine, FEX, Mesa, DXMT  |
 
 The top-level `architecture` value is the default lane for `just runtime` and local tooling. The launcher selects a lane explicitly from its saved selection; it never reads the x86 interface for an ARM runtime.
 
@@ -213,6 +213,8 @@ Clients read the appcast through the stable `releases/latest/download/appcast.xm
 
 The workflow creates the archives from the fully packaged app, preserving bundle symlinks and executable modes. It generates and signs the appcast with Sparkle's `generate_appcast`. Before it creates the draft, it validates the key pair and runs Sparkle's `sign_update --verify` on the appcast, the archive, and every delta. This rejects a bad signature or a tampered file before publication.
 
+The release feed marks the newest item informational for clients below build 18 (0.6.0). Those launchers cannot migrate their data, so they get an information link and no install action. Users must delete the launcher data and reinstall. Clients at 0.6.0 or newer update normally. `sparkle_deltas.py finalize` inserts the gate before signing, and `validate_sparkle_keys.py` rejects a feed without it.
+
 The workflow also checks that the bundle contains Sparkle.framework with symlinks and nested XPC and helper code intact, an `@executable_path/../Frameworks` rpath, inside-out ad-hoc signatures, and a final outer-bundle verification. For a release candidate, install the DMG, start a newer signed update from the launcher, and confirm the themed update UI and the download and restart flow. Repeat during an active game or installation to verify that replacement is deferred.
 
 > [!CAUTION]
@@ -248,6 +250,6 @@ The setup assistant always does one silent Sparkle check before version-specific
 
 On a new installation, setup also asks for the runtime architecture. See [Game runtime](../help/runtime.md#macos-support) for the macOS rule.
 
-To make every existing user rerun setup after a release, bump `OnboardingProgressStore.currentSchemaVersion`. Schema 2 shipped with 0.7.0. Schema 3 ships with 0.8.0. Schema 4 ships with 1.0 and merges the runtime, game download, location, and Rosetta 2 into the **Install** step. Preferences stay unchanged. Only setup progress resets.
+To make every existing user rerun setup after a release, bump `OnboardingProgressStore.currentSchemaVersion`. Schema 2 shipped with 0.7.0. Schemas 3 and 4 ship with 1.0. Schema 4 merges the runtime, game download, location, and Rosetta 2 into the **Install** step. Preferences stay unchanged. Only setup progress resets.
 
 To make the rerun mandatory, also add the new schema to `OnboardingProgressStore.requiredSchemaVersions` and give it a reason in `OnboardingWelcomeView.requiredSetupReason(schema:)`. Returning players then see why, and Skip Setup stays hidden until they finish. First-time users can still skip. Schemas 2, 3, and 4 are required. In debug builds, the **Required** toggle next to **Onboarding preview** in the developer simulator shows this state.

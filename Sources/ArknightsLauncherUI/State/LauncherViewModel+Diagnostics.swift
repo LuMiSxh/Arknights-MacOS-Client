@@ -43,7 +43,7 @@ extension LauncherViewModel {
 				redaction: DiagnosticsRedaction(
 					homeDirectory: NSHomeDirectory(), userName: NSUserName()),
 				log: log,
-				runtimeRoot: paths.runtimeRoot,
+				applicationSupportRoot: paths.applicationSupportRoot,
 				runtimeConfigurationURL: paths.activeRuntimeConfigurationURL(
 					for: runtimeSelection.selectedLane)
 			).write()

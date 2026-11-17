@@ -55,6 +55,7 @@ The launcher must feel like a current macOS app. It must feel like an Arknights 
 29. Change a busy button's label, such as to "Checking…". Keep its width. Disable only that button.
 30. Show a failure inline under the step or row that failed. Use the shared inline failure component. It states what happened, what to do, and the **Support code**.
 31. Show a blocked macOS permission as a status row directly under the feature it blocks. Show the row while that feature is on, or while a denial has turned it off. The row has a warning icon, a sentence-case label without a period, and **Open System Settings**.
+32. Use a blocking startup notice when saved data cannot be migrated. Give it a sentence-case title, one sentence of action, and only the actions that resolve it, such as **Delete Data Folder** and **Quit**. Do not offer ordinary dismissal.
 
 ### Settings-only
 
@@ -211,6 +212,8 @@ The Home screen shows one primary operation at a time. The current state selects
 | The server’s game session is active | **Stop**                  |
 
 Use one control for these actions. Secondary controls stay neutral. Update checks never download game data. A download starts only when the user selects the update action. **Play** stays disabled until the selected runtime is installed and the server is ready.
+
+After a runtime update, the launcher updates the game environments of installed servers in the background. This work has no status or progress. **Play** stays enabled and cancels it. Other locked controls show "Wait for the game environment update to finish."
 
 Each server owns its game directory and installed manifest. The Home action and status capsule show only the active server. See [Installation architecture](architecture/installation.md) and [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md).
 

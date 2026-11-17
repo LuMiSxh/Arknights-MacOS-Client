@@ -32,9 +32,9 @@ package actor PresetCatalogService {
 	) {
 		self.log = log
 		self.cacheDirectory = cacheDirectory
-		cachedAvatarsFile = cacheDirectory.appending(path: "avatars_index_v2.json")
-		cachedWallpapersFile = cacheDirectory.appending(path: "wallpapers_index_v1.json")
-		cachedWallpaperTagsFile = cacheDirectory.appending(path: "wallpaper_tags_v1.json")
+		cachedAvatarsFile = cacheDirectory.appending(path: "avatars_index.json")
+		cachedWallpapersFile = cacheDirectory.appending(path: "wallpapers_index.json")
+		cachedWallpaperTagsFile = cacheDirectory.appending(path: "wallpaper_tags.json")
 		self.wallpaperTagsURL = wallpaperTagsURL
 		self.tagStore = tagStore
 		loader = BoundedHTTPDataLoader(
@@ -139,21 +139,24 @@ package actor PresetCatalogService {
 		}
 	}
 
-	func readJSONCache<Value: Decodable>(
+	func readJSONCache<Value: Codable>(
 		from url: URL,
 		maximumBytes: Int
 	) async -> Value? {
 		guard FileManager.default.fileExists(atPath: url.path) else { return nil }
 		do {
-			let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-			let size = (attributes[.size] as? NSNumber)?.intValue ?? 0
+			let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
 			guard size <= maximumBytes else {
 				try FileManager.default.removeItem(at: url)
 				log.error("Removed oversized preset index at \(url.path) (\(size) bytes)")
 				return nil
 			}
 			let store = JSONFileStore(maximumBytes: maximumBytes, prettyPrinted: false)
-			return try store.read(Value.self, at: url)
+			guard
+				let file = try store.read(PresetIndexFile<Value>.self, at: url),
+				file.schemaVersion == AppConstants.Presets.indexSchemaVersion
+			else { return nil }
+			return file.items
 		} catch {
 			log.error(
 				"Failed to read preset index at \(url.path): \(launcherDiagnosticDescription(for: error))"
@@ -162,7 +165,7 @@ package actor PresetCatalogService {
 		}
 	}
 
-	func writeJSONCache<Value: Encodable>(
+	func writeJSONCache<Value: Codable>(
 		_ value: Value,
 		to url: URL,
 		maximumBytes: Int,
@@ -170,7 +173,11 @@ package actor PresetCatalogService {
 	) async {
 		guard cacheEpoch == epoch else { return }
 		do {
-			let data = try JSONEncoder().encode(value)
+			let data = try JSONEncoder().encode(
+				PresetIndexFile(
+					schemaVersion: AppConstants.Presets.indexSchemaVersion,
+					items: value
+				))
 			guard data.count <= maximumBytes else {
 				throw LauncherError.remoteContentTooLarge(url, maximumBytes: maximumBytes)
 			}
@@ -204,4 +211,10 @@ package actor PresetCatalogService {
 		]
 	}
 
+}
+
+// One cached preset catalog with the format version that produced it.
+private struct PresetIndexFile<Value: Codable>: Codable {
+	let schemaVersion: Int
+	let items: Value
 }

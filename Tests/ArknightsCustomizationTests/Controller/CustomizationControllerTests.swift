@@ -221,7 +221,8 @@ func makeCustomizationController(
 	)
 	let defaults = makeIsolatedDefaults("CustomizationControllerTests").defaults
 	let lifecycle = LauncherLifecycleStore(log: LauncherLog(fileURL: paths.launcherLogFile))
-	let preferences = LauncherPreferencesStore(defaults: defaults)
+	let preferences = LauncherPreferencesStore(
+		defaults: defaults, themeCacheURL: paths.themeCache)
 	let iconManager = LauncherIconManager(
 		setBundleIcon: setBundleIcon,
 		setRunningIcon: setRunningIcon,

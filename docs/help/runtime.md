@@ -119,6 +119,10 @@ A launcher update can require a newer runtime. Home then shows **Runtime update 
 
 The **Active runtime** panel shows **Update available**, the required version, and the installed version under the runtime. The launcher removes the old runtime after the update. The launcher never downloads a runtime on its own.
 
+### Game environment update
+
+After a runtime update, the launcher updates the game environment of each installed server in the background. This frees the disk space that the old runtime files held. The update starts when the launcher is idle, one server at a time. **Play** stops it, and it continues after the game closes. Other actions wait until it finishes.
+
 ## If a runtime fails
 
 The **Active runtime** panel and the **Install** setup step show a message and a support code. Home shows **Needs attention**. The details open in a dialog. Match the code to the list below.

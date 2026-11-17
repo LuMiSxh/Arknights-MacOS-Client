@@ -5,6 +5,7 @@ import Foundation
 package enum AppConstants {
 	package enum Game {
 		package static let installedStateFileName = ".arknights-client-state.json"
+		package static let installedStateSchemaVersion = 1
 		package static let installedStateMaximumBytes = 8 * 1_024 * 1_024
 		package static let installerStagingDirectoryName = ".arknights-client-install-staging"
 		package static let installerResumeMetadataMaximumBytes = 16 * 1_024
@@ -53,7 +54,7 @@ package enum AppConstants {
 		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
 		package static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
 		/// The only persisted runtime choice. It names the lane, not a version.
-		package static let runtimeSelectionFilename = "runtime-selection.json"
+		package static let runtimeSelectionFilename = "runtime.json"
 		package static let runtimeSelectionMaximumBytes = 4 * 1_024
 		/// The first macOS major version that can run the native ARM64 lane.
 		package static let armLaneMinimumMacOSMajorVersion = 26
@@ -167,8 +168,11 @@ package enum AppConstants {
 		/// Last measurements that seed Settings until the next measurement replaces them.
 		/// The format version lets a future layout be ignored instead of misread.
 		package static let overviewCacheFormatVersion = 1
-		static let overviewCacheFilename = "storage-overview-cache.json"
+
 		package static let overviewCacheMaximumBytes = 64 * 1_024
+		/// Records the Application Support layout; a missing file means the 0.6/0.7 layout.
+		package static let layoutFilename = "layout.json"
+		package static let layoutSchemaVersion = 1
 		package static let overviewCacheEntryLimit = 8
 	}
 
@@ -229,6 +233,9 @@ package enum AppConstants {
 		)!
 		package static let imageMaximumBytes = 24 * 1_024 * 1_024
 		package static let imageCacheMaximumBytes: Int64 = 256 * 1_024 * 1_024
+		/// Downloaded artwork and logos; least recently used files go first.
+		package static let artworkCacheMaximumBytes: Int64 = 128 * 1_024 * 1_024
+		package static let indexSchemaVersion = 1
 		/// In-memory decoded gallery thumbnails; `NSCache` cost is bytes.
 		package static let thumbnailCacheMaximumBytes = 32 * 1_024 * 1_024
 		/// In-memory rendered Launcher and Game icon pairs (about 8 MiB each).
@@ -269,7 +276,7 @@ package enum AppConstants {
 
 	package enum Playtime {
 		package static let schemaVersion = 1
-		static let statisticsFilename = "playtime-v1.json"
+		static let statisticsFilename = "playtime.json"
 		package static let statisticsMaximumBytes = 64 * 1_024
 		package static let dailyHistoryLimit = 31
 	}
@@ -331,7 +338,9 @@ package enum AppConstants {
 		// Cached scores carry this version; bump it when the score changes.
 		package static let homeLuminanceVersion = "homeLuminance.v1"
 		package static let homeLuminanceCacheLimit = 64
-
+		/// Cached artwork accents; the least recently used entries go first.
+		package static let themeAccentCacheLimit = 64
+		package static let themeCacheSchemaVersion = 1
 	}
 
 	package enum Support {

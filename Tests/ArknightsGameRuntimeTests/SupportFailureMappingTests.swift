@@ -39,7 +39,7 @@ struct SupportFailureMappingTests {
 		#expect(
 			GameSessionController.supportCode(
 				for: WineRuntimeDiscoveryError.missingRuntime(
-					URL(filePath: "/Runtimes/x86/1.0.0")))
+					URL(filePath: "/Runtimes/x86-1.0.0")))
 				== .bundledRuntimeDamaged)
 	}
 }

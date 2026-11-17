@@ -55,8 +55,8 @@ func runtimeLanesUseSeparateWinePrefixes() throws {
 	let x86 = paths(.x86)
 	let arm = paths(.arm)
 
-	#expect(x86.winePrefix.lastPathComponent == "Prefix")
-	#expect(arm.winePrefix.lastPathComponent == "Prefix-ARM64")
+	#expect(x86.winePrefix.lastPathComponent == "yostar-x86")
+	#expect(arm.winePrefix.lastPathComponent == "yostar-arm")
 	#expect(x86.winePrefix != arm.winePrefix)
 	#expect(x86.winePrefix(for: .china) != arm.winePrefix(for: .china))
 	#expect(x86.winePrefix(for: .taiwan) != arm.winePrefix(for: .taiwan))
@@ -71,11 +71,14 @@ func runtimeStorePathsStayOutsideTheAppBundle() throws {
 	let paths = AppPaths(applicationSupportDirectory: temporary.url)
 
 	#expect(paths.runtimeRoot.lastPathComponent == "Runtimes")
-	#expect(paths.runtimeDownloadsDirectory.lastPathComponent == ".downloads")
+	#expect(paths.runtimeDownloadsDirectory.lastPathComponent == "Downloads")
 	#expect(paths.runtimeStagingRoot.lastPathComponent == ".staging")
-	#expect(paths.runtimeSelectionFile.lastPathComponent == "runtime-selection.json")
-	#expect(!paths.runtimeDirectory(for: .x86).path.contains(".app/"))
-	#expect(!paths.runtimeDirectory(for: .arm).path.contains(".app/"))
+	#expect(paths.runtimeSelectionFile.lastPathComponent == "runtime.json")
+	#expect(
+		paths.runtimeVersionDirectory(for: .x86, version: "1.0.0").lastPathComponent
+			== "x86-1.0.0")
+	#expect(!paths.runtimeVersionDirectory(for: .x86, version: "1.0.0").path.contains(".app/"))
+	#expect(!paths.runtimeVersionDirectory(for: .arm, version: "1.0.0").path.contains(".app/"))
 }
 
 @Test
@@ -86,7 +89,7 @@ func missingSelectionDefaultsToARMWhateverTheRuntimeTreesHold() throws {
 	let applicationSupport = support.appending(
 		path: AppPaths.bundleIdentifier, directoryHint: .isDirectory)
 	let armRuntime = applicationSupport.appending(
-		path: "Runtimes/arm/2.0.0", directoryHint: .isDirectory)
+		path: "Runtimes/arm-2.0.0", directoryHint: .isDirectory)
 	try FileManager.default.createDirectory(at: armRuntime, withIntermediateDirectories: true)
 	try Data(#"{"architecture":"arm"}"#.utf8).write(
 		to: armRuntime.appending(path: "RUNTIME.json"))
@@ -99,5 +102,6 @@ func missingSelectionDefaultsToARMWhateverTheRuntimeTreesHold() throws {
 	)
 
 	#expect(paths.runtimeLane == .arm)
-	#expect(paths.winePrefix.lastPathComponent == "Prefix-ARM64")
+	#expect(paths.winePrefix.lastPathComponent == "yostar-arm")
+	#expect(paths.installedRuntimeVersion(for: .arm) == nil)
 }

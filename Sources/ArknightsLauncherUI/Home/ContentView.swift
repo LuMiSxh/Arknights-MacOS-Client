@@ -177,6 +177,18 @@ package struct ContentView: View {
 					"Every game file for this region will be checked. Missing or damaged files will be downloaded again and may use substantial data. Launcher settings and the Wine prefix are preserved."
 				)
 			}
+			.confirmationDialog(
+				"Delete old launcher data?",
+				isPresented: deleteLegacyDataConfirmationBinding,
+				titleVisibility: .visible
+			) {
+				Button("Delete", role: .destructive, action: confirmDeleteLegacyData)
+				Button("Cancel", role: .cancel, action: cancelDeleteLegacyData)
+			} message: {
+				Text(
+					"This permanently deletes installed games and game environments from launcher versions older than 0.6. Games installed in a custom folder are not deleted."
+				)
+			}
 			.aceWarningConfirmation(model: model)
 			.onAppear {
 				registerOpenSettings(requestSettings)
@@ -213,6 +225,10 @@ package struct ContentView: View {
 					if model.isOnboardingPreview { onboarding.simulateRequiredSetup(isRequired) }
 				}
 			#endif
+			.onChange(of: model.legacyDataDeletionCompleted) { _, completed in
+				guard completed else { return }
+				Task { await startOnboardingIfNeeded() }
+			}
 			.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) {
 				_, isPresented in
 				if isPresented {
@@ -275,6 +291,11 @@ package struct ContentView: View {
 		Binding(
 			get: { if case .repair = confirmation { true } else { false } },
 			set: { if !$0 { confirmation = nil } })
+	}
+	private var deleteLegacyDataConfirmationBinding: Binding<Bool> {
+		Binding(
+			get: { if case .deleteLegacyData = confirmation { true } else { false } },
+			set: { if !$0 { cancelDeleteLegacyData() } })
 	}
 	var onboardingIsPresentable: Bool {
 		presentation.showsOnboarding(isOnboardingPresented: onboarding.isPresented)
@@ -440,6 +461,20 @@ package struct ContentView: View {
 		confirmation = nil
 		repairFailureID = nil
 		model.confirmRepair(failureID: id)
+	}
+
+	private func confirmDeleteLegacyData() {
+		guard case .deleteLegacyData(let id) = confirmation else { return }
+		confirmation = nil
+		model.confirmDeleteLegacyData(failureID: id)
+	}
+
+	private func cancelDeleteLegacyData() {
+		confirmation = nil
+		// The confirmation closes the notice; bring it back when deletion does not start.
+		if let failure = model.lifecycle.state.presentation.failure {
+			presentation.request(.failure(failure))
+		}
 	}
 
 	private var themeAnimation: Animation? {

@@ -5,7 +5,8 @@ import Foundation
 
 extension GameSessionController {
 	package func launch() {
-		guard lifecycle.activity == .idle, !applicationTerminationRequested,
+		guard lifecycle.activity == .idle || isYieldingMaintenance,
+			!applicationTerminationRequested,
 			pendingLaunchID == nil
 		else { return }
 		let region = installation.region
