@@ -27,9 +27,13 @@ import ArknightsGameRuntime
 			installation.cancelInstalledStateRefresh()
 			installation.configuration = Self.developerConfiguration
 			installation.progress = simulation.downloadProgress
-			installation.isInstalled = simulation.isInstalled
-			installation.hasPartialDownload = simulation.hasPartialDownload
-			installation.installedVersion = simulation.installedVersion
+			if let version = simulation.installedVersion {
+				installation.installPresence = .installed(version: version)
+			} else if simulation.hasPartialDownload {
+				installation.installPresence = .partialDownload
+			} else {
+				installation.installPresence = .absent
+			}
 			installation.isGameUpdateAvailable = simulation.updateAvailable
 			runtimeSelection.simulate(simulatedRuntime(for: simulation.runtime))
 			gameSession.runtimeName = "Wine 11.16 + DXMT 0.80-199"

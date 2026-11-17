@@ -250,7 +250,7 @@ package final class IntelTranslationController {
 			}
 			return
 		}
-		guard lifecycle.state.readiness.isInstalled else { return }
+		guard lifecycle.state.readiness.installPresence.isInstalled else { return }
 		guard check.state != .waitingForLauncherCheck, check.state != .checking else { return }
 		guard
 			lifecycle.state.presentation.failure == nil

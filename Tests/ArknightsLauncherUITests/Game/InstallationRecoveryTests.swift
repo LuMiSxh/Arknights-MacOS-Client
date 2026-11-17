@@ -15,10 +15,9 @@ struct InstallationRecoveryTests {
 		defer { fixture.storage.remove() }
 		#expect(!fixture.controller.canUninstallGame)
 
-		fixture.controller.isInstalled = true
+		fixture.controller.installPresence = .installed(version: "1.0.0")
 		#expect(fixture.controller.canUninstallGame)
-		fixture.controller.isInstalled = false
-		fixture.controller.hasPartialDownload = true
+		fixture.controller.installPresence = .partialDownload
 		#expect(fixture.controller.canUninstallGame)
 
 		fixture.controller.lifecycle.simulateActivity(.installing(id: UUID(), stage: .downloading))
@@ -46,7 +45,7 @@ struct InstallationRecoveryTests {
 			stateLoader: { _ in
 				await gate.wait()
 				return InstallationStateSnapshot(
-					isInstalled: true, hasPartialDownload: false, installedVersion: "1.0.0",
+					installPresence: .installed(version: "1.0.0"),
 					installedRegions: [.global], diagnostic: nil)
 			})
 		defer { fixture.storage.remove() }
@@ -98,7 +97,8 @@ private func makeInstallationFixture(
 		cachesDirectory: root.appending(path: "Caches", directoryHint: .isDirectory),
 		libraryDirectory: root.appending(path: "Library", directoryHint: .isDirectory)
 	)
-	let preferences = LauncherPreferencesStore(defaults: makeIsolatedDefaults().defaults)
+	let preferences = LauncherPreferencesStore(
+		defaults: makeIsolatedDefaults().defaults, themeCacheURL: paths.themeCache)
 	let log = LauncherLog(fileURL: paths.launcherLogFile)
 	let lifecycle = LauncherLifecycleStore(log: log)
 	let installer = ControllableInstaller()

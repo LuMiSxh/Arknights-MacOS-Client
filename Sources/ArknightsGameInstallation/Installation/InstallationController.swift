@@ -27,18 +27,13 @@ package final class InstallationController {
 		get { lifecycle.state.readiness.configuration }
 		set { lifecycle.state.readiness.configuration = newValue }
 	}
-	package var isInstalled: Bool {
-		get { lifecycle.state.readiness.isInstalled }
-		set { lifecycle.state.readiness.isInstalled = newValue }
+	package var installPresence: InstallPresence {
+		get { lifecycle.state.readiness.installPresence }
+		set { lifecycle.state.readiness.installPresence = newValue }
 	}
-	package var hasPartialDownload: Bool {
-		get { lifecycle.state.readiness.hasPartialDownload }
-		set { lifecycle.state.readiness.hasPartialDownload = newValue }
-	}
-	package var installedVersion: String? {
-		get { lifecycle.state.readiness.installedVersion }
-		set { lifecycle.state.readiness.installedVersion = newValue }
-	}
+	package var isInstalled: Bool { installPresence.isInstalled }
+	package var hasPartialDownload: Bool { installPresence == .partialDownload }
+	package var installedVersion: String? { installPresence.installedVersion }
 	package var isGameUpdateAvailable: Bool {
 		get { lifecycle.state.readiness.isGameUpdateAvailable }
 		set { lifecycle.state.readiness.isGameUpdateAvailable = newValue }
@@ -104,9 +99,7 @@ package final class InstallationController {
 		region = newRegion
 		preferences.setSelectedRegion(newRegion)
 		configuration = nil
-		isInstalled = false
-		hasPartialDownload = false
-		installedVersion = nil
+		installPresence = .absent
 		isGameUpdateAvailable = false
 		progress = nil
 		progressSequence = 0
@@ -157,9 +150,7 @@ package final class InstallationController {
 				guard let self, self.ownsStateRefresh(token, request: request) else {
 					return
 				}
-				self.isInstalled = snapshot.isInstalled
-				self.hasPartialDownload = snapshot.hasPartialDownload
-				self.installedVersion = snapshot.installedVersion
+				self.installPresence = snapshot.installPresence
 				self.installedRegions = snapshot.installedRegions.filter {
 					self.currentSelectableRegions.contains($0)
 				}

@@ -30,9 +30,7 @@ package enum LauncherRefreshState: Equatable, Sendable {
 package struct LauncherReadinessState {
 	package var configuration: GameConfiguration?
 	package var runtimeName: String?
-	package var isInstalled = false
-	package var hasPartialDownload = false
-	package var installedVersion: String?
+	package var installPresence: InstallPresence = .absent
 	package var isGameUpdateAvailable = false
 	package var intelTranslation: IntelTranslationState = .checking
 	package var rosettaInstallation: RosettaInstallationState = .idle

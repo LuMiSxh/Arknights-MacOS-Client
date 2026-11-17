@@ -76,7 +76,7 @@ extension InstallationController {
 				))
 		else { return }
 		activityLease = lease
-		hasPartialDownload = false
+		if installPresence == .partialDownload { installPresence = .absent }
 		lifecycle.setStatus(
 			verifyAllExistingFiles ? .verifyingInstallation : .preparingInstallation)
 		log.info(
@@ -117,10 +117,8 @@ extension InstallationController {
 					}
 				}
 				guard finishInstallation(installationID) else { return }
-				isInstalled = true
+				installPresence = .installed(version: configuration.gameLatestVersion)
 				setRegionInstalled(requestedRegion, true)
-				hasPartialDownload = false
-				installedVersion = configuration.gameLatestVersion
 				isGameUpdateAvailable = false
 				lifecycle.setStatus(.ready)
 				publishCompletionFeedback(for: installationID, region: requestedRegion)

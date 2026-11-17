@@ -89,10 +89,8 @@ extension InstallationController {
 				return
 			}
 			guard let self else { return }
-			isInstalled = false
+			installPresence = .absent
 			setRegionInstalled(requestedRegion, false)
-			hasPartialDownload = false
-			installedVersion = nil
 			isGameUpdateAvailable = false
 			lifecycle.setStatus(.uninstalled)
 		}
