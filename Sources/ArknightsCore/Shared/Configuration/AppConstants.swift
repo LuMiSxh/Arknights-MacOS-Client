@@ -246,7 +246,7 @@ package enum AppConstants {
 		package static let imageDownloadAttempts = 2
 		/// Concurrent remote image downloads. The gallery requests a whole grid at once, and requests
 		/// beyond the per-host connection limit would burn their timeout while queued.
-		package static let imageFetchConcurrency = 4
+		package static let imageFetchConcurrency = 8
 		// Shares the artwork limits so the gallery never offers an image that cannot be applied.
 		package static let imageMaximumDimension = Artwork.maximumDimension
 		package static let imageMaximumPixels = Artwork.maximumPixels
