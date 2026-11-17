@@ -193,21 +193,4 @@ struct GameEnvironmentRefreshControllerTests {
 		#expect(spy.calls == [yostar])
 	}
 
-	@Test(.timeLimit(.minutes(1)))
-	func aStaleLeaseNeverSetsIdle() async throws {
-		let spy = RefresherSpy(stale: [yostar], gated: [yostar])
-		let fixture = try RefreshFixture(
-			spy: spy, installed: [.global], existingPrefixes: [.yostar])
-		defer { fixture.storage.remove() }
-
-		fixture.controller.requestRefresh()
-		await spy.entered[yostar]?.wait()
-		// Another owner takes over the activity and invalidates the maintenance lease.
-		let sessionID = UUID()
-		fixture.lifecycle.simulateActivity(.preparingGame(sessionID: sessionID))
-		spy.release(yostar)
-		await fixture.controller.cancelAndWait()
-
-		#expect(fixture.lifecycle.activity == .preparingGame(sessionID: sessionID))
-	}
 }

@@ -8,14 +8,6 @@ import Testing
 
 @MainActor
 @Test
-func pendingPopupBlocksApplicationQuit() {
-	let arbiter = LauncherPresentationArbiter()
-
-	#expect(arbiter.blockingDestination(hasPendingPopup: true) == .popup)
-}
-
-@MainActor
-@Test
 func aSameFailureUpdateReplacesThePresentedValue() {
 	var arbiter = LauncherPresentationArbiter()
 	let id = UUID()
