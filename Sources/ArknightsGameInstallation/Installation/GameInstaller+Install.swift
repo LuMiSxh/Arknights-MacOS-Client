@@ -104,7 +104,7 @@ extension GameInstaller {
 			return InstallResult(downloadedFiles: 0, downloadedBytes: 0)
 		}
 		await progress(await counter.current(file: pendingFiles[0].path))
-		let reuse = await reuseSession(for: region, target: installationRoot)
+		let reuse = try await reuseSession(for: region, target: installationRoot)
 		try Task.checkCancellation()
 		try await InstallProgressMonitor.run(
 			counter: counter,

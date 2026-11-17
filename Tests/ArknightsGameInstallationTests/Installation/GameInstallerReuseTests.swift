@@ -92,10 +92,41 @@ struct GameInstallerReuseTests {
 		let alias = own.root.appending(path: "alias", directoryHint: .isDirectory)
 		try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: own.target)
 		try await withTestInstallDirectory(at: own.target) { root in
-			let session = await own.installer(donors: [own.target, alias])
+			let session = try await own.installer(donors: [own.target, alias])
 				.reuseSession(for: .global, target: root)
 			#expect(session.sources.isEmpty)
 		}
+	}
+
+	@Test
+	func cancellingTheReuseScanThrowsInsteadOfReturningPartialSources() async throws {
+		let world = try ReuseWorld()
+		defer { world.remove() }
+		let donor = try world.makeDonor(body: Self.body)
+		let started = Signal()
+		let installer = GameInstaller(
+			api: InstallerAPI(
+				manifest: GameManifest(source: world.fixture.source, file: [world.fixture.item]),
+				cdn: CDNConfiguration(
+					primaryCdn: world.fixture.baseURL, backUpCdn: world.fixture.baseURL)
+			),
+			session: world.fixture.route.session,
+			compatibilityManager: GameCompatibilityManager(),
+			reuseSourceDirectories: { _ in
+				started.fire()
+				// Cancelling the scan resumes this wait, so the loop observes the cancellation.
+				await Signal().wait()
+				return [donor.directory]
+			}
+		)
+		let scan = Task {
+			try await withTestInstallDirectory(at: world.target) { root in
+				try await installer.reuseSession(for: .global, target: root)
+			}
+		}
+		await started.wait()
+		scan.cancel()
+		await #expect(throws: CancellationError.self) { try await scan.value }
 	}
 
 	private static var stateName: String { AppConstants.Game.installedStateFileName }

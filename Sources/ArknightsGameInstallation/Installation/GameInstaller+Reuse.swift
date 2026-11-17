@@ -39,14 +39,15 @@ extension GameInstaller {
 	// installed region the launcher uses.
 	func reuseSession(
 		for region: GameRegion, target: InstallerDirectory
-	) async
+	) async throws
 		-> ReuseSession
 	{
 		guard let reuseSourceDirectories else { return .none }
 		let candidates = await reuseSourceDirectories(region)
 		var seen: Set<String> = [target.url.resolvingSymlinksInPath().path]
 		var sources: [ReuseSource] = []
-		for candidate in candidates where !Task.isCancelled {
+		for candidate in candidates {
+			try Task.checkCancellation()
 			var status = stat()
 			guard stat(candidate.path, &status) == 0, status.st_mode & S_IFMT == S_IFDIR else {
 				continue
