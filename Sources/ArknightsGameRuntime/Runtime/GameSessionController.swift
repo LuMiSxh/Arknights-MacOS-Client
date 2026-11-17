@@ -109,7 +109,7 @@ package final class GameSessionController {
 		self.graphicsDiagnosticsEnabled = graphicsDiagnosticsEnabled
 	}
 
-	deinit {
+	isolated deinit {
 		session?.cancelTasks()
 	}
 

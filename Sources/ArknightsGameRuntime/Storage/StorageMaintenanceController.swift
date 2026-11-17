@@ -45,19 +45,15 @@ package final class StorageMaintenanceController {
 			paths.winePrefix(for: region, lane: $0)
 		}
 		Task { [weak self, lifecycle = self.lifecycle] in
-			guard let self else {
-				lifecycle.end(lease)
-				return
-			}
+			defer { lifecycle.end(lease) }
+			guard let self else { return }
 			do {
 				for winePrefix in winePrefixes {
 					try await Self.clearCaches(winePrefix: winePrefix)
 				}
-				lifecycle.end(lease)
 				onStorageOverviewChanged?()
 				log.info("Shader and browser caches cleared")
 			} catch {
-				lifecycle.end(lease)
 				presentCacheFailure(error, id: operationID, region: region)
 			}
 		}
@@ -82,17 +78,13 @@ package final class StorageMaintenanceController {
 	package func clearPresetGalleryCache() {
 		guard let lease = lifecycle.begin(.maintaining(.clearingCache)) else { return }
 		Task { [weak self, lifecycle = self.lifecycle] in
-			guard let self else {
-				lifecycle.end(lease)
-				return
-			}
+			defer { lifecycle.end(lease) }
+			guard let self else { return }
 			do {
 				try await clearGalleryCache()
-				lifecycle.end(lease)
 				onStorageOverviewChanged?()
 				log.info("Preset gallery caches cleared")
 			} catch {
-				lifecycle.end(lease)
 				lifecycle.show(error)
 			}
 		}

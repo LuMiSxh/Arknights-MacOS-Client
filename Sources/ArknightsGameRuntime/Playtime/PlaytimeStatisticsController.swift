@@ -57,15 +57,12 @@ package final class PlaytimeStatisticsController {
 			}
 		}
 		snapshotConsumer = consumer
-		continuation.onTermination = { @Sendable [weak self] _ in
-			Task { @MainActor [weak self] in
-				self?.snapshotConsumer?.cancel()
-			}
-		}
 	}
 
-	deinit {
+	isolated deinit {
 		snapshotContinuation.finish()
+		snapshotConsumer?.cancel()
+		loadTask?.cancel()
 	}
 
 	/// Returns once the persisted statistics are merged into memory.
