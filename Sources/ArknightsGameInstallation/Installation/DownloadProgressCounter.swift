@@ -101,7 +101,7 @@ actor ProgressCounter {
 // One install-wide ticker keeps stall detection and the displayed rate fresh while bytes are
 // not arriving. Every in-flight file shares the counter's estimator, so one tick reporting the
 // most recently active file covers 1 to N concurrent downloads.
-enum InstallProgressMonitor {
+package enum InstallProgressMonitor {
 	// The monitor is cancelled and awaited on every exit path, so no progress callback outlives
 	// the call.
 	static func run<Result>(
@@ -120,7 +120,7 @@ enum InstallProgressMonitor {
 		}
 	}
 
-	static func run<Result>(
+	package static func run<Result>(
 		interval: Duration,
 		clock: any Clock<Duration> = ContinuousClock(),
 		emit: @escaping @Sendable () async -> Void,

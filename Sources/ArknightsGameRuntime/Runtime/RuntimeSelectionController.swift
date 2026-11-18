@@ -404,7 +404,8 @@ package final class RuntimeSelectionController {
 			return installOwner.owns(token)
 		} catch is CancellationError {
 			// A pause is not a failure: the partial archive stays and no failure is presented.
-			if pauseRequested { pausedLane = lane }
+			// Pausing before the first byte leaves nothing to resume, so the lane stays not installed.
+			if pauseRequested, hasPartialArchive(for: pin) { pausedLane = lane }
 			log?.info("Runtime install cancelled; lane=\(lane.rawValue) paused=\(pauseRequested)")
 			return false
 		} catch {
@@ -414,6 +415,20 @@ package final class RuntimeSelectionController {
 			}
 			present(.installFailure(error, lane: lane))
 			refresh()
+			return false
+		}
+	}
+
+	private func hasPartialArchive(for pin: PinnedRuntime) -> Bool {
+		let url = RuntimeInstaller.partialArchiveURL(for: pin, paths: paths)
+		do {
+			let size = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int64
+			return (size ?? 0) > 0
+		} catch let error as CocoaError where error.code == .fileNoSuchFile {
+			return false
+		} catch {
+			log?.error(
+				"Could not inspect the partial runtime archive: \(error.localizedDescription)")
 			return false
 		}
 	}

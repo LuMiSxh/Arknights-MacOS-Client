@@ -10,9 +10,7 @@ package struct BoundedHTTPDataLoader: Sendable {
 	package init(
 		configuration: URLSessionConfiguration,
 		maximumBufferedBytes: Int,
-		redirectValidator: @escaping @Sendable (URL) -> Bool = {
-			$0.scheme?.lowercased() == "https"
-		}
+		redirectValidator: @escaping @Sendable (URL) -> Bool = HTTPRedirectPolicy.httpsOnly
 	) {
 		self.redirectValidator = redirectValidator
 		self.session = HTTPChunkSession(
@@ -26,9 +24,7 @@ package struct BoundedHTTPDataLoader: Sendable {
 	package init(
 		session: URLSession = .shared,
 		maximumBufferedBytes: Int,
-		redirectValidator: @escaping @Sendable (URL) -> Bool = {
-			$0.scheme?.lowercased() == "https"
-		}
+		redirectValidator: @escaping @Sendable (URL) -> Bool = HTTPRedirectPolicy.httpsOnly
 	) {
 		self.init(
 			configuration: session.configuration,

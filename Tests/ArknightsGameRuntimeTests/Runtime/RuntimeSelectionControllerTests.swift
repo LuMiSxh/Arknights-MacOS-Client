@@ -104,11 +104,42 @@ struct RuntimeSelectionControllerTests {
 	}
 
 	@Test
+	func pausingBeforeTheFirstByteDoesNotReportAPausedDownload() async throws {
+		let temporary = try TemporaryDirectory("RuntimeSelectionEarlyPauseTests")
+		defer { temporary.remove() }
+		let paths = makePaths(temporary)
+		let started = Mutex(false)
+		let operation: RuntimeSelectionController.InstallOperation = { _, _ in
+			started.withLock { $0 = true }
+			let parked = AsyncStream<Void>(bufferingPolicy: .bufferingNewest(1)) { _ in }
+			for await _ in parked {}
+			throw CancellationError()
+		}
+		let controller = makeController(
+			paths: paths,
+			storage: temporary,
+			configuration: try configuration(),
+			access: access(macOS: 26),
+			installOperation: operation
+		)
+
+		let install = Task { await controller.install(lane: .x86) }
+		while !started.withLock({ $0 }) { await Task.yield() }
+		controller.pauseInstall()
+
+		#expect(await install.value == false)
+		#expect(controller.pausedLane == nil)
+		#expect(controller.failure == nil)
+		#expect(controller.state(for: .x86) == .notInstalled)
+	}
+
+	@Test
 	func pausedDownloadKeepsItsPartialFileIsNotAFailureAndResumes() async throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionPauseTests")
 		defer { temporary.remove() }
 		let paths = makePaths(temporary)
-		let partURL = paths.runtimeDownloadsDirectory.appending(path: "archive.part")
+		let partURL = RuntimeInstaller.partialArchiveURL(
+			for: try configuration().pinnedRuntime(for: .x86), paths: paths)
 		let finish = makeInstallOperation(paths: paths)
 		let calls = Mutex(0)
 		let writing = Mutex(false)

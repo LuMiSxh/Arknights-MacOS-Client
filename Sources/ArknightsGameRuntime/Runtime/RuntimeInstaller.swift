@@ -6,6 +6,7 @@ import ArknightsInfrastructure
 import CryptoKit
 import Darwin
 import Foundation
+import Synchronization
 
 /// Failures while downloading, verifying, extracting, and installing a pinned runtime.
 enum RuntimeInstallError: Error, Equatable, Sendable {
@@ -66,15 +67,18 @@ package struct RuntimeInstaller: Sendable {
 	let log: LauncherLog?
 	private let chunkSession: HTTPChunkSession
 	private let store: RuntimeStore
+	private let clock: any Clock<Duration>
 
 	package init(
 		paths: AppPaths,
 		selectionStore: RuntimeSelectionStore,
 		access: RuntimeAccess = RuntimeAccess(),
 		session: URLSession = .shared,
+		clock: any Clock<Duration> = ContinuousClock(),
 		log: LauncherLog? = nil
 	) {
 		self.paths = paths
+		self.clock = clock
 		self.access = access
 		self.log = log
 		chunkSession = HTTPChunkSession(
@@ -195,6 +199,11 @@ package struct RuntimeInstaller: Sendable {
 
 	// MARK: - Download
 
+	/// Where the installer keeps the resumable archive of `pin`.
+	package static func partialArchiveURL(for pin: PinnedRuntime, paths: AppPaths) -> URL {
+		paths.runtimeDownloadsDirectory(for: pin.lane).appending(path: "\(pin.sha256).part")
+	}
+
 	private func download(
 		_ pin: PinnedRuntime,
 		progress: @escaping ProgressHandler
@@ -205,7 +214,7 @@ package struct RuntimeInstaller: Sendable {
 		let downloadsDirectory = paths.runtimeDownloadsDirectory(for: pin.lane)
 		try FileManager.default.createDirectory(
 			at: downloadsDirectory, withIntermediateDirectories: true)
-		let archiveURL = downloadsDirectory.appending(path: "\(pin.sha256).part")
+		let archiveURL = Self.partialArchiveURL(for: pin, paths: paths)
 		let descriptor = Darwin.open(
 			archiveURL.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, S_IRUSR | S_IWUSR)
 		guard descriptor >= 0 else {
@@ -241,42 +250,45 @@ package struct RuntimeInstaller: Sendable {
 			request.setValue("bytes=\(existingBytes)-", forHTTPHeaderField: "Range")
 		}
 
-		let stream = chunkSession.stream(for: request)
+		let stream = chunkSession.stream(
+			for: request, redirectValidator: HTTPRedirectPolicy.httpsOnly)
 		defer { stream.cancel() }
-		var estimator = TransferRateEstimator()
+		let total = Int64(pin.sizeBytes)
+		let meter = RuntimeDownloadMeter(offset: existingBytes, clock: clock)
 		var offset = existingBytes
 		var receivedResponse = false
 		do {
-			for try await event in stream.events {
-				try Task.checkCancellation()
-				switch event {
-				case .response(let response):
-					try acceptResponse(response, offset: &offset, handle: handle)
-					receivedResponse = true
-				case .data(let data):
-					guard receivedResponse else {
-						throw RuntimeInstallError.downloadFailed("data arrived before a response")
+			// The ticker keeps the stall state fresh while no bytes arrive.
+			try await InstallProgressMonitor.run(
+				interval: AppConstants.Network.transferRateMonitorInterval,
+				clock: clock,
+				emit: { await progress(meter.progress(total: total)) },
+				operation: {
+					for try await event in stream.events {
+						try Task.checkCancellation()
+						switch event {
+						case .response(let response):
+							try acceptResponse(response, offset: &offset, handle: handle)
+							meter.reset(offset: offset)
+							receivedResponse = true
+						case .data(let data):
+							guard receivedResponse else {
+								throw RuntimeInstallError.downloadFailed(
+									"data arrived before a response")
+							}
+							let next = offset + Int64(data.count)
+							guard next <= total else {
+								throw RuntimeInstallError.sizeMismatch(
+									expected: pin.sizeBytes, actual: Int(next))
+							}
+							try handle.write(contentsOf: data)
+							stream.acknowledge(data.count)
+							offset = next
+							await progress(
+								meter.record(bytes: Int64(data.count), offset: next, total: total))
+						}
 					}
-					let next = offset + Int64(data.count)
-					guard next <= Int64(pin.sizeBytes) else {
-						throw RuntimeInstallError.sizeMismatch(
-							expected: pin.sizeBytes, actual: Int(next))
-					}
-					try handle.write(contentsOf: data)
-					stream.acknowledge(data.count)
-					offset = next
-					estimator.add(bytes: Int64(data.count))
-					let transfer = estimator.snapshot()
-					await progress(
-						RuntimeInstallProgress(
-							downloadedBytes: offset,
-							totalBytes: Int64(pin.sizeBytes),
-							phase: .downloading,
-							transferRateBytesPerSecond: transfer.bytesPerSecond,
-							isTransferStalled: transfer.isStalled
-						))
-				}
-			}
+				})
 		} catch let error as HTTPTransportError {
 			throw RuntimeInstallError.downloadFailed(String(describing: error))
 		}
@@ -448,5 +460,49 @@ package struct RuntimeInstaller: Sendable {
 		var status = stat()
 		guard lstat(url.path, &status) == 0 else { return false }
 		return status.st_mode & S_IFMT == S_IFREG
+	}
+}
+
+// Shares the byte count and rate estimate between the chunk loop and the stall ticker.
+private final class RuntimeDownloadMeter: Sendable {
+	private struct State {
+		var offset: Int64
+		var estimator: TransferRateEstimator
+	}
+
+	private let state: Mutex<State>
+
+	init(offset: Int64, clock: any Clock<Duration>) {
+		state = Mutex(State(offset: offset, estimator: TransferRateEstimator(clock: clock)))
+	}
+
+	func reset(offset: Int64) {
+		state.withLock {
+			$0.offset = offset
+			$0.estimator.reset()
+		}
+	}
+
+	func record(bytes: Int64, offset: Int64, total: Int64) -> RuntimeInstallProgress {
+		state.withLock {
+			$0.offset = offset
+			$0.estimator.add(bytes: bytes)
+			return Self.progress(&$0, total: total)
+		}
+	}
+
+	func progress(total: Int64) -> RuntimeInstallProgress {
+		state.withLock { Self.progress(&$0, total: total) }
+	}
+
+	private static func progress(_ state: inout State, total: Int64) -> RuntimeInstallProgress {
+		let transfer = state.estimator.snapshot()
+		return RuntimeInstallProgress(
+			downloadedBytes: state.offset,
+			totalBytes: total,
+			phase: .downloading,
+			transferRateBytesPerSecond: transfer.bytesPerSecond,
+			isTransferStalled: transfer.isStalled
+		)
 	}
 }

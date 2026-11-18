@@ -4,6 +4,7 @@ import ArknightsCore
 import ArknightsTestSupport
 import CryptoKit
 import Foundation
+import Synchronization
 import Testing
 
 @testable import ArknightsGameRuntime
@@ -134,14 +135,19 @@ private func makePaths(_ temporary: TemporaryDirectory) -> AppPaths {
 	)
 }
 
-private func makeInstaller(paths: AppPaths, route: StubURLProtocol.Route) -> RuntimeInstaller {
+private func makeInstaller(
+	paths: AppPaths,
+	route: StubURLProtocol.Route,
+	clock: any Clock<Duration> = ContinuousClock()
+) -> RuntimeInstaller {
 	RuntimeInstaller(
 		paths: paths,
 		selectionStore: RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile),
 		access: RuntimeAccess(
 			macOSVersion: OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)
 		),
-		session: route.session
+		session: route.session,
+		clock: clock
 	)
 }
 
@@ -250,6 +256,61 @@ struct RuntimeInstallerTests {
 
 		#expect(installed.version == "1.0.0")
 		#expect(route.requestCount == 1)
+	}
+
+	@Test
+	func aRedirectDowngradingToHTTPIsRejected() async throws {
+		let temporary = try TemporaryDirectory("RuntimeInstallerRedirect")
+		defer { temporary.remove() }
+		let archive = runtimeArchive()
+		let route = StubURLProtocol.Route()
+		route.redirectURL = URL(string: "http://download.test/runtime.tar")!
+		route.handler = { request in
+			(makeHTTPResponse(url: request.url!, status: 200), archive)
+		}
+		let installer = makeInstaller(paths: makePaths(temporary), route: route)
+
+		var failure: RuntimeInstallError?
+		do {
+			_ = try await installer.install(pin: makePin(archive: archive)) { _ in }
+		} catch {
+			failure = error as? RuntimeInstallError
+		}
+
+		guard case .downloadFailed(let detail) = failure else {
+			Issue.record("expected a download failure, got \(String(describing: failure))")
+			return
+		}
+		#expect(detail.contains("redirectRejected"))
+		#expect(route.requestCount == 1)
+	}
+
+	@Test
+	func aDownloadThatReceivesNothingReportsAStall() async throws {
+		let temporary = try TemporaryDirectory("RuntimeInstallerStall")
+		defer { temporary.remove() }
+		let archive = runtimeArchive()
+		let stalled = DispatchSemaphore(value: 0)
+		let route = StubURLProtocol.Route()
+		route.handler = { request in
+			// Holds the response until the ticker has reported the stall. The bound only
+			// prevents a hang when the stall is never reported.
+			_ = stalled.wait(timeout: .now() + .seconds(30))
+			return (makeHTTPResponse(url: request.url!, status: 200), archive)
+		}
+		// The recording clock advances by each requested sleep, so the ticker ages the download
+		// without real waiting.
+		let installer = makeInstaller(
+			paths: makePaths(temporary), route: route, clock: RecordingClock())
+
+		let sawStall = Mutex(false)
+		_ = try await installer.install(pin: makePin(archive: archive)) { progress in
+			guard progress.phase == .downloading, progress.isTransferStalled else { return }
+			sawStall.withLock { $0 = true }
+			stalled.signal()
+		}
+
+		#expect(sawStall.withLock { $0 })
 	}
 
 	@Test
