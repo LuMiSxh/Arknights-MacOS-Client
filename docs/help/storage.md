@@ -33,7 +33,7 @@ A custom installation location replaces only the game folder of that server. **S
 To open the app data folder, go to **Settings → Storage → Logs and data**. Choose **Show in Finder** in the **App Data Folder** row.
 
 > [!WARNING]
-> The game can see everything in its installation folder. For a custom location, use a folder with only the game.
+> The game can see everything in its installation folder. For a custom location, use a folder with only the game. **Uninstall Game…** in a custom folder removes only the files the launcher installed. Your other files stay. Files the game created later also stay.
 
 ## Logs
 
@@ -66,7 +66,7 @@ Try **Clear Caches** and **Rebuild…** before **Delete Environment…**.
 | **Delete Environment…** | Settings → Help → Danger zone     | The publisher's game environment: sign-ins and Windows settings | All game files and launcher settings       |
 | **Reset All Settings…** | Settings → Help → Danger zone     | Launcher preferences and launch options                         | Server, installation locations, game files |
 | **Reset Statistics…**   | Settings → Playtime               | Playtime totals                                                 | Everything else                            |
-| **Uninstall Game…**     | Settings → Installation           | The game folder of the selected server (moved to the Trash)     | Other servers, game environment, launcher  |
+| **Uninstall Game…**     | Settings → Installation           | The game files of the selected server (moved to the Trash)      | Other servers, game environment, launcher  |
 | **Remove Runtime…**     | Settings → Runtime                | The runtime you use (set it up again before you play)           | Game files, game environments, launcher    |
 
 ## Uninstall completely

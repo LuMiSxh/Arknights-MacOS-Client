@@ -15,11 +15,7 @@ extension InstallationController {
 		panel.allowsMultipleSelection = false
 		panel.directoryURL = installDirectory.deletingLastPathComponent()
 		if panel.runModal() == .OK, let selected = panel.url {
-			installDirectory =
-				selected.lastPathComponent == region.gameTag
-				? selected : selected.appending(path: region.gameTag, directoryHint: .isDirectory)
-			preferences.setInstallDirectory(installDirectory, for: region)
-			updateInstalledState()
+			assessInstallDirectory(selected)
 		}
 	}
 
@@ -58,9 +54,11 @@ extension InstallationController {
 		NSWorkspace.shared.activateFileViewerSelecting([installDirectory])
 	}
 
-	@concurrent
-	private static func trashDirectory(at directory: URL) async throws {
-		try FileManager.default.trashItem(at: directory, resultingItemURL: nil)
+	/// Only the launcher's default folder is wholly its own. Any other folder may hold the
+	/// user's files, so uninstalling there removes only what the launcher installed.
+	private var uninstallScope: UninstallScope {
+		installDirectory.standardizedFileURL == paths.gameInstall(for: region).standardizedFileURL
+			? .wholeFolder : .installedFilesOnly
 	}
 
 	package func uninstallGame() {
@@ -70,15 +68,17 @@ extension InstallationController {
 			return
 		}
 		let directory = installDirectory
+		let scope = uninstallScope
 		let operationID = UUID()
 		let requestedRegion = region
 		guard let lease = lifecycle.begin(.maintaining(.uninstalling)) else { return }
 		lifecycle.setStatus(.movingToTrash)
 		log.info("Game uninstall requested")
-		Task { [weak self, lifecycle = self.lifecycle] in
+		Task { [weak self, lifecycle = self.lifecycle, installer = self.installer] in
 			defer { lifecycle.end(lease) }
+			let outcome: UninstallOutcome
 			do {
-				try await Self.trashDirectory(at: directory)
+				outcome = try await installer.uninstall(from: directory, scope: scope)
 			} catch {
 				self?.presentInstallationFailure(
 					error,
@@ -89,6 +89,16 @@ extension InstallationController {
 				return
 			}
 			guard let self else { return }
+			if outcome == .installedFilesUnknown {
+				updateInstalledState()
+				presentInstallationFailure(
+					InstallerError.installedFilesUnknown(directory),
+					id: operationID,
+					operation: .uninstall,
+					region: requestedRegion
+				)
+				return
+			}
 			installPresence = .absent
 			setRegionInstalled(requestedRegion, false)
 			isGameUpdateAvailable = false

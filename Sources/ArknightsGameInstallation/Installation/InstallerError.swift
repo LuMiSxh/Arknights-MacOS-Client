@@ -16,6 +16,7 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 	case cannotCreateFile(URL)
 	case unsafeInstallerTemporaryFile(URL)
 	case installDirectoryInUse(URL)
+	case installedFilesUnknown(URL)
 	case missingConfiguration
 	case insufficientDiskSpace(required: Int64, available: Int64)
 
@@ -38,6 +39,8 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 			"The launcher could not safely write to the install folder. Choose another folder and try again."
 		case .installDirectoryInUse:
 			"Another launcher process is changing this install folder. Wait for it to finish and try again."
+		case .installedFilesUnknown:
+			"The launcher could not tell which files it installed, so it left the folder in place. Delete the game files from the folder yourself."
 		case .missingConfiguration:
 			"Game information has not loaded yet. Refresh the launcher and try again."
 		case .insufficientDiskSpace(let required, let available):
@@ -66,6 +69,8 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 			"The installer refused a non-regular or multiply linked temporary file: \(url.path)"
 		case .installDirectoryInUse(let url):
 			"Another launcher process holds the install lease for \(url.path)."
+		case .installedFilesUnknown(let url):
+			"No installed-file list was found, so uninstall left the folder in place: \(url.path)"
 		case .missingConfiguration: "The current game configuration has not been loaded yet."
 		case .insufficientDiskSpace:
 			errorDescription ?? "The operation could not be completed."

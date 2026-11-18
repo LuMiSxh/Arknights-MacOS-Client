@@ -18,8 +18,8 @@ extension InstallationController {
 			code: operation == .uninstall
 				? .localFileFailed : Self.supportCode(for: presentedError),
 			context: SupportContext(operation: operation, region: region.supportRegion),
-			canRepair: isInstalled && operation != .repair,
-			allowsRetry: !Self.isMissingConfiguration(error),
+			canRepair: isInstalled && operation != .repair && !Self.leavesFolderInPlace(error),
+			allowsRetry: !Self.isMissingConfiguration(error) && !Self.leavesFolderInPlace(error),
 			blocksGameLaunch: operation == .install || operation == .update
 				|| operation == .repair
 		)
@@ -68,6 +68,12 @@ extension InstallationController {
 		default:
 			nil
 		}
+	}
+
+	/// Repeating the uninstall or repairing cannot help; the user must delete the files.
+	private static func leavesFolderInPlace(_ error: any Error) -> Bool {
+		if case InstallerError.installedFilesUnknown = error { return true }
+		return false
 	}
 
 	private static func isMissingConfiguration(_ error: any Error) -> Bool {

@@ -104,7 +104,7 @@ The first start is slower. The window can stay blank for up to one minute the fi
 
 - **Add a server:** Select it in **Settings → Installation** and start its download.
 - **Use existing files:** Choose **Settings → Installation → Location → Change… → Locate Existing Installation…**. Select the game folder. If it shows **Not installed**, run **Repair**.
-- **Use another location:** Choose **Choose New Location…** before the download. Use a folder that contains only the game. The game can see its contents.
+- **Use another location:** Choose **Choose New Location…** before the download. Use a folder that contains only the game. The game can see its contents. The launcher asks before it uses a folder with other files. It refuses a folder that overlaps another server. **Uninstall Game…** removes only the files the launcher installed and leaves your other files in the folder.
 
 ## Update the launcher
 

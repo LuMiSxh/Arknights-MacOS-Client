@@ -111,6 +111,13 @@ One install-wide monitor (`InstallProgressMonitor`) reports transfer rate and st
 it and waits for it before it returns. Only the HUD progress leaf, `HUDProgressSurface`, reads
 per-tick progress.
 
+`InstallProgressMonitor`, `TransferRateEstimator`, and `ProgressEmissionGate` live in
+`ArknightsInfrastructure/Progress`, and `ArknightsCore` supplies their default limits. The same
+target holds the transfer building blocks that `GameInstaller` and `RuntimeInstaller` share:
+`PartialDownloadFile` (no-follow open, regular file, one link), `HTTPRangeResponse` (200 versus 206
+classification), and `BoundedByteCount` (checked size arithmetic). Each installer keeps its own
+download loop and verification policy.
+
 ## Manifest and path safety
 
 `GameInstaller` validates the complete manifest before downloads begin. A path can be relative or have
@@ -253,6 +260,21 @@ xcrun xctrace record --template 'os_signpost' --output installer.trace --time-li
 ```
 
 Open `installer.trace` in Instruments. Filter by the subsystem to show installer intervals.
+
+## Uninstall
+
+`GameInstaller.uninstall(from:scope:)` runs under the install lease. The default `Games/<server>` folder
+is launcher-owned, so the whole folder goes to the Trash.
+
+Any other folder may hold user files. The uninstaller then validates every path in the installed state
+with the manifest path rules and skips links and non-regular files. It moves the listed files into one
+`Arknights Game Files` folder and sends that folder to the Trash. A failure moves the files back.
+It then deletes the installed state, the installer working folder, and `.part` files, and prunes folders
+that became empty. It removes the install folder only when it ends up empty.
+
+Without an installed-file list, it removes only the installed state and the installer working folder.
+It leaves `.part` files, which only the list identifies. It returns `installedFilesUnknown` while the
+folder remains, and the controller reports that the folder stays without Retry or Repair.
 
 ## Failure handling
 

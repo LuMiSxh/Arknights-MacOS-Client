@@ -65,7 +65,6 @@ extension InstallationController {
 		}
 		onMetadataRefreshCancellationRequested?()
 		lifecycle.state.refresh = .idle
-		clearCompletionFeedback()
 		progress = nil
 		progressSequence = 0
 		guard
@@ -121,7 +120,7 @@ extension InstallationController {
 				setRegionInstalled(requestedRegion, true)
 				isGameUpdateAvailable = false
 				lifecycle.setStatus(.ready)
-				publishCompletionFeedback(for: installationID, region: requestedRegion)
+
 				log.info(
 					"Installation completed; files=\(result.downloadedFiles); bytes=\(result.downloadedBytes)"
 				)

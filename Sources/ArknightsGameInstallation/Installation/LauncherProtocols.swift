@@ -25,6 +25,11 @@ package protocol GameInstalling: Sendable {
 		verifyAllExistingFiles: Bool,
 		progress: @escaping @Sendable (DownloadProgress) async -> Void
 	) async throws -> InstallResult
+
+	func uninstall(
+		from installDirectory: URL, scope: UninstallScope
+	) async throws
+		-> UninstallOutcome
 }
 
 extension LauncherAPI: LauncherAPIProviding {}

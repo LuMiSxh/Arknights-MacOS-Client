@@ -93,6 +93,13 @@ actor ControllableInstaller: GameInstalling {
 		[(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
 	private var installationResponse: CheckedContinuation<InstallResult, Error>?
 	private var progress: (@Sendable (DownloadProgress) async -> Void)?
+	func uninstall(
+		from installDirectory: URL, scope: UninstallScope
+	) async throws
+		-> UninstallOutcome
+	{
+		.removed
+	}
 	func install(
 		configuration: GameConfiguration,
 		region: GameRegion,

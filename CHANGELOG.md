@@ -57,6 +57,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Preset gallery images, preset catalogs, and launcher artwork now share one cache policy; the least recently used files are removed first.
 - Theme accents and Home brightness scores are now cached on disk and rebuild once after updating.
 - Rebuilt the website in the launcher's design.
+- Home shows **Runtime setup required** when the game is installed but the selected runtime is missing. The primary action is **Set Up Runtime**.
+- The Settings rail strip shows the runtime download while the runtime installs.
+- Removed the **Installation complete** message after a game install. Home moves straight to the next state.
+- **Choose New Location…** installs the game directly into the folder you pick, with no `Arknights_EN` subfolder. Existing installs keep their folder.
+- The launcher refuses a folder that overlaps another server or holds launcher data. It asks before using a folder with other files.
+- **Uninstall Game…** in a folder you chose removes only the files the launcher installed and keeps your other files. The default folder still moves to the Trash as a whole.
 
 ### Fixed
 

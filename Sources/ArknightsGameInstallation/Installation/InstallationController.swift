@@ -13,8 +13,9 @@ package final class InstallationController {
 
 	package var region: GameRegion
 	package var installDirectory: URL
+	/// A folder the user picked that the launcher refuses or asks about before using.
+	package private(set) var pendingInstallDirectory: PendingInstallDirectory?
 	package var progress: DownloadProgress?
-	package private(set) var completionFeedback: InstallationCompletionFeedback?
 	package private(set) var installedRegions: [GameRegion] = [] {
 		didSet {
 			if installedRegions != oldValue { onInstalledRegionsChanged?() }
@@ -94,7 +95,7 @@ package final class InstallationController {
 		guard newRegion != region, lifecycle.activity == .idle else { return false }
 
 		cancelInstalledStateRefresh()
-		completionFeedback = nil
+		pendingInstallDirectory = nil
 		lifecycle.clearFailure()
 		region = newRegion
 		preferences.setSelectedRegion(newRegion)
@@ -125,23 +126,28 @@ package final class InstallationController {
 		isGameUpdateAvailable = installedVersion.map { $0 != latest } ?? true
 	}
 
+	/// The install location of every server, including the default for unset servers.
+	func configuredInstallDirectories() -> [GameRegion: URL] {
+		Dictionary(
+			uniqueKeysWithValues: GameRegion.allCases.map {
+				candidate in
+				(
+					candidate,
+					preferences.installDirectory(
+						for: candidate,
+						default: paths.gameInstall(for: candidate)
+					)
+				)
+			}
+		)
+	}
+
 	@discardableResult
 	package func updateInstalledState() -> Task<Void, Never> {
 		let request = InstallationStateRequest(
 			selectedRegion: region,
 			selectedDirectory: installDirectory,
-			regionDirectories: Dictionary(
-				uniqueKeysWithValues: GameRegion.allCases.map {
-					candidate in
-					(
-						candidate,
-						preferences.installDirectory(
-							for: candidate,
-							default: paths.gameInstall(for: candidate)
-						)
-					)
-				}
-			)
+			regionDirectories: configuredInstallDirectories()
 		)
 		let stateLoader = self.stateLoader
 		return stateRefreshSlot.replace { [weak self, log] token in
@@ -197,23 +203,43 @@ package final class InstallationController {
 		await installationTask?.value
 	}
 
-	package func consumeCompletionFeedback(
-		for region: GameRegion
-	)
-		-> InstallationCompletionFeedback?
-	{
-		guard let completionFeedback, completionFeedback.region == region else { return nil }
-		self.completionFeedback = nil
-		return completionFeedback
+	/// Uses a refused or unconfirmed folder only after the user confirms it.
+	package func confirmPendingInstallDirectory() {
+		guard let pending = pendingInstallDirectory, !pending.issue.isRefusal else { return }
+		pendingInstallDirectory = nil
+		guard lifecycle.activity == .idle else { return }
+		applyInstallDirectory(pending.url)
 	}
 
-	func clearCompletionFeedback() {
-		completionFeedback = nil
+	package func dismissPendingInstallDirectory() {
+		pendingInstallDirectory = nil
 	}
 
-	func publishCompletionFeedback(for operationID: UUID, region: GameRegion) {
-		guard self.region == region else { return }
-		completionFeedback = InstallationCompletionFeedback(id: operationID, region: region)
+	func assessInstallDirectory(_ selected: URL) {
+		do {
+			let contents = try InstallDirectoryPolicy.inspect(selected)
+			let issue = InstallDirectoryPolicy.assess(
+				candidate: selected,
+				region: region,
+				configuredDirectories: configuredInstallDirectories(),
+				launcherDataRoot: paths.applicationSupportRoot,
+				homeDirectory: FileManager.default.homeDirectoryForCurrentUser,
+				contents: contents
+			)
+			if let issue {
+				pendingInstallDirectory = PendingInstallDirectory(url: selected, issue: issue)
+			} else {
+				applyInstallDirectory(selected)
+			}
+		} catch {
+			log.error("Could not read the chosen install folder: \(error.localizedDescription)")
+		}
+	}
+
+	private func applyInstallDirectory(_ url: URL) {
+		installDirectory = url
+		preferences.setInstallDirectory(url, for: region)
+		updateInstalledState()
 	}
 
 	private func ownsStateRefresh(
