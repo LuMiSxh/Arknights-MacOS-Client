@@ -104,7 +104,7 @@ number. The compiler rejects a cycle.
 | 1   | `ArknightsInfrastructure`   | Feature-independent I/O and Discord IPC (`FileSystem`, `Network`, `Presence`)                                                                  | none                   | none               |
 | 2   | `ArknightsCore`             | Cross-feature lifecycle state (`Core`), shared domain, configuration, persistence, diagnostics, UI contracts (`Shared`), and SwiftPM resources | 1                      | none               |
 | 3   | `ArknightsCustomization`    | Artwork, icons, preset gallery                                                                                                                 | 1, 2                   | none               |
-| 4   | `ArknightsGameInstallation` | Installation, manifests, game-file compatibility components                                                                                    | 1, 2                   | `CCommonCrypto`    |
+| 4   | `ArknightsGameInstallation` | Installation, manifests, game-file compatibility components                                                                                    | 1, 2                   | none               |
 | 5   | `ArknightsGameRuntime`      | Wine runtime, Intel translation, playtime, storage                                                                                             | 1, 2, 4                | `Czlib`            |
 | 6   | `ArknightsPresence`         | Discord Rich Presence state, local IPC transport adapter                                                                                       | 1, 2                   | none               |
 | 7   | `ArknightsAudio`            | Background playback, Now Playing, settings, HUD controls                                                                                       | 2, 3                   | `YouTubePlayerKit` |
@@ -159,8 +159,10 @@ and resource layout), and `runtime.json` (runtime layout) through `scripts/lib/p
 
 ## Platform boundary
 
-The native side runs on Apple Silicon and macOS 15 or newer. The packaged Wine runtime is x86-64.
-Before launch, the launcher verifies that macOS can run an Intel process through Rosetta 2.
+The native side runs on Apple Silicon and macOS 15 or newer. The runtime ships as two downloadable
+lanes: x86_64, which runs through Rosetta 2, and native ARM64, which needs macOS 26 or newer.
+Before launch on the x86_64 lane, the launcher verifies that macOS can run an Intel process through
+Rosetta 2.
 
 The Wine prefix is not a macOS security sandbox. See
 [Directory and drive contract](wine-prefix.md#directory-and-drive-contract) and

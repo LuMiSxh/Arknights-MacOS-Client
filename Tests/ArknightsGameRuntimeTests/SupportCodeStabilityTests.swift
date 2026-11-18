@@ -9,10 +9,6 @@ import Testing
 @testable import ArknightsGameRuntime
 
 // Edit only this table when a `LauncherError` case changes. Each row pins the
-// support code, `errorDescription`, and `diagnosticDescription` of one case.
-// Edit only this table when a `LauncherError` case changes. Each row pins the
-// support code of one case. Message text is copy and is not pinned here.
-// Edit only this table when a `LauncherError` case changes. Each row pins the
 // support code of one case. Message text is copy and is not pinned here.
 private let supportCodeStabilityCases: [(any LauncherDiagnosticError & Sendable, SupportCode?)] = [
 	(CaptureError.permissionDenied, .screenCapturePermissionDenied),

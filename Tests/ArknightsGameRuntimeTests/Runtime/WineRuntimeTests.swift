@@ -164,10 +164,6 @@ func runtimeProvidesOnlyPrivateUnixUserDirectoriesAndRejectsInvalidConfiguration
 	}
 }
 
-@Suite
-struct WineRuntimeDiscoveryTests {
-}
-
 private struct DXMTFixture {
 	let root: URL
 	let payload: URL

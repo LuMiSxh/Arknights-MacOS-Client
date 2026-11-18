@@ -31,7 +31,7 @@ Each entry in the client index has these fields.
 | `spdx`                      | An SPDX expression. Use `NOASSERTION` when the license is not known.                                                                                     |
 | `files`                     | License texts in `docs/legal/licenses/`. A project-authored resource can have none.                                                                      |
 | `status`                    | `verified` or `unverified`. A `verified` entry needs `basis`. An `unverified` entry can list `candidates`.                                               |
-| `scope`                     | `app` (default), `website`, or `runtime-fallback`.                                                                                                       |
+| `scope`                     | `app` (default), `website`, or `runtime-reference`.                                                                                                       |
 | `ecosystem`, `package`      | `swiftpm` or `npm`, and the package identity. The check compares the version with the lock data.                                                         |
 | `paths`                     | Resource file names in `Sources/ArknightsCore/Resources/`.                                                                                               |
 | `runtimeComponent`          | A key of `components` in `runtime.json`. The script derives `version` and `source` from it.                                                              |
@@ -40,7 +40,7 @@ Each entry in the client index has these fields.
 
 The key `textOrigins` records where each license text came from. Take a text from the package checkout or `node_modules` first. If neither has it, copy the canonical SPDX text from the `spdx/license-list-data` repository and record the tag. Never mark a license `verified` without a text or a project record that proves it.
 
-The scope `runtime-fallback` lists the components of the pinned runtime. The script uses these entries only when no prepared runtime supplies a `Licenses/index.json`. Keep them equal to the runtime inventory of the pinned release. A grouped entry can name several libraries in `note`.
+The scope `runtime-reference` lists the components of the pinned runtime. The script uses these entries only when no prepared runtime supplies a `Licenses/index.json`. Keep them equal to the runtime inventory of the pinned release. A grouped entry can name several libraries in `note`.
 
 ## Add a dependency
 
@@ -69,13 +69,13 @@ For a new resource file, add its name to `paths` of an entry. Mark the entry `un
 
 `docs/legal/license-texts.md` holds the full text of every license in the client index. Each component has its own heading. A text that two components share appears once. The website publishes the page at `/legal/license-texts/`.
 
-Without a prepared runtime, the page lists the `runtime-fallback` entries. To merge the runtime index into the page, run `uv run --locked scripts/licenses.py --runtime .build/runtime`. Then commit the result. Run `--check` with the same `--runtime` option to find a stale page. The release workflow runs this check in strict mode after it downloads the runtime.
+Without a prepared runtime, the page lists the `runtime-reference` entries. To merge the runtime index into the page, run `uv run --locked scripts/licenses.py --runtime .build/runtime`. Then commit the result. Run `--check` with the same `--runtime` option to find a stale page. The release workflow runs this check in strict mode after it downloads the runtime.
 
 ## Build the app
 
 `scripts/build_app.py` calls `stage_bundle` from `scripts/lib/licenses.py`. It writes `Contents/Resources/ThirdPartyNotices.deflate`, a raw-deflate file of one Markdown document. The document has a table of the app components and the merged runtime components. Each distinct license text appears once. The website components are not in the file. The app decodes the file with the Compression framework when the user opens **Third-Party Notices** in **Settings → About**.
 
-The repository does not keep a copy of the file. A runtime archive before 0.7.0 has no license files. The build then warns and lists the `runtime-fallback` entries. [Bundled resources](architecture/README.md#bundled-resources) states which other files the bundle keeps.
+The repository does not keep a copy of the file. A runtime archive before 0.7.0 has no license files. The build then warns and lists the `runtime-reference` entries. [Bundled resources](architecture/README.md#bundled-resources) states which other files the bundle keeps.
 
 ## Generated blocks
 

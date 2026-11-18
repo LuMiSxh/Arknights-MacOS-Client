@@ -17,7 +17,6 @@ struct GameModeRequestsTests {
 	}
 
 	/// A hung `gamepolicyctl` must not hold up quit: the blocking request terminates it and returns.
-	/// A hung `gamepolicyctl` must not hold up quit: the blocking request terminates it and returns.
 	@Test(.timeLimit(.minutes(1)))
 	func quitTerminatesAHungGamePolicyControl() throws {
 		let directory = try TemporaryDirectory("game-mode-quit")

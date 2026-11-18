@@ -102,7 +102,6 @@ The launcher must feel like a current macOS app. It must feel like an Arknights 
   - Accent: `accentFill` for solid fills, `accentInk` for text and icons on a surface, `onAccent` for text on `accentFill`.
   - Danger: `danger` for solid fills, `dangerInk` for text, `dangerGlassTint` for glass.
 - Do not write a color literal or `Color(red:` in a view.
-- `LauncherPalette` is being retired. Do not add members to it. Use `LauncherTheme` roles instead.
 
 ### Accent
 

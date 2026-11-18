@@ -24,10 +24,6 @@ let package = Package(
 	],
 	targets: [
 		.systemLibrary(
-			name: "CCommonCrypto",
-			path: "RuntimeSupport/CommonCrypto"
-		),
-		.systemLibrary(
 			name: "Czlib",
 			path: "RuntimeSupport/zlib"
 		),
@@ -51,7 +47,6 @@ let package = Package(
 			dependencies: [
 				"ArknightsInfrastructure",
 				"ArknightsCore",
-				"CCommonCrypto",
 			],
 			path: "Sources/ArknightsGameInstallation"
 		),
