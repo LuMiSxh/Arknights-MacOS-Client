@@ -182,7 +182,9 @@ package struct StorageOverviewPage: View {
 	/// Keeps the row's geometry stable while a measurement is pending instead of showing text.
 	@ViewBuilder
 	private func sizeView(for usage: StorageUsage) -> some View {
-		if usage.byteCount == nil, controller.isMeasuring {
+		if usage.byteCount == nil, controller.isMeasuring,
+			!controller.hasMeasuredValue(for: usage.location.category)
+		{
 			SkeletonValue(width: 60, height: 16)
 		} else {
 			Text(sizeText(for: usage))

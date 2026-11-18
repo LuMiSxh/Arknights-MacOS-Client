@@ -16,11 +16,22 @@ struct GameDisplaySettingsPanel: View {
 	let metalFXSpatialUpscalingSupported: Bool?
 	@State private var screens = GameScreenMonitor()
 	@Environment(\.simulatedGameScreens) private var simulatedGameScreens
-	/// Set by the Custom… choice. Shows the width and height fields for the stored size.
-	@State private var showsCustomSize = false
+	/// Set by the Custom… choice so its fields stay visible even when the size matches a preset.
+	@State private var pickedCustomSize = false
 
 	private var options: GameLaunchOptions { settings.launchOptions }
 	private var isSizeLocked: Bool { options.usesGameSettings || isLocked }
+	/// A saved custom size reopens with its fields, so the Custom… state derives from the size.
+	private var showsCustomSize: Bool {
+		pickedCustomSize || isCustomWindowSize(options.windowSize, on: screen)
+	}
+	/// Reports only the explicit pick; the row reads the derived visibility through the getter.
+	private var showsCustomSizeBinding: Binding<Bool> {
+		Binding(
+			get: { showsCustomSize },
+			set: { pickedCustomSize = $0 }
+		)
+	}
 	/// The screen the game opens on, from the connected displays.
 	private var resolution: GameScreenResolution? { displayList.resolve(options.display) }
 	private var screen: GameScreenMetrics? { resolution?.metrics }
@@ -86,7 +97,7 @@ struct GameDisplaySettingsPanel: View {
 					settings: settings,
 					screen: screen,
 					isDisabled: isSizeLocked,
-					showsCustomSize: $showsCustomSize
+					showsCustomSize: showsCustomSizeBinding
 				)
 				if showsCustomSize {
 					SettingsHairline()

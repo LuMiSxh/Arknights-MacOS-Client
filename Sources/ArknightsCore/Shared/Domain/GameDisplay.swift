@@ -96,6 +96,8 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 	}
 
 	package var displayName: String { "\(width) × \(height)" }
+	/// Whether this size is one of the fixed window presets, not a custom size.
+	package var isWindowPreset: Bool { Self.windowPresets.contains(self) }
 	/// The common marketing name for this exact resolution, or nil when it has none.
 	package var commonName: String? {
 		switch (width, height) {

@@ -216,6 +216,7 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	@Environment(\.accessibilityShowBorders) private var showBorders
 	@Environment(\.isEnabled) private var isEnabled
 	@Environment(\.colorScheme) private var colorScheme
+	@Environment(\.self) private var environment
 
 	@ViewBuilder
 	func body(content: Content) -> some View {
@@ -323,7 +324,7 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	// the darker neutral backplate. The chroma test also avoids turning a black tint blue.
 	private var macOS27ColorTint: Color? {
 		guard let tint else { return nil }
-		let resolved = tint.resolve(in: EnvironmentValues())
+		let resolved = tint.resolve(in: environment)
 		let chroma =
 			max(resolved.red, resolved.green, resolved.blue)
 			- min(resolved.red, resolved.green, resolved.blue)
@@ -341,7 +342,7 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 
 	private var macOS27BorderTint: Color {
 		guard let tint = effectiveBorderTint else { return .white }
-		let resolved = tint.resolve(in: EnvironmentValues())
+		let resolved = tint.resolve(in: environment)
 		let red = Double(resolved.red)
 		let green = Double(resolved.green)
 		let blue = Double(resolved.blue)

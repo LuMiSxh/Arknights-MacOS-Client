@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsGameInstallation
+import ArknightsGameRuntime
 import SwiftUI
 
 enum SettingsOperationStripPresentation {
@@ -68,27 +69,36 @@ struct SettingsOperationStrip: View {
 	@Environment(\.launcherTheme) private var theme
 	let lifecycle: LauncherLifecycleStore
 	let installation: InstallationController
+	let runtimeSelection: RuntimeSelectionController
 
 	var body: some View {
 		let status = lifecycle.state.presentation.status
 		let progress = installation.progress
-		if let text = SettingsOperationStripPresentation.text(status: status, progress: progress)
+		let gameText =
+			SettingsOperationStripPresentation.text(status: status, progress: progress)
 			?? lifecycle.activity.lockReason
-		{
-			Text(text)
-				.font(.caption)
-				.foregroundStyle(theme.textSecondary)
-				.lineLimit(1)
-				.truncationMode(.tail)
-				.frame(maxWidth: .infinity, alignment: .leading)
-				.accessibilityElement(children: .ignore)
-				.accessibilityLabel(
-					Text(SettingsOperationStripPresentation.accessibilityLabel(for: status) ?? text)
-				)
-				.accessibilityValue(
-					Text(
-						SettingsOperationStripPresentation.accessibilityValue(
-							status: status, progress: progress)))
+		// A runtime install takes no lifecycle lease, so it needs its own branch.
+		if runtimeSelection.isInstalling {
+			line(text: RuntimeInstallPresentation.title(for: runtimeSelection.installProgress))
+		} else if let text = gameText {
+			line(
+				text: text,
+				label: SettingsOperationStripPresentation.accessibilityLabel(for: status) ?? text,
+				value: SettingsOperationStripPresentation.accessibilityValue(
+					status: status, progress: progress)
+			)
 		}
+	}
+
+	private func line(text: String, label: String? = nil, value: String = "") -> some View {
+		Text(text)
+			.font(.caption)
+			.foregroundStyle(theme.textSecondary)
+			.lineLimit(1)
+			.truncationMode(.tail)
+			.frame(maxWidth: .infinity, alignment: .leading)
+			.accessibilityElement(children: .ignore)
+			.accessibilityLabel(Text(label ?? text))
+			.accessibilityValue(Text(value))
 	}
 }

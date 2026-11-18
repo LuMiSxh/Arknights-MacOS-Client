@@ -53,8 +53,6 @@ package enum LauncherMotion {
 		case page
 		case progress
 		case backdrop
-		case ripple
-		case settle
 		case disclosure
 
 		package var animation: Animation {
@@ -71,8 +69,6 @@ package enum LauncherMotion {
 			case .page: Role.present.animation()
 			case .progress: Role.state.animation()
 			case .backdrop: Role.present.animation()
-			case .ripple: .easeOut(duration: 0.9)
-			case .settle: Role.dismiss.animation()
 			case .disclosure: Role.morph.animation()
 			}
 		}
@@ -81,7 +77,6 @@ package enum LauncherMotion {
 	package enum Cycle {
 		/// Period in seconds of the halo pulse and the indeterminate pulse.
 		static let pulse: TimeInterval = 3.2
-		package static let completionFeedback: Duration = .milliseconds(400)
 		/// Progress sweep phase durations in seconds: fade in, travel, fade out, then pause.
 		static let progressSweepFadeIn = 0.12
 		static let progressSweepTravel = 1.40

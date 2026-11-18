@@ -3,6 +3,12 @@
 import ArknightsCore
 import SwiftUI
 
+/// A stored size is custom when it matches neither a preset nor a screen-relative choice.
+func isCustomWindowSize(_ size: GameDisplaySize, on screen: GameScreenMetrics?) -> Bool {
+	guard !size.isWindowPreset else { return false }
+	return screen.flatMap { GameWindowSizeChoice.matching(size, on: $0) } == nil
+}
+
 // Windowed sizes are macOS points; the launcher converts them into the game's pixel resolution.
 /// Width and height fields for a custom window size, plus the entry to the measuring window.
 struct CustomWindowSizeRow: View {

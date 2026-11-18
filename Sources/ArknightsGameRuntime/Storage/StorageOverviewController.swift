@@ -11,6 +11,9 @@ import Observation
 package final class StorageOverviewController {
 	private(set) var usages: [StorageUsage]
 	private(set) var isMeasuring = false
+	/// Categories with a result from the cache or a finished measurement. A missing size for one
+	/// of these rows means "None", not a measurement that has not returned yet.
+	private(set) var measuredCategoryIDs: Set<String> = []
 
 	let lifecycle: LauncherLifecycleStore
 	private let paths: AppPaths
@@ -54,6 +57,7 @@ package final class StorageOverviewController {
 			region: regionProvider()
 		)
 		usages = displayedUsages(for: context)
+		measuredCategoryIDs = cachedCategoryIDs(for: context)
 		displayedContext = context
 	}
 
@@ -88,6 +92,7 @@ package final class StorageOverviewController {
 			measurementSlot.invalidate()
 			isMeasuring = false
 			usages = displayedUsages(for: context)
+			measuredCategoryIDs = cachedCategoryIDs(for: context)
 			displayedContext = context
 		}
 		if !force {
@@ -119,6 +124,7 @@ package final class StorageOverviewController {
 		for context: StorageOverviewContext
 	) {
 		isMeasuring = false
+		measuredCategoryIDs = Set(measured.map(\.id))
 		lastMeasuredContext = context
 		lastMeasuredAt = now()
 		// Skip the publish when nothing changed, so Observation does not redraw the page.
@@ -150,6 +156,13 @@ package final class StorageOverviewController {
 		}
 	}
 
+	/// The categories the stored cache holds a result for.
+	private func cachedCategoryIDs(for context: StorageOverviewContext) -> Set<String> {
+		let key = StorageOverviewCacheKey(context: context)
+		let cached = cachedEntries.first { $0.key == key }?.usages ?? []
+		return Set(cached.map(\.categoryID))
+	}
+
 	/// Writes are chained so an older snapshot cannot land after a newer one.
 	private func persistCachedEntries(_ entries: [StorageOverviewCacheEntry]) {
 		let previousWrite = pendingCacheWrite
@@ -171,5 +184,10 @@ package final class StorageOverviewController {
 
 	func usage(for category: StorageCategory) -> StorageUsage? {
 		usages.first { $0.location.category == category }
+	}
+
+	/// Whether `category` has a result yet. Rows without one show the calculating placeholder.
+	func hasMeasuredValue(for category: StorageCategory) -> Bool {
+		measuredCategoryIDs.contains(category.id)
 	}
 }

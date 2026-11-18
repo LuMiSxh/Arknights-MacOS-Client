@@ -15,7 +15,7 @@ Sources/ArknightsCore/Shared/UI/Components/ExpandableHUDPill.swift:raw-color:1
 # Preset gallery applying state: white text on a fixed dark scrim in both appearances.
 Sources/ArknightsCustomization/Presets/UI/PresetGalleryGrids.swift:raw-white-foreground:1
 # LauncherMotion defines the curves, so its spring and ease literals are the motion source.
-Sources/ArknightsCore/Shared/UI/LauncherMotion.swift:raw-animation:10
+Sources/ArknightsCore/Shared/UI/LauncherMotion.swift:raw-animation:9
 # Artwork accent: an HSB color computed from wallpaper pixels, not a design literal.
 Sources/ArknightsCustomization/Artwork/WallpaperColorExtractor.swift:raw-hue:1
 

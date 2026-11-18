@@ -9,8 +9,6 @@ struct LauncherActivityStatusView: View {
 	let lifecycle: LauncherLifecycleStore
 	let installation: InstallationController
 	let runtimeSelection: RuntimeSelectionController
-	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@State private var completionFeedback: InstallationCompletionFeedback?
 
 	var body: some View {
 		Group {
@@ -25,14 +23,12 @@ struct LauncherActivityStatusView: View {
 				case .outdated = runtimeSelection.selectedLaneState
 			{
 				PlainStatusText(title: "Runtime update required")
-			} else if let completionFeedback, showsCompletionFeedback {
-				HStack(spacing: LauncherTokens.Spacing.control) {
-					LauncherCompletionFeedbackView(feedbackID: completionFeedback.id)
-					Text("Installation complete")
-				}
-				.font(LauncherTokens.Typography.statusTitle)
-				.accessibilityElement(children: .combine)
-				.accessibilityLabel(Text("Installation complete"))
+			} else if lifecycle.activity == .idle, !installation.isDownloading,
+				installation.isInstalled, !installation.isGameUpdateAvailable,
+				!runtimeSelection.isSelectedLaneInstalled,
+				lifecycle.state.presentation.failure == nil
+			{
+				PlainStatusText(title: "Runtime setup required")
 			} else if showsDownloadLayout {
 				DownloadStatusLabel(
 					lifecycle: lifecycle,
@@ -43,54 +39,6 @@ struct LauncherActivityStatusView: View {
 				PlainStatusText(title: statusTitle)
 			}
 		}
-		.onAppear(perform: consumeCompletionFeedback)
-		.onChange(of: installation.completionFeedback?.id) { _, _ in
-			consumeCompletionFeedback()
-		}
-		.onChange(of: lifecycle.state.presentation.failure?.id) { _, failureID in
-			if failureID != nil { completionFeedback = nil }
-		}
-		.onChange(of: lifecycle.activity) { _, activity in
-			if activity != .idle { completionFeedback = nil }
-		}
-		.onChange(of: installation.region) { _, region in
-			if completionFeedback?.region != region { completionFeedback = nil }
-		}
-		.task(id: completionFeedback?.id) {
-			guard let displayedFeedback = completionFeedback else { return }
-			if reduceMotion {
-				completionFeedback = nil
-				return
-			}
-			do {
-				try await Task.sleep(for: LauncherMotion.Cycle.completionFeedback)
-			} catch {
-				return
-			}
-			guard !Task.isCancelled,
-				completionFeedback == displayedFeedback,
-				displayedFeedback.region == installation.region,
-				lifecycle.activity == .idle,
-				lifecycle.state.presentation.failure == nil
-			else {
-				completionFeedback = nil
-				return
-			}
-			completionFeedback = nil
-			consumeCompletionFeedback()
-		}
-	}
-
-	private var showsCompletionFeedback: Bool {
-		guard let completionFeedback else { return false }
-		return completionFeedback.region == installation.region
-			&& lifecycle.activity == .idle
-			&& lifecycle.state.presentation.failure == nil
-	}
-
-	private func consumeCompletionFeedback() {
-		guard completionFeedback == nil else { return }
-		completionFeedback = installation.consumeCompletionFeedback(for: installation.region)
 	}
 
 	private var statusTitle: String {

@@ -72,6 +72,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 	@Environment(\.colorSchemeContrast) private var contrast
 	@Environment(\.controlSurfaceScope) private var controlSurfaceScope
 	@Environment(\.launcherTheme) private var theme
+	@Environment(\.self) private var environment
 	@State private var isHovering = false
 
 	private var isActive: Bool { environmentIsEnabled && !isDisabled }
@@ -133,7 +134,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 	}
 
 	private var chromatic: Bool {
-		let resolved = tint.resolve(in: EnvironmentValues())
+		let resolved = tint.resolve(in: environment)
 		return max(resolved.red, resolved.green, resolved.blue)
 			- min(resolved.red, resolved.green, resolved.blue) > 0.08
 	}

@@ -87,7 +87,9 @@ The launcher must feel like a current macOS app. It must feel like an Arknights 
 - Show only the current state, the version, and one primary action.
 - Show download progress in the same bar. Draw the progress rail along the outer edge of the bar, with an inner inset. Use crisp strokes only. Do not add a blurred glow or glint. In the compact state, show the percentage first. Then show transfer size, speed, and remaining time.
 - Show a runtime download with the same status line and progress rail as a game download.
+- Do not show a completion message after an install. Home moves straight to the next state.
 - When the installed runtime is older than the launcher's pin, show **Runtime update required** and make the primary action **Update Runtime**.
+- When the game is installed and the selected runtime is missing, show **Runtime setup required** and make the primary action **Set Up Runtime**.
 - Give each Home surface its own Home theme. Home controls and Branding each take Automatic, Dark, or Light. Home ignores the Appearance setting.
 
 ## Visual language
@@ -248,6 +250,7 @@ For a UI change, use the debug simulator. Check these states: an empty region, a
 ## Settings and documents
 
 - The Settings sheet adapts to the window size. `AppConstants.Settings` sets its margin and size limits.
+- The Settings rail strip shows the current game operation. It also shows a runtime install, with the same title as the Runtime page.
 - Group related controls in quiet glass panels. Switch Settings pages at once. Do not use page transitions. The selected rail row uses the accent.
 - Use a grouped list rail. The Arknights group holds Game, Installation, Runtime, Storage, and Playtime. The Launcher group holds Appearance, Integration, and Updates. In Integration, the panels are Notifications, Music, Screenshots, and Discord. The Notifications panel holds the daily reset reminder, a server menu limited to installed servers, and a status row with **Open System Settings** when macOS blocks notifications. Help and About follow. Debug builds add Developer. Game opens first. Later, Settings reopens the last page while the app runs.
 - In Settings → Runtime, panels appear in this order: Active runtime, Maintenance, Compatibility, Runtime patches, and Danger zone. The Active runtime panel shows each runtime with its summary and marks the selected one with a checkmark. A secondary line shows the installed version, the download size while the runtime is not installed, and the macOS requirement only when this Mac does not meet it. **ARM64 (Apple Silicon)** shows a **Recommended** badge beside its title. The panel offers **Switch to x86_64** or **Switch to ARM64**. While a runtime downloads, the panel offers **Pause**; a paused download shows **Resume**. While the game runs, a page banner gives the reason. While another operation runs, a footnote in each affected panel gives it. The Maintenance panel offers **Update Runtime** when the runtime is outdated and the Rosetta 2 status for the x86_64 runtime. It is hidden when it has neither. The Compatibility panel holds the Wine sync setting and is always expanded. The Danger zone holds **Remove Runtime…** and **Remove Other Runtime…**. It asks for confirmation, keeps the game environment, and shows a failure inline with a support code. A switch that needs a download uses the same warning as setup. The new runtime applies at the next game launch. The page links to **Game runtime** with **About game runtimes**.

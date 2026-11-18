@@ -84,6 +84,8 @@ The launcher shows a note when the game may ask you to sign in again.
 
 While the runtime downloads, the progress line shows the percentage, download size, and speed. Choose **Pause** to stop the download in setup or in the **Active runtime** panel. Choose **Resume** to continue from the partial file. Pause works only while the runtime downloads, not while it installs.
 
+If the game is installed but the runtime is missing, Home shows **Runtime setup required**. Choose **Set Up Runtime** on Home to download it.
+
 ## Switch runtimes in Settings
 
 1. Open **Settings → Runtime**.

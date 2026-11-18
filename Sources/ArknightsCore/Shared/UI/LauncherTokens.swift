@@ -142,7 +142,6 @@ package enum LauncherTokens {
 		package static let statusPercent = Font.system(size: 16, weight: .medium)
 		package static let hudPillCaption = Font.caption.monospacedDigit().weight(.medium)
 		package static let progressCaption = Font.caption.monospacedDigit()
-		package static let completionLabel = Font.system(size: 15, weight: .medium)
 		package static let hudControlGlyph = Font.system(size: 13, weight: .medium)
 		package static let hudProminentGlyph = Font.system(size: 16, weight: .medium)
 		static let menuChevron = Font.system(size: 9, weight: .semibold)
