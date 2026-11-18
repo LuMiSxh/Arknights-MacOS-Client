@@ -360,6 +360,7 @@ struct ArknightsClientApp: App {
 		}
 		.windowStyle(.hiddenTitleBar)
 		.defaultSize(width: 1040, height: 680)
+		.windowResizability(.contentMinSize)
 		.commands {
 			CommandMenu("Game") {
 				Button("Take Screenshot") {
