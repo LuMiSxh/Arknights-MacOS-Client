@@ -66,9 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- An automatic launcher update check no longer shows **UP-ERR** while the launcher finishes a startup task. The check waits until the launcher is idle.
-- The launcher update dialog no longer clips at the bottom of a small window or draws a square dim behind its rounded corners. It fits the current window size.
-- The launcher window keeps its 880 × 560 minimum. The Home pills and the **Settings** button stay inside it at every size, and a collapsed pill respects its maximum width.
+- The Home top bar, control bar, and **Settings** button stay inside the window at every size, and the launcher update dialog fits the window without a square dim. The Home artwork is pinned to the window size instead of widening the layout.
 - Wallpapers and icons in the preset gallery no longer time out while loading. The gallery downloads a few images at a time, and applying a preset goes ahead of the queue.
 - The status pill's VoiceOver hint now says "servers", matching the help and Settings wording.
 - **Switch and Download** selects the new runtime when the download starts, so Home no longer offers **Play** for the old one.

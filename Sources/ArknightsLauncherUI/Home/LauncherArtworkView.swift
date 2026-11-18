@@ -14,29 +14,32 @@ struct LauncherArtworkView: View {
 	@State private var hasShownArtworkBefore = false
 
 	var body: some View {
-		ZStack {
-			if let image {
-				Image(nsImage: image)
-					.resizable()
-					.scaledToFill()
-					.id(artworkIdentity)
-					.transition(artworkTransition)
-					.accessibilityLabel("Arknights artwork")
-			} else {
-				fallbackArtwork
-					.id(artworkIdentity)
-					.transition(artworkTransition)
-					.accessibilityHidden(true)
+		GeometryReader { proxy in
+			ZStack {
+				if let image {
+					Image(nsImage: image)
+						.resizable()
+						.scaledToFill()
+						.id(artworkIdentity)
+						.transition(artworkTransition)
+						.accessibilityLabel("Arknights artwork")
+				} else {
+					fallbackArtwork
+						.id(artworkIdentity)
+						.transition(artworkTransition)
+						.accessibilityHidden(true)
+				}
 			}
-		}
-		.clipped()
-		.animation(
-			hasShownArtworkBefore
-				? LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion) : nil,
-			value: artworkIdentity
-		)
-		.onChange(of: artworkIdentity, initial: true) { _, _ in
-			if image != nil { hasShownArtworkBefore = true }
+			.frame(width: proxy.size.width, height: proxy.size.height)
+			.clipped()
+			.animation(
+				hasShownArtworkBefore
+					? LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion) : nil,
+				value: artworkIdentity
+			)
+			.onChange(of: artworkIdentity, initial: true) { _, _ in
+				if image != nil { hasShownArtworkBefore = true }
+			}
 		}
 	}
 

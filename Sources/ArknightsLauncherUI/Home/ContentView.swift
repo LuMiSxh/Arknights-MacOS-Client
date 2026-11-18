@@ -349,7 +349,6 @@ package struct ContentView: View {
 				minHeight: LauncherTokens.Control.minimumHitTarget
 			)
 			.keyboardShortcut(",", modifiers: .command)
-			.layoutPriority(1)
 			.accessibilityHint(Text("Open launcher settings"))
 			.help("Open launcher settings")
 			.launcherTheme(accent: model.customization.accentColor)

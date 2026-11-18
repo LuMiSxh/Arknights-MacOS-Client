@@ -93,7 +93,7 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 			minWidth: expanded ? sizing.expandedMinWidth : nil,
 			maxWidth: expanded ? sizing.expandedMaxWidth : sizing.collapsedMaxWidth
 		)
-		.fixedSize(horizontal: expanded && sizing.fixesWidthWhenExpanded, vertical: false)
+		.fixedSize(horizontal: sizing.fixesWidthWhenExpanded || !expanded, vertical: false)
 		.hudPillSurface(isExpanded: expanded)
 		.shadow(
 			color: Color.black.opacity(expanded ? 0.35 : 0),
