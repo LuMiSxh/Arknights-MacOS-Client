@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsInfrastructure
 import Foundation
 
 actor ProgressCounter {
 	private let totalBytes: Int64
-	private let clock: ElapsedTime
 	private var downloadedBytes: Int64
 	private var networkDownloadedBytes: Int64 = 0
 	private var completedFiles = 0
@@ -14,7 +14,7 @@ actor ProgressCounter {
 	private(set) var lastActiveFile: String?
 	// Chunk callbacks can fire far faster than SwiftUI needs to redraw a progress bar;
 	// throttling emissions to 10/s keeps updates smooth without flooding the UI.
-	private var lastEmission: Duration
+	private var emission: ProgressEmissionGate
 
 	init(
 		totalBytes: Int64,
@@ -24,13 +24,11 @@ actor ProgressCounter {
 		clock: any Clock<Duration> = ContinuousClock()
 	) {
 		self.totalBytes = totalBytes
-		let elapsed = ElapsedTime(clock)
-		self.clock = elapsed
 		self.downloadedBytes = downloadedBytes
 		self.completedFiles = completedFiles
 		self.sequence = sequence
 		estimator = TransferRateEstimator(clock: clock)
-		lastEmission = elapsed.now
+		emission = ProgressEmissionGate(clock: clock)
 	}
 
 	func remove(
@@ -41,7 +39,7 @@ actor ProgressCounter {
 		downloadedBytes = max(0, downloadedBytes - bytes)
 		networkDownloadedBytes = max(0, networkDownloadedBytes - networkBytes)
 		estimator.reset()
-		lastEmission = clock.now
+		emission.restart()
 		return current(file: file)
 	}
 
@@ -50,7 +48,7 @@ actor ProgressCounter {
 	func addReused(bytes: Int64, file: String) -> DownloadProgress {
 		downloadedBytes += bytes
 		completedFiles += 1
-		lastEmission = clock.now
+		emission.restart()
 		return current(file: file)
 	}
 
@@ -65,21 +63,14 @@ actor ProgressCounter {
 			completedFiles += 1
 		}
 
-		let now = clock.now
-		guard
-			force
-				|| now - lastEmission >= AppConstants.Network.progressEmissionInterval
-		else {
-			return nil
-		}
-		lastEmission = now
+		guard emission.admit(force: force) else { return nil }
 		return current(file: file)
 	}
 
 	// Byte progress stays accurate. Only the rate restarts, on a CDN retry or a stalled stream.
 	func resetRate(file: String) -> DownloadProgress {
 		estimator.reset()
-		lastEmission = clock.now
+		emission.restart()
 		return current(file: file)
 	}
 
@@ -98,12 +89,9 @@ actor ProgressCounter {
 	}
 }
 
-// One install-wide ticker keeps stall detection and the displayed rate fresh while bytes are
-// not arriving. Every in-flight file shares the counter's estimator, so one tick reporting the
-// most recently active file covers 1 to N concurrent downloads.
-package enum InstallProgressMonitor {
-	// The monitor is cancelled and awaited on every exit path, so no progress callback outlives
-	// the call.
+// Every in-flight file shares the counter's estimator, so one tick reporting the most recently
+// active file covers 1 to N concurrent downloads.
+extension InstallProgressMonitor {
 	static func run<Result>(
 		counter: ProgressCounter,
 		fallbackFile: String,
@@ -117,44 +105,6 @@ package enum InstallProgressMonitor {
 			await progress(await counter.current(file: file))
 		} operation: {
 			try await operation()
-		}
-	}
-
-	package static func run<Result>(
-		interval: Duration,
-		clock: any Clock<Duration> = ContinuousClock(),
-		emit: @escaping @Sendable () async -> Void,
-		operation: () async throws -> Result
-	) async rethrows -> Result {
-		let monitor = Task {
-			await tick(interval: interval, clock: clock, emit: emit)
-		}
-		let result: Result
-		do {
-			result = try await operation()
-		} catch {
-			monitor.cancel()
-			await monitor.value
-			throw error
-		}
-		monitor.cancel()
-		await monitor.value
-		return result
-	}
-
-	private static func tick(
-		interval: Duration,
-		clock: any Clock<Duration>,
-		emit: @Sendable () async -> Void
-	) async {
-		do {
-			while !Task.isCancelled {
-				try await clock.sleep(for: interval, tolerance: interval / 10)
-				guard !Task.isCancelled else { return }
-				await emit()
-			}
-		} catch {
-			// Only cancellation ends the sleep: the install finished, failed, or paused.
 		}
 	}
 }

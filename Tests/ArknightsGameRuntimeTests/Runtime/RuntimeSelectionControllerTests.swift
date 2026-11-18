@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsRuntimeTestSupport
 import ArknightsTestSupport
 import Foundation
 import Synchronization

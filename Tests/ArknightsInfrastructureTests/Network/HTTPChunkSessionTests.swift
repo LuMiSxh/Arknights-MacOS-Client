@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import ArknightsCore
 import ArknightsTestSupport
 import Foundation
 import Testing
@@ -48,7 +47,7 @@ struct HTTPChunkSessionTests {
 		route.configure(configuration)
 		let session = HTTPChunkSession(
 			configuration: configuration,
-			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+			maximumBufferedBytes: 8 * 1_024 * 1_024
 		)
 		let sourceURL = URL(string: "https://download.test/game.bin")!
 		route.redirectURL = URL(string: "https://evil.test/game.bin")!

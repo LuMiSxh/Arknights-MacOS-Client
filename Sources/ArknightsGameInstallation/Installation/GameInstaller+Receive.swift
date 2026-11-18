@@ -75,21 +75,24 @@ extension GameInstaller {
 		transfer: inout ReceivedTransfer
 	) async throws {
 		let item = download.item
-		guard response.statusCode == 200 || response.statusCode == 206 else {
-			throw InstallerError.invalidDownloadResponse(
-				status: response.statusCode,
-				path: item.path
-			)
+		let classification = HTTPRangeResponse.classify(
+			response, requestedOffset: download.existingBytes)
+		if case .unexpectedStatus(let status) = classification {
+			throw InstallerError.invalidDownloadResponse(status: status, path: item.path)
 		}
 		let responseMetadata = try Self.resumeMetadata(from: response, manifestHash: item.hash)
-		if response.statusCode == 206 {
+		switch classification {
+		case .resume(let contentRange, let byteCount):
 			try await acceptRangeResponse(
-				response,
+				contentRange,
+				byteCount: byteCount,
 				metadata: responseMetadata,
 				for: download,
 				transfer: &transfer
 			)
-		} else {
+		case .invalidRange, .unexpectedStatus:
+			throw LauncherError.invalidResponse
+		case .restartFromZero:
 			guard
 				response.expectedContentLength < 0
 					|| response.expectedContentLength == item.byteCount
@@ -107,22 +110,14 @@ extension GameInstaller {
 	}
 
 	private func acceptRangeResponse(
-		_ response: HTTPURLResponse,
+		_ contentRange: HTTPContentRange,
+		byteCount: Int64,
 		metadata responseMetadata: InstallerResumeMetadata,
 		for download: PartialDownload,
 		transfer: inout ReceivedTransfer
 	) async throws {
 		let item = download.item
-		guard download.existingBytes > 0,
-			let contentRange = InstallerContentRange.parse(
-				response.value(forHTTPHeaderField: "Content-Range")
-			),
-			contentRange.start == download.existingBytes,
-			contentRange.total == item.byteCount,
-			let byteCount = contentRange.byteCount,
-			response.expectedContentLength < 0
-				|| response.expectedContentLength == byteCount
-		else { throw LauncherError.invalidResponse }
+		guard contentRange.total == item.byteCount else { throw LauncherError.invalidResponse }
 		var acceptedMetadata = responseMetadata
 		if let priorMetadata = download.resumeMetadata,
 			ManifestChecksum.matches(priorMetadata.manifestHash, expected: item.hash)
@@ -152,21 +147,26 @@ extension GameInstaller {
 		guard transfer.receivedResponse else { throw LauncherError.invalidResponse }
 		let accumulatedBytes = download.existingBytes + transfer.newlyDownloaded
 		let incomingBytes = Int64(data.count)
-		let (receivedBytes, overflow) = accumulatedBytes.addingReportingOverflow(incomingBytes)
-		guard !overflow, receivedBytes <= item.byteCount else {
+		do throws(ByteLimitExceeded) {
+			_ = try BoundedByteCount.adding(
+				incomingBytes, to: accumulatedBytes, limit: item.byteCount)
+		} catch {
 			try await download.discardBytes(
 				.overflow(counted: accumulatedBytes, network: transfer.newlyDownloaded))
 			throw InstallerError.downloadedSizeMismatch(
 				path: item.path,
 				expected: item.byteCount,
-				actual: overflow ? Int64.max : receivedBytes
+				actual: error.attempted
 			)
 		}
-		let (newResponseBodyBytes, responseOverflow) =
-			transfer.responseBodyBytes.addingReportingOverflow(incomingBytes)
-		guard !responseOverflow,
-			transfer.expectedRangeBytes.map({ newResponseBodyBytes <= $0 }) ?? true
-		else {
+		let newResponseBodyBytes: Int64
+		do {
+			newResponseBodyBytes = try BoundedByteCount.adding(
+				incomingBytes,
+				to: transfer.responseBodyBytes,
+				limit: transfer.expectedRangeBytes ?? .max
+			)
+		} catch {
 			try await discardRange(of: download, transfer: transfer)
 			throw LauncherError.invalidResponse
 		}

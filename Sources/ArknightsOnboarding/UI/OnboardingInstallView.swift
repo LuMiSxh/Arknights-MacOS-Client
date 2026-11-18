@@ -114,14 +114,8 @@ struct OnboardingInstallView: View {
 		parts.append(
 			"\(DownloadProgressFormatting.byteCount(Int64(pin.sizeBytes))) download"
 		)
-		parts.append("Requires \(macOSVersion(pin.minimumMacOS)) or later")
+		parts.append("Requires \(pin.minimumMacOS.macOSDisplayName) or later")
 		return parts.joined(separator: " · ")
-	}
-
-	private func macOSVersion(_ version: OperatingSystemVersion) -> String {
-		version.minorVersion == 0
-			? "macOS \(version.majorVersion)"
-			: "macOS \(version.majorVersion).\(version.minorVersion)"
 	}
 }
 

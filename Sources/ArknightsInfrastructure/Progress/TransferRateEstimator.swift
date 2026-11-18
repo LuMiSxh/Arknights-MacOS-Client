@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import ArknightsCore
 import Foundation
 
 // Reads elapsed time from any `Clock<Duration>`. The clock's instant type is erased, so the
@@ -41,10 +40,10 @@ package struct TransferRateEstimator {
 	private var isStalledState = false
 
 	package init(
-		clock: any Clock<Duration> = ContinuousClock(),
-		sampleInterval: Duration = AppConstants.Network.transferRateSampleInterval,
-		stallTimeout: Duration = AppConstants.Network.transferRateStallTimeout,
-		smoothingFactor: Double = AppConstants.Network.transferRateSmoothingFactor
+		clock: any Clock<Duration>,
+		sampleInterval: Duration,
+		stallTimeout: Duration,
+		smoothingFactor: Double
 	) {
 		let elapsed = ElapsedTime(clock)
 		let operationStartedAt = elapsed.now

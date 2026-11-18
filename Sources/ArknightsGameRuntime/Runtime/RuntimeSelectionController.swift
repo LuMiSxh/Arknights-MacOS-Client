@@ -140,14 +140,8 @@ package enum RuntimeSwitchWarning {
 				"The runtime download is about \(DownloadProgressFormatting.byteCount(Int64(pin.sizeBytes)))."
 			)
 		}
-		parts.append("Requires \(macOSVersion(pin.minimumMacOS)) or later.")
+		parts.append("Requires \(pin.minimumMacOS.macOSDisplayName) or later.")
 		return parts.joined(separator: " ")
-	}
-
-	private static func macOSVersion(_ version: OperatingSystemVersion) -> String {
-		version.minorVersion == 0
-			? "macOS \(version.majorVersion)"
-			: "macOS \(version.majorVersion).\(version.minorVersion)"
 	}
 }
 
@@ -180,7 +174,6 @@ package final class RuntimeSelectionController {
 	private let store: RuntimeStore
 	private let installOperation: InstallOperation
 	internal var installedVersions: [RuntimeLane: String]
-	@ObservationIgnored private var lastProgressUpdate: ContinuousClock.Instant?
 	@ObservationIgnored private var installTask: Task<InstalledRuntime, any Error>?
 	/// Owns the running download's outcome. Selecting another lane invalidates it, so a late
 	/// completion cannot change the selection or the failure state.
@@ -360,14 +353,12 @@ package final class RuntimeSelectionController {
 
 		installingLane = lane
 		installProgress = nil
-		lastProgressUpdate = nil
 		pausedLane = nil
 		pauseRequested = false
 		let token = installOwner.begin()
 		defer {
 			installingLane = nil
 			installProgress = nil
-			lastProgressUpdate = nil
 			installTask = nil
 			if installOwner.owns(token) { installOwner.invalidate() }
 		}
@@ -560,16 +551,10 @@ package final class RuntimeSelectionController {
 		)
 	}
 
+	// The installer rate-limits byte snapshots and always passes phase, stall and final ones,
+	// so forwarding every snapshot keeps those changes immediate.
 	private func receive(_ progress: RuntimeInstallProgress, for lane: RuntimeLane) {
 		guard installingLane == lane else { return }
-		let phaseChanged = installProgress?.phase != progress.phase
-		let now = ContinuousClock().now
-		if !phaseChanged, let lastProgressUpdate,
-			now - lastProgressUpdate < AppConstants.Network.progressEmissionInterval
-		{
-			return
-		}
-		lastProgressUpdate = now
 		installProgress = progress
 	}
 

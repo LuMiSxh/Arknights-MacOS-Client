@@ -9,51 +9,6 @@ import Testing
 
 @testable import ArknightsGameRuntime
 
-// A plain tar builder so installer tests do not need downloaded fixtures.
-private struct TarBuilder {
-	private(set) var data = Data()
-
-	mutating func append(
-		name: String,
-		typeFlag: UInt8 = 0x30,
-		linkName: String = "",
-		mode: Int = 0o644,
-		content: Data = Data()
-	) {
-		var header = [UInt8](repeating: 0, count: 512)
-		writeString(name, into: &header, range: 0..<100)
-		writeOctal(mode, into: &header, range: 100..<108)
-		writeOctal(content.count, into: &header, range: 124..<136)
-		header[156] = typeFlag
-		writeString(linkName, into: &header, range: 157..<257)
-		data.append(contentsOf: header)
-		data.append(content)
-		let padding = (512 - (content.count % 512)) % 512
-		if padding > 0 { data.append(Data(repeating: 0, count: padding)) }
-	}
-
-	mutating func directory(_ name: String) {
-		append(name: name, typeFlag: 0x35)
-	}
-
-	mutating func finish() {
-		data.append(Data(repeating: 0, count: 1_024))
-	}
-
-	private func writeString(_ value: String, into header: inout [UInt8], range: Range<Int>) {
-		for (index, byte) in Array(value.utf8).enumerated() where index < range.count {
-			header[range.lowerBound + index] = byte
-		}
-	}
-
-	private func writeOctal(_ value: Int, into header: inout [UInt8], range: Range<Int>) {
-		for (index, byte) in Array(String(value, radix: 8).utf8).enumerated()
-		where index < range.count {
-			header[range.lowerBound + index] = byte
-		}
-	}
-}
-
 private func runtimeArchive() -> Data {
 	var builder = TarBuilder()
 	builder.directory("Libraries")
@@ -241,7 +196,11 @@ struct RuntimeInstallerTests {
 		route.handler = { request in
 			#expect(request.value(forHTTPHeaderField: "Range") == "bytes=\(split)-")
 			return (
-				makeHTTPResponse(url: request.url!, status: 206),
+				makeHTTPResponse(
+					url: request.url!, status: 206,
+					headers: [
+						"Content-Range": "bytes \(split)-\(archive.count - 1)/\(archive.count)"
+					]),
 				Data(suffix)
 			)
 		}

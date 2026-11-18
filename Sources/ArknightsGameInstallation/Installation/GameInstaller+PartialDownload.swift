@@ -152,14 +152,11 @@ extension GameInstaller {
 		} catch {
 			throw mapInstallerFileSystemError(error)
 		}
-		var fileStatus = stat()
-		guard fstat(descriptor, &fileStatus) == 0,
-			fileStatus.st_mode & S_IFMT == S_IFREG,
-			fileStatus.st_nlink == 1,
-			fileStatus.st_size >= 0
-		else {
-			_ = close(descriptor)
-			throw InstallerError.unsafeInstallerTemporaryFile(partial.url)
+		let existingBytes: Int64
+		do {
+			existingBytes = try PartialDownloadFile.validatedSize(of: descriptor, at: partial.url)
+		} catch PartialDownloadFileError.unsafeFile(let url) {
+			throw InstallerError.unsafeInstallerTemporaryFile(url)
 		}
 		return PartialDownload(
 			item: item,
@@ -167,7 +164,7 @@ extension GameInstaller {
 			destination: destination,
 			metadataFile: metadataFile,
 			descriptor: descriptor,
-			existingBytes: Int64(fileStatus.st_size),
+			existingBytes: existingBytes,
 			counter: counter,
 			progress: progress
 		)

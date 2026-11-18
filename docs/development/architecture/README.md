@@ -101,7 +101,7 @@ number. The compiler rejects a cycle.
 
 | No. | Target                      | Contains                                                                                                                                       | Depends on             | Linked products    |
 | --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------ |
-| 1   | `ArknightsInfrastructure`   | Feature-independent I/O and Discord IPC (`FileSystem`, `Network`, `Presence`)                                                                  | none                   | none               |
+| 1   | `ArknightsInfrastructure`   | Feature-independent I/O, transfer building blocks, and Discord IPC (`FileSystem`, `Network`, `Progress`, `Presence`)                            | none                   | none               |
 | 2   | `ArknightsCore`             | Cross-feature lifecycle state (`Core`), shared domain, configuration, persistence, diagnostics, UI contracts (`Shared`), and SwiftPM resources | 1                      | none               |
 | 3   | `ArknightsCustomization`    | Artwork, icons, preset gallery                                                                                                                 | 1, 2                   | none               |
 | 4   | `ArknightsGameInstallation` | Installation, manifests, game-file compatibility components                                                                                    | 1, 2                   | none               |
@@ -114,7 +114,8 @@ number. The compiler rejects a cycle.
 
 Each library target has an `Arknights<Name>Tests` target. `ArknightsClientTests` holds only
 app-entry tests. `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests` cover the
-other levels. `ArknightsTestSupport` is a library target for shared test helpers. See
+other levels. `ArknightsTestSupport` is a library target for shared test helpers.
+`ArknightsRuntimeTestSupport` adds runtime fixtures and depends on `ArknightsGameRuntime`. See
 [Testing architecture](../testing.md).
 
 Direction rules:

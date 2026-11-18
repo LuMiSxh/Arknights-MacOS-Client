@@ -35,42 +35,6 @@ struct InstallerResumeMetadata: Codable, Sendable {
 	}
 }
 
-struct InstallerContentRange: Equatable, Sendable {
-	let start: Int64
-	let end: Int64
-	let total: Int64
-
-	var byteCount: Int64? {
-		let (difference, underflow) = end.subtractingReportingOverflow(start)
-		let (count, overflow) = difference.addingReportingOverflow(1)
-		return underflow || overflow ? nil : count
-	}
-
-	static func parse(_ header: String?) -> InstallerContentRange? {
-		guard let header else { return nil }
-		let trimmed = header.trimmingCharacters(in: .whitespacesAndNewlines)
-		guard trimmed.lowercased().hasPrefix("bytes ") else { return nil }
-		let value = trimmed.dropFirst("bytes ".count)
-		let components = value.split(separator: "/", omittingEmptySubsequences: false)
-		guard components.count == 2,
-			let total = decimal(components[1])
-		else { return nil }
-		let range = components[0].split(separator: "-", omittingEmptySubsequences: false)
-		guard range.count == 2,
-			let start = decimal(range[0]),
-			let end = decimal(range[1]),
-			start <= end,
-			end < total
-		else { return nil }
-		return InstallerContentRange(start: start, end: end, total: total)
-	}
-
-	private static func decimal(_ value: Substring) -> Int64? {
-		guard !value.isEmpty, value.allSatisfy({ $0 >= "0" && $0 <= "9" }) else { return nil }
-		return Int64(value)
-	}
-}
-
 extension GameInstaller {
 	static func resumeMetadata(
 		from response: HTTPURLResponse,

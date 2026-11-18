@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
 import ArknightsGameRuntime
 import SwiftUI
 
@@ -283,7 +284,7 @@ extension RuntimeSettingsPage {
 			if let pin {
 				parts.append("Version \(pin.version)")
 				parts.append(
-					"\(ByteCountFormatter.string(fromByteCount: Int64(pin.sizeBytes), countStyle: .file)) download"
+					"\(DownloadProgressFormatting.byteCount(Int64(pin.sizeBytes))) download"
 				)
 			}
 		case .outdated(let installed):
@@ -298,14 +299,8 @@ extension RuntimeSettingsPage {
 			}
 		}
 		if let pin, !ProcessInfo.processInfo.isOperatingSystemAtLeast(pin.minimumMacOS) {
-			parts.append("Requires \(macOSVersion(pin.minimumMacOS)) or later")
+			parts.append("Requires \(pin.minimumMacOS.macOSDisplayName) or later")
 		}
 		return parts.joined(separator: " · ")
-	}
-
-	private func macOSVersion(_ version: OperatingSystemVersion) -> String {
-		version.minorVersion == 0
-			? "macOS \(version.majorVersion)"
-			: "macOS \(version.majorVersion).\(version.minorVersion)"
 	}
 }

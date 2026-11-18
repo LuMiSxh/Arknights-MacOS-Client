@@ -215,21 +215,13 @@ package struct RuntimeInstaller: Sendable {
 		try FileManager.default.createDirectory(
 			at: downloadsDirectory, withIntermediateDirectories: true)
 		let archiveURL = Self.partialArchiveURL(for: pin, paths: paths)
-		let descriptor = Darwin.open(
-			archiveURL.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, S_IRUSR | S_IWUSR)
-		guard descriptor >= 0 else {
-			if errno == ELOOP { throw RuntimeInstallError.unsafeDownloadFile(archiveURL) }
-			throw POSIXError(.init(rawValue: errno) ?? .EIO)
+		let handle: FileHandle
+		var existingBytes: Int64
+		do {
+			(handle, existingBytes) = try PartialDownloadFile.open(at: archiveURL)
+		} catch PartialDownloadFileError.unsafeFile(let url) {
+			throw RuntimeInstallError.unsafeDownloadFile(url)
 		}
-		let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
-
-		var status = stat()
-		guard fstat(descriptor, &status) == 0, status.st_mode & S_IFMT == S_IFREG,
-			status.st_nlink == 1
-		else {
-			throw RuntimeInstallError.unsafeDownloadFile(archiveURL)
-		}
-		var existingBytes = Int64(status.st_size)
 
 		if existingBytes == Int64(pin.sizeBytes) {
 			if try Self.sha256Hex(at: archiveURL) == pin.sha256 {
@@ -276,18 +268,27 @@ package struct RuntimeInstaller: Sendable {
 								throw RuntimeInstallError.downloadFailed(
 									"data arrived before a response")
 							}
-							let next = offset + Int64(data.count)
-							guard next <= total else {
+							let next: Int64
+							do throws(ByteLimitExceeded) {
+								next = try BoundedByteCount.adding(
+									Int64(data.count), to: offset, limit: total)
+							} catch {
 								throw RuntimeInstallError.sizeMismatch(
-									expected: pin.sizeBytes, actual: Int(next))
+									expected: pin.sizeBytes,
+									actual: Int(clamping: error.attempted))
 							}
 							try handle.write(contentsOf: data)
 							stream.acknowledge(data.count)
 							offset = next
-							await progress(
-								meter.record(bytes: Int64(data.count), offset: next, total: total))
+							if let snapshot = meter.record(
+								bytes: Int64(data.count), offset: next, total: total)
+							{
+								await progress(snapshot)
+							}
 						}
 					}
+					// Chunks skipped by the throttle leave the last count stale, so report it.
+					await progress(meter.progress(total: total))
 				})
 		} catch let error as HTTPTransportError {
 			throw RuntimeInstallError.downloadFailed(String(describing: error))
@@ -319,15 +320,18 @@ package struct RuntimeInstaller: Sendable {
 		offset: inout Int64,
 		handle: FileHandle
 	) throws {
-		guard response.statusCode == 200 || response.statusCode == 206 else {
-			throw RuntimeInstallError.downloadFailed(
-				"the server returned status \(response.statusCode)")
-		}
-		if response.statusCode == 200, offset > 0 {
+		switch HTTPRangeResponse.classify(response, requestedOffset: offset) {
+		case .unexpectedStatus(let status):
+			throw RuntimeInstallError.downloadFailed("the server returned status \(status)")
+		case .invalidRange:
+			throw RuntimeInstallError.downloadFailed("the server sent an invalid range response")
+		case .restartFromZero where offset > 0:
 			// The server ignored the range request; restart the whole archive.
 			try handle.truncate(atOffset: 0)
 			try handle.seek(toOffset: 0)
 			offset = 0
+		case .restartFromZero, .resume:
+			break
 		}
 	}
 
@@ -468,12 +472,18 @@ private final class RuntimeDownloadMeter: Sendable {
 	private struct State {
 		var offset: Int64
 		var estimator: TransferRateEstimator
+		var emission: ProgressEmissionGate
 	}
 
 	private let state: Mutex<State>
 
 	init(offset: Int64, clock: any Clock<Duration>) {
-		state = Mutex(State(offset: offset, estimator: TransferRateEstimator(clock: clock)))
+		state = Mutex(
+			State(
+				offset: offset,
+				estimator: TransferRateEstimator(clock: clock),
+				emission: ProgressEmissionGate(clock: clock)
+			))
 	}
 
 	func reset(offset: Int64) {
@@ -483,10 +493,12 @@ private final class RuntimeDownloadMeter: Sendable {
 		}
 	}
 
-	func record(bytes: Int64, offset: Int64, total: Int64) -> RuntimeInstallProgress {
+	// Nil inside the 10/s throttle window. The download loop always reports the final count.
+	func record(bytes: Int64, offset: Int64, total: Int64) -> RuntimeInstallProgress? {
 		state.withLock {
 			$0.offset = offset
 			$0.estimator.add(bytes: bytes)
+			guard $0.emission.admit() else { return nil }
 			return Self.progress(&$0, total: total)
 		}
 	}
