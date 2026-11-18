@@ -65,7 +65,6 @@ import CoreGraphics
 		var runtime = Runtime.real
 		var selectedRegion = GameRegion.global
 		var installedRegions: Set<GameRegion> = [.global]
-		var canaryFeaturesEnabled = false
 		var showStatusPill = false
 		var showVersionPill = true
 		var showMusicPill = false

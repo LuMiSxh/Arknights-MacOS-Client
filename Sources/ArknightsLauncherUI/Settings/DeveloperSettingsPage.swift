@@ -27,7 +27,6 @@ import SwiftUI
 					picker("Support code", \.failureCode)
 					picker("Runtime", \.runtime)
 					picker("Displays", \.displays)
-					picker("Canary features", \.canaryFeaturesEnabled)
 					picker("Status pill", \.showStatusPill)
 					picker("Version pill", \.showVersionPill)
 					picker("Music pill", \.showMusicPill)

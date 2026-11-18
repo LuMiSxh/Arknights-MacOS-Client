@@ -109,9 +109,6 @@ package final class LauncherPreferencesController {
 			}
 		}
 	}
-	package var canaryFeaturesEnabled = Key.canaryFeaturesEnabled.defaultValue {
-		didSet { persist(canaryFeaturesEnabled, for: Key.canaryFeaturesEnabled) }
-	}
 	package var usesHardwareCursor = Key.usesHardwareCursor.defaultValue {
 		didSet { persist(usesHardwareCursor, for: Key.usesHardwareCursor) }
 	}
@@ -208,7 +205,6 @@ package final class LauncherPreferencesController {
 		launcherMusicVolume = store.value(Key.launcherMusicVolume)
 		launcherMusicMuted = store.value(Key.launcherMusicMuted)
 		usesDynamicTheme = store.value(Key.usesDynamicTheme)
-		canaryFeaturesEnabled = store.value(Key.canaryFeaturesEnabled)
 		usesHardwareCursor = store.value(Key.usesHardwareCursor)
 		dismissedInGameResolutionNote = store.value(Key.dismissedInGameResolutionNote)
 		batterySaverEnabled = store.value(Key.batterySaverEnabled)

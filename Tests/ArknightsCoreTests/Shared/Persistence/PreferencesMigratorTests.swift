@@ -36,7 +36,7 @@ struct PreferencesMigratorTests {
 	}
 
 	@Test
-	func retiredThemeAndRetinaKeysAreRemovedForAnOlderInstall() {
+	func retiredKeysAreRemovedForAnOlderInstall() {
 		let (defaults, suiteName) = makeIsolatedDefaults("PreferencesMigratorTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		// 0.7.1 recorded version 2 and never ran the 0.8 development steps.
@@ -45,6 +45,7 @@ struct PreferencesMigratorTests {
 		defaults.set(["hue": 0.2], forKey: "dynamicThemeAccent.v4.current-cache")
 		defaults.set([["identity": "old", "score": 0.5]], forKey: "homeLuminanceCache")
 		defaults.set(true, forKey: "forceDisableRetina")
+		defaults.set(true, forKey: "canaryFeaturesEnabled")
 
 		PreferencesMigrator().migrate(
 			defaults, themeCacheURL: makeThemeCacheURL("RetiredTheme"))
@@ -53,6 +54,9 @@ struct PreferencesMigratorTests {
 		#expect(defaults.object(forKey: "dynamicThemeAccent.v4.current-cache") == nil)
 		#expect(defaults.object(forKey: "homeLuminanceCache") == nil)
 		#expect(defaults.object(forKey: "forceDisableRetina") == nil)
+		#expect(defaults.object(forKey: "canaryFeaturesEnabled") == nil)
+		#expect(
+			defaults.integer(forKey: LauncherPreferencesStore.Key.preferencesMigrationVersion) == 4)
 	}
 
 	@Test

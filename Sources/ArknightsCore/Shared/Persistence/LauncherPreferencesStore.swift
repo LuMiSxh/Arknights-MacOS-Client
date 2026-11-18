@@ -57,7 +57,6 @@ package struct LauncherPreferencesStore {
 			case showsDiscordPresence
 			case launcherMusicVolume
 			case launcherMusicMuted
-			case canaryFeaturesEnabled
 			case usesHardwareCursor
 			case dismissedInGameResolutionNote
 			case usesDynamicTheme
@@ -110,8 +109,6 @@ package struct LauncherPreferencesStore {
 		}
 		package static let launcherMusicMuted = ScalarKey(
 			Name.launcherMusicMuted.rawValue, default: false)
-		package static let canaryFeaturesEnabled = ScalarKey(
-			Name.canaryFeaturesEnabled.rawValue, default: false)
 		package static let usesHardwareCursor = ScalarKey(
 			Name.usesHardwareCursor.rawValue, default: false)
 		package static let dismissedInGameResolutionNote = ScalarKey(
@@ -158,7 +155,7 @@ package struct LauncherPreferencesStore {
 				automaticLauncherUpdates, automaticGameUpdates, announcementsEnabled,
 				showsServerResetCountdown, showsGameVersion, showsBranding, playsLauncherMusic,
 				launcherMusicURL, showsPlayingMusic, showsDiscordPresence, launcherMusicVolume,
-				launcherMusicMuted, usesDynamicTheme, canaryFeaturesEnabled,
+				launcherMusicMuted, usesDynamicTheme,
 				usesHardwareCursor, dismissedInGameResolutionNote, batterySaverEnabled,
 				screenshotNotifies,
 				debugLoggingEnabled,

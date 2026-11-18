@@ -149,6 +149,8 @@ package struct PreferencesMigrator {
 			$0.remove("homeLuminanceCache")
 			$0.remove("forceDisableRetina")
 		},
+		// The developer-only Canary Features toggle was written but never read.
+		Step(version: 4) { $0.remove("canaryFeaturesEnabled") },
 	]
 
 	private static let versionKey = LauncherPreferencesStore.Key.preferencesMigrationVersion

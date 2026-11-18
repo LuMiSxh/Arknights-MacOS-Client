@@ -13,7 +13,6 @@ import ArknightsGameRuntime
 			let simulation = simulation.normalized()
 			developerSimulation = simulation
 
-			settings.canaryFeaturesEnabled = simulation.canaryFeaturesEnabled
 			if installation.region != simulation.selectedRegion {
 				lifecycle.simulateActivity(.idle)
 				_ = installation.selectRegion(simulation.selectedRegion)
