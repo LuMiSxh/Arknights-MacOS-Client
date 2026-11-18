@@ -34,6 +34,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	}
 	private var check: Check?
 	private var updateFailureID: UUID?
+	private var idleCheckObserverID: UUID?
 
 	init(
 		lifecycle: LauncherLifecycleStore,
@@ -55,6 +56,10 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	}
 
 	deinit {
+		if let idleCheckObserverID {
+			let lifecycle = self.lifecycle
+			Task { @MainActor in lifecycle.removeActivityObserver(idleCheckObserverID) }
+		}
 		cancelActivityObservation?()
 	}
 
@@ -70,6 +75,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	}
 
 	func checkForUpdates() {
+		cancelIdleCheck()
 		if userDriver.phase != .hidden && !userDriver.isPresented {
 			userDriver.showUpdateInFocus()
 			return
@@ -84,6 +90,23 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		}
 		check = .userInitiated
 		updater.checkForUpdates()
+	}
+
+	/// Starts the check now, or once no operation holds the launcher.
+	func checkForUpdatesWhenIdle() {
+		guard !lifecycle.canBeginExclusiveActivity else {
+			checkForUpdates()
+			return
+		}
+		guard idleCheckObserverID == nil else { return }
+		var observerID: UUID?
+		observerID = lifecycle.observeActivityChanges { [weak self] in
+			guard let self, self.lifecycle.canBeginExclusiveActivity else { return }
+			if let observerID { self.lifecycle.removeActivityObserver(observerID) }
+			self.idleCheckObserverID = nil
+			self.checkForUpdates()
+		}
+		idleCheckObserverID = observerID
 	}
 
 	func checkForUpdateInformation(
@@ -245,6 +268,11 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	/// failure sheet and returns true, so the overlay stays idle. Background and probe failures
 	/// return false and keep their inline message.
 	private func reportUpdateFailure(_ error: any Error) -> Bool {
+		if Self.isBusyError(error) {
+			log.info("Launcher update deferred; another operation holds the launcher")
+			checkForUpdatesWhenIdle()
+			return true
+		}
 		log.error("Launcher update failed: \(error)")
 		guard installationID != nil || isUserInitiatedCheck else { return false }
 		// Keep the failure the user already sees. A second one would replace it.
@@ -292,6 +320,17 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		}
 		check = nil
 		lifecycle.finishLauncherUpdate()
+	}
+
+	private func cancelIdleCheck() {
+		guard let idleCheckObserverID else { return }
+		lifecycle.removeActivityObserver(idleCheckObserverID)
+		self.idleCheckObserverID = nil
+	}
+
+	private static func isBusyError(_ error: any Error) -> Bool {
+		let error = error as NSError
+		return error.domain == busyError.domain && error.code == busyError.code
 	}
 
 	@discardableResult

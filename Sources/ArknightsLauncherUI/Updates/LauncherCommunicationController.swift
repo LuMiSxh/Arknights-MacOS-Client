@@ -58,7 +58,7 @@ package final class LauncherCommunicationController {
 			guard let self else { return outcome }
 			startupProbeOutcome = outcome
 			if case .updateAvailable = outcome {
-				launcherUpdater.checkForUpdates()
+				launcherUpdater.checkForUpdatesWhenIdle()
 			}
 			return outcome
 		}
