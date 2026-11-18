@@ -3,7 +3,7 @@
 ## Scope and Commands
 
 - Target Apple Silicon and macOS 15+. Guard macOS-26-only Liquid Glass APIs with `AdaptiveGlass.swift` fallbacks.
-- Treat Yostar Global, Japan, and Korea PC, Gryphline Taiwan, and Hypergryph China and China (Bilibili) as stable. Canary Features currently has no features.
+- Treat Yostar Global, Japan, and Korea PC, Gryphline Taiwan, and Hypergryph China and China (Bilibili) as stable.
 - Keep source, docs, tests, UI copy, and commits in English; the app ships English-only. Write docs in plain technical English: one idea per sentence, about 25 words or fewer, active voice, imperative steps, UI labels in **bold** exactly as shown, and glossary terms (`docs/development/README.md#terms`). `docs/help/**` and `docs/installation.md` are strict; architecture docs may use precise technical terms.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
 - Keep the static SvelteKit site in `web/` (see `docs/development/README.md#documentation-website`); do not add Vitest.
@@ -26,7 +26,7 @@
 - Define persisted locations through `AppPaths`; preserve paths, keys, and formats unless a migration is explicit. Centralize application-owned keys, limits, retries, and timeouts in `Shared/Configuration/AppConstants.swift`; keep upstream literals beside their protocol.
 - Keep production Swift under 800 lines and tests under 450. Split a type by responsibility (`Type+Download.swift`), never by line count. C/Objective-C shims and scripts are exempt.
 - Do not use `try?` for filesystem, process, or network work. Use `log.attempt("context") { try … }` for best-effort work.
-- Use `try?` only to remove an app-owned temporary file, with `// best effort:` on that line or the line above. `scripts/lib/try_lint.py` enforces this in Infrastructure, Installation, and Runtime.
+- Use `try?` only to remove an app-owned temporary file, with `// best effort:` on that line or the line above. `scripts/lib/try_lint.py` enforces this in Core, Customization, Infrastructure, Installation, Presence, and Runtime.
 - Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python.
 - Comment only non-obvious WHYs, workarounds, and security/concurrency invariants. Add DocC only to `package` APIs whose behavior the name does not state.
 - Keep developer simulation in `SimulatedLauncherActions` (`#if DEBUG`), driven by `CaseIterable` state and generic pickers. Production action bodies never branch on developer mode.

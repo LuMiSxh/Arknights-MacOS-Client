@@ -2,3 +2,8 @@
 # Each entry is `path:silent-try:count`, relative to the repository root. The count is the exact number
 # of unmarked `try?` the file may keep. A count that differs from the scan fails the scripts tests.
 # An entry that matches no hit is removed. Temporary-file removal uses `// best effort:` and needs no entry.
+# In-memory decoding is not filesystem, process, or network work; those entries say so above them.
+# A failed legacy-blob decode leaves the stored data untouched, and the preferences reader reports it.
+Sources/ArknightsCore/Shared/Persistence/PreferencesMigrator.swift:silent-try:7
+# Tolerant catalog decoders try each representation in turn; a type mismatch means "not this shape".
+Sources/ArknightsCustomization/Presets/Models/PresetCatalogModels.swift:silent-try:6

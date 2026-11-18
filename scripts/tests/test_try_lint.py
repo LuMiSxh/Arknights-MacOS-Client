@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import pytest
-from lib.try_lint import TRY_LINT_ALLOWLIST, check
+from lib.try_lint import TRY_LINT_ALLOWLIST, TRY_LINT_SOURCE_ROOTS, check
 
 SOURCE = "Sources/ArknightsGameRuntime/Runtime/Example.swift"
 
@@ -30,3 +30,15 @@ def test_silent_try_without_marker_is_reported(tmp_path: Path, line: str) -> Non
     write_allowlist(tmp_path)
 
     assert check(tmp_path) == [f"{SOURCE}:1: silent-try: {line}"]
+
+
+@pytest.mark.parametrize("source_root", TRY_LINT_SOURCE_ROOTS)
+def test_every_linted_source_root_reports_silent_try(
+    tmp_path: Path, source_root: Path
+) -> None:
+    line = "let data = try? Data(contentsOf: url)"
+    source = (source_root / "Example.swift").as_posix()
+    write(tmp_path / source, f"{line}\n")
+    write_allowlist(tmp_path)
+
+    assert check(tmp_path) == [f"{source}:1: silent-try: {line}"]

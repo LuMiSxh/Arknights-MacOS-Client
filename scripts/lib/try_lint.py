@@ -17,9 +17,12 @@ from pathlib import Path
 from lib.allowlist import code_of, load_allowlist
 
 TRY_LINT_SOURCE_ROOTS = (
-    Path("Sources/ArknightsInfrastructure"),
+    Path("Sources/ArknightsCore"),
+    Path("Sources/ArknightsCustomization"),
     Path("Sources/ArknightsGameInstallation"),
     Path("Sources/ArknightsGameRuntime"),
+    Path("Sources/ArknightsInfrastructure"),
+    Path("Sources/ArknightsPresence"),
 )
 TRY_LINT_ALLOWLIST = Path("scripts/config/try-lint-allowlist.txt")
 RULE = "silent-try"
