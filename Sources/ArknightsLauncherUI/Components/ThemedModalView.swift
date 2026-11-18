@@ -91,10 +91,6 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 		}
 		.frame(width: modalSize.width, height: modalSize.height)
 		.launcherSurface(.modal)
-		.background {
-			// Dims the window behind the card; the card leaves with it.
-			theme.modalDim.ignoresSafeArea()
-		}
 		.modifier(ModalEntrance(hasEntered: hasEntered, reduceMotion: reduceMotion))
 		.transition(
 			reduceMotion
