@@ -20,7 +20,6 @@ package struct ContentView: View {
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@State var presentation = LauncherPresentationArbiter()
 	@State var confirmation: LauncherConfirmation?
-	@State var repairFailureID: UUID?
 	@State var decorativeMotionVisibility = DecorativeMotionVisibility()
 	@State private var isTerminating = false
 	@State var windowSize = CGSize.zero
@@ -51,8 +50,7 @@ package struct ContentView: View {
 	// The chain is split in two: as one expression it exceeds the type checker's budget.
 	private var presentedContent: some View {
 		ZStack {
-			BackgroundMusicView(
-				lifecycle: model.lifecycle, settings: model.settings, controller: musicController)
+			BackgroundMusicView(settings: model.settings, controller: musicController)
 			LauncherArtworkView(
 				image: model.customization.heroArtwork,
 				themeCacheKey: model.customization.activeThemeCacheKey,
@@ -190,6 +188,7 @@ package struct ContentView: View {
 				)
 			}
 			.aceWarningConfirmation(model: model)
+			.installDirectoryConfirmation(model.installation)
 			.onAppear {
 				StartupTimeline.shared.mark("window appeared")
 				registerOpenSettings(requestSettings)
@@ -291,9 +290,12 @@ package struct ContentView: View {
 	private var rosettaConfirmationBinding: Binding<Bool> {
 		Binding(get: { confirmation == .rosetta }, set: { if !$0 { confirmation = nil } })
 	}
+	private var isRepairConfirmationPending: Bool {
+		if case .repair = confirmation { true } else { false }
+	}
 	private var repairConfirmationBinding: Binding<Bool> {
 		Binding(
-			get: { if case .repair = confirmation { true } else { false } },
+			get: { isRepairConfirmationPending },
 			set: { if !$0 { confirmation = nil } })
 	}
 	private var deleteLegacyDataConfirmationBinding: Binding<Bool> {
@@ -362,7 +364,6 @@ package struct ContentView: View {
 	private func dismissPresentationForQuit() {
 		isTerminating = true
 		confirmation = nil
-		repairFailureID = nil
 		model.actions.cancelACEWarning()
 		presentation.dismissCurrent()
 	}
@@ -448,7 +449,7 @@ package struct ContentView: View {
 		}
 	}
 	func failureDetailsDidDismiss() {
-		guard repairFailureID == nil,
+		guard !isRepairConfirmationPending,
 			let failure = model.lifecycle.state.presentation.failure,
 			!presentation.presents(.failure(failure))
 		else { return }
@@ -458,15 +459,13 @@ package struct ContentView: View {
 	}
 	private func cancelRepair() {
 		confirmation = nil
-		repairFailureID = nil
 		if model.lifecycle.state.presentation.failure?.blocksGameLaunch == false {
 			model.lifecycle.clearFailure()
 		}
 	}
 	private func confirmRepair() {
-		guard let id = repairFailureID else { return }
+		guard case .repair(let id) = confirmation else { return }
 		confirmation = nil
-		repairFailureID = nil
 		model.confirmRepair(failureID: id)
 	}
 

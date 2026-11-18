@@ -48,6 +48,11 @@ package final class BackgroundMusicController {
 	@ObservationIgnored var playerGeneration: TaskSlot.Token
 	@ObservationIgnored var lastObservedTitle: String?
 	@ObservationIgnored var lastObservedVideoID: String?
+	@ObservationIgnored var activityObserverID: UUID?
+	@ObservationIgnored var lifecycleObservationTask: Task<Void, Never>?
+	@ObservationIgnored var isFollowingChanges = false
+	@ObservationIgnored var observedMusicPreferences: MusicPreferencesSnapshot?
+	@ObservationIgnored var observedIsChecking: Bool?
 
 	package convenience init(
 		lifecycle: LauncherLifecycleStore,
@@ -146,6 +151,74 @@ package final class BackgroundMusicController {
 		startIfNeeded()
 	}
 
+	/// Starts following launcher activity and music preferences while the view is mounted.
+	func start() {
+		guard !isFollowingChanges else { return }
+		isFollowingChanges = true
+		activityObserverID = lifecycle.observeActivityChanges { [weak self] in
+			guard let self else { return }
+			self.gameActivityDidChange(to: self.lifecycle.activity)
+		}
+		observedMusicPreferences = musicPreferences
+		observedIsChecking = lifecycle.state.refresh.isChecking
+		observeFollowedState()
+		startIfNeeded()
+	}
+
+	private var musicPreferences: MusicPreferencesSnapshot {
+		MusicPreferencesSnapshot(
+			url: settings.launcherMusicURL,
+			isEnabled: settings.playsLauncherMusic,
+			volume: settings.launcherMusicVolume,
+			isMuted: settings.launcherMusicMuted
+		)
+	}
+
+	/// One cancellable task follows settings and the refresh flag. Observation tracking fires
+	/// once, so the loop re-arms it after every change.
+	private func observeFollowedState() {
+		lifecycleObservationTask?.cancel()
+		lifecycleObservationTask = Task { [weak self] in
+			while !Task.isCancelled {
+				guard let self else { return }
+				let (changes, continuation) = AsyncStream<Void>.makeStream(
+					bufferingPolicy: .bufferingNewest(1))
+				withObservationTracking {
+					_ = self.musicPreferences
+					_ = self.lifecycle.state.refresh.isChecking
+				} onChange: {
+					continuation.yield(())
+				}
+				var iterator = changes.makeAsyncIterator()
+				guard await iterator.next() != nil, !Task.isCancelled else { return }
+				self.followedStateDidChange()
+			}
+		}
+	}
+
+	/// Applies every followed value that changed since the previous observation.
+	private func followedStateDidChange() {
+		guard isFollowingChanges else { return }
+		let previousPreferences = observedMusicPreferences
+		let currentPreferences = musicPreferences
+		observedMusicPreferences = currentPreferences
+		if let previousPreferences, previousPreferences != currentPreferences {
+			if previousPreferences.url != currentPreferences.url { sourceDidChange() }
+			if previousPreferences.isEnabled != currentPreferences.isEnabled {
+				enabledDidChange(to: currentPreferences.isEnabled)
+			}
+			if previousPreferences.volume != currentPreferences.volume
+				|| previousPreferences.isMuted != currentPreferences.isMuted
+			{
+				volumeDidChange(to: currentPreferences.volume)
+			}
+		}
+		let isChecking = lifecycle.state.refresh.isChecking
+		guard observedIsChecking != isChecking else { return }
+		observedIsChecking = isChecking
+		refreshDidChange(isChecking: isChecking)
+	}
+
 	func sourceDidChange() {
 		guard settings.playsLauncherMusic, !lifecycle.activity.hasGameProcess else { return }
 		sourceChangeSlot.replace { [weak self, clock] token in
@@ -226,6 +299,15 @@ package final class BackgroundMusicController {
 	}
 
 	func stop() {
+		isFollowingChanges = false
+		lifecycleObservationTask?.cancel()
+		lifecycleObservationTask = nil
+		if let activityObserverID {
+			lifecycle.removeActivityObserver(activityObserverID)
+			self.activityObserverID = nil
+		}
+		observedMusicPreferences = nil
+		observedIsChecking = nil
 		stopAndClearPlayer()
 	}
 
@@ -325,4 +407,12 @@ package final class BackgroundMusicController {
 		if let url = URL(string: trimmed) { openURL(url) }
 	}
 
+}
+
+/// The launcher music preferences the controller follows while the view is mounted.
+struct MusicPreferencesSnapshot: Equatable {
+	let url: String
+	let isEnabled: Bool
+	let volume: Double
+	let isMuted: Bool
 }

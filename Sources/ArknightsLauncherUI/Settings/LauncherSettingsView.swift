@@ -14,23 +14,7 @@ import SwiftUI
 
 struct LauncherSettingsView: View {
 	@Environment(\.launcherTheme) private var theme
-	let settings: LauncherPreferencesController
-	let customization: CustomizationController
-	let communication: LauncherCommunicationController
-	let installation: InstallationController
-	let gameSession: GameSessionController
-	let runtimeSelection: RuntimeSelectionController
-	let intelTranslation: IntelTranslationController
-	let lifecycle: LauncherLifecycleStore
-	let reminders: ResetReminderController
-	let screenshots: GameScreenshotController
-	let storage: StorageMaintenanceController
-	let storageOverview: StorageOverviewController
-	let playtimeStatistics: PlaytimeStatisticsController
-	let presetCatalog: PresetCatalogService
-	let launcherIconManager: LauncherIconManager
-	let branding: LauncherBranding?
-	let actions: any LauncherActions
+	let dependencies: LauncherSettingsDependencies
 	let restartOnboarding: () -> Void
 	let requestLauncherUpdateCheck: () -> Void
 	let openProblemReport: () -> Void
@@ -58,8 +42,9 @@ struct LauncherSettingsView: View {
 			SettingsNavigationRail(
 				selection: $selectedSection,
 				isDeveloperMode: isDeveloperMode,
-				lifecycle: lifecycle,
-				installation: installation,
+				lifecycle: dependencies.lifecycle,
+				installation: dependencies.installation,
+				runtimeSelection: dependencies.runtimeSelection,
 				selectionNamespace: railSelection
 			)
 			Divider()
@@ -70,87 +55,88 @@ struct LauncherSettingsView: View {
 					switch selectedSection {
 					case .game:
 						GameSettingsPage(
-							settings: settings,
-							gameSession: gameSession,
-							lifecycle: lifecycle
+							settings: dependencies.settings,
+							gameSession: dependencies.gameSession,
+							lifecycle: dependencies.lifecycle
 						)
 					case .appearance:
 						AppearanceSettingsPage(
-							settings: settings,
-							customization: customization,
-							lifecycle: lifecycle,
-							presetCatalog: presetCatalog,
-							actions: actions
+							settings: dependencies.settings,
+							customization: dependencies.customization,
+							lifecycle: dependencies.lifecycle,
+							presetCatalog: dependencies.presetCatalog,
+							actions: dependencies.actions
 						)
 					case .integration:
 						IntegrationSettingsPage(
-							settings: settings,
-							reminders: reminders,
-							screenshots: screenshots
+							settings: dependencies.settings,
+							reminders: dependencies.reminders,
+							screenshots: dependencies.screenshots
 						)
 					case .updates:
 						UpdatesSettingsPage(
-							settings: settings,
-							communication: communication,
-							installation: installation,
-							lifecycle: lifecycle,
+							settings: dependencies.settings,
+							communication: dependencies.communication,
+							installation: dependencies.installation,
+							lifecycle: dependencies.lifecycle,
 							appVersion: IssueReportURL.appVersion,
-							actions: actions,
+							actions: dependencies.actions,
 							checkLauncherUpdates: requestLauncherUpdateCheck
 						)
 					case .servers:
 						InstallationSettingsPage(
-							settings: settings,
-							installation: installation,
-							gameSession: gameSession,
-							lifecycle: lifecycle,
-							actions: actions,
-							maintenance: actions
+							settings: dependencies.settings,
+							installation: dependencies.installation,
+							gameSession: dependencies.gameSession,
+							lifecycle: dependencies.lifecycle,
+							actions: dependencies.actions,
+							maintenance: dependencies.actions
 						)
 					case .runtime:
 						RuntimeSettingsPage(
-							settings: settings,
-							gameSession: gameSession,
-							runtimeSelection: runtimeSelection,
-							intelTranslation: intelTranslation,
-							lifecycle: lifecycle,
-							actions: actions
+							settings: dependencies.settings,
+							gameSession: dependencies.gameSession,
+							runtimeSelection: dependencies.runtimeSelection,
+							intelTranslation: dependencies.intelTranslation,
+							lifecycle: dependencies.lifecycle,
+							actions: dependencies.actions
 						)
 					case .storage:
 						StorageOverviewPage(
-							controller: storageOverview,
+							controller: dependencies.storageOverview,
 							actions: StorageOverviewActions(
-								clearGameCaches: storage.clearGameCache,
-								clearGalleryCache: storage.clearPresetGalleryCache,
-								revealLogs: storage.revealLogs,
-								revealApplicationSupport: storage.revealApplicationSupport
+								clearGameCaches: dependencies.storage.clearGameCache,
+								clearGalleryCache: dependencies.storage.clearPresetGalleryCache,
+								revealLogs: dependencies.storage.revealLogs,
+								revealApplicationSupport: dependencies.storage
+									.revealApplicationSupport
 							)
 						)
 					case .statistics:
 						PlaytimeStatisticsPage(
-							controller: playtimeStatistics,
+							controller: dependencies.playtimeStatistics,
 							regions: GameRegion.allCases.filter {
-								installation.isRegionInstalled($0)
+								dependencies.installation.isRegionInstalled($0)
 							}
 						)
 					case .help:
 						HelpSettingsPage(
-							region: installation.region,
-							settings: settings,
-							actions: actions,
-							maintenance: actions,
+							region: dependencies.installation.region,
+							settings: dependencies.settings,
+							actions: dependencies.actions,
+							maintenance: dependencies.actions,
 							openProblemReport: openProblemReport,
-							installation: installation,
-							gameSession: gameSession,
-							lifecycle: lifecycle,
+							installation: dependencies.installation,
+							gameSession: dependencies.gameSession,
+							lifecycle: dependencies.lifecycle,
 							restartOnboarding: restartOnboarding
 						)
 					case .about:
 						AboutSettingsPage(
-							launcherIconManager: launcherIconManager,
-							branding: branding,
-							runtime: gameSession.installedRuntime,
-							revealApplication: storage.revealApplication,
+							launcherIconManager: dependencies.launcherIconManager,
+							branding: dependencies.branding,
+							runtime: dependencies.gameSession.installedRuntime,
+							revealApplication: dependencies.storage.revealApplication,
 							presentedDocument: $presentedDocument
 						)
 					#if DEBUG
@@ -191,7 +177,7 @@ struct LauncherSettingsView: View {
 		.background(theme.sheetTint)
 		.animation(
 			LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion),
-			value: customization.dynamicThemeHue
+			value: dependencies.customization.dynamicThemeHue
 		)
 		.onExitCommand(perform: dismiss.callAsFunction)
 		.frame(
@@ -206,7 +192,7 @@ struct LauncherSettingsView: View {
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(
 				document: document,
-				accentColor: customization.accentColor
+				accentColor: dependencies.customization.accentColor
 			)
 		}
 	}
@@ -243,6 +229,7 @@ private struct SettingsNavigationRail: View {
 	let isDeveloperMode: Bool
 	let lifecycle: LauncherLifecycleStore
 	let installation: InstallationController
+	let runtimeSelection: RuntimeSelectionController
 	let selectionNamespace: Namespace.ID
 
 	var body: some View {
@@ -276,9 +263,13 @@ private struct SettingsNavigationRail: View {
 
 			Spacer()
 
-			SettingsOperationStrip(lifecycle: lifecycle, installation: installation)
-				.padding(.horizontal, LauncherTokens.Spacing.panel)
-				.padding(.bottom, LauncherTokens.Spacing.panel)
+			SettingsOperationStrip(
+				lifecycle: lifecycle,
+				installation: installation,
+				runtimeSelection: runtimeSelection
+			)
+			.padding(.horizontal, LauncherTokens.Spacing.panel)
+			.padding(.bottom, LauncherTokens.Spacing.panel)
 		}
 		.frame(width: LauncherTokens.Layout.railWidth)
 		.background(theme.footerFill)

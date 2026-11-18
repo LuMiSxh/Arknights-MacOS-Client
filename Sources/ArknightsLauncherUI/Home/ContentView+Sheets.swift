@@ -8,18 +8,7 @@ extension ContentView {
 		switch destination {
 		case .settings:
 			LauncherSettingsView(
-				settings: model.settings, customization: model.customization,
-				communication: model.communication,
-				installation: model.installation, gameSession: model.gameSession,
-				runtimeSelection: model.runtimeSelection,
-				intelTranslation: model.intelTranslation,
-				lifecycle: model.lifecycle, reminders: model.reminders,
-				screenshots: model.screenshots,
-				storage: model.storage, storageOverview: model.storageOverview,
-				playtimeStatistics: model.playtimeStatistics, presetCatalog: model.presetCatalog,
-				launcherIconManager: model.launcherIconManager,
-				branding: model.refreshController.branding,
-				actions: model.actions,
+				dependencies: model.settingsDependencies,
 				restartOnboarding: restartOnboarding,
 				requestLauncherUpdateCheck: requestLauncherUpdateCheck,
 				openProblemReport: { model.openProblemReport(source: .settings) },

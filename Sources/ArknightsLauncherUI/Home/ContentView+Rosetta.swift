@@ -22,7 +22,6 @@ extension ContentView {
 		switch disposition {
 		case .repairConfirmationRequired:
 			presentation.dismissCurrent()
-			repairFailureID = failure.id
 			confirmation = .repair(failure.id)
 		case .deleteDataFolderConfirmationRequired:
 			presentation.dismissCurrent()
