@@ -150,12 +150,12 @@ package struct ContentView: View {
 		} action: {
 			windowSize = $0
 		}
-		.environment(\.launcherWindowSize, windowSize)
 		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) {
 			sheetContent(for: $0)
 				.launcherTheme(accent: model.customization.accentColor)
 		}
 		.overlay { updateOverlay }
+		.environment(\.launcherWindowSize, windowSize)
 	}
 
 	package var body: some View {
