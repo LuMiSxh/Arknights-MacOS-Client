@@ -6,30 +6,6 @@ import Testing
 
 @testable import ArknightsGameRuntime
 
-/// A clock whose sleeps end only when their task is cancelled, so a deadline never fires.
-private struct ParkedClock: Clock {
-	struct Instant: InstantProtocol {
-		var offset: Duration
-		func advanced(by duration: Duration) -> Instant { Instant(offset: offset + duration) }
-		func duration(to other: Instant) -> Duration { other.offset - offset }
-		static func < (lhs: Instant, rhs: Instant) -> Bool { lhs.offset < rhs.offset }
-	}
-
-	var now: Instant { Instant(offset: .zero) }
-	var minimumResolution: Duration { .nanoseconds(1) }
-
-	func sleep(until deadline: Instant, tolerance: Duration?) async throws {
-		try await waitForCancellation()
-	}
-}
-
-/// Suspends until the task is cancelled; the stream never yields or finishes on its own.
-private func waitForCancellation() async throws {
-	let stream = AsyncStream<Void>(bufferingPolicy: .bufferingNewest(1)) { _ in }
-	for await _ in stream {}
-	throw CancellationError()
-}
-
 /// A child that ignores SIGTERM and exits when its stdin closes.
 private struct StubbornChild {
 	let process = Process()

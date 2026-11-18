@@ -92,7 +92,7 @@ struct DiscordIPCConnectionTests {
 	func cancellingTheConnectingTaskThrowsCancellationError() async throws {
 		let pair = try ConnectedSocketPair()
 		defer { pair.closePeer() }
-		let connection = Self.connection(on: pair, clock: SuspendedClock())
+		let connection = Self.connection(on: pair, clock: ParkedClock())
 		let attempt = Task { try await connection.connect(clientID: Self.clientID) }
 
 		// The peer sees the handshake once the connection waits for READY.
@@ -109,7 +109,7 @@ struct DiscordIPCConnectionTests {
 
 	private static func connection(
 		on pair: ConnectedSocketPair,
-		clock: any Clock<Duration> = SuspendedClock()
+		clock: any Clock<Duration> = ParkedClock()
 	) -> DiscordIPCConnection {
 		let descriptor = pair.clientDescriptor
 		return DiscordIPCConnection(
@@ -211,20 +211,5 @@ private final class ConnectedSocketPair {
 			guard count > 0 else { throw SocketPairError.posix(errno) }
 			received.append(contentsOf: chunk.prefix(count))
 		}
-	}
-}
-
-/// A clock whose sleeps end only on cancellation, so a handshake timeout never fires.
-private final class SuspendedClock: Clock, Sendable {
-	typealias Instant = TestClockInstant
-
-	var now: Instant { Instant(offset: .zero) }
-	var minimumResolution: Duration { .nanoseconds(1) }
-
-	func sleep(until deadline: Instant, tolerance: Duration?) async throws {
-		let (stream, continuation) = AsyncStream<Never>.makeStream()
-		for await _ in stream {}
-		continuation.finish()
-		try Task.checkCancellation()
 	}
 }

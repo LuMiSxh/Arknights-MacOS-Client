@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import Foundation
+import Synchronization
 import Testing
 
 @testable import ArknightsGameRuntime
@@ -81,12 +82,11 @@ struct ActiveGameSessionTests {
 }
 
 /// Records whether the spawn gate already refused new processes when `stop` ran.
-private final class GateRecordingRuntime: WineRuntimeSessionControlling, @unchecked Sendable {
-	private let lock = NSLock()
-	private var denied: Bool?
+private final class GateRecordingRuntime: WineRuntimeSessionControlling, Sendable {
+	private let denied = Mutex<Bool?>(nil)
 
 	var spawnWasDeniedAtStop: Bool? {
-		lock.withLock { denied }
+		denied.withLock { $0 }
 	}
 
 	func waitUntilStopped(prefixDirectory: URL) async throws {}
@@ -98,6 +98,6 @@ private final class GateRecordingRuntime: WineRuntimeSessionControlling, @unchec
 		} catch is CancellationError {
 			wasDenied = true
 		}
-		lock.withLock { denied = wasDenied }
+		denied.withLock { $0 = wasDenied }
 	}
 }

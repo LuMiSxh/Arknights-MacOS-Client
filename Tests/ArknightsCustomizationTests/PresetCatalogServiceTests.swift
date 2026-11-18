@@ -3,6 +3,7 @@
 import ArknightsCore
 import ArknightsTestSupport
 import Foundation
+import Synchronization
 import Testing
 
 @testable import ArknightsCustomization
@@ -97,17 +98,20 @@ private final class EpochImageURLProtocol: URLProtocol, @unchecked Sendable {
 			"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zf9sAAAAASUVORK5CYII="
 	)!
 	static let gate = DispatchSemaphore(value: 0)
-	private static let lock = NSLock()
-	nonisolated(unsafe) static var requestStartedSignal = Signal()
-	nonisolated(unsafe) static var requestCount = 0
+	private struct RequestState {
+		var startedSignal = Signal()
+		var count = 0
+	}
+
+	private static let state = Mutex(RequestState())
 
 	override class func canInit(with request: URLRequest) -> Bool { true }
 	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
 	override func startLoading() {
-		let (started, isFirstRequest) = Self.lock.withLock { () -> (Signal, Bool) in
-			Self.requestCount += 1
-			return (Self.requestStartedSignal, Self.requestCount == 1)
+		let (started, isFirstRequest) = Self.state.withLock { state -> (Signal, Bool) in
+			state.count += 1
+			return (state.startedSignal, state.count == 1)
 		}
 		started.fire()
 		if isFirstRequest { Self.gate.wait() }
@@ -125,16 +129,13 @@ private final class EpochImageURLProtocol: URLProtocol, @unchecked Sendable {
 	override func stopLoading() {}
 
 	static func waitForRequestStart() async -> Bool {
-		let signal = lock.withLock { requestStartedSignal }
+		let signal = state.withLock { $0.startedSignal }
 		return await signal.wait(timeout: .seconds(10))
 	}
 
 	static func reset() {
 		while gate.wait(timeout: .now()) == .success {}
-		lock.withLock {
-			requestStartedSignal = Signal()
-			requestCount = 0
-		}
+		state.withLock { $0 = RequestState() }
 	}
 
 	static func release() { gate.signal() }

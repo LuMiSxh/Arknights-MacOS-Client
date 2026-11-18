@@ -115,8 +115,13 @@ let package = Package(
 		),
 		.target(
 			name: "ArknightsTestSupport",
-			dependencies: ["ArknightsCore", "ArknightsGameRuntime"],
+			dependencies: ["ArknightsCore"],
 			path: "Tests/ArknightsTestSupport"
+		),
+		.target(
+			name: "ArknightsRuntimeTestSupport",
+			dependencies: ["ArknightsCore", "ArknightsTestSupport", "ArknightsGameRuntime"],
+			path: "Tests/ArknightsRuntimeTestSupport"
 		),
 		.testTarget(
 			name: "ArknightsClientTests",
@@ -133,6 +138,7 @@ let package = Package(
 			dependencies: [
 				"ArknightsLauncherUI",
 				"ArknightsTestSupport",
+				"ArknightsRuntimeTestSupport",
 				"ArknightsGameRuntime",
 				"ArknightsGameInstallation",
 				"ArknightsCustomization",
@@ -195,6 +201,7 @@ let package = Package(
 			dependencies: [
 				"ArknightsGameRuntime",
 				"ArknightsTestSupport",
+				"ArknightsRuntimeTestSupport",
 				"ArknightsGameInstallation",
 				"ArknightsCustomization",
 				"ArknightsCore",

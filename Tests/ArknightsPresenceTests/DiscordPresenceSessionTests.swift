@@ -54,7 +54,7 @@ struct DiscordPresenceSessionTests {
 		await connecting.wait()
 		let secondApply = Task { await session.apply(.playing(secondRequest)) }
 		await second.activityRecorded.wait()
-		await release.open()
+		release.fire()
 		await firstApply.value
 		await secondApply.value
 
@@ -95,26 +95,6 @@ private struct ImmediateClock: Clock {
 	func sleep(until deadline: Instant, tolerance: Duration?) async throws {}
 }
 
-private actor Signal {
-	private var isOpen = false
-	private var waiters: [CheckedContinuation<Void, Never>] = []
-
-	func open() {
-		guard !isOpen else { return }
-		isOpen = true
-		let pending = waiters
-		waiters.removeAll()
-		for waiter in pending {
-			waiter.resume()
-		}
-	}
-
-	func wait() async {
-		guard !isOpen else { return }
-		await withCheckedContinuation { waiters.append($0) }
-	}
-}
-
 private actor FakeTransport: DiscordIPCTransport {
 	struct Call: Sendable {
 		let activity: DiscordIPCActivity?
@@ -135,13 +115,13 @@ private actor FakeTransport: DiscordIPCTransport {
 	}
 
 	func connect(clientID: String) async throws {
-		await connectStarted?.open()
+		connectStarted?.fire()
 		await connectRelease?.wait()
 	}
 
 	func setActivity(_ activity: DiscordIPCActivity?, pid: Int32) async throws {
 		activities.append(Call(activity: activity, pid: pid))
-		await activityRecorded.open()
+		activityRecorded.fire()
 	}
 
 	func waitForDisconnect() async {
@@ -150,6 +130,6 @@ private actor FakeTransport: DiscordIPCTransport {
 
 	func disconnect() async {
 		disconnectCount += 1
-		await closed.open()
+		closed.fire()
 	}
 }

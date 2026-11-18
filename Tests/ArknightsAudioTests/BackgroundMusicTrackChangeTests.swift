@@ -52,6 +52,8 @@ struct BackgroundMusicTrackChangeTests {
 		#expect(controller.isChangingTrack)
 
 		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "b", title: "Second")
+		// The timeout and the recheck both sleep; a sleep that registers after the release stays held.
+		#expect(await clock.waitForSleepers(2))
 		clock.release()
 		await waitForCondition { !controller.isChangingTrack }
 		#expect(controller.currentMusicTitle == "Second")
