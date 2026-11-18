@@ -22,7 +22,7 @@ audience: developers
 
 ## Before handing off a change
 
-1. Run the narrowest focused check while you iterate. Add regression coverage where behavior changed.
+1. Run the narrowest focused check while you iterate. Add a test only for behavior that no type, compiler check, or existing test covers.
 2. Update the affected guide or contract. Add user-visible changes to `CHANGELOG.md`.
 3. Run the relevant formatter, inspect its diff, and rerun the focused check.
 4. Run `just ci`.

@@ -62,11 +62,12 @@
 
 ## Testing
 
-- See `docs/development/testing.md`. Keep unit and integration tests offline and fixture-backed. Live contracts run only through `just live-contracts`.
+- See `docs/development/testing.md`. A test earns its place only when it fails for a behavior that users depend on; test count is not quality.
+- Keep unit and integration tests offline and fixture-backed. Live contracts run only through `just live-contracts`.
 - Put shared helpers in `Tests/ArknightsTestSupport`. Give each test its own UUID temp directory, cleaned in `defer`. Use `.serialized` only as a last resort.
-- Write one test per contract. Parameterize equivalent cases. Test each contract at the cheapest layer that fails; do not repeat it in view-model or composition tests.
-- Add a regression test only when users would notice the bug and no type, compiler check, or existing test catches it. Prefer a type change (enum, exhaustive `switch`).
-- Test external contracts only: support codes, diagnostic prefixes, persisted keys, and URLs. Do not test constants, user-facing strings, log text, mappings, getters, presentation, or framework behavior.
+- Write one test per contract, parameterized for equivalent cases, at the cheapest layer that fails. Do not repeat a contract in view-model or composition tests.
+- Do not test constants, mappings, getters, presentation, log text, user-facing strings, framework behavior, or a double's calls.
+- Prefer a type change (enum, exhaustive `switch`, restricted initializer) to a new test. Add a regression test only when users would notice the bug and no check catches it.
 - Keep at least one test for each critical contract: install exclusivity, activity lease, prefix ownership, launch cancellation, `.part` resume, manifest paths, download hosts, migrations, support codes, privacy, stale-result checks, and update safety.
 
 ## CI and Workflows

@@ -1,13 +1,32 @@
 ---
 title: Testing architecture
-description: Test levels, isolation boundaries, deterministic workflows, and release verification
+description: Which tests earn their place, how to prove it, and the isolation rules for each level
 order: 40
 ---
 
 # Testing architecture
 
 > [!IMPORTANT]
-> Unit and integration tests are deterministic and run for every pull request. Live contracts are read-only probes of public services. They run only through their scheduled or manual workflow.
+> A test earns its place only when it fails for a behavior that users or callers depend on. Test count is not quality.
+
+## Test value
+
+Keep a test only when it fails for the behavior it names and stays green through a refactor that keeps that behavior.
+
+| Smell            | How it looks                                                      | Action                                               |
+| ---------------- | ----------------------------------------------------------------- | ---------------------------------------------------- |
+| Tautology        | The test builds the expected value the way the code does          | Compare against a literal from the specification     |
+| Tests the double | The test checks that a stub was called and nothing else           | Assert the returned state or the written file        |
+| Change detector  | The test asserts call order or a private detail                   | Delete it, or rewrite through the public entry point |
+| Trivial          | Constant, getter, plain `Codable` roundtrip, standard library use | Delete                                               |
+| Weak assertion   | `#expect(value != nil)`, `#expect(!list.isEmpty)`                 | Assert the exact value or delete the test            |
+| Duplicate        | The same rule has a test in the unit and the view-model target    | Keep the cheapest layer and delete the other         |
+| Example pile     | Five tests of one rule with different literals                    | One `@Test(arguments:)` case list                    |
+| Large setup      | Many doubles to reach one assertion                               | Test at the layer that owns the rule                 |
+
+Prefer a type change over a test when the compiler can reject the bug. Use an enum instead of a boolean pair, an exhaustive `switch`, or an initializer that rejects an invalid value.
+
+A test also stays when it pins a past bug that users noticed. Every contract in [What to test](#what-to-test) keeps at least one test.
 
 ## Test levels
 
@@ -17,11 +36,13 @@ order: 40
 | Integration   | `just integration`    | Onboarding, API decoding, installer downloads, checksums, and state persistence on fixtures | Denied         |
 | Live contract | `just live-contracts` | Current Yostar configuration, CDN, and manifest shapes; Gryphline Taiwan metadata and CDN   | Required       |
 
-`just ci` runs unit checks, integration tests, and the release Swift build. It never downloads the Wine runtime or game files. It never launches the app or Wine. uv and SwiftPM can resolve pinned dependencies on a fresh checkout. Test processes stay network-denied.
+`just ci` runs unit checks, integration tests, and the release Swift build. It never downloads the Wine runtime or game files, and it never launches the app or Wine. Test processes stay network-denied.
 
-Swift suites use Swift Testing (`import Testing`), not XCTest. Each unit test target sits beside its source target. `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests` also have environment gates, so a plain `swift test` cannot contact public services. Python tests use `pytest` from the default group.
+Swift suites use Swift Testing (`import Testing`), and each unit test target sits beside its source target. The integration and live-contract targets also have environment gates, so a plain `swift test` cannot contact public services. Python tests use `pytest` from the default group.
 
-Use the smallest level that proves the changed contract:
+## What to test
+
+Write one test per contract, parameterized for equivalent cases, at the cheapest layer that fails.
 
 | Change                                                                      | Test, if a test is necessary                                                                                                                                        |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -31,28 +52,22 @@ Use the smallest level that proves the changed contract:
 | `runtime.json` or a new runtime release                                     | `just check`, `just runtime`, and the manual compatibility matrix                                                                                                   |
 | Website Markdown, Svelte UI, routes, or Mermaid                             | The website checks in [Development](README.md#documentation-website)                                                                                                |
 
-## What to test
+Add a regression test only when users would notice the bug and no type, compiler check, or existing test catches it.
 
-Write one test per contract. Put equivalent cases into one parameterized test. Test each contract at the cheapest layer that fails. Do not test it again in view-model or composition tests.
-
-Add a regression test only when users would notice the bug and no type, compiler check, or existing test catches it. Prefer a type change (enum, value type, exhaustive `switch`) to a new test.
-
-Do not test constants, strings, mappings, getters, log text, presentation details, or framework behavior.
+Do not test constants, strings, mappings, getters, log text, presentation details, framework behavior, or a double's calls.
 
 These contracts always keep at least one test: install exclusivity, activity lease, prefix ownership, launch cancellation, `.part` resume, manifest paths, download hosts, migrations, support codes, privacy, stale-result checks, and update safety.
 
 ## Focused tests
 
-Run `just test FILTER` to run a group of Swift unit tests. `FILTER` is a case-sensitive regular expression. It matches the test identifier, which contains the suite or type name. A pattern that matches no test fails the recipe.
+`just test FILTER` runs the unit tests whose identifier matches the case-sensitive regular expression. A pattern that matches no test fails the recipe. It never runs integration or live-contract tests, so run `just ci` before you finish.
 
 ```bash
 just test GameInstaller
 just test 'InstallerDirectory|GameInstallerRollback'
 ```
 
-- `just test gameinstaller` matches nothing, because the match is case-sensitive.
-- A free-function `@Test` runs under `just test` only when a `@Suite` type wraps it.
-- `just test` does not run integration or live-contract tests. Run `just ci` before you finish.
+A free-function `@Test` runs under `just test` only when a `@Suite` type wraps it.
 
 ## Isolation contract
 
@@ -61,33 +76,31 @@ Swift unit and integration tests run in the macOS sandbox with network denied. S
 > [!WARNING]
 > Each Swift test process gets temporary `HOME`, `CFFIXED_USER_HOME`, and `TMPDIR` directories. Workflow fixtures also inject temporary `AppPaths` roots and a unique `UserDefaults` suite. Tests must never use the user's application support directory, Wine prefix, game directories, runtime cache, or `dist/`.
 
-HTTP tests use an ephemeral `URLSession` whose `URLProtocol` accepts only recorded fixture routes. An unknown URL fails the test. Fixtures must be small, deterministic, reviewable, and generated locally. Do not commit downloaded game, runtime, or artwork files. Static `URLProtocol` handlers need serialized suites and a cleanup reset.
+HTTP tests use an ephemeral `URLSession` whose `URLProtocol` accepts only recorded fixture routes, and an unknown URL fails the test. Fixtures must be small, deterministic, reviewable, and generated locally. Do not commit downloaded game, runtime, or artwork files. Static `URLProtocol` handlers need serialized suites and a cleanup reset.
 
 ## Shared helpers, clocks, and leases
 
-Helpers that more than one test target uses live in the `ArknightsTestSupport` library target. Do not copy a helper into another test target.
+Helpers used by more than one test target live in the `ArknightsTestSupport` library target; do not copy one into another test target. Runtime fixtures live in `ArknightsRuntimeTestSupport`, which depends on `ArknightsGameRuntime`; add it only where fixtures are used. `ArknightsTestSupport` never depends on runtime targets.
 
-Runtime fixtures live in the `ArknightsRuntimeTestSupport` target, which depends on `ArknightsGameRuntime`. Add it only to test targets that use runtime fixtures. `ArknightsTestSupport` must not depend on runtime targets.
+Use `StubURLProtocol`, `makeIsolatedDefaults()`, `makeLifecycleStore()`, and `TemporaryDirectory` instead of a local copy.
 
-Use `StubURLProtocol` for network stubs. Each `Route` has its own handler and request count. Use `makeIsolatedDefaults()`, `makeLifecycleStore()`, and `TemporaryDirectory` instead of a private copy.
-
-Timed code takes an injected `Clock` (`any Clock<Duration>`). Tests pass a manual clock and advance it explicitly. Use `ParkedClock` when a deadline must never fire. A test never sleeps for real time. `just check scripts` rejects `Task.sleep`, `Thread.sleep`, `usleep` and `sleep` under `Tests/`. Exceptions are listed with a reason and an exact count in `scripts/config/test-sleep-allowlist.txt`.
+Timed code takes an injected `Clock` (`any Clock<Duration>`), and tests advance a manual clock explicitly. Use `ParkedClock` when a deadline must never fire. No test sleeps for real time: `just check scripts` rejects `Task.sleep`, `Thread.sleep`, `usleep`, and `sleep` under `Tests/`, except the reasons and exact counts in `scripts/config/test-sleep-allowlist.txt`.
 
 Each test owns its state:
 
-- Create a temporary directory with a unique UUID name. Remove it in `defer`.
-- Acquire the install lease explicitly. Release it explicitly before the test returns. Never rely on deallocation to unlock it.
-- Use `.serialized` only as a last resort, when shared static state cannot be isolated per test.
+- Create a temporary directory with a unique UUID name and remove it in `defer`.
+- Acquire the install lease explicitly and release it before the test returns. Never rely on deallocation to unlock it.
+- Use `.serialized` only when shared static state cannot be isolated per test.
 
 ## Failure triage
 
-Start with the narrowest failing command. Keep its first error in the report.
+Start with the narrowest failing command and keep its first error in the report.
 
 - Unit test: fix it at the owning feature boundary. Do not weaken an assertion to pass a fixture.
 - Fixture network: check the recorded URL, method, headers, response bytes, and `URLProtocol` cleanup before you change production code.
 - Live contract: inspect the sanitized report and compare the upstream response shape before you update fixtures.
 
-Move a test that needs a real runtime, game download, or public network to the manual matrix or a gated workflow.
+Never delete or weaken a failing test to make the suite green. A red test is a finding: decide whether the behavior or the test is wrong first. Move a test that needs a real runtime, game download, or public network to the manual matrix or a gated workflow.
 
 ## Live contracts
 
@@ -96,35 +109,13 @@ Move a test that needs a real runtime, game download, or public network to the m
 
 Each run checks branding, game configuration, CDN configuration, manifest location, and the complete manifest for Global, Japan, and Korea through the production request signing and decoders. For Taiwan it checks only Gryphline branding, metadata, and CDN hosts. It never reads the encrypted game manifest or a game package. It requires credential-free HTTPS URLs, bounded response time and manifest size, safe non-conflicting paths, parseable CRC64 or MD5 values, and nonnegative file sizes. It retries network and HTTP failures three times, not decoding or validation failures.
 
-A failed scheduled run emails the repository owner. If no issue titled "Live contract failure" is open, the workflow opens one. Manual runs never open issues. The owner closes the issue by hand.
+A failed scheduled run emails the repository owner, and the workflow opens one issue titled "Live contract failure" if none is open. Manual runs never open issues; the owner closes the issue by hand.
 
-A failure means an upstream schema or endpoint may have changed. Nothing rewrites fixtures or code automatically. Update decoding and fixtures together.
+A failure means an upstream schema or endpoint may have changed. Nothing rewrites fixtures or code automatically; update decoding and fixtures together.
 
 ## Runtime ownership
 
 The Arknights macOS Runtime repository owns runtime source monitoring and release construction. This repository validates the selected release through `runtime.json`. See [Runtime updates](releases-and-updates.md#runtime-updates).
 
-## Manual compatibility matrix
-
 > [!IMPORTANT]
 > Unit and integration tests never launch Wine or the game, so they do not establish platform compatibility. Real game and macOS checks stay pending until someone runs them on the release candidate. Record the client commit, runtime revision or archive hash, macOS version, chip, prefix history, result, and sanitized logs. Change a result from **Pending** only after you observe that exact case.
-
-Use this checklist for each release candidate.
-
-| Check                             | Procedure                                                                                                                                                                                                                                                        | Result  |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| Fresh prefix                      | New Wine prefix: install a stable client, launch, sign in, open and close Notices, exit the game and launcher.                                                                                                                                                   | Pending |
-| Existing prefix                   | Launch from an initialized prefix after you update or repair the game. Repeat for Global, Japan, and Korea, including sign-in, Notices, and focus switches between game and helper windows.                                                                      | Pending |
-| Mac pointer                       | Play with **Cursor** set to **macOS** and to **Game**. Record cursor behavior, server, and runtime.                                                                                                                                                              | Pending |
-| Rendering modes and sizes         | On a Retina display, play one fight with each **Rendering** choice at one **Window size**, windowed and fullscreen at **Native** resolution. Confirm the window keeps its size and fullscreen fills the display.                                                 | Pending |
-| Window size choices               | On a 16:10 and a 16:9 display, use **Fill screen** and **Compact**. Confirm the window fits above the Dock with its title bar visible.                                                                                                                           | Pending |
-| Audio route changes               | Change the macOS output device before launch, during game and music, and after exit. Record whether game audio and launcher music recover.                                                                                                                       | Pending |
-| Other installation and game paths | Full install, update, and repair. Sign-in helpers, Notices and payment pages, media playback, DXMT/Metal rendering, HiDPI, fullscreen and borderless modes, input, companion-window tracking, Command-Q.                                                         | Pending |
-| macOS and Rosetta preflight       | On macOS 15, 26, and 27 stable, check Rosetta preflight and complete a launch and shutdown. On stable macOS 27, confirm an unavailable beta-only `game-test-tool` does not block the Rosetta check. Test Legacy Game Test Mode recovery only on a macOS 27 beta. | Pending |
-
-For the launcher UI, use the debug preview controls to compose lifecycle, installation, failure, region, HUD, popup, and accessibility states.
-
-- VoiceOver: Settings navigation, the music and version HUD controls, gallery items, document links, and modal Done actions expose meaningful labels and stay keyboard reachable.
-- Full Keyboard Access: Tab shows a visible focus ring. Space activates the focused control. Return never triggers Play or Install globally. The primary action stays focused as it changes. Settings scrolls the focused row into view.
-- Repeat with Reduce Motion, Reduce Transparency, Differentiate Without Color, and the largest practical text size. English copy must wrap without clipping.
-- With one and with several regions installed, the Dock menu lists only those regions, disables Play during active operations, opens Settings once, and brings the launcher forward when a launch needs attention.
