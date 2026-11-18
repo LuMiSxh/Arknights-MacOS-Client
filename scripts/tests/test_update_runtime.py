@@ -11,6 +11,7 @@ import pytest
 from conftest import runtime_manifest
 from lib import generated_blocks, licenses, runtime_update
 from lib.common import PROJECT_DIR, ScriptError
+from lib.project_config import RUNTIME_CONFIG
 
 NEW_TAG = "v99.0.0"
 NEW_SOURCE_COMMIT = "2" * 40
@@ -19,14 +20,14 @@ LANES = ("x86", "arm")
 ARCHIVE_DIGESTS = {"x86": "a" * 64, "arm": "c" * 64}
 ARCHIVE_SIZES = {"x86": 123_456, "arm": 234_567}
 FIXTURE_FILES = (
-    Path("runtime.json"),
+    RUNTIME_CONFIG,
     licenses.CLIENT_INDEX,
     runtime_update.NOTICES_DOCUMENT,
 )
 
 
 def manifest_of(root: Path) -> dict[str, Any]:
-    return json.loads((root / "runtime.json").read_text(encoding="utf-8"))
+    return json.loads((root / RUNTIME_CONFIG).read_text(encoding="utf-8"))
 
 
 def current_tag(root: Path, architecture: str = "x86") -> str:
@@ -165,7 +166,7 @@ def project(tmp_path: Path) -> Path:
     for relative in FIXTURE_FILES:
         (tmp_path / relative).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(PROJECT_DIR / relative, tmp_path / relative)
-    (tmp_path / "runtime.json").write_text(
+    (tmp_path / RUNTIME_CONFIG).write_text(
         json.dumps(runtime_manifest()), encoding="utf-8"
     )
     generated_blocks.write_documents(
@@ -182,7 +183,7 @@ def test_update_pins_both_lanes_from_one_release(project: Path) -> None:
     changed = runtime_update.update(project, NEW_TAG, release_fetch())
 
     manifest = manifest_of(project)
-    assert changed == [Path("runtime.json"), runtime_update.NOTICES_DOCUMENT]
+    assert changed == [RUNTIME_CONFIG, runtime_update.NOTICES_DOCUMENT]
     for architecture in LANES:
         archive, _ = runtime_update.asset_names(NEW_TAG, architecture)
         assert manifest["lanes"][architecture]["runtime"] == {
@@ -234,7 +235,7 @@ def test_update_seeds_an_empty_arm_lane_from_its_fragment(project: Path) -> None
     manifest = manifest_of(project)
     manifest["lanes"]["arm"]["components"] = {}
     manifest["lanes"]["arm"]["provenance"] = {}
-    (project / "runtime.json").write_text(json.dumps(manifest), encoding="utf-8")
+    (project / RUNTIME_CONFIG).write_text(json.dumps(manifest), encoding="utf-8")
     provenance = release_provenance()
     provenance["runtimes"][1]["wine"] = {
         "source": "external",
@@ -273,7 +274,7 @@ def test_update_seeds_an_empty_arm_lane_from_its_fragment(project: Path) -> None
 def test_update_needs_a_fragment_for_each_lane(
     project: Path, architecture: str
 ) -> None:
-    before = (project / "runtime.json").read_text(encoding="utf-8")
+    before = (project / RUNTIME_CONFIG).read_text(encoding="utf-8")
     provenance = release_provenance()
     provenance["runtimes"] = [
         fragment
@@ -284,7 +285,7 @@ def test_update_needs_a_fragment_for_each_lane(
     with pytest.raises(ScriptError, match=f"one {architecture} runtime"):
         runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
 
-    assert (project / "runtime.json").read_text(encoding="utf-8") == before
+    assert (project / RUNTIME_CONFIG).read_text(encoding="utf-8") == before
 
 
 @pytest.mark.parametrize(("key", "value"), [("version", "98.0.0"), ("arch", "x86_64")])
@@ -313,14 +314,14 @@ def test_provenance_of_another_release_or_schema_fails(
 
 def test_checksum_file_mismatch_fails_without_writing(project: Path) -> None:
     archive, _ = runtime_update.asset_names(NEW_TAG, "x86")
-    before = (project / "runtime.json").read_text(encoding="utf-8")
+    before = (project / RUNTIME_CONFIG).read_text(encoding="utf-8")
 
     def corrupt(assets: dict[str, str | bytes]) -> None:
         assets[f"{archive}.sha256"] = f"{'f' * 64}  {archive}\n"
 
     with pytest.raises(ScriptError, match="differs from provenance.json"):
         runtime_update.update(project, NEW_TAG, release_fetch(mutate=corrupt))
-    assert (project / "runtime.json").read_text(encoding="utf-8") == before
+    assert (project / RUNTIME_CONFIG).read_text(encoding="utf-8") == before
 
 
 def test_checksum_file_for_another_asset_fails(project: Path) -> None:
@@ -366,11 +367,11 @@ def test_interface_drift_fails_without_writing(
         if runtime["target"] == runtime_update.LANE_TARGETS[architecture]
     ]
     fragment["runtimeLock"]["contents"]["interface"]["minimumMacOS"] = "27.0"
-    before = (project / "runtime.json").read_text(encoding="utf-8")
+    before = (project / RUNTIME_CONFIG).read_text(encoding="utf-8")
 
     with pytest.raises(ScriptError, match="interface differs.*minimumMacOS"):
         runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
-    assert (project / "runtime.json").read_text(encoding="utf-8") == before
+    assert (project / RUNTIME_CONFIG).read_text(encoding="utf-8") == before
 
 
 def test_changed_moltenvk_commit_needs_a_version(project: Path) -> None:
@@ -466,7 +467,7 @@ def test_check_detects_a_lane_that_names_another_release(project: Path) -> None:
     manifest = manifest_of(project)
     url = manifest["lanes"]["arm"]["runtime"]["url"]
     manifest["lanes"]["arm"]["runtime"]["url"] = url.replace("/v0.8.0/", "/v0.7.0/")
-    (project / "runtime.json").write_text(json.dumps(manifest), encoding="utf-8")
+    (project / RUNTIME_CONFIG).write_text(json.dumps(manifest), encoding="utf-8")
 
     with pytest.raises(ScriptError, match=r"arm runtime\.version"):
         runtime_update.check(project)
@@ -475,7 +476,7 @@ def test_check_detects_a_lane_that_names_another_release(project: Path) -> None:
 def test_check_detects_a_manifest_that_disagrees_with_its_name(project: Path) -> None:
     manifest = manifest_of(project)
     manifest["lanes"]["x86"]["runtime"]["name"] = "Arknights macOS Runtime 0.6.1"
-    (project / "runtime.json").write_text(json.dumps(manifest), encoding="utf-8")
+    (project / RUNTIME_CONFIG).write_text(json.dumps(manifest), encoding="utf-8")
 
     with pytest.raises(ScriptError, match=r"x86 runtime\.name"):
         runtime_update.check(project)

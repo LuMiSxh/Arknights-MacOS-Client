@@ -79,7 +79,7 @@
 ## Verification and Safety
 
 - Run focused checks while iterating; run `just check web` and the production build for website changes, and `just ci` before handoff. Run Python through the root `pyproject.toml`/`uv.lock` with `uv run --locked`; reuse `scripts/lib` and test changed behavior.
-- Define each repository path once: in the module that owns it, or in `project_config` when two or more scripts or workflows share it. Derive product and package metadata only through `project_config`, and runtime layout through `runtime.json`. Scripts never hard-code source paths.
+- Define each repository path once: in the module that owns it, or in `project_config` when two or more scripts or workflows share it. Derive product and package metadata only through `project_config`, and runtime layout through `scripts/config/runtime.json`. Scripts never hard-code source paths.
 - Same change: when a UI label, setting, menu item, or network host changes, update `docs/help`, `docs/development/design.md`, `web/src/routes/privacy/+page.svelte`, and `CHANGELOG.md` together. When a doc contradicts code, the code wins; fix the doc.
 - User help uses glossary terms (server, game environment). CHANGELOG entries use exact UI labels and describe the shipped change, not intermediate builds. Record user-visible changes in `CHANGELOG.md`; follow `docs/development/releases-and-updates.md` for releases.
 - Follow existing commit style. Never mention agent or model vendors. Push only with explicit consent.

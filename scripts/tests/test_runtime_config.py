@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 import runtime_config
+from lib.project_config import RUNTIME_CONFIG
 
 
 def interface(architecture: str, dxmt_libraries: list[str]) -> dict[str, object]:
@@ -184,8 +185,9 @@ def test_accepts_an_unpublished_lane(tmp_path: Path) -> None:
 def test_prepared_runtime_is_used_only_when_it_matches_the_lane_pin(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, state: str
 ) -> None:
-    write_config(tmp_path / "runtime.json", valid_config())
-    config = runtime_config.load_runtime_config(tmp_path / "runtime.json")
+    (tmp_path / RUNTIME_CONFIG).parent.mkdir(parents=True)
+    write_config(tmp_path / RUNTIME_CONFIG, valid_config())
+    config = runtime_config.load_runtime_config(tmp_path / RUNTIME_CONFIG)
     lane = config.lane("arm")
     directory = tmp_path / ".build" / "runtime-arm"
     monkeypatch.setattr(runtime_config, "runtime_is_valid", lambda *_: True)

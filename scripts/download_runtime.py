@@ -21,7 +21,7 @@ from lib.common import (
 from lib.console import info, success, warning
 from lib.extract_runtime import extract
 from lib.licenses import stage_runtime_legal
-from lib.project_config import load_project_configuration
+from lib.project_config import RUNTIME_CONFIG, load_project_configuration
 from runtime_config import (
     MAXIMUM_RUNTIME_ARCHIVE_BYTES,
     PREPARED_REVISION_FILE,
@@ -163,7 +163,7 @@ def prepare_runtime(
 
 def main() -> None:
     project_configuration = load_project_configuration()
-    config = load_runtime_config(PROJECT_DIR / "runtime.json")
+    config = load_runtime_config(PROJECT_DIR / RUNTIME_CONFIG)
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(

@@ -50,7 +50,7 @@ toc: true
 | `audience`               | `all`, `developers`, or `users`.                                                           |
 | `code`                   | Optional. A code in the form `XX-XXX`. Requires a non-empty `domain`.                      |
 
-- Public error codes come from `support-codes.json`. Do not edit the generated code pages, the generated tables in `docs/help/errors/README.md`, or `docs/help/errors/registry.json`. Each active code has one page at `/help/errors/<lowercase-code>/`.
+- Public error codes come from `scripts/config/support-codes.json`. Do not edit the generated code pages, the generated tables in `docs/help/errors/README.md`, or `docs/help/errors/registry.json`. Each active code has one page at `/help/errors/<lowercase-code>/`.
 - A top-level section with `audience: developers` appears under **Contributors** in the sidebar.
 - A `draft: true` file fails the production build.
 - Use `README.md` for a directory landing page. It maps to the directory route. Do not add `index.md`. Without a README, the build lists the visible children.

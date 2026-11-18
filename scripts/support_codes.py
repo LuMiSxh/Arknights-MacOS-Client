@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
-"""Generate or check every output of `support-codes.json`."""
+"""Generate or check every output of `scripts/config/support-codes.json`."""
 
 import argparse
 

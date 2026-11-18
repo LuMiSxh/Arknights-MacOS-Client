@@ -8,7 +8,11 @@ import pytest
 from conftest import runtime_manifest
 from lib import licenses
 from lib.common import PROJECT_DIR, ScriptError
-from lib.project_config import ProjectConfiguration, load_project_configuration
+from lib.project_config import (
+    RUNTIME_CONFIG,
+    ProjectConfiguration,
+    load_project_configuration,
+)
 
 
 def component(**overrides: object) -> dict[str, object]:
@@ -59,7 +63,8 @@ def project(tmp_path: Path) -> Path:
         json.dumps({"pins": [{"identity": "pkg", "state": {"version": "2.0.0"}}]}),
         encoding="utf-8",
     )
-    (root / "runtime.json").write_text(json.dumps(runtime_manifest()), encoding="utf-8")
+    (root / RUNTIME_CONFIG).parent.mkdir(parents=True)
+    (root / RUNTIME_CONFIG).write_text(json.dumps(runtime_manifest()), encoding="utf-8")
     write_index(
         root,
         [

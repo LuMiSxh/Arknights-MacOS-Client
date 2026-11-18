@@ -2,6 +2,7 @@
 
 from lib.common import PROJECT_DIR
 from lib.design_lint import check as check_design_lint
+from lib.project_config import RUNTIME_CONFIG
 from lib.sleep_lint import check as check_sleep_lint
 from lib.try_lint import check as check_try_lint
 from runtime_config import load_runtime_config
@@ -20,4 +21,4 @@ def test_runtime_sources_have_no_silent_try() -> None:
 
 
 def test_repository_runtime_pin_loads() -> None:
-    load_runtime_config(PROJECT_DIR / "runtime.json")
+    load_runtime_config(PROJECT_DIR / RUNTIME_CONFIG)

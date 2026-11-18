@@ -20,22 +20,23 @@ SPARKLE_ARCHIVE_SUFFIXES = (".tar.xz", ".zip")
 # Sparkle treats clients below build 18 (0.6.0) as informational-only, because newer
 # releases cannot migrate their data.
 MINIMUM_MIGRATABLE_BUILD = 18
-# Support-code outputs, relative to the repository root. `support-codes.json` generates them.
-SUPPORT_CODE_CATALOG = Path("support-codes.json")
+# Support-code outputs, relative to the repository root. The catalog generates them.
+SUPPORT_CODE_CATALOG = Path("scripts/config/support-codes.json")
+# Pinned runtime configuration, relative to the repository root.
+RUNTIME_CONFIG = Path("scripts/config/runtime.json")
 SUPPORT_CODE_ARTICLES = Path("docs/help/errors")
 SUPPORT_CODE_SWIFT = Path("Sources/ArknightsCore/Shared/Support/SupportCode.swift")
 ISSUE_REPORT_TEMPLATE = Path(".github/ISSUE_TEMPLATE/problem-report.yml")
-# Design-literal lint: the Swift tree it scans, the directories it skips, the token files that
-# define the literals it enforces, and its allowlist.
+# Design-literal lint: the Swift tree it scans, the token files that define the literals it
+# enforces, and its allowlist.
 DESIGN_LINT_SOURCE_ROOT = Path("Sources")
-DESIGN_LINT_EXCLUDED_DIRECTORIES = (Path("Sources/ArknightsDesignLab"),)
 DESIGN_LINT_EXEMPT_FILES = (
     Path("Sources/ArknightsCore/Shared/UI/LauncherTheme.swift"),
     Path("Sources/ArknightsCore/Shared/UI/LauncherVisuals.swift"),
     Path("Sources/ArknightsCore/Shared/UI/LauncherTokens.swift"),
     Path("Sources/ArknightsCore/Shared/UI/AdaptiveGlass.swift"),
 )
-DESIGN_LINT_ALLOWLIST = Path("scripts/design-lint-allowlist.txt")
+DESIGN_LINT_ALLOWLIST = Path("scripts/config/design-lint-allowlist.txt")
 
 
 def sparkle_archive_names(stem: str, version: str) -> set[str]:

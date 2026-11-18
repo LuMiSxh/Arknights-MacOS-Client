@@ -39,12 +39,12 @@ from lib.licenses import (
     read_json,
     tree_url,
 )
+from lib.project_config import RUNTIME_CONFIG
 
 REPOSITORY = "LuMiSxh/Arknights-MacOS-Runtime"
 REPOSITORY_URL = f"https://github.com/{REPOSITORY}"
 RELEASES_API = f"https://api.github.com/repos/{REPOSITORY}/releases?per_page=100"
 RELEASE_API = f"https://api.github.com/repos/{REPOSITORY}/releases/tags/"
-RUNTIME_CONFIG = Path("runtime.json")
 NOTICES_DOCUMENT = Path("docs/legal/third-party-notices.md")
 BLOCK_NAMESPACE = "runtime"
 TAG_PATTERN = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.]+)?$")

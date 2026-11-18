@@ -6,7 +6,7 @@ order: 50
 
 # Releases and updates
 
-Each release is a complete Apple Silicon DMG with the launcher, its licenses, and an Applications shortcut. It does not contain a runtime or Arknights game files. On first use, the launcher asks for an architecture and downloads the pinned runtime for that architecture. [`runtime.json`](../../runtime.json) pins one runtime archive per lane. [Runtime updates](#runtime-updates) describes how to change a pin.
+Each release is a complete Apple Silicon DMG with the launcher, its licenses, and an Applications shortcut. It does not contain a runtime or Arknights game files. On first use, the launcher asks for an architecture and downloads the pinned runtime for that architecture. [`runtime.json`](../../scripts/config/runtime.json) pins one runtime archive per lane. [Runtime updates](#runtime-updates) describes how to change a pin.
 
 ## Creating a release
 
@@ -85,7 +85,7 @@ If an artifact lacks a notice, has another runtime checksum, or points to the wr
 
 ## Runtime updates
 
-[`runtime.json`](../../runtime.json) is the single source of truth for the pinned runtimes. It has schema 3 and two lanes: `x86` and `arm`. Each lane carries the archive name, version, URL, SHA-256, size, interface, component versions, provenance, `minimumMacOS`, and `prefixRevision`.
+[`runtime.json`](../../scripts/config/runtime.json) is the single source of truth for the pinned runtimes. It has schema 3 and two lanes: `x86` and `arm`. Each lane carries the archive name, version, URL, SHA-256, size, interface, component versions, provenance, `minimumMacOS`, and `prefixRevision`.
 
 One launcher release serves both architectures. The architecture is a user choice inside the app, not a separate app build or Sparkle channel. The launcher downloads the runtime for the chosen architecture on first use or after a switch.
 

@@ -16,7 +16,6 @@ from pathlib import Path
 from lib.allowlist import code_of, load_allowlist
 from lib.project_config import (
     DESIGN_LINT_ALLOWLIST,
-    DESIGN_LINT_EXCLUDED_DIRECTORIES,
     DESIGN_LINT_EXEMPT_FILES,
     DESIGN_LINT_SOURCE_ROOT,
 )
@@ -83,13 +82,10 @@ def _has_off_grid_spacing(code: str) -> bool:
 
 def scan(root: Path) -> list[Violation]:
     """Return every rule match in the Swift files under `root`, in path and line order."""
-    excluded = tuple(root / directory for directory in DESIGN_LINT_EXCLUDED_DIRECTORIES)
     exempt = {root / path for path in DESIGN_LINT_EXEMPT_FILES}
     violations: list[Violation] = []
     for path in sorted((root / DESIGN_LINT_SOURCE_ROOT).rglob("*.swift")):
-        skipped = path in exempt or any(
-            path.is_relative_to(directory) for directory in excluded
-        )
+        skipped = path in exempt
         rules = [
             (rule, pattern)
             for rule, pattern in RULES.items()

@@ -86,7 +86,7 @@ format target='all':
     done
     echo "format complete ($target)"
 
-# Regenerate the files built from support-codes.json and the license inventory.
+# Regenerate the files built from scripts/config/support-codes.json and the license inventory.
 [group('Checks')]
 generate:
     {{ uv }} scripts/support_codes.py

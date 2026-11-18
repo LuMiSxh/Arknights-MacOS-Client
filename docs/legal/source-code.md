@@ -16,7 +16,7 @@ The tag contains the source for the launcher executable, compatibility wrappers,
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Native launcher              | Swift sources under `Sources/` at the matching tag                                                                                                                                                  |
 | Native compatibility helpers | C/Objective-C sources under `RuntimeSupport/` at the matching tag                                                                                                                                   |
-| Downloaded runtime archive   | The archive URL, checksum, size, component revisions, and interface in [`runtime.json`](../../runtime.json), plus the upstream source repositories in [Third-party notices](third-party-notices.md) |
+| Downloaded runtime archive   | The archive URL, checksum, size, component revisions, and interface in [`runtime.json`](../../scripts/config/runtime.json), plus the upstream source repositories in [Third-party notices](third-party-notices.md) |
 | Packaging                    | `scripts/build_app.py` and `scripts/build_compatibility.py`                                                                                                                                         |
 | Third-party notices          | [Third-party notices](third-party-notices.md) and the verbatim [License texts](license-texts.md)                                                                                                    |
 

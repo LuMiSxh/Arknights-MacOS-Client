@@ -65,7 +65,7 @@ just check
 | `just dev app run` | Build the app and open it                                   |
 | `just dev web`     | Start the local documentation website                       |
 
-Run `just --list` for all commands. [`runtime.json`](runtime.json) pins the tested runtime for each architecture. Contributor documentation is in [`docs/development/`](docs/development/README.md) and [`docs/legal/`](docs/legal/README.md).
+Run `just --list` for all commands. [`runtime.json`](scripts/config/runtime.json) pins the tested runtime for each architecture. Contributor documentation is in [`docs/development/`](docs/development/README.md) and [`docs/legal/`](docs/legal/README.md).
 
 ## License
 

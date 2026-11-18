@@ -1,7 +1,6 @@
 {
   "schemaVersion": 3,
   "architecture": "x86",
-  "prefixRevision": 2,
   "lanes": {
     "x86": {
       "minimumMacOS": "15.0",

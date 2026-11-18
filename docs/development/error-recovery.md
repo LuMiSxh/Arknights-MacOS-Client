@@ -44,7 +44,7 @@ A newer visible status clears the previous failure unless a caller preserves it.
 
 ## Code catalog
 
-`support-codes.json` at the repository root is the only hand-written source for public codes. `scripts/support_codes.py` generates these files from it:
+`scripts/config/support-codes.json` is the only hand-written source for public codes. `scripts/support_codes.py` generates these files from it:
 
 - One help page for each active code in `docs/help/errors/`.
 - `docs/help/errors/registry.json`.
@@ -72,7 +72,7 @@ The domain names the recovery owner, not the failing API. A filesystem failure w
 ## Adding or retiring a code
 
 1. Choose a domain. If no domain owns the recovery path, add the domain to the generator first.
-2. Add an entry to `support-codes.json`. Fill every field.
+2. Add an entry to `scripts/config/support-codes.json`. Fill every field.
 3. Run `uv run --locked scripts/support_codes.py`.
 4. Map typed failures and ordered actions to the code in the owning feature. Do not inspect message strings.
 5. Add fixtures for the mapped failures, report privacy, stale actions, duplicate selection, and each affected supported region.

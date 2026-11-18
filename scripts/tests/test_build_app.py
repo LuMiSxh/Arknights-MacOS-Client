@@ -5,7 +5,11 @@ from pathlib import Path
 
 import build_app
 import pytest
-from lib.project_config import ProjectConfiguration, load_project_configuration
+from lib.project_config import (
+    RUNTIME_CONFIG,
+    ProjectConfiguration,
+    load_project_configuration,
+)
 
 
 @pytest.fixture(scope="module")
@@ -18,7 +22,7 @@ def test_app_resources_bundle_the_runtime_configuration(
 ) -> None:
     resources = dict(build_app.app_resources(configuration))
 
-    assert resources[configuration.project_directory / "runtime.json"] == Path(
+    assert resources[configuration.project_directory / RUNTIME_CONFIG] == Path(
         "RUNTIME.json"
     )
 

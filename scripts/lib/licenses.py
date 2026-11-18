@@ -28,7 +28,7 @@ from lib.generated_blocks import (
     stale_documents,
     write_documents,
 )
-from lib.project_config import load_project_configuration
+from lib.project_config import RUNTIME_CONFIG, load_project_configuration
 
 SCHEMA_VERSION = 1
 
@@ -260,7 +260,7 @@ def load_client_components(root: Path, problems: list[str]) -> tuple[Component, 
     ):
         problems.append(f"{CLIENT_INDEX}: schemaVersion must be {SCHEMA_VERSION}")
         return ()
-    manifest = read_json(root / "runtime.json")
+    manifest = read_json(root / RUNTIME_CONFIG)
     return parse_components(
         document.get("components"), str(CLIENT_INDEX), CLIENT_SCOPES, problems, manifest
     )
@@ -631,7 +631,7 @@ def load_legal(
 def generate_documents(root: Path) -> dict[Path, str]:
     """Return the repository documents with up-to-date generated blocks."""
     components, _ = load_legal(root, None)
-    manifest = read_json(root / "runtime.json")
+    manifest = read_json(root / RUNTIME_CONFIG)
     notices, source = document_blocks(components, manifest)
     texts = render_license_texts(root, components)
     documents = (

@@ -12,6 +12,7 @@ from typing import Any
 
 from lib.common import BUILD_DIR, PROJECT_DIR, fail, is_safe_relative_path
 from lib.console import warning
+from lib.project_config import RUNTIME_CONFIG
 
 SCHEMA_VERSION = 3
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -159,7 +160,7 @@ def runtime_is_valid(directory: Path, layout: RuntimeLayout) -> bool:
 
 def prepared_runtime(root: Path, architecture: str | None = None) -> Path | None:
     """Return the prepared runtime of one lane if it matches that lane's pin."""
-    config = load_runtime_config(root / "runtime.json")
+    config = load_runtime_config(root / RUNTIME_CONFIG)
     lane = config.lane(architecture or config.architecture)
     if not lane.runtime.is_available:
         warning(f"the {lane.name} runtime has no published pin yet")

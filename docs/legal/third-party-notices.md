@@ -7,7 +7,7 @@ order: 20
 # Third-party notices
 
 > [!IMPORTANT]
-> Arknights Client downloads a prebuilt compatibility runtime for the architecture that you choose. [`runtime.json`](../../runtime.json) pins one archive per runtime lane, with its exact version, archive hash, size, and build provenance. The app bundle does not contain a runtime. The app embeds small MPL-2.0 compatibility wrappers built from `RuntimeSupport/`. It does not distribute the Vuplex SDK or the upstream game files.
+> Arknights Client downloads a prebuilt compatibility runtime for the architecture that you choose. [`runtime.json`](../../scripts/config/runtime.json) pins one archive per runtime lane, with its exact version, archive hash, size, and build provenance. The app bundle does not contain a runtime. The app embeds small MPL-2.0 compatibility wrappers built from `RuntimeSupport/`. It does not distribute the Vuplex SDK or the upstream game files.
 
 The app bundles one compact file with the notices of its own components. This website publishes the same content. The [License texts](license-texts.md) page holds the full text of every named license. The [Source code](source-code.md) page describes how to get the source.
 
@@ -97,8 +97,8 @@ A runtime dependency can carry an additional notice. The release artifact and up
 | ------------------------------------------ | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Native launcher                            | Yes                         | Repository source and top-level [`LICENSE`](../../LICENSE)                                                                                                                               |
 | Project compatibility wrappers and bridges | Yes                         | `RuntimeSupport/` source at the matching tag; MPL-2.0 SPDX markers                                                                                                                       |
-| x86_64 runtime                             | No. Downloaded on first use | [`runtime.json`](../../runtime.json) lane `x86` and the runtime archive notices                                                                                                          |
-| ARM64 runtime                              | No. Downloaded on first use | [`runtime.json`](../../runtime.json) lane `arm` and the runtime archive notices                                                                                                          |
+| x86_64 runtime                             | No. Downloaded on first use | [`runtime.json`](../../scripts/config/runtime.json) lane `x86` and the runtime archive notices                                                                                                          |
+| ARM64 runtime                              | No. Downloaded on first use | [`runtime.json`](../../scripts/config/runtime.json) lane `arm` and the runtime archive notices                                                                                                          |
 | Sparkle framework                          | Yes                         | [License text](license-texts.md#sparkle) and the Sparkle project                                                                                                                         |
 | YouTubePlayerKit                           | Yes                         | [License text](license-texts.md#youtubeplayerkit)                                                                                                                                        |
 | Arknights game files                       | No                          | Downloaded from first-party publisher endpoints after the user starts installation: Yostar for Global, Japan, and Korea; Gryphline for Taiwan; Hypergryph for China and China (Bilibili) |

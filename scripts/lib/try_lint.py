@@ -21,7 +21,7 @@ TRY_LINT_SOURCE_ROOTS = (
     Path("Sources/ArknightsGameInstallation"),
     Path("Sources/ArknightsGameRuntime"),
 )
-TRY_LINT_ALLOWLIST = Path("scripts/try-lint-allowlist.txt")
+TRY_LINT_ALLOWLIST = Path("scripts/config/try-lint-allowlist.txt")
 RULE = "silent-try"
 BEST_EFFORT_MARKER = "// best effort:"
 SILENT_TRY = re.compile(r"\btry\?")

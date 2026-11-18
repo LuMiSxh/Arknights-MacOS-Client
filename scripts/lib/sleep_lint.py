@@ -15,7 +15,7 @@ from pathlib import Path
 from lib.allowlist import code_of, load_allowlist
 
 TEST_SOURCE_ROOT = Path("Tests")
-TEST_SLEEP_ALLOWLIST = Path("scripts/test-sleep-allowlist.txt")
+TEST_SLEEP_ALLOWLIST = Path("scripts/config/test-sleep-allowlist.txt")
 RULE = "real-sleep"
 # A method call such as `clock.sleep(until:)` is not a real sleep, so the bare C form skips a
 # preceding `.` or identifier character.
