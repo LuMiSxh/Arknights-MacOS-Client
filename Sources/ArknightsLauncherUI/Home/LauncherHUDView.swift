@@ -29,7 +29,7 @@ struct LauncherHUDView: View {
 				.contentShape(Rectangle())
 				.onTapGesture(perform: collapseExpandedPill)
 
-			VStack(spacing: LauncherTokens.Spacing.content) {
+			VStack(spacing: LauncherTokens.Spacing.control) {
 				hudPillRow
 				controlBar
 			}
@@ -113,7 +113,7 @@ struct LauncherHUDView: View {
 		.padding(LauncherTokens.Spacing.panel)
 	}
 
-	// Takes the `LauncherTokens.Spacing.content` VStack spacing above `controlBar` only when a
+	// Takes the `LauncherTokens.Spacing.control` VStack spacing above `controlBar` only when a
 	// pill has content, mirroring the pill visibility checks.
 	@ViewBuilder
 	private var hudPillRow: some View {
