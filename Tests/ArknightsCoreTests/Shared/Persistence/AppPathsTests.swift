@@ -73,7 +73,7 @@ func runtimeStorePathsStayOutsideTheAppBundle() throws {
 	#expect(paths.runtimeRoot.lastPathComponent == "Runtimes")
 	#expect(paths.runtimeDownloadsDirectory.lastPathComponent == "Downloads")
 	#expect(paths.runtimeStagingRoot.lastPathComponent == ".staging")
-	#expect(paths.runtimeSelectionFile.lastPathComponent == "runtime.json")
+	#expect(paths.runtimeSelectionFile.lastPathComponent == "runtime-selection.json")
 	#expect(
 		paths.runtimeVersionDirectory(for: .x86, version: "1.0.0").lastPathComponent
 			== "x86-1.0.0")

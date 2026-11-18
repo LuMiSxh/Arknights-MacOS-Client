@@ -17,7 +17,6 @@ func a07LayoutMigratesToTheFlatLayoutAndTheMarkerComesLast() async throws {
 	try fixture.write("{}", to: fixture.support.appending(path: "playtime-v1.json"))
 
 	let leftovers = [
-		fixture.support.appending(path: "runtime-selection.json"),
 		fixture.support.appending(path: "storage-overview-cache.json"),
 		fixture.paths.runtimeRoot.appending(path: "x86/marker"),
 		fixture.paths.runtimeRoot.appending(path: ".downloads/archive"),

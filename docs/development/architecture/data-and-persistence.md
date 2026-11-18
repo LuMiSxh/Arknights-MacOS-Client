@@ -19,11 +19,11 @@ guide lists the paths. Update it in the same change as `AppPaths`.
 
 | Data                        | Owner                                      | Lifetime                                                                    |
 | --------------------------- | ------------------------------------------ | --------------------------------------------------------------------------- |
-| Regional game files         | `InstallationController` / `GameInstaller` | Manifest-updated. **Uninstall Game** trashes only the selected directory    |
+| Regional game files         | `InstallationController` / `GameInstaller` | Manifest-updated. **Uninstall Game** trashes the default folder, or only the installed files elsewhere |
 | Installed manifest state    | `GameInstaller`                            | Written atomically after all files pass validation and checksums            |
 | Wine prefixes               | `GameSessionController` / `WineRuntime`    | One per publisher family and lane under `Environments/`. Deleting a prefix reruns its migration plan |
 | Runtime migration state     | `RuntimeMigrationStore`                    | Runtime revision and completed setup steps. It is not game-save data        |
-| Downloaded runtime          | `RuntimeSelectionController`               | One version directory per lane under `Runtimes/<lane>-<version>/` and archives under `Downloads/<lane>/`. `runtime.json` records the selected lane and each installed version. **Remove Runtime…** deletes only that lane's version directories under a per-lane lease. The game environment and selection stay |
+| Downloaded runtime          | `RuntimeSelectionController`               | One version directory per lane under `Runtimes/<lane>-<version>/` and archives under `Downloads/<lane>/`. `runtime-selection.json` records the selected lane and each installed version. **Remove Runtime…** deletes only that lane's version directories under a per-lane lease. The game environment and selection stay |
 | Application Support folder  | `StorageMaintenanceController`             | **Show in Finder** under Settings → Storage → Logs and data opens `applicationSupportRoot` |
 | Downloaded official artwork | `CustomizationController` / `ArtworkCache` | Recreated when missing                                                      |
 | Preset gallery cache        | `PresetCatalogService`                     | Targeted cleanup in Settings. Recreated on demand                           |
@@ -67,8 +67,8 @@ Rules:
 - A failed step does not undo earlier moves. The migrator returns `LayoutMigrationResult` with the
   completed moves and the first failure. The model saves the preferences of the completed moves only
   and skips the steps that follow the failure.
-- It also deletes pre-release 0.8 leftovers that never shipped: `runtime-selection.json`,
-  `storage-overview-cache.json`, old-shape `Runtimes/<lane>/` directories, `Runtimes/.downloads`,
+- It also deletes pre-release 0.8 leftovers that never shipped: `storage-overview-cache.json`,
+  old-shape `Runtimes/<lane>/` directories, `Runtimes/.downloads`,
   `Runtimes/.staging`, `Caches/<bundle>/Artwork/Downloaded`, and `Caches/<bundle>/PresetGallery`. It
   clears recorded runtime versions, so a runtime downloads again.
 - The pre-0.5 layout (`Games/Arknights-*` or `Wine/Prefixes/*` directories) is not migrated. Startup

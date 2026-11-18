@@ -65,7 +65,6 @@ extension LayoutMigrator {
 		fileManager: FileManager
 	) throws {
 		var leftovers = [
-			paths.applicationSupportRoot.appending(path: "runtime-selection.json"),
 			paths.applicationSupportRoot.appending(path: "storage-overview-cache.json"),
 			paths.runtimeRoot.appending(path: ".downloads", directoryHint: .isDirectory),
 			paths.runtimeRoot.appending(path: ".staging", directoryHint: .isDirectory),

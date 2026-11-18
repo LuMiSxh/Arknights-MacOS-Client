@@ -26,7 +26,7 @@ struct RuntimeSelectionStoreTests {
 		let temporary = try TemporaryDirectory("RuntimeSelectionStoreDefaultTests")
 		defer { temporary.remove() }
 		let store = RuntimeSelectionStore(
-			fileURL: temporary.url.appending(path: "runtime.json"))
+			fileURL: temporary.url.appending(path: "runtime-selection.json"))
 
 		#expect(try store.load(access: access(macOS: major)).selected == expected)
 	}
@@ -36,7 +36,7 @@ struct RuntimeSelectionStoreTests {
 		let temporary = try TemporaryDirectory("RuntimeSelectionStorePersistedTests")
 		defer { temporary.remove() }
 		let store = RuntimeSelectionStore(
-			fileURL: temporary.url.appending(path: "runtime.json"))
+			fileURL: temporary.url.appending(path: "runtime-selection.json"))
 		try store.save(RuntimeSelection(selected: .x86))
 
 		#expect(try store.load(access: access(macOS: 28)).selected == .x86)
@@ -46,7 +46,7 @@ struct RuntimeSelectionStoreTests {
 	func installedVersionsRoundTripAsAJSONObject() throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionStoreVersionsTests")
 		defer { temporary.remove() }
-		let url = temporary.url.appending(path: "runtime.json")
+		let url = temporary.url.appending(path: "runtime-selection.json")
 		let store = RuntimeSelectionStore(fileURL: url)
 		try store.save(
 			RuntimeSelection(

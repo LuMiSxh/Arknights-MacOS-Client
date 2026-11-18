@@ -55,7 +55,7 @@ package enum AppConstants {
 		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
 		package static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
 		/// The only persisted runtime choice. It names the lane, not a version.
-		package static let runtimeSelectionFilename = "runtime.json"
+		package static let runtimeSelectionFilename = "runtime-selection.json"
 		package static let runtimeSelectionMaximumBytes = 4 * 1_024
 		/// The first macOS major version that can run the native ARM64 lane.
 		package static let armLaneMinimumMacOSMajorVersion = 26

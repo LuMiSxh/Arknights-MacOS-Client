@@ -10,11 +10,11 @@ package enum RuntimeStoreError: Error, Equatable, Sendable {
 }
 
 /// Owns the managed runtime trees under `AppPaths.runtimeRoot`. There is one directory per lane
-/// and version, at `Runtimes/<lane>-<version>/`. `runtime.json` records the installed version of
-/// each lane, so no directory scan decides what is installed. A missing or corrupt document is
-/// rebuilt from the version directories that hold a valid `RUNTIME.json`. Every write goes through
-/// `RuntimeSelectionStore.update` on the shared owner, so concurrent writers never drop each
-/// other's entries.
+/// and version, at `Runtimes/<lane>-<version>/`. `runtime-selection.json` records the installed
+/// version of each lane, so no directory scan decides what is installed. A missing or corrupt
+/// document is rebuilt from the version directories that hold a valid `RUNTIME.json`. Every write
+/// goes through `RuntimeSelectionStore.update` on the shared owner, so concurrent writers never
+/// drop each other's entries.
 package struct RuntimeStore: Sendable {
 	package let paths: AppPaths
 
