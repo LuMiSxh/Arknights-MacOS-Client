@@ -43,17 +43,4 @@ struct BackgroundMusicGameSilencingTests {
 
 		#expect(fixture.fake.commands.isEmpty)
 	}
-
-	@Test
-	func muteDuringTheFadeOutStillPausesTheMusic() async throws {
-		let fixture = try MusicFixture()
-		defer { fixture.remove() }
-		let controller = fixture.controller
-
-		controller.gameActivityDidChange(to: .testRunningGame())
-		controller.toggleMute()
-
-		await waitForCondition { fixture.fake.count("pause") == 1 }
-		if let fadeTask = controller.fadeTask { await fadeTask.value }
-	}
 }

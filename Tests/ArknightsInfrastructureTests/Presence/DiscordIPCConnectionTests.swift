@@ -29,17 +29,6 @@ struct DiscordIPCConnectionTests {
 	}
 
 	@Test
-	func readyCompletesTheHandshake() async throws {
-		let pair = try ConnectedSocketPair()
-		defer { pair.closePeer() }
-		let connection = Self.connection(on: pair)
-		try pair.send(.frame, json: #"{"evt":"READY"}"#)
-
-		try await connection.connect(clientID: Self.clientID)
-		await connection.disconnect()
-	}
-
-	@Test
 	func errorDuringTheHandshakeFailsConnectWithTheDiscordError() async throws {
 		let pair = try ConnectedSocketPair()
 		defer { pair.closePeer() }

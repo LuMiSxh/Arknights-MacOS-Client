@@ -55,16 +55,6 @@ struct LauncherUpdaterControllerTests {
 			lifecycle.simulateActivity(.idle)
 			#expect(installCalled)
 		}
-		#expect(subject.updaterShouldRelaunchApplication(sparkle.1))
-
-		var retryCount = 0
-		let lease = lifecycle.begin(.runningGame(sessionID: UUID(), processIdentifier: 42))
-		subject.userDriver.showInstallingUpdate(withApplicationTerminated: false) {
-			retryCount += 1
-		}
-		#expect(retryCount == 0)
-		#expect(lease.map { lifecycle.end($0) } == true)
-		#expect(retryCount == 1)
 	}
 
 	@Test

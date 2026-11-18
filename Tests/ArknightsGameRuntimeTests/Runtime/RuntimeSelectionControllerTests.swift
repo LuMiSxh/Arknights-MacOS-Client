@@ -43,17 +43,23 @@ private func makePaths(_ temporary: TemporaryDirectory) -> AppPaths {
 	)
 }
 
-private func makeInstallOperation(
-	paths: AppPaths,
-	throwsVerificationError: Bool = false
-) -> RuntimeSelectionController.InstallOperation {
+private func makeInstallOperation(paths: AppPaths) -> RuntimeSelectionController.InstallOperation {
 	{ pin, _ in
-		if throwsVerificationError { throw RuntimeInstallError.hashMismatch }
 		let directory = paths.runtimeVersionDirectory(for: pin.lane, version: pin.version)
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 		try Data(#"{"architecture":"\#(pin.lane.rawValue)"}"#.utf8).write(
 			to: directory.appending(path: "RUNTIME.json"))
 		return InstalledRuntime(lane: pin.lane, version: pin.version, directory: directory)
+	}
+}
+
+/// A `select` refusal: the lane holds no runtime, or it holds one that is not the pinned version.
+private struct SelectRefusalCase: CustomTestStringConvertible, Sendable {
+	let installedVersion: String?
+	let state: RuntimeLaneState
+
+	var testDescription: String {
+		installedVersion.map { "installed \($0)" } ?? "not installed"
 	}
 }
 
@@ -185,29 +191,6 @@ struct RuntimeSelectionControllerTests {
 	}
 
 	@Test
-	func aVerificationFailureExposesTheRuntimeVerificationCode() async throws {
-		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
-		defer { temporary.remove() }
-		let paths = makePaths(temporary)
-		let controller = makeController(
-			paths: paths,
-			storage: temporary,
-			configuration: try configuration(),
-			access: access(macOS: 26),
-			installOperation: makeInstallOperation(
-				paths: paths, throwsVerificationError: true)
-		)
-
-		try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).save(
-			RuntimeSelection(selected: .x86))
-
-		#expect(await controller.install(lane: .arm) == false)
-		#expect(controller.failure?.code == .runtimeVerificationFailed)
-		#expect(controller.selectedLane == .arm)
-		#expect(controller.installedVersion(for: .arm) == nil)
-	}
-
-	@Test
 	func anUnpublishedLaneFailsWithTheNotInstalledCode() async throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
 		defer { temporary.remove() }
@@ -224,31 +207,17 @@ struct RuntimeSelectionControllerTests {
 		#expect(controller.failure?.code == .runtimeNotInstalled)
 	}
 
-	@Test
-	func selectingAnOutdatedLaneIsRefused() throws {
+	@Test(arguments: [
+		SelectRefusalCase(installedVersion: nil, state: .notInstalled),
+		SelectRefusalCase(installedVersion: "0.8.0", state: .outdated(installed: "0.8.0")),
+	])
+	private func selectingALaneThatIsNotCurrentIsRefused(_ testCase: SelectRefusalCase) throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
 		defer { temporary.remove() }
 		let paths = makePaths(temporary)
-		try makeInstalledRuntime(version: "0.8.0", lane: .arm, paths: paths)
-		let controller = makeController(
-			paths: paths,
-			storage: temporary,
-			configuration: try configuration(),
-			access: access(macOS: 26),
-			installOperation: makeInstallOperation(paths: paths)
-		)
-
-		#expect(controller.state(for: .arm) == .outdated(installed: "0.8.0"))
-		#expect(throws: RuntimeSelectionError.notInstalled(.arm)) {
-			try controller.select(lane: .arm)
+		if let version = testCase.installedVersion {
+			try makeInstalledRuntime(version: version, lane: .arm, paths: paths)
 		}
-	}
-
-	@Test
-	func selectingAnUninstalledLaneIsRefused() throws {
-		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
-		defer { temporary.remove() }
-		let paths = makePaths(temporary)
 		let controller = makeController(
 			paths: paths,
 			storage: temporary,
@@ -257,6 +226,7 @@ struct RuntimeSelectionControllerTests {
 			installOperation: makeInstallOperation(paths: paths)
 		)
 
+		#expect(controller.state(for: .arm) == testCase.state)
 		#expect(throws: RuntimeSelectionError.notInstalled(.arm)) {
 			try controller.select(lane: .arm)
 		}

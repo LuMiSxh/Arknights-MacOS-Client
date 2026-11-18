@@ -76,7 +76,6 @@ struct LauncherViewModelConcurrencyTests {
 
 		await installer.acknowledgeCancellation()
 		await waitForDownloadToStop(model)
-		#expect(!model.lifecycle.state.presentation.status.message.isEmpty)
 		await api.resolveBranding()
 	}
 

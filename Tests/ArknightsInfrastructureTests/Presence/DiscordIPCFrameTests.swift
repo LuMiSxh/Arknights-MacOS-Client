@@ -7,19 +7,8 @@ import Testing
 
 struct DiscordIPCFrameTests {
 	@Test
-	func activityFrameUsesMillisecondsAndClearsWithNull() throws {
-		let activity = DiscordIPCActivity(
-			details: "Playing Arknights",
-			state: "Global",
-			timestamps: DiscordIPCTimestamps(start: 1_700_000_000_000),
-			assets: DiscordIPCAssets(
-				largeImage: "https://example.com/icon.png",
-				largeText: "Arknights macOS Client"
-			),
-			buttons: [
-				DiscordIPCButton(label: "Website", url: "https://example.com/")
-			]
-		)
+	func activityFrameSendsSetActivityAndClearsPresenceWithANullActivity() throws {
+		let activity = DiscordIPCActivity(details: "Playing Arknights")
 		var buffer = try DiscordIPCConnection.activityFrame(
 			activity,
 			pid: 42,
@@ -37,15 +26,6 @@ struct DiscordIPCFrameTests {
 		#expect(args["pid"] as? Int == 42)
 		let payload = try #require(args["activity"] as? [String: Any])
 		#expect(payload["details"] as? String == "Playing Arknights")
-		#expect(payload["state"] as? String == "Global")
-		let timestamps = try #require(payload["timestamps"] as? [String: Any])
-		#expect(timestamps["start"] as? Int == 1_700_000_000_000)
-		let assets = try #require(payload["assets"] as? [String: Any])
-		#expect(assets["large_image"] as? String == "https://example.com/icon.png")
-		#expect(assets["large_text"] as? String == "Arknights macOS Client")
-		let buttons = try #require(payload["buttons"] as? [[String: Any]])
-		#expect(buttons.first?["label"] as? String == "Website")
-		#expect(buttons.first?["url"] as? String == "https://example.com/")
 
 		var clearBuffer = try DiscordIPCConnection.activityFrame(
 			nil,

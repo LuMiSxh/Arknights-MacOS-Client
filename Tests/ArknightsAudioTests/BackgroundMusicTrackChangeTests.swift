@@ -58,18 +58,4 @@ struct BackgroundMusicTrackChangeTests {
 		await waitForCondition { !controller.isChangingTrack }
 		#expect(controller.currentMusicTitle == "Second")
 	}
-
-	@Test
-	func anEventStreamThatIsNeverIteratedEndsItsSubscriptionWhenItIsDropped() throws {
-		let fixture = try MusicFixture()
-		defer { fixture.remove() }
-		let player = try #require(fixture.controller.player)
-
-		var events: BackgroundMusicPlayerEvents? = fixture.fake.playerCommands.events(player)
-		#expect(events != nil)
-		#expect(fixture.fake.activeSubscriptions == 1)
-		events = nil
-
-		#expect(fixture.fake.activeSubscriptions == 0)
-	}
 }

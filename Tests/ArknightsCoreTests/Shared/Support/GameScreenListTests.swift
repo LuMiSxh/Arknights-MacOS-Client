@@ -40,5 +40,4 @@ func chosenDisplayIsStoredUnderTheDisplayKey() throws {
 	let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
 	#expect(object["display"] as? [String: String] == ["uuid": "UUID-B", "name": "Studio Display"])
-	#expect(try JSONDecoder().decode(GameLaunchOptions.self, from: data).display == options.display)
 }

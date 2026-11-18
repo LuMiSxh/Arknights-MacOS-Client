@@ -5,6 +5,25 @@ import Testing
 
 @testable import ArknightsCore
 
+enum ConflictingMove: Sendable, CaseIterable {
+	case game
+	case prefix
+
+	func legacy(_ fixture: MigrationFixture) -> URL {
+		switch self {
+		case .game: fixture.legacyGame(.global)
+		case .prefix: fixture.legacyPrefix(.yostar, lane: .x86)
+		}
+	}
+
+	func destination(_ fixture: MigrationFixture) -> URL {
+		switch self {
+		case .game: fixture.paths.gameInstall(for: .global)
+		case .prefix: fixture.paths.winePrefix(for: .yostar, lane: .x86)
+		}
+	}
+}
+
 @Test
 func a07LayoutMigratesToTheFlatLayoutAndTheMarkerComesLast() async throws {
 	let fixture = try MigrationFixture("LayoutMigrator07Tests")
@@ -108,26 +127,26 @@ func aStoppedMigrationResumesWithoutLosingData() async throws {
 	#expect(try layoutSchema(fixture.paths.layoutFile) == AppConstants.Storage.layoutSchemaVersion)
 }
 
-@Test
-func aDestinationConflictFailsWithoutOverwriting() async throws {
+@Test(arguments: ConflictingMove.allCases)
+func aDestinationConflictStaysFatalAndKeepsTheNewCopy(conflict: ConflictingMove) async throws {
 	let fixture = try MigrationFixture("LayoutMigratorConflictTests")
 	defer { fixture.temporary.remove() }
-	try fixture.write("old", to: fixture.legacyGame(.global).appending(path: "marker"))
-	try fixture.write("new", to: fixture.paths.gameInstall(for: .global).appending(path: "marker"))
+	let legacy = try fixture.makeDirectory(conflict.legacy(fixture))
+	try fixture.write("old", to: legacy.appending(path: "marker"))
+	let destination = conflict.destination(fixture)
+	try fixture.write("new", to: destination.appending(path: "marker"))
 
 	let result = await LayoutMigrator.migrate(
 		paths: fixture.paths,
 		selectionStore: fixture.selectionStore,
-		persistedInstallDirectories: [.global: fixture.legacyGame(.global)]
+		persistedInstallDirectories: [.global: conflict.legacy(fixture)]
 	)
 
 	#expect(result.failure is LayoutMigrationError)
 	#expect(result.installDirectoriesToUpdate.isEmpty)
+	#expect(try String(contentsOf: legacy.appending(path: "marker"), encoding: .utf8) == "old")
 	#expect(
-		try String(
-			contentsOf: fixture.paths.gameInstall(for: .global).appending(path: "marker"),
-			encoding: .utf8) == "new")
-	#expect(fixture.exists(fixture.legacyGame(.global)))
+		try String(contentsOf: destination.appending(path: "marker"), encoding: .utf8) == "new")
 	#expect(try layoutSchema(fixture.paths.layoutFile) == nil)
 }
 
@@ -207,40 +226,20 @@ func anArtworkCollisionKeepsBothCopiesAndTheMigrationFinishes() async throws {
 }
 
 @Test
-func aPrefixConflictStaysFatal() async throws {
-	let fixture = try MigrationFixture("LayoutMigratorPrefixConflictTests")
-	defer { fixture.temporary.remove() }
-	let legacy = try fixture.makeDirectory(fixture.legacyPrefix(.yostar, lane: .x86))
-	try fixture.write("old", to: legacy.appending(path: "marker"))
-	let destination = fixture.paths.winePrefix(for: .yostar, lane: .x86)
-	try fixture.write("new", to: destination.appending(path: "marker"))
-
-	let result = await LayoutMigrator.migrate(
-		paths: fixture.paths,
-		selectionStore: fixture.selectionStore,
-		persistedInstallDirectories: [:]
-	)
-
-	#expect(result.failure is LayoutMigrationError)
-	#expect(fixture.exists(legacy.appending(path: "marker")))
-	#expect(
-		try String(contentsOf: destination.appending(path: "marker"), encoding: .utf8) == "new")
-	#expect(try layoutSchema(fixture.paths.layoutFile) == nil)
-}
-
-@Test
-func aFreshInstallWritesTheLayoutMarker() async throws {
+func aFreshInstallWritesTheLayoutWithoutCheckingForWine() async throws {
 	let fixture = try MigrationFixture("LayoutMigratorFreshTests")
 	defer { fixture.temporary.remove() }
 
 	let result = await LayoutMigrator.migrate(
 		paths: fixture.paths,
 		selectionStore: fixture.selectionStore,
-		persistedInstallDirectories: [:]
+		persistedInstallDirectories: [:],
+		isWineRunning: { true }
 	)
 
 	#expect(result.failure == nil)
 	#expect(!result.requiresLegacyDataNotice)
+	#expect(!result.wineIsRunning)
 	#expect(try layoutSchema(fixture.paths.layoutFile) == AppConstants.Storage.layoutSchemaVersion)
 	#expect(FileManager.default.fileExists(atPath: fixture.paths.artworkDirectory.path))
 }
@@ -264,21 +263,4 @@ func aRunningWineProcessStopsTheMigrationBeforeAnyMove() async throws {
 	#expect(fixture.exists(fixture.legacyGame(.global).appending(path: "marker")))
 	#expect(!fixture.exists(fixture.paths.gameInstall(for: .global)))
 	#expect(try layoutSchema(fixture.paths.layoutFile) == nil)
-}
-
-@Test
-func theWineCheckIsSkippedWhenNothingWouldMove() async throws {
-	let fixture = try MigrationFixture("LayoutMigratorNoMoveWineCheckTests")
-	defer { fixture.temporary.remove() }
-
-	let result = await LayoutMigrator.migrate(
-		paths: fixture.paths,
-		selectionStore: fixture.selectionStore,
-		persistedInstallDirectories: [:],
-		isWineRunning: { true }
-	)
-
-	#expect(!result.wineIsRunning)
-	#expect(result.failure == nil)
-	#expect(try layoutSchema(fixture.paths.layoutFile) == AppConstants.Storage.layoutSchemaVersion)
 }

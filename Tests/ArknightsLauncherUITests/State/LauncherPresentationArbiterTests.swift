@@ -20,8 +20,7 @@ func aSameFailureUpdateReplacesThePresentedValue() {
 		blocksGameLaunch: true,
 		showsDismissAction: false
 	)
-	var busy = failure
-	busy = LauncherFailurePresentation(
+	let busy = LauncherFailurePresentation(
 		id: id,
 		message: "Deleting…",
 		code: nil,

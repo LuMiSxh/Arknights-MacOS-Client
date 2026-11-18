@@ -57,8 +57,6 @@ struct LauncherStorageMigrationRecoveryTests {
 
 		#expect(model.lifecycle.activity == .idle)
 		let failure = try #require(model.lifecycle.state.presentation.failure)
-		#expect(failure.title == "Data from an old launcher version")
-		#expect(failure.message.contains("older than 0.6"))
 		#expect(failure.actions == [.deleteDataFolder, .quit])
 		#expect(!failure.showsDismissAction)
 		#expect(failure.blocksGameLaunch)

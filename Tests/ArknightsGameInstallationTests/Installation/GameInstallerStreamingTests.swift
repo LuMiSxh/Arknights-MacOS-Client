@@ -109,7 +109,7 @@ struct GameInstallerStreamingTests {
 			Issue.record("Expected the oversized response to be rejected")
 		} catch InstallerError.downloadedSizeMismatch(_, let expected, let actual) {
 			#expect(expected == Int64(body.count))
-			#expect(actual > expected)
+			#expect(actual == Int64(body.count) + 64 * 1_024)
 		} catch {
 			Issue.record("Unexpected installer error: \(error)")
 		}

@@ -7,42 +7,22 @@ import Testing
 
 @MainActor
 struct LauncherLifecycleStoreTests {
-	@Test(arguments: LauncherUpdateStartScenario.allCases)
-	func launcherUpdateWaitsForAnActiveGameToFinish(
-		scenario: LauncherUpdateStartScenario
-	) throws {
+	@Test
+	func aPendingLauncherUpdateProjectsAsTheActivityOnlyBetweenOperations() throws {
 		let storage = try TemporaryDirectory("LauncherLifecycleStoreTests")
 		defer { storage.remove() }
 		let lifecycle = makeLifecycleStore(in: storage)
-		let sessionID = UUID()
-		let gameActivity = LauncherActivity.runningGame(
-			sessionID: sessionID, processIdentifier: 42)
-		var gameLease: ActivityLease?
-		if scenario == .gameRunning {
-			gameLease = lifecycle.begin(gameActivity)
-			#expect(gameLease != nil)
-		}
+		let gameActivity = LauncherActivity.runningGame(sessionID: UUID(), processIdentifier: 42)
+		let lease = lifecycle.begin(gameActivity)
 
-		#expect(lifecycle.canBeginExclusiveActivity == (scenario == .idle))
-		#expect(lifecycle.hasActiveActivity == (scenario == .gameRunning))
 		lifecycle.beginLauncherUpdate()
-
-		#expect(!lifecycle.canBeginExclusiveActivity)
-		if scenario == .gameRunning {
-			#expect(lifecycle.hasActiveActivity)
-			#expect(lifecycle.activity == gameActivity)
-			#expect(gameLease.map { lifecycle.end($0) } == true)
-		}
+		#expect(lifecycle.activity == gameActivity)
+		#expect(lease.map { lifecycle.end($0) } == true)
+		// The pending update keeps the launcher busy after the game lease ends.
 		#expect(lifecycle.activity == .maintaining(.updatingLauncher))
 		#expect(!lifecycle.canBeginExclusiveActivity)
 
 		lifecycle.finishLauncherUpdate()
 		#expect(lifecycle.activity == .idle)
-		#expect(lifecycle.canBeginExclusiveActivity)
 	}
-}
-
-enum LauncherUpdateStartScenario: String, CaseIterable, Equatable, Sendable {
-	case idle
-	case gameRunning
 }

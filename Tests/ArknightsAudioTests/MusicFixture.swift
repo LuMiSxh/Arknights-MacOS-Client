@@ -7,7 +7,6 @@ import ArknightsTestSupport
 @preconcurrency import Combine
 import Foundation
 import Observation
-import Synchronization
 import YouTubePlayerKit
 
 @testable import ArknightsAudio
@@ -21,26 +20,6 @@ func musicTestIcon(size: NSSize = NSSize(width: 64, height: 64)) -> NSImage {
 	NSBezierPath(rect: NSRect(origin: .zero, size: size)).fill()
 	image.unlockFocus()
 	return image
-}
-
-/// Counts event subscriptions from any thread, because Combine cancels them off the main actor.
-final class SubscriptionRecorder: Sendable {
-	private let started = Mutex(0)
-	private let cancelled = Mutex(0)
-	/// Fires when an event subscription is cancelled.
-	let cancellation = Signal()
-
-	var active: Int { started.withLock { $0 } }
-
-	func didSubscribe(_ subscription: any Subscription) {
-		started.withLock { $0 += 1 }
-	}
-
-	func didCancel() {
-		started.withLock { $0 -= 1 }
-		cancelled.withLock { $0 += 1 }
-		cancellation.fire()
-	}
 }
 
 /// Records every player command and can hold `getPlaylist` until the test releases it.
@@ -57,9 +36,6 @@ final class FakeMusicPlayer {
 	var playlist = ["a", "b"]
 	/// Makes `nextVideo` and `previousVideo` throw.
 	var failsNavigation = false
-	private let subscriptions = SubscriptionRecorder()
-	/// Event subscriptions that are started and not yet cancelled.
-	var activeSubscriptions: Int { subscriptions.active }
 	/// What `getPlaybackMetadata` returns; it throws while nil.
 	var metadata: YouTubePlayer.PlaybackMetadata?
 	/// What `getPlaybackState` returns.
@@ -92,14 +68,7 @@ final class FakeMusicPlayer {
 	var playerCommands: BackgroundMusicPlayerCommands {
 		BackgroundMusicPlayerCommands(
 			events: { [self] _ in
-				BackgroundMusicPlayerEvents(
-					eventSubject
-						.handleEvents(
-							receiveSubscription: subscriptions.didSubscribe,
-							receiveCancel: subscriptions.didCancel
-						)
-						.eraseToAnyPublisher()
-				)
+				BackgroundMusicPlayerEvents(eventSubject.eraseToAnyPublisher())
 			},
 			load: { [self] _, _ in commands.append("load") },
 			getPlaylist: { [self] _ in

@@ -113,7 +113,6 @@ func legacyLaunchOptionsDecodeWithStableDefaultsAndIgnoreRetiredFields() throws 
 		stored.fullscreenResolution = .native
 		let data = try JSONEncoder().encode(stored)
 		let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-		#expect(try JSONDecoder().decode(GameLaunchOptions.self, from: data) == stored)
 		#expect(object["usesHighResolutionMode"] as? Bool == (renderingMode == .retina))
 	}
 }

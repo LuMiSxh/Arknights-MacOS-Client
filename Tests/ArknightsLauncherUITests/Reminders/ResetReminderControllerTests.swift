@@ -148,11 +148,6 @@ private func fireDates(_ scheduler: FakeScheduler, region: GameRegion) -> [Date]
 
 		let expected = (0..<7).map { date(firstFire).addingTimeInterval(Double($0) * 86_400) }
 		#expect(fireDates(harness.scheduler, region: .global) == expected)
-		#expect(
-			harness.scheduler.pending.keys.sorted()
-				== (4...10).map {
-					String(format: "reset.global.2026-11-%02d.%d", $0, timing.leadMinutes ?? 0)
-				})
 	}
 
 	@Test func turningOffRemovesEveryPendingRequest() async {

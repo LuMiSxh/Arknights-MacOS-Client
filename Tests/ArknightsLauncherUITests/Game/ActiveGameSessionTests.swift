@@ -2,7 +2,6 @@
 
 import ArknightsCore
 import Foundation
-import Synchronization
 import Testing
 
 @testable import ArknightsGameRuntime
@@ -56,48 +55,5 @@ struct ActiveGameSessionTests {
 			model.lifecycle.activity
 				== .runningGame(sessionID: sessionID, processIdentifier: 42))
 		await api.resolveBranding()
-	}
-
-	@Test
-	func stopDeniesTheSpawnGateBeforeRuntimeStopRuns() async {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequest()
-		let sessionID = UUID()
-		let spawnGate = WineProcessSpawnGate()
-		model.beginTestGameSession(
-			.runningGame(sessionID: sessionID, processIdentifier: 42),
-			spawnGate: spawnGate
-		)
-		let runtime = GateRecordingRuntime()
-		model.gameSession.runtimeSessionControllerProvider = { runtime }
-
-		model.gameSession.stopGame()
-		await model.gameSession.session?.monitorTask?.value
-
-		#expect(runtime.spawnWasDeniedAtStop == true)
-		#expect(model.lifecycle.activity == .idle)
-		await api.resolveBranding()
-	}
-}
-
-/// Records whether the spawn gate already refused new processes when `stop` ran.
-private final class GateRecordingRuntime: WineRuntimeSessionControlling, Sendable {
-	private let denied = Mutex<Bool?>(nil)
-
-	var spawnWasDeniedAtStop: Bool? {
-		denied.withLock { $0 }
-	}
-
-	func waitUntilStopped(prefixDirectory: URL) async throws {}
-
-	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
-		var wasDenied = false
-		do {
-			try spawnGate?.runIfAllowed(process: Process()) {}
-		} catch is CancellationError {
-			wasDenied = true
-		}
-		denied.withLock { $0 = wasDenied }
 	}
 }

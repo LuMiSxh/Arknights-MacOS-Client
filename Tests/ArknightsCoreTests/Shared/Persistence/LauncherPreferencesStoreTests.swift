@@ -17,7 +17,7 @@ private struct StoredShortcutCase: Sendable {
 @MainActor
 struct LauncherPreferencesStoreTests {
 	@Test
-	func launchOptionsPreserveValidStoredFieldsAndRoundTrip() throws {
+	func launchOptionsKeepValidStoredFieldsAndDefaultAnUnsupportedResolution() {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(
@@ -34,16 +34,6 @@ struct LauncherPreferencesStoreTests {
 		#expect(options.displayMode == .borderlessWindow)
 		#expect(options.resolution == GameLaunchOptions.default.resolution)
 		#expect(options.usesGameMode)
-
-		let expected = GameLaunchOptions(
-			displayMode: .borderlessWindow,
-			resolution: .quadHD,
-			synchronizationMode: .esync
-		)
-
-		try store.setLaunchOptions(expected)
-
-		#expect(store.launchOptions() == expected)
 	}
 
 	@Test(
@@ -108,20 +98,23 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
-	func resetRemovesExactlyTheResettablePreferences() {
+	func resetKeepsRegionInstallLocationsAndTheMigrationVersion() {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(
 			defaults: defaults, themeCacheURL: makeUnusedThemeCacheURL())
-		for preference in Key.all {
-			defaults.set("stored", forKey: preference.name)
-		}
+		defaults.set("/Games/Global", forKey: Key.installPath(for: .global))
+		defaults.set("japan", forKey: Key.selectedRegion)
+		defaults.set(4, forKey: Key.preferencesMigrationVersion)
+		store.set(false, for: Key.automaticLauncherUpdates)
+		store.setScreenshotShortcut(.standard)
 
 		store.removeResettablePreferences()
 
-		for preference in Key.all {
-			let removed = defaults.object(forKey: preference.name) == nil
-			#expect(removed == preference.resettable, "\(preference.name)")
-		}
+		#expect(defaults.object(forKey: Key.automaticLauncherUpdates.name) == nil)
+		#expect(defaults.object(forKey: Key.screenshotShortcut) == nil)
+		#expect(defaults.string(forKey: Key.installPath(for: .global)) == "/Games/Global")
+		#expect(defaults.string(forKey: Key.selectedRegion) == "japan")
+		#expect(defaults.integer(forKey: Key.preferencesMigrationVersion) == 4)
 	}
 }

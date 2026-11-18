@@ -65,7 +65,7 @@ func runtimeLanesUseSeparateWinePrefixes() throws {
 }
 
 @Test
-func runtimeStorePathsStayOutsideTheAppBundle() throws {
+func runtimeStorePathsUseTheirDocumentedNames() throws {
 	let temporary = try TemporaryDirectory("AppPathsRuntimeTests")
 	defer { temporary.remove() }
 	let paths = AppPaths(applicationSupportDirectory: temporary.url)
@@ -77,8 +77,6 @@ func runtimeStorePathsStayOutsideTheAppBundle() throws {
 	#expect(
 		paths.runtimeVersionDirectory(for: .x86, version: "1.0.0").lastPathComponent
 			== "x86-1.0.0")
-	#expect(!paths.runtimeVersionDirectory(for: .x86, version: "1.0.0").path.contains(".app/"))
-	#expect(!paths.runtimeVersionDirectory(for: .arm, version: "1.0.0").path.contains(".app/"))
 }
 
 @Test

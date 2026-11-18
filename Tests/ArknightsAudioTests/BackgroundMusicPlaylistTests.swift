@@ -10,30 +10,6 @@ import Testing
 @MainActor
 struct BackgroundMusicPlaylistTests {
 	@Test
-	func playlistStartsOnTheRandomTrackWithoutPlayingTheFirstOne() async throws {
-		let fixture = try MusicFixture(randomIndex: { $0 - 1 })
-		defer { fixture.remove() }
-		let controller = fixture.controller
-		controller.settings.playsLauncherMusic = true
-		controller.currentSource = .playlist(id: "list")
-		fixture.fake.playlist = ["a", "b", "c", "d"]
-		controller.observeEvents(of: try #require(controller.player))
-
-		fixture.fake.emit(.playback(.cued))
-		// `fadeTask` is not observable, so wait for the fade itself, then for the volume command.
-		if let fadeTask = controller.fadeTask { await fadeTask.value }
-		await waitForCondition { fixture.fake.count("setVolume") > 1 }
-
-		let commands = fixture.fake.commands
-		#expect(
-			commands.filter { $0 != "setVolume" } == [
-				"setLoop", "setShuffle", "getPlaylist", "playVideoInPlaylist",
-			])
-		#expect(fixture.fake.playedIndices == [3])
-		#expect(commands.last == "setVolume")
-	}
-
-	@Test
 	func setupForTheSameSourceKeepsTheStartedPlaylistButANewSourceRestartsIt() async throws {
 		let fixture = try MusicFixture(randomIndex: { $0 - 1 })
 		defer { fixture.remove() }

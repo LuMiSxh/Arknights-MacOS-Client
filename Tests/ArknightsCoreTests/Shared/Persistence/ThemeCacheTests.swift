@@ -61,7 +61,9 @@ struct ThemeCacheTests {
 		#expect((document["accents"] as? [Any])?.count == accentLimit)
 		#expect((document["luminance"] as? [Any])?.count == 2)
 		#expect(store.dynamicThemeAccent(for: "accent-0") == nil)
-		#expect(store.dynamicThemeAccent(for: "accent-\(accentLimit + 1)") != nil)
+		#expect(
+			store.dynamicThemeAccent(for: "accent-\(accentLimit + 1)")?.hue
+				== Double(accentLimit + 1) / Double(accentLimit + 2))
 		#expect(store.homeLuminance(for: "old") == nil)
 		#expect(store.homeLuminance(for: "new") == 0.3)
 	}

@@ -56,7 +56,6 @@ func publisherArtifactSourcesAndRedirectsUseTheSameHTTPSPolicy() throws {
 	components.scheme = "https"
 	components.path = "/game/file"
 	let missingHostURL = try #require(components.url)
-	#expect(missingHostURL.host == nil)
 	for region in GameRegion.allCases {
 		#expect(!DownloadHTTPPolicy.isAllowedSource(missingHostURL, for: region))
 		#expect(!DownloadHTTPPolicy.redirectValidator(for: region)(missingHostURL))

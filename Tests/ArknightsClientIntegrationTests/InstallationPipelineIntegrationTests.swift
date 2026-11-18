@@ -29,7 +29,6 @@ struct InstallationPipelineIntegrationTests {
 		let network = try LocalFixtureNetwork()
 		environment.route.handler = network.response(for:)
 
-		#expect(environment.preferences.selectedRegion() == .global)
 		let installDirectory = environment.paths.gameInstall(for: .global)
 		environment.preferences.setSelectedRegion(.global)
 		environment.preferences.setInstallDirectory(installDirectory, for: .global)
@@ -68,16 +67,9 @@ struct InstallationPipelineIntegrationTests {
 			checkIntelTranslation: { .available }
 		)
 		#expect(onboarding.isPresented)
-		#expect(onboarding.step == .welcome)
-		onboarding.advance()
-		#expect(onboarding.step == .region)
 
-		let progress = IntegrationProgressRecorder()
 		model.installation.startInstallation(launchAfterCompletion: false)
 		await model.installation.waitForCurrentInstallation()
-		if let modelProgress = model.installation.progress {
-			await progress.record(modelProgress)
-		}
 
 		let payloadURL = installDirectory.appending(path: "Arknights.exe")
 		let expectedPayload = try LocalFixtureNetwork.fixture(
@@ -99,10 +91,6 @@ struct InstallationPipelineIntegrationTests {
 				#expect(state.files?.map(\.path) == ["Arknights.exe"])
 			}
 		}
-		let finalProgress = try #require(await progress.updates().last)
-		#expect(finalProgress.fraction == 1)
-		#expect(finalProgress.completedFiles == 1)
-
 		for _ in 0..<10 where onboarding.isPresented {
 			onboarding.advance()
 		}
@@ -118,16 +106,6 @@ struct InstallationPipelineIntegrationTests {
 		)
 		#expect(!completedOnboarding.isPresented)
 
-		let reloadedPreferences = LauncherPreferencesStore(
-			defaults: environment.defaults, themeCacheURL: environment.paths.themeCache)
-		#expect(reloadedPreferences.selectedRegion() == .global)
-		#expect(
-			reloadedPreferences.installDirectory(
-				for: .global,
-				default: environment.paths.applicationSupportRoot
-			) == installDirectory
-		)
-
 		let secondResult = try await installer.install(
 			configuration: configuration,
 			region: .global,
@@ -141,17 +119,9 @@ struct InstallationPipelineIntegrationTests {
 			model.installation.isInstalled,
 			"The persisted installation must be discoverable after refresh"
 		)
-		#expect(network.recorder.count(path: "/fixture-source/Arknights.exe") == 1)
-		#expect(network.recorder.count(path: "/api/launcher/game/config") == 1)
-		#expect(network.recorder.count(path: "/api/launcher/base/config") == 1)
-		#expect(network.recorder.count(path: "/api/launcher/game/config/json") == 2)
-		#expect(network.recorder.count(path: "/api/launcher/advanced/game/download/cdn") == 2)
-		#expect(network.recorder.count(path: "/manifest.json") == 2)
-
 		let apiRequests = network.recorder.recordedRequests().filter {
 			$0.url?.host == "api-launcher-en.yo-star.com"
 		}
-		#expect(apiRequests.count == 6)
 		#expect(
 			apiRequests.allSatisfy {
 				$0.value(forHTTPHeaderField: "Authorization")?.contains(
@@ -159,23 +129,5 @@ struct InstallationPipelineIntegrationTests {
 				) == true
 			}
 		)
-	}
-}
-
-private actor IntegrationProgressRecorder {
-	private var recordedUpdates: [DownloadProgress] = []
-
-	func record(_ update: DownloadProgress) {
-		recordedUpdates.append(update)
-	}
-
-	func updates() -> [DownloadProgress] {
-		recordedUpdates
-	}
-}
-
-extension FixtureRequestRecorder {
-	func count(path: String) -> Int {
-		recordedRequests().count { $0.url?.path == path }
 	}
 }

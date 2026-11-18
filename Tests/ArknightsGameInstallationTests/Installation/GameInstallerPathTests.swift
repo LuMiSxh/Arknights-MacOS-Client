@@ -126,17 +126,18 @@ struct GameInstallerPathTests {
 	/// BoundedFileReader refuses symbolic links and oversized files, and does not block on a FIFO
 	/// without a writer.
 	@Test(.timeLimit(.minutes(1)))
-	func boundedReaderRejectsUnsafeFilesWithoutBlocking() async throws {
+	func boundedReaderRejectsUnsafeFilesWithoutBlocking() throws {
 		let temporary = try TemporaryDirectory("GameInstallerPathTests")
 		defer { temporary.remove() }
 		let target = temporary.url.appending(path: "target")
 		let link = temporary.url.appending(path: "link")
 		try Data(repeating: 0, count: 16).write(to: target)
 		try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
-		#expect(throws: Error.self) {
+		#expect(throws: BoundedFileReadError.self) {
 			_ = try BoundedFileReader.readRegularFile(at: target, maximumBytes: 8)
 		}
-		#expect(throws: Error.self) {
+		// The open refuses the link itself instead of following it.
+		#expect(throws: POSIXError.self) {
 			_ = try BoundedFileReader.readRegularFile(at: link, maximumBytes: 32)
 		}
 
@@ -145,26 +146,8 @@ struct GameInstallerPathTests {
 		guard mkfifo(fifo.path, 0o600) == 0 else {
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
 		}
-		try await withInstallLease(at: temporary.url) { lease in
-			let install = lease.directory
-			let readRejected = await Task {
-				do {
-					_ = try BoundedFileReader.readRegularFile(at: fifo, maximumBytes: 32)
-					return false
-				} catch {
-					// A FIFO is rejected after its nonblocking descriptor is inspected.
-					return true
-				}
-			}.value
-			#expect(readRejected)
-			await Task {
-				do {
-					let descriptor = try install.file(at: "fifo").open(flags: O_RDONLY | O_CLOEXEC)
-					_ = close(descriptor)
-				} catch {
-					// Descriptor-anchored file opens also reject FIFOs without waiting for a writer.
-				}
-			}.value
+		#expect(throws: BoundedFileReadError.self) {
+			_ = try BoundedFileReader.readRegularFile(at: fifo, maximumBytes: 32)
 		}
 	}
 

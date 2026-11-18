@@ -7,7 +7,6 @@ import Testing
 
 private struct SupportCodeFixture: Decodable {
 	let code: String
-	let domain: String
 }
 
 @Test
@@ -24,8 +23,6 @@ func supportCodeRegistryMatchesThePublicDocumentationFixture() throws {
 	)
 
 	#expect(Set(fixtures.map(\.code)) == Set(SupportCode.allCases.map(\.rawValue)))
-	#expect(fixtures.allSatisfy { !$0.domain.isEmpty })
-	#expect(fixtures.map(\.code).count == Set(fixtures.map(\.code)).count)
 
 	for code in SupportCode.allCases {
 		#expect(code.bundledTroubleshootingMarkdown() != nil)

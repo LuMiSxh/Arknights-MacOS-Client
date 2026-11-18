@@ -11,21 +11,19 @@ import Testing
 @MainActor
 struct GameLaunchOwnershipTests {
 	@Test
-	func secondPlayClickDuringPreflightStartsOnlyOneLaunch() async {
+	func secondPlayClickDuringPreflightStartsOnlyOneLaunch() async throws {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequest()
 
 		model.gameSession.launch()
-		let pendingID = model.gameSession.pendingLaunchID
+		let pendingID = try #require(model.gameSession.pendingLaunchID)
 		model.gameSession.launch()
 		model.gameSession.launch()
 
-		#expect(pendingID != nil)
 		#expect(model.gameSession.pendingLaunchID == pendingID)
 		// The game is not installed, so the one launch ends with a single failure for its ID.
 		await waitForCondition { model.lifecycle.state.presentation.failure?.id == pendingID }
-		#expect(model.lifecycle.state.presentation.failure?.id == pendingID)
 		#expect(model.gameSession.session == nil)
 		#expect(model.lifecycle.activity == .idle)
 

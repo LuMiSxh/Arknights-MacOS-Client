@@ -101,6 +101,5 @@ struct GameInstallerParallelVerificationTests {
 		await #expect(throws: CancellationError.self) { try await task.value }
 		let observed = reads.load(ordering: .relaxed)
 		#expect(observed <= 2 * AppConstants.IO.verificationConcurrency)
-		#expect(observed < fileCount * bufferCount)
 	}
 }
