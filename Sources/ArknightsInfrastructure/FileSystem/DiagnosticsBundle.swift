@@ -118,7 +118,9 @@ package enum DiagnosticsBundle {
 			let result = try await ChildProcess(
 				executable: URL(fileURLWithPath: "/usr/bin/ditto"),
 				// Without extended attributes the archive has no `__MACOSX/._*` entries.
-				arguments: ["-c", "-k", "--norsrc", "--noextattr", "--noacl", staging.path, archive.path],
+				arguments: [
+					"-c", "-k", "--norsrc", "--noextattr", "--noacl", staging.path, archive.path,
+				],
 				output: .discarded
 			).run()
 			try Task.checkCancellation()

@@ -68,6 +68,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A slow Game Mode helper no longer blocks quitting.
 - **Repair** of a complete game no longer fails with **IN-DSK**. It now needs free space only for the files it downloads.
 - **Help → Save Diagnostics…** now finds the SDK logs of China, China (Bilibili), and Taiwan.
+- Server artwork that fails to download now retries on its own instead of staying blank until a restart.
 
 ### Removed
 
