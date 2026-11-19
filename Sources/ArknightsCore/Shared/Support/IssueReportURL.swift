@@ -62,7 +62,7 @@ package enum IssueReportURL {
 		return "macOS \(os.majorVersion).\(os.minorVersion); \(chipName); \(memoryGB) GB"
 	}
 
-	private static var chipName: String {
+	package static var chipName: String {
 		var size = 0
 		sysctlbyname("machdep.cpu.brand_string", nil, &size, nil, 0)
 		var buffer = [CChar](repeating: 0, count: size)

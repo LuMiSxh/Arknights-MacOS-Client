@@ -13,6 +13,9 @@ package struct DiagnosticsArchive: Sendable {
 	private let sdkLogDirectory: URL
 	private let publisher: GamePublisher
 	private let environment: String
+	private let gameDirectories: [(region: GameRegion, directory: URL)]
+	private let crashReportsDirectory: URL
+	private let now: Date
 	private let readme: String
 	private let baseName: String
 	private let directory: URL
@@ -28,6 +31,9 @@ package struct DiagnosticsArchive: Sendable {
 		sdkLogDirectory: URL,
 		publisher: GamePublisher,
 		environment: String,
+		gameDirectories: [(region: GameRegion, directory: URL)] = [],
+		crashReportsDirectory: URL = AppPaths.systemCrashReportsDirectory,
+		now: Date = .now,
 		readme: String,
 		baseName: String,
 		directory: URL,
@@ -41,6 +47,9 @@ package struct DiagnosticsArchive: Sendable {
 		self.sdkLogDirectory = sdkLogDirectory
 		self.publisher = publisher
 		self.environment = environment
+		self.gameDirectories = gameDirectories
+		self.crashReportsDirectory = crashReportsDirectory
+		self.now = now
 		self.readme = readme
 		self.baseName = baseName
 		self.directory = directory
@@ -81,8 +90,28 @@ package struct DiagnosticsArchive: Sendable {
 		} catch {
 			log.error("SDK logs skipped: \(launcherDiagnosticDescription(for: error))")
 		}
+		let cutoff = now.addingTimeInterval(-AppConstants.Diagnostics.recentFileWindow)
+		for (region, directory) in gameDirectories {
+			do {
+				items.append(
+					contentsOf: try Self.gameFolderItems(
+						region: region, directory: directory, cutoff: cutoff,
+						fileManager: fileManager))
+			} catch {
+				log.error(
+					"Game folder logs skipped for \(region.rawValue): \(launcherDiagnosticDescription(for: error))"
+				)
+			}
+		}
+		do {
+			items.append(
+				contentsOf: try Self.crashReportItems(
+					in: crashReportsDirectory, cutoff: cutoff, fileManager: fileManager))
+		} catch {
+			log.error("Crash reports skipped: \(launcherDiagnosticDescription(for: error))")
+		}
 		items.append(contentsOf: runtimeConfigurationItems())
-		items.append(.init(archivePath: "environment.txt", content: .text(environment)))
+		items.append(.init(archivePath: "environment.json", content: .text(environment)))
 		return items
 	}
 
@@ -127,34 +156,6 @@ package struct DiagnosticsArchive: Sendable {
 		return items
 	}
 
-	/// The multi-line `environment.txt` every archive carries. Kept here so every writer
-	/// emits the same fields.
-	package static func environmentSummary(
-		options: GameLaunchOptions,
-		usesHardwareCursor: Bool,
-		metalFX: String,
-		runtimeName: String?,
-		region: GameRegion,
-		installedRegions: [GameRegion]
-	) -> String {
-		let installed = installedRegions.map(\.rawValue).sorted().joined(separator: ", ")
-		let lines = [
-			"Arknights Client \(IssueReportURL.appVersion)",
-			IssueReportURL.environment,
-			"Runtime: \(runtimeName ?? "unknown")",
-			"MetalFX spatial upscaling: \(metalFX)",
-			"Region: \(region.rawValue)",
-			"Display mode: \(String(describing: options.displayMode))",
-			"Window size: \(options.windowSize.displayName)",
-			"Fullscreen resolution: \(String(describing: options.fullscreenResolution))",
-			"Rendering: \(String(describing: options.renderingMode))",
-			"Cursor: \(usesHardwareCursor ? "macOS" : "Game")",
-			"Synchronization: \(String(describing: options.synchronizationMode))",
-			"Installed regions: \(installed.isEmpty ? "none" : installed)",
-		]
-		return lines.joined(separator: "\n") + "\n"
-	}
-
 	/// The README every archive carries, telling the user what is inside and what to review.
 	package static var readme: String {
 		"""
@@ -162,16 +163,20 @@ package struct DiagnosticsArchive: Sendable {
 
 		This folder was written by Arknights Client \(IssueReportURL.appVersion).
 
-		- `environment.txt`: app, runtime, display, and system details.
+		- `environment.json`: app, system, runtime, game, and settings details.
 		- `Logs/`: the launcher log, the game runtime log, the Unity log, and the browser log,
-		  when each exists.
+		  when each exists. Each `*.previous.log` file holds the session before.
 		- `Logs/sdklogs/`: the publisher SDK logs for China, China (Bilibili), and Taiwan,
-		  when they exist.
+		  when they exist. The China (Bilibili) logs from its game folder are included.
+		- `Logs/CrashSight/`: the game crash reporter logs from the last 7 days, per server.
+		- `CrashReports/`: macOS crash reports from the last 7 days for the app, Wine,
+		  and the game processes.
 		- `RUNTIME.json`: the runtime pin the app was built with.
 
+		The archive does not contain save data, the game's event logs, or settings databases.
 		The archive is not uploaded anywhere.
-		The app redacts your home folder path, your user name, and URL query strings in the logs.
-		The logs can still contain other file paths, server names, and account details.
+		The app redacts your home folder path, your user name, and URL query strings in text files.
+		The files can still contain other file paths, server names, and account details.
 		SDK logs can contain account IDs and access keys that redaction does not remove.
 		Review the archive before you share it.
 		"""
@@ -195,6 +200,49 @@ package struct DiagnosticsArchive: Sendable {
 			return DiagnosticsBundle.Item(
 				archivePath: "Logs/sdklogs/\(publisher.rawValue)/\(file.lastPathComponent)",
 				content: .redactedLog(file))
+		}
+	}
+
+	/// The game's own text logs: `CrashSightLog/` for every server, and the Bilibili platform
+	/// logs for China (Bilibili). Only recent `.log` and `.txt` files are listed.
+	static func gameFolderItems(
+		region: GameRegion,
+		directory: URL,
+		cutoff: Date,
+		fileManager: FileManager = .default
+	) throws -> [DiagnosticsBundle.Item] {
+		var sources = [("CrashSightLog", "Logs/CrashSight/\(region.serverIdentifier)")]
+		if region == .chinaBilibili {
+			let base = "Logs/sdklogs/\(region.serverIdentifier)/BLPlatform64"
+			sources.append(("BLPlatform64", base))
+			sources.append(("BLPlatform64/BLWebBrowser", "\(base)/BLWebBrowser"))
+		}
+		return try sources.flatMap { folder, archiveFolder in
+			try DiagnosticsFileSelection.recentFiles(
+				in: directory.appending(path: folder, directoryHint: .isDirectory),
+				extensions: ["log", "txt"], newerThan: cutoff, fileManager: fileManager
+			).map {
+				DiagnosticsBundle.Item(
+					archivePath: "\(archiveFolder)/\($0.lastPathComponent)",
+					content: .redactedLog($0))
+			}
+		}
+	}
+
+	/// Recent macOS crash reports of the app, Wine, and the game processes.
+	static func crashReportItems(
+		in directory: URL,
+		cutoff: Date,
+		fileManager: FileManager = .default
+	) throws -> [DiagnosticsBundle.Item] {
+		let prefixes = AppConstants.Diagnostics.crashReportProcessPrefixes
+		return try DiagnosticsFileSelection.recentFiles(
+			in: directory, extensions: ["ips"],
+			matching: { name in prefixes.contains(where: name.hasPrefix) },
+			newerThan: cutoff, fileManager: fileManager
+		).map {
+			DiagnosticsBundle.Item(
+				archivePath: "CrashReports/\($0.lastPathComponent)", content: .redactedLog($0))
 		}
 	}
 }
