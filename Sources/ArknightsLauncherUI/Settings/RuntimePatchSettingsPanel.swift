@@ -18,7 +18,7 @@ struct RuntimePatchSettingsPanel: View {
 	var body: some View {
 		SettingsPanel(title: "Runtime patches", tone: .warning) {
 			SettingsFootnote(
-				"Keep the default settings unless you know what a patch does. Turning one off can break the game."
+				"Keep the default settings unless you know what a patch does."
 			)
 			ForEach(patches, id: \.self) { patch in
 				SettingsActionRow(title: patch.label, detail: patch.detail) {
