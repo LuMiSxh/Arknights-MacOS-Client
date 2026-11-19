@@ -52,9 +52,7 @@ struct OnboardingWelcomeView: View {
 		case 2:
 			"Display settings work differently in this version. Confirm display mode, rendering and cursor once."
 		case 3:
-			"This version adds light mode and Home controls, reorganizes settings, and changes fullscreen. Go through each step once to review your setup."
-		case 4:
-			"Setup changed in version 1.0. Your server, runtime, location, and preferences stay as they are. Nothing downloads unless you change something."
+			"Version 1.0 downloads the game runtime separately and can use the new ARM64 runtime. Setup installs it once and adds a Look step for light mode and Home controls. Your server, game location, and settings stay as they are."
 		default:
 			"The launcher changed how an important setting works. Go through each step once so everything keeps working."
 		}
