@@ -52,12 +52,18 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 		let stagedController = temporaryURL(in: paths.directory, suffix: "controller")
 		let previousController = temporaryURL(in: paths.directory, suffix: "previous-controller")
 		defer {
-			GameShimIO.attempt("Could not remove the staged Bilibili controller", log: log) {
-				try fileManager.removeItem(at: stagedController)
-			}
-			GameShimIO.attempt("Could not remove the previous Bilibili controller", log: log) {
-				try fileManager.removeItem(at: previousController)
-			}
+			GameShimIO.removeIfPresent(
+				"Could not remove the staged Bilibili controller",
+				at: stagedController,
+				fileManager: fileManager,
+				log: log
+			)
+			GameShimIO.removeIfPresent(
+				"Could not remove the previous Bilibili controller",
+				at: previousController,
+				fileManager: fileManager,
+				log: log
+			)
 		}
 		try fileManager.copyItem(at: controllerURL, to: stagedController)
 		if fileManager.fileExists(atPath: paths.controller.path) {
@@ -65,9 +71,12 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 		}
 		do {
 			try fileManager.moveItem(at: stagedController, to: paths.controller)
-			GameShimIO.attempt("Could not remove the previous Bilibili controller", log: log) {
-				try fileManager.removeItem(at: previousController)
-			}
+			GameShimIO.removeIfPresent(
+				"Could not remove the previous Bilibili controller",
+				at: previousController,
+				fileManager: fileManager,
+				log: log
+			)
 		} catch {
 			try GameShimIO.rethrowAfterRollback(
 				error,

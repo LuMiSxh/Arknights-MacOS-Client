@@ -16,6 +16,23 @@ package enum GameShimIO {
 		}
 	}
 
+	// A copy moved into place on the success path is absent when deferred cleanup runs. That
+	// absence is success; any other removal failure is still logged.
+	static func removeIfPresent(
+		_ context: String,
+		at url: URL,
+		fileManager: FileManager,
+		log: LauncherLog?
+	) {
+		attempt(context, log: log) {
+			do {
+				try fileManager.removeItem(at: url)
+			} catch {
+				guard isMissingFile(error) else { throw error }
+			}
+		}
+	}
+
 	// A missing optional link is the normal state, so callers log only other read failures.
 	package static func isMissingFile(_ error: Error) -> Bool {
 		if let cocoaError = error as? CocoaError {
@@ -77,12 +94,18 @@ package enum GameShimIO {
 		let temporaryURL = directory.appending(path: "\(temporaryPrefix)\(UUID().uuidString)")
 		let previousURL = directory.appending(path: "\(previousPrefix)\(UUID().uuidString)")
 		defer {
-			attempt("Could not remove a temporary helper copy", log: log) {
-				try fileManager.removeItem(at: temporaryURL)
-			}
-			attempt("Could not remove a previous helper copy", log: log) {
-				try fileManager.removeItem(at: previousURL)
-			}
+			removeIfPresent(
+				"Could not remove a temporary helper copy",
+				at: temporaryURL,
+				fileManager: fileManager,
+				log: log
+			)
+			removeIfPresent(
+				"Could not remove a previous helper copy",
+				at: previousURL,
+				fileManager: fileManager,
+				log: log
+			)
 		}
 		try fileManager.copyItem(at: shimURL, to: temporaryURL)
 		if isCurrentlyInstalledShim {
