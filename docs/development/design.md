@@ -220,7 +220,7 @@ Show a failure inline under the step or row that failed, as rule 30 requires, wi
 
 Use native controls first, then the shared components in `Sources/ArknightsCore/Shared/UI/Components`. Create a custom control only for a different interaction contract; padding and tint do not justify one. Keep primary emphasis on the current game action, and keep secondary actions, settings, diagnostics, and legal text quiet. Links still use `accentInk`.
 
-For a UI change, use the debug simulator and check an empty region, an installed region, an active operation, and a failure with its recovery path. Repeat with keyboard navigation, VoiceOver, Reduce Motion, and normal and large text. The release matrix is in [Testing architecture](testing.md#manual-compatibility-matrix).
+For a UI change, use the debug simulator and check an empty region, an installed region, an active operation, and a failure with its recovery path. Repeat with keyboard navigation, VoiceOver, Reduce Motion, and normal and large text. The release matrix is in [Testing architecture](testing.md).
 
 ## Modals and popups
 
