@@ -34,35 +34,6 @@ extension InstallationController {
 			return
 		}
 		let targetDirectory = installDirectory
-		guard let required = configuration.requiredInstallBytes else {
-			presentInstallationFailure(
-				LauncherError.invalidResponse,
-				id: installationID,
-				operation: operation,
-				region: requestedRegion
-			)
-			return
-		}
-		do {
-			let available = try GameInstaller.availableCapacityBytes(at: targetDirectory)
-			if available < required {
-				presentInstallationFailure(
-					InstallerError.insufficientDiskSpace(required: required, available: available),
-					id: installationID,
-					operation: operation,
-					region: requestedRegion
-				)
-				return
-			}
-		} catch {
-			presentInstallationFailure(
-				error,
-				id: installationID,
-				operation: operation,
-				region: requestedRegion
-			)
-			return
-		}
 		onMetadataRefreshCancellationRequested?()
 		lifecycle.state.refresh = .idle
 		progress = nil

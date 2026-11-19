@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsInfrastructure
 import Foundation
 
 enum DiskCapacityError: LauncherDiagnosticError, Sendable {
@@ -25,6 +26,24 @@ enum DiskCapacityError: LauncherDiagnosticError, Sendable {
 }
 
 extension GameInstaller {
+	// Only files that need a download count, minus bytes already held in `.part` files. Present,
+	// valid files take no new space, so a repair of a complete install needs almost none.
+	func requireFreeSpace(
+		forPending pendingFiles: [ManifestFile],
+		in installationRoot: InstallerDirectory
+	) throws {
+		var required: Int64 = 0
+		for item in pendingFiles {
+			let partial = min(try partialByteCount(of: item, in: installationRoot), item.byteCount)
+			required += item.byteCount - partial
+		}
+		guard required > 0 else { return }
+		let available = try availableCapacity(installationRoot.url)
+		if available < required {
+			throw InstallerError.insufficientDiskSpace(required: required, available: available)
+		}
+	}
+
 	// Walks up to the nearest existing ancestor because `url` (e.g. a not-yet-created install
 	// directory) may not exist yet.
 	package static func availableCapacityBytes(
