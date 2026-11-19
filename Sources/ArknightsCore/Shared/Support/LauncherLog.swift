@@ -181,7 +181,7 @@ private final class LauncherLogWriter: @unchecked Sendable {
 	}
 
 	private func rotate() throws {
-		let previousURL = fileURL.deletingPathExtension().appendingPathExtension("previous.log")
+		let previousURL = AppPaths.previousLogFile(of: fileURL)
 		guard fileManager.fileExists(atPath: fileURL.path) else { return }
 		if fileManager.fileExists(atPath: previousURL.path) {
 			try fileManager.removeItem(at: previousURL)

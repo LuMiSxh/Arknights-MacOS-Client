@@ -268,6 +268,8 @@ extension GameSessionController {
 				"Window size \(request.options.windowSize.displayName) is scaled to \(fittedWindowSize.displayName) to fit the screen."
 			)
 		}
+		await SessionLogRotation.rotate(region: request.region, paths: paths, log: log)
+		guard activeGameSessionID == request.id else { return nil }
 		var gameArguments = ["-logFile", AppPaths.windowsUnityLogPath]
 		if context.runtime.isNativeARMLane {
 			// The ARM64EC Wine build cannot set up AppContainer for the SDK login view; its

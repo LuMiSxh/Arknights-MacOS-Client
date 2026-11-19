@@ -25,15 +25,17 @@ enum SDKLogCollector {
 		log.attempt("Collecting SDK logs") {
 			try collect(
 				publisher: publisher,
-				source: paths.sdkLogDirectory(for: publisher, lane: lane),
+				sources: paths.sdkLogDirectories(for: publisher, lane: lane),
 				destination: paths.collectedSDKLogDirectory(for: publisher)
 			)
 		}
 	}
 
+	/// Copies the tail of each known log from `sources`. When several profiles hold the same
+	/// name, the most recently written copy wins.
 	static func collect(
 		publisher: GamePublisher,
-		source: URL,
+		sources: [URL],
 		destination: URL,
 		maximumBytes: Int = AppConstants.Logging.sdkLogMaximumBytes,
 		fileManager: FileManager = .default
@@ -41,8 +43,14 @@ enum SDKLogCollector {
 		guard publisher != .yostar else { return }
 		var created = false
 		for name in fileNames {
-			let file = source.appending(path: name)
-			guard let tail = try readTail(of: file, maximumBytes: maximumBytes) else { continue }
+			var newest: (file: URL, modified: Date)?
+			for source in sources {
+				let file = source.appending(path: name)
+				guard let modified = try regularFileModificationDate(of: file) else { continue }
+				if newest.map({ modified > $0.modified }) ?? true { newest = (file, modified) }
+			}
+			guard let newest else { continue }
+			let tail = try readTail(of: newest.file, maximumBytes: maximumBytes)
 			if !created {
 				try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
 				created = true
@@ -51,14 +59,20 @@ enum SDKLogCollector {
 		}
 	}
 
-	private static func readTail(of file: URL, maximumBytes: Int) throws -> Data? {
+	private static func regularFileModificationDate(of file: URL) throws -> Date? {
 		let values: URLResourceValues
 		do {
-			values = try file.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+			values = try file.resourceValues(forKeys: [
+				.isRegularFileKey, .isSymbolicLinkKey, .contentModificationDateKey,
+			])
 		} catch  where AppPaths.isMissingPathError(error) {
 			return nil
 		}
 		guard values.isRegularFile == true, values.isSymbolicLink != true else { return nil }
+		return values.contentModificationDate ?? .distantPast
+	}
+
+	private static func readTail(of file: URL, maximumBytes: Int) throws -> Data {
 		// A failed read skips the close; the handle closes when it deallocates.
 		let handle = try FileHandle(forReadingFrom: file)
 		let size = try handle.seekToEnd()

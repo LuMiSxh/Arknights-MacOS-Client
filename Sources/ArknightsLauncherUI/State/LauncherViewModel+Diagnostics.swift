@@ -17,26 +17,21 @@ extension LauncherViewModel {
 			let log = log
 			await storage.refreshSDKLogs()
 			let publisher = installation.region.publisher
-			let metalFX =
-				gameSession.metalFXSpatialUpscalingSupported.map {
-					$0 ? "supported" : "unsupported"
-				} ?? "unknown"
+			let runtimeLog = paths.runtimeLogFile(for: installation.region)
 			let archive = try await DiagnosticsArchive(
 				logFiles: [
 					paths.launcherLogFile,
-					paths.runtimeLogFile(for: installation.region),
+					AppPaths.previousLogFile(of: paths.launcherLogFile),
+					runtimeLog,
+					AppPaths.previousLogFile(of: runtimeLog),
 					paths.unityLogFile,
+					AppPaths.previousLogFile(of: paths.unityLogFile),
 					paths.chromiumLogFile,
 				],
 				sdkLogDirectory: paths.collectedSDKLogDirectory(for: publisher),
 				publisher: publisher,
-				environment: DiagnosticsArchive.environmentSummary(
-					options: settings.launchOptions,
-					usesHardwareCursor: settings.usesHardwareCursor,
-					metalFX: metalFX,
-					runtimeName: gameSession.runtimeName,
-					region: installation.region,
-					installedRegions: installation.installedRegions),
+				environment: await diagnosticsEnvironment().json(),
+				gameDirectories: gameDirectories(),
 				readme: DiagnosticsArchive.readme,
 				baseName: Self.diagnosticsBaseName(),
 				directory: paths.diagnosticsDirectory,

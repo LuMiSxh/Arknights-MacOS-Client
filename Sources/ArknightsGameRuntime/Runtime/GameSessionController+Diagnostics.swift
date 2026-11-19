@@ -82,8 +82,7 @@ extension GameSessionController {
 	nonisolated static func recentCrashReportPath(
 		near date: Date,
 		log: LauncherLog,
-		in directory: URL = FileManager.default.homeDirectoryForCurrentUser
-			.appending(path: "Library/Logs/DiagnosticReports", directoryHint: .isDirectory),
+		in directory: URL = AppPaths.systemCrashReportsDirectory,
 		window: Duration = .seconds(AppConstants.Logging.crashReportSearchWindow),
 		fileManager: FileManager = .default
 	) -> String? {
