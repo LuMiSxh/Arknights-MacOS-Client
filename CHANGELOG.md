@@ -65,6 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Launcher music fades out once when the game window appears, and track titles stay correct.
 - The **Needs attention** dialog responds while Settings is open.
 - A slow Game Mode helper no longer blocks quitting.
+- **Repair** of a complete game no longer fails with **IN-DSK**. It now needs free space only for the files it downloads.
 
 ### Removed
 
