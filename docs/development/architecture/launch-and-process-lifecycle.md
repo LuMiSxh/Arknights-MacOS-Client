@@ -394,7 +394,10 @@ The launch directs Wine, Unity, and Chromium diagnostics to the central macOS lo
   `arknights-gryphline.log` (Taiwan), or `arknights-hypergryph.log` (Hypergryph).
 - `L:` maps that directory. Unity receives `-logFile L:\unity.log`. The Vuplex compatibility component
   adds `--log-file=L:\chromium.log`.
-- After a game session and on **Reveal logs**, the launcher copies the SDK logs for China, China (Bilibili), and Taiwan to `logs/sdklogs/<publisher>`. Each file keeps only its last 2 MiB. Yostar regions have no SDK logs. **Save Diagnostics** refreshes them.
+- Each launch moves a non-empty Wine log and `unity.log` to `*.previous.log`, so diagnostics keep the last session.
+- After a game session and on **Reveal logs**, the launcher copies the SDK logs for China, China (Bilibili), and Taiwan to `logs/sdklogs/<publisher>`. The SDK writes them under the prefix user's profile, which is the macOS account name or `crossover`, so the launcher checks every profile and keeps the newest copy of each file. Each file keeps only its last 2 MiB. Yostar regions have no SDK logs. **Save Diagnostics** refreshes them.
+- **Save Diagnostics** also reads the game folder of every server, managed or located. It adds recent `.log` and `.txt` files from `CrashSightLog/` and, for China (Bilibili), from `BLPlatform64/` and `BLPlatform64/BLWebBrowser/`. It adds `.ips` crash reports of the last 7 days from `~/Library/Logs/DiagnosticReports` for the app, Wine, `PlatformProcess`, and `QtWebEngineProcess`. Limits live in `AppConstants.Diagnostics`. The archive never includes databases, `mmkv/`, `HGEventLog*`, or save data.
+- `environment.json` (schema 1) holds app, system, runtime, game, and settings facts from local state. It makes no network call.
 - [Storage](../../help/storage.md#logs) lists the macOS paths.
 
 Launch diagnostics include the session ID, region, display, frame rate limit, and synchronization options, and whether
