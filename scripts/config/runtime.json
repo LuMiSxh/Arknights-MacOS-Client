@@ -6,11 +6,11 @@
       "minimumMacOS": "15.0",
       "prefixRevision": 2,
       "runtime": {
-        "name": "Arknights macOS Runtime 1.0.0-rc1",
-        "version": "1.0.0-rc1",
-        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.0-rc1/Arknights-MacOS-Runtime-v1.0.0-rc1-x86_64.tar.gz",
-        "sha256": "55f67c3da464658821b049549fbf9c13c78235f6f07123e03df70e1843b43877",
-        "sizeBytes": 119296036
+        "name": "Arknights macOS Runtime 1.0.0",
+        "version": "1.0.0",
+        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.0/Arknights-MacOS-Runtime-v1.0.0-x86_64.tar.gz",
+        "sha256": "3be6e38f581001e9e9907976f43e416c2526380a9b9191b9a3db2cd4acc5dd24",
+        "sizeBytes": 119295049
       },
       "interface": {
         "archive": {
@@ -53,7 +53,7 @@
       },
       "provenance": {
         "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-        "buildCommit": "d62944126fc2aa4fc4af33e2dde7ed69b97d22d4",
+        "buildCommit": "6706c177fd486730800bf6354a9800389c84209e",
         "wineRepository": "https://github.com/dappermint/winecx",
         "wineCommit": "a54b8240683e92bf4c15cb1ba6bf92a9539bd768",
         "dxmtRepository": "https://github.com/3Shain/dxmt",
@@ -72,11 +72,11 @@
       "minimumMacOS": "26.0",
       "prefixRevision": 2,
       "runtime": {
-        "name": "Arknights macOS Runtime 1.0.0-rc1",
-        "version": "1.0.0-rc1",
-        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.0-rc1/Arknights-MacOS-Runtime-v1.0.0-rc1-arm64.tar.gz",
-        "sha256": "3e889b3fe938eaa2f7c017f1d42010c6f3b1f2a9ba53a2075def8b3d2c7c6d18",
-        "sizeBytes": 237494190
+        "name": "Arknights macOS Runtime 1.0.0",
+        "version": "1.0.0",
+        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.0/Arknights-MacOS-Runtime-v1.0.0-arm64.tar.gz",
+        "sha256": "90ce60ffb2e3892843583e1af6dfd4014bc351410faaa50e4beb3d1d8de8fd63",
+        "sizeBytes": 237494359
       },
       "interface": {
         "archive": {
@@ -118,7 +118,7 @@
       },
       "provenance": {
         "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-        "buildCommit": "d62944126fc2aa4fc4af33e2dde7ed69b97d22d4",
+        "buildCommit": "6706c177fd486730800bf6354a9800389c84209e",
         "externalBuildRepository": "https://github.com/riverfog7/wine-build-new",
         "externalBuildCommit": "7b3fff76fa5178f6ce0141b2c776afa2a822f101",
         "wineRepository": "https://gitlab.winehq.org/wine/wine",
