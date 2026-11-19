@@ -65,7 +65,7 @@ struct GamePerformanceSettingsPanel: View {
 
 	private var frameRateDetail: String {
 		launcherDisplayControl
-			? "Caps the frames per second the game draws. Lower limits save battery."
+			? "Caps the frames per second the game draws. Set the in-game frame rate to 120 FPS so this limit applies."
 			: "The game keeps its own frame rate while Override in-game display settings is off. Turn it on to change this."
 	}
 

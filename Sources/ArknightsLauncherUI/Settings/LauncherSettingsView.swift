@@ -99,7 +99,8 @@ struct LauncherSettingsView: View {
 							runtimeSelection: dependencies.runtimeSelection,
 							intelTranslation: dependencies.intelTranslation,
 							lifecycle: dependencies.lifecycle,
-							actions: dependencies.actions
+							actions: dependencies.actions,
+							runtime: dependencies.gameSession.installedRuntime
 						)
 					case .storage:
 						StorageOverviewPage(
@@ -135,7 +136,6 @@ struct LauncherSettingsView: View {
 						AboutSettingsPage(
 							launcherIconManager: dependencies.launcherIconManager,
 							branding: dependencies.branding,
-							runtime: dependencies.gameSession.installedRuntime,
 							revealApplication: dependencies.storage.revealApplication,
 							presentedDocument: $presentedDocument
 						)

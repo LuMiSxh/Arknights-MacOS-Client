@@ -35,7 +35,9 @@ Lower resolutions scale to fill the screen. They look grainy on larger or differ
 
 ## Performance
 
-**Frame rate limit** in **Settings → Game → Performance** caps the frames per second the game draws. Choose **30 FPS**, **60 FPS**, or **120 FPS**. Lower values save battery.
+**Frame rate limit** in **Settings → Game → Performance** caps the frames per second the game draws. Choose **30 FPS**, **60 FPS**, or **120 FPS**.
+
+Set the in-game frame rate to 120 FPS. The launcher can only lower the frame rate, so a lower in-game setting caps the game below your choice.
 
 **Frame rate limit**, **Game Mode**, and **Metal Performance HUD** apply only when **Override in-game display settings** is on. When it is off, the game keeps its own settings for these options.
 

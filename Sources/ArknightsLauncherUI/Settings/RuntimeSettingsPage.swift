@@ -12,9 +12,12 @@ struct RuntimeSettingsPage: View {
 	let intelTranslation: IntelTranslationController
 	let lifecycle: LauncherLifecycleStore
 	let actions: any LauncherInstallationActions
+	let runtime: InstalledRuntimeDetails?
 	@State var pendingRuntimeLane: RuntimeLane?
 	@State var isRemoveRuntimeConfirmationPresented = false
 	@State var isRemoveSelectedRuntimeConfirmationPresented = false
+	@State var isShowingTechnicalDetails = false
+	@Environment(\.accessibilityReduceMotion) var reduceMotion
 
 	var body: some View {
 		SettingsPage(
@@ -25,6 +28,7 @@ struct RuntimeSettingsPage: View {
 				SettingsLockBanner(reason: reason)
 			}
 			activeRuntimePanel
+			detailsPanel
 			maintenancePanel
 			GameCompatibilitySettingsPanel(
 				settings: settings,

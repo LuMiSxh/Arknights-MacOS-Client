@@ -33,6 +33,93 @@ extension RuntimeSettingsPage {
 		}
 	}
 
+	@ViewBuilder var detailsPanel: some View {
+		SettingsPanel(title: "Details") {
+			detailRows
+		}
+	}
+
+	private static let commitPrefixLength = 12
+
+	@ViewBuilder private var detailRows: some View {
+		if let runtime {
+			SettingsActionRow(title: "Version") {
+				valueText(runtime.name)
+			}
+			SettingsHairline()
+			SettingsActionRow(title: "Architecture") {
+				valueText(runtime.architecture)
+			}
+			SettingsHairline()
+			// Not a stack: the panel pads and divides each top-level row, including the expanded ones.
+			Group {
+				Button {
+					withAnimation(LauncherMotion.animation(.disclosure, reduceMotion: reduceMotion))
+					{
+						isShowingTechnicalDetails.toggle()
+					}
+				} label: {
+					HStack {
+						Text("Technical details")
+							.foregroundStyle(theme.textPrimary)
+						Spacer(minLength: 0)
+						Image(systemName: "chevron.right")
+							.font(.caption.weight(.medium))
+							.foregroundStyle(theme.textSecondary)
+							.rotationEffect(.degrees(isShowingTechnicalDetails ? 90 : 0))
+							.accessibilityHidden(true)
+					}
+					.contentShape(.rect)
+				}
+				.buttonStyle(.plain)
+				.accessibilityValue(isShowingTechnicalDetails ? "Expanded" : "Collapsed")
+				if isShowingTechnicalDetails {
+					SettingsHairline()
+					SettingsActionRow(
+						title: "Wine",
+						detail: runtime.wineCommit.map {
+							"Commit \($0.prefix(Self.commitPrefixLength))"
+						}
+					) {
+						valueText(runtime.wineVersion ?? "—")
+					}
+					SettingsHairline()
+					SettingsActionRow(
+						title: "DXMT",
+						detail: runtime.dxmtCommit.map {
+							"Commit \($0.prefix(Self.commitPrefixLength))"
+						}
+					) {
+						valueText(runtime.dxmtVersion ?? "—")
+					}
+					SettingsHairline()
+					capabilityRow("Hardware cursor", advertised: runtime.hardwareCursor)
+					SettingsHairline()
+					capabilityRow(
+						"MetalFX spatial upscaling", advertised: runtime.metalFXSpatialUpscaling)
+					SettingsHairline()
+					capabilityRow(
+						"Native fullscreen Space", advertised: runtime.nativeFullscreenSpace)
+				}
+			}
+		} else {
+			SettingsActionRow(title: "Version") {
+				valueText("Not installed")
+			}
+		}
+	}
+
+	private func capabilityRow(_ title: String, advertised: Bool) -> some View {
+		SettingsActionRow(title: title) {
+			valueText(advertised ? "Advertised" : "Not advertised")
+		}
+	}
+
+	private func valueText(_ text: String) -> some View {
+		Text(text)
+			.foregroundStyle(theme.textSecondary)
+	}
+
 	@ViewBuilder var maintenancePanel: some View {
 		if isRuntimeUpdateAvailable || runtimeSelection.selectedLane == .x86 {
 			maintenancePanelContent
