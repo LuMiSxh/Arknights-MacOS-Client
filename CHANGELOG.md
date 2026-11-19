@@ -9,76 +9,62 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0]
+## [1.0.0] - 2026-11-20
 
 > [!IMPORTANT]
 > Huge thanks to @riverfog7 for providing this client with an [ARM runtime](https://github.com/riverfog7/wine-build-new)!
 
 ### Added
 
-- Added an **ARM64 (Apple Silicon)** runtime for macOS 26 or later. It uses its own game environment, so the game may look like a fresh install after a switch.
-- Added runtime downloads. Choose the runtime under **Settings → Runtime**; the launcher downloads, verifies, and installs it, with **Pause** and **Resume**.
-- Added a **Runtime** page to Settings with the runtime choice, **Remove Runtime…**, Wine sync under **Compatibility**, and **Runtime patches**.
-- Added the **Game runtime** help page, linked from setup and the **Active runtime** panel with **About game runtimes**.
-- Added a light mode. Choose System, Light, or Dark under **Settings → Appearance**.
-- Added **Home controls** and **Branding** options to **Dynamic Theme**. Each follows the artwork's brightness or stays dark or light.
+- Added an **ARM64 (Apple Silicon)** runtime for macOS 26 or later. It uses its own game environment, so the game may look freshly installed after a switch.
+- Added runtime downloads with **Pause** and **Resume**.
+- Added a **Runtime** settings page with the runtime choice, **Details**, **Remove Runtime…**, and **Runtime patches**.
+- Added the **Game runtime** help page.
+- Added a light mode under **Settings → Appearance**.
+- Added **Home controls** and **Branding colors**: follow the artwork, or stay dark or light.
 - Added **Game display** to choose the display the game opens on.
 - Added **Custom…** window sizes and **Measure With a Window…**.
-- Added **Frame rate limit** (30, 60, or 120 FPS) and **Battery Saver mode**.
+- Added **Frame rate limit** (30, 60, or 120 FPS). Set the in-game frame rate to 120 FPS for it to apply.
+- Added **Battery Saver mode** with its own frame rate limit.
 - Added an optional **Daily reset reminder**.
-- Added **Screenshots**: press **⌃⌥S** or your own **Shortcut** to save the game window to **Pictures/Arknights**.
+- Added **Screenshots**: press **⌃⌥S** or your own shortcut to save the game window to **Pictures/Arknights**.
 - Added optional **Discord presence**.
-- Added a **Help** section and a **Help** menu with **Report a Problem…**, **Save Diagnostics…**, and the troubleshooting guide. **Report a Problem…** is also in the Dock menu.
-- Added **Save Diagnostics…**: a local zip of logs and system details. Nothing is uploaded.
-- Added **Contact the developer**, **Debug logging**, and the **App Data Folder** button.
-- Added a **Runtime** group to **Settings → About** with the runtime, Wine, and DXMT versions.
+- Added a **Help** section and menu with **Report a Problem…** and **Save Diagnostics…**. Diagnostics stay local.
+- Added **Contact the developer** and the **App Data Folder** button.
 - The failure dialog can copy the support code.
 
 ### Changed
 
 - Updated the runtime to 1.0.0.
-- Setup has one **Install** step for the runtime, the game location, and Rosetta 2, and a new **Look** step. Existing users run setup once more and keep their choices.
-- On macOS 28 and later, setup uses **ARM64 (Apple Silicon)** only. x86_64 users are asked to switch.
-- A launcher update can require a newer runtime. Home then shows **Update Runtime** instead of **Play**.
-- Rebuilt the launcher design on one theme for dark and light, without glow, hover zoom, or bouncy motion.
+- Setup has one **Install** step and a new **Look** step. Existing users run setup once more and keep their choices.
+- On macOS 28 and later, only **ARM64 (Apple Silicon)** is available.
+- A launcher update can require a newer runtime. Home then shows **Update Runtime**.
+- After a runtime update, the launcher updates every installed server's game environment in the background.
+- Rebuilt the launcher design with one theme for dark and light.
 - Reorganized Settings: **Audio** is now **Integration**, recovery actions moved to **Help**, and **Game** is split into **Display** and **Performance**.
-- **Game Mode** and **Metal Performance HUD** apply only when **Override in-game display settings** is on.
+- **Frame rate limit**, **Game Mode**, and **Metal Performance HUD** apply only when **Override in-game display settings** is on.
 - Gryphline Taiwan is now a stable server.
 - Fullscreen opens the game in its own macOS Space.
-- **Settings → Storage** shows the last measured sizes at once.
-- Runtime downloads are deleted after the runtime installs.
-- The launcher stores games, game environments, runtimes, downloads, artwork, and playtime in one flat folder layout under Application Support.
-- Launcher versions before 0.6 can no longer be upgraded in place. The launcher detects their data and offers **Delete Data Folder** to remove it and set up again.
-- After a runtime update, the launcher updates the game environment of every installed server in the background.
-- **Rendering** marks MetalFX unavailable when the runtime cannot use it.
-- Support codes use a short format, for example **IN-DSK**. Old codes link to their new pages.
+- **Choose New Location…** installs into the folder you pick, without an `Arknights_EN` subfolder.
+- The launcher refuses folders that overlap another server or its own data.
+- **Uninstall Game…** in a chosen folder removes only the installed files.
+- The launcher moves its data to a new folder layout once.
+- Versions before 0.6 can no longer be upgraded in place. The launcher offers **Delete Data Folder** instead.
+- Support codes use a short format, for example **IN-DSK**.
 - The China (Bilibili) sign-in window stays above the game.
-- The launcher remembers when you mute the music, and playlists start on a random track.
-- Preset gallery images, preset catalogs, and launcher artwork now share one cache policy; the least recently used files are removed first.
-- Theme accents and Home brightness scores are now cached on disk and rebuild once after updating.
+- The launcher remembers muted music, and playlists start on a random track.
 - Rebuilt the website in the launcher's design.
-- Home shows **Runtime setup required** when the game is installed but the selected runtime is missing. The primary action is **Set Up Runtime**.
-- The Settings rail strip shows the runtime download while the runtime installs.
-- Removed the **Installation complete** message after a game install. Home moves straight to the next state.
-- **Choose New Location…** installs the game directly into the folder you pick, with no `Arknights_EN` subfolder. Existing installs keep their folder.
-- The launcher refuses a folder that overlaps another server or holds launcher data. It asks before using a folder with other files.
-- **Uninstall Game…** in a folder you chose removes only the files the launcher installed and keeps your other files. The default folder still moves to the Trash as a whole.
 
 ### Fixed
 
-- The Home top bar, control bar, and **Settings** button stay inside the window at every size, and the launcher update dialog fits the window without a square dim. The Home artwork is pinned to the window size instead of widening the layout.
-- Wallpapers and icons in the preset gallery no longer time out while loading. The gallery downloads a few images at a time, and applying a preset goes ahead of the queue.
-- The status pill's VoiceOver hint now says "servers", matching the help and Settings wording.
-- **Switch and Download** selects the new runtime when the download starts, so Home no longer offers **Play** for the old one.
-- Window size, fullscreen size, and Retina scale follow the display the game opens on.
+- The Home controls and the update dialog stay inside the window at every size.
+- Preset gallery images no longer time out while loading.
+- The largest official wallpapers now apply. Unusable images show support code **UI-IMG**.
 - The "Wine configuration is being updated" window no longer appears after a runtime update.
-- The Notices window shows the blurred game, comes forward on click, and no longer stays above other apps (Thanks to @darkwebdev, #118, #119, #120).
-- Launcher music plays until the game window appears, then fades out once. Track titles, **Next**, and **Previous** work on every track change.
-- Wallpapers larger than 8,192 pixels apply. Unusable images show support code **UI-IMG**.
-- The **Needs attention** dialog responds after an error appears while Settings is open.
-- Download verification uses less memory and CPU.
-- A slow Game Mode helper no longer stops the launcher from quitting.
-- An installed-state file from a newer launcher version is now reported as unreadable instead of being misread.
+- The Notices window no longer stays above other apps (Thanks to @darkwebdev, #118, #119, #120).
+- Launcher music fades out once when the game window appears, and track titles stay correct.
+- The **Needs attention** dialog responds while Settings is open.
+- A slow Game Mode helper no longer blocks quitting.
 
 ### Removed
 
@@ -496,7 +482,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.7.1...HEAD
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v1.0.0
 [0.7.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.7.1
 [0.7.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.7.0
 [0.6.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.6.1
