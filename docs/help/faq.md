@@ -44,6 +44,15 @@ The game needs it to connect through Wine.
 
 No. Quitting the launcher quits the game. Closing its window does not.
 
+## Why does the Bilibili login return to the start?
+
+On the first start of a new game environment, the security check of China (Bilibili) can close. The login then shows its first page again.
+
+1. Quit the game.
+2. Start it again and sign in.
+3. If the security check still closes, quit the game and choose **Repair**.
+4. If it still fails, [report the problem](README.md#report-a-problem).
+
 ## Why do notices still appear with announcements turned off?
 
 The setting covers only project announcements. Publisher notices come from the game.
