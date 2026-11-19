@@ -10,17 +10,20 @@ import Foundation
 package actor ArtworkCache {
 	private let loader: BoundedHTTPDataLoader
 	private nonisolated let directory: URL
+	private let clock: any Clock<Duration>
 	private var activeImageRequestIDs: [GameRegion: UUID] = [:]
 
 	package init(
 		session: URLSession = .shared,
-		directory: URL
+		directory: URL,
+		clock: any Clock<Duration> = ContinuousClock()
 	) {
 		loader = BoundedHTTPDataLoader(
 			session: session,
 			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
 		)
 		self.directory = directory
+		self.clock = clock
 	}
 
 	package nonisolated func cachedActiveImageData(for region: GameRegion) throws -> (String, Data)?
@@ -85,12 +88,11 @@ package actor ArtworkCache {
 			// official asset below.
 		}
 
-		let data = try await downloadData(
-			from: sourceURL,
-			maximumBytes: AppConstants.Artwork.launcherMaximumBytes,
-			region: region
-		)
-		guard isCurrentImageRequest(requestID, region: region) else { return nil }
+		guard
+			let data = try await downloadArtwork(
+				from: sourceURL, region: region, requestID: requestID),
+			isCurrentImageRequest(requestID, region: region)
+		else { return nil }
 
 		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
 		try pruneCache(incomingBytes: Int64(data.count), preserving: cachedURL)
@@ -122,7 +124,11 @@ package actor ArtworkCache {
 		guard let sourceURL = Self.officialLogoURL(for: region) else { return nil }
 		let data = try await downloadData(
 			from: sourceURL,
-			maximumBytes: AppConstants.Artwork.officialLogoMaximumBytes,
+			policy: HTTPFetchPolicy(
+				maximumBytes: AppConstants.Artwork.officialLogoMaximumBytes,
+				attemptsPerCandidate: AppConstants.Network.maxDownloadAttempts,
+				backoffStep: AppConstants.Network.retryBackoffStep
+			),
 			region: region
 		)
 
@@ -132,11 +138,11 @@ package actor ArtworkCache {
 		return data
 	}
 
-	private var fetcher: CheckedHTTPFetcher { CheckedHTTPFetcher(loader: loader) }
+	private var fetcher: CheckedHTTPFetcher { CheckedHTTPFetcher(loader: loader, clock: clock) }
 
 	private func downloadData(
 		from url: URL,
-		maximumBytes: Int,
+		policy: HTTPFetchPolicy,
 		region: GameRegion
 	) async throws -> Data {
 		var request = URLRequest(url: url)
@@ -145,19 +151,60 @@ package actor ArtworkCache {
 		do {
 			result = try await fetcher.fetch(
 				[request],
-				policy: HTTPFetchPolicy(
-					maximumBytes: maximumBytes,
-					attemptsPerCandidate: AppConstants.Network.maxDownloadAttempts,
-					backoffStep: AppConstants.Network.retryBackoffStep
-				),
+				policy: policy,
 				redirectValidator: Self.artworkRedirectValidator(for: region)
 			)
-		} catch HTTPFetchError.unexpectedStatus {
+		} catch HTTPFetchError.unexpectedStatus(let status, _)
+			where !(500..<600).contains(status)
+		{
 			throw LauncherError.invalidResponse
 		}
 		guard !result.data.isEmpty else { throw LauncherError.invalidResponse }
 		guard NSImage(data: result.data) != nil else { throw LauncherError.invalidResponse }
 		return result.data
+	}
+
+	/// Makes one attempt per try and retries transient failures after doubling waits. A wait
+	/// ends early when a newer request for the region has replaced this one.
+	private func downloadArtwork(
+		from url: URL,
+		region: GameRegion,
+		requestID: UUID
+	) async throws -> Data? {
+		var retries = 0
+		while true {
+			do {
+				return try await downloadData(
+					from: url,
+					policy: HTTPFetchPolicy(
+						maximumBytes: AppConstants.Artwork.launcherMaximumBytes
+					),
+					region: region
+				)
+			} catch let error where Self.isTransient(error) {
+				guard retries < AppConstants.Artwork.transientRetryLimit else { throw error }
+				retries += 1
+				let delay = AppConstants.Artwork.transientRetryBaseDelay * (1 << (retries - 1))
+				try await clock.sleep(for: delay, tolerance: delay / 10)
+				guard isCurrentImageRequest(requestID, region: region) else { return nil }
+			}
+		}
+	}
+
+	/// Connectivity, timeout, and server failures can succeed on a later attempt. A rejected
+	/// host or an invalid image cannot.
+	private static func isTransient(_ error: any Error) -> Bool {
+		if case HTTPFetchError.unexpectedStatus(let status, _) = error {
+			return (500..<600).contains(status)
+		}
+		guard let urlError = error as? URLError else { return false }
+		switch urlError.code {
+		case .timedOut, .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet,
+			.dnsLookupFailed:
+			return true
+		default:
+			return false
+		}
 	}
 
 	private nonisolated func officialLogoCacheURL(for region: GameRegion) -> URL {

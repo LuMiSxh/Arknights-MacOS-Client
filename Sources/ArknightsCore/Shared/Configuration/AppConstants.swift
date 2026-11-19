@@ -302,6 +302,9 @@ package enum AppConstants {
 		// 13,280 x 7,470 px (99.2 MP, 16.4 MiB). Limits add about 10% and round to gallery limits.
 		package static let maximumDimension = 16_384
 		package static let maximumPixels = 120_000_000
+		// Server artwork that fails transiently waits this long before the first retry, then doubles.
+		package static let transientRetryLimit = 3
+		package static let transientRetryBaseDelay: Duration = .seconds(4)
 	}
 
 	package enum Timeouts {
