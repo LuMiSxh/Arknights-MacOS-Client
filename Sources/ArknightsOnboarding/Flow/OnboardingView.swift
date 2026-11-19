@@ -315,7 +315,7 @@ package struct OnboardingView: View {
 			gameIsInstalled: installation.isInstalled,
 			gameIsDownloading: installation.isDownloading,
 			runtimeIsInstalled: runtimeLane.map {
-				runtimeSelection.installedVersion(for: $0) != nil
+				runtimeSelection.state(for: $0) == .current
 			} ?? false
 		)
 	}
@@ -410,7 +410,7 @@ package struct OnboardingView: View {
 		}
 		return RuntimeSwitchWarning.message(
 			for: pin,
-			isInstalled: runtimeSelection.installedVersion(for: lane) != nil
+			isInstalled: runtimeSelection.state(for: lane) == .current
 		)
 	}
 

@@ -100,20 +100,26 @@ struct OnboardingInstallView: View {
 
 	private func laneInfo(_ lane: RuntimeLane) -> String {
 		var parts: [String] = []
-		if let version = runtimeSelection.installedVersion(for: lane) {
-			parts.append("Installed, version \(version)")
-		} else {
-			parts.append("Not installed")
+		let state = runtimeSelection.state(for: lane)
+		switch state {
+		case .notInstalled: parts.append("Not installed")
+		case .outdated(let installed): parts.append("Installed, version \(installed)")
+		case .current:
+			parts.append("Installed, version \(runtimeSelection.installedVersion(for: lane) ?? "")")
 		}
 		guard let pin = runtimeSelection.pinnedRuntime(for: lane) else {
 			return parts.joined(separator: " · ")
 		}
-		if runtimeSelection.installedVersion(for: lane) == nil {
-			parts.append("Version \(pin.version)")
+		switch state {
+		case .notInstalled: parts.append("Version \(pin.version)")
+		case .outdated: parts.append("Updates to \(pin.version)")
+		case .current: break
 		}
-		parts.append(
-			"\(DownloadProgressFormatting.byteCount(Int64(pin.sizeBytes))) download"
-		)
+		if state != .current {
+			parts.append(
+				"\(DownloadProgressFormatting.byteCount(Int64(pin.sizeBytes))) download"
+			)
+		}
 		parts.append("Requires \(pin.minimumMacOS.macOSDisplayName) or later")
 		return parts.joined(separator: " · ")
 	}
