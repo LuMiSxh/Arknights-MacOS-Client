@@ -14,13 +14,14 @@ package enum RuntimePatch: String, CaseIterable, Sendable {
 	case aceRosetta
 	case eflags
 	case hybridThread
+	case loaderLink
 
 	/// The runtime lanes whose build contains the patch.
 	package var lanes: Set<RuntimeLane> {
 		switch self {
 		case .aceImports, .appContainer, .winsock, .menu: [.x86, .arm]
 		case .audio, .aceTiming, .aceDispatcher, .aceRosetta: [.x86]
-		case .eflags, .hybridThread: [.arm]
+		case .eflags, .hybridThread, .loaderLink: [.arm]
 		}
 	}
 }

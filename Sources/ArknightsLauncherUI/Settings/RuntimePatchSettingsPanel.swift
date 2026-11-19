@@ -9,6 +9,7 @@ struct RuntimePatchSettingsPanel: View {
 	let lane: RuntimeLane
 	let isLocked: Bool
 	@State private var pendingTurnOff: RuntimePatch?
+	@Environment(\.launcherTheme) private var theme
 
 	private var patches: [RuntimePatch] {
 		RuntimePatch.allCases.filter { $0.lanes.contains(lane) }
@@ -16,9 +17,12 @@ struct RuntimePatchSettingsPanel: View {
 
 	var body: some View {
 		SettingsPanel(title: "Runtime patches", tone: .warning) {
+			SettingsFootnote(
+				"Keep the default settings unless you know what a patch does. Turning one off can break the game."
+			)
 			ForEach(patches, id: \.self) { patch in
 				SettingsActionRow(title: patch.label, detail: patch.detail) {
-					SettingsToggle(patch.label, isOn: binding(for: patch))
+					SettingsToggle(patch.label, isOn: binding(for: patch), tint: theme.warning)
 						.disabled(isLocked)
 				}
 			}
@@ -83,6 +87,7 @@ extension RuntimePatch {
 		case .aceRosetta: "Rosetta workarounds"
 		case .eflags: "CPU flag carry"
 		case .hybridThread: "Thread start fix"
+		case .loaderLink: "App name"
 		}
 	}
 
@@ -108,6 +113,8 @@ extension RuntimePatch {
 			"Keeps CPU status flags intact when the ARM64 runtime runs x64 code. Turning it off can cause crashes."
 		case .hybridThread:
 			"Repairs how threads start in mixed ARM64 and x64 code. Turning it off can cause crashes."
+		case .loaderLink:
+			"Shows the game’s own name instead of Wine in the menu bar. Off restores Wine’s name."
 		}
 	}
 }

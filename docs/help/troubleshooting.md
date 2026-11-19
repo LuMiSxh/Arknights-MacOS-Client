@@ -105,7 +105,7 @@ Use **Runtime patches** only when a maintainer asks, or when a problem started a
 3. Turn off one switch and confirm the warning.
 4. Start the game and check whether the problem is gone.
 
-The game may break or behave differently with a patch off. To undo a change, turn the switch back on. **Restore Defaults** turns every patch back on. The list shows only the patches that your runtime contains.
+Keep the defaults on unless you know what a patch does. The game may break or behave differently with a patch off. To undo a change, turn the switch back on. **Restore Defaults** turns every patch back on. The list shows only the patches that your runtime contains.
 
 ## Debug logging
 

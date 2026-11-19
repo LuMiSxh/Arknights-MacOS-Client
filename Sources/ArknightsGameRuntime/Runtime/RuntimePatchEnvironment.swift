@@ -17,6 +17,7 @@ struct RuntimePatchEnvironment {
 		case .aceRosetta: AppConstants.Runtime.aceRosettaEnvironmentKey
 		case .eflags: AppConstants.Runtime.eflagsEnvironmentKey
 		case .hybridThread: AppConstants.Runtime.hybridThreadEnvironmentKey
+		case .loaderLink: AppConstants.Runtime.loaderLinkEnvironmentKey
 		}
 	}
 

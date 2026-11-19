@@ -22,7 +22,11 @@ private let x86GateKeys = [
 	"LMISXH_AKMOCL_ACE_DISPATCHER",
 	"LMISXH_AKMOCL_ACE_ROSETTA",
 ]
-private let armGateKeys = ["LMISXH_AKMOCL_EFLAGS", "LMISXH_AKMOCL_HYBRID_THREAD"]
+private let armGateKeys = [
+	"LMISXH_AKMOCL_EFLAGS",
+	"LMISXH_AKMOCL_HYBRID_THREAD",
+	"LMISXH_AKMOCL_LOADER_LINK",
+]
 
 private func gateKeys(for lane: RuntimeLane) -> [String] {
 	sharedGateKeys + (lane == .arm ? armGateKeys : x86GateKeys)
