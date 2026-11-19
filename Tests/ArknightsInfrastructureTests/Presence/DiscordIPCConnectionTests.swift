@@ -73,7 +73,7 @@ struct DiscordIPCConnectionTests {
 		try pair.send(.ping, json: "{}")
 
 		// A pong after the odd payload shows the connection processed it and stayed open.
-		#expect(try pair.readFrame(opcode: .pong) != nil)
+		#expect(try await pair.readFrame(opcode: .pong) != nil)
 		await connection.disconnect()
 	}
 
@@ -85,7 +85,7 @@ struct DiscordIPCConnectionTests {
 		let attempt = Task { try await connection.connect(clientID: Self.clientID) }
 
 		// The peer sees the handshake once the connection waits for READY.
-		#expect(try pair.readFrame(opcode: .handshake) != nil)
+		#expect(try await pair.readFrame(opcode: .handshake) != nil)
 		attempt.cancel()
 
 		do {
@@ -131,7 +131,8 @@ private enum SocketPairError: Error {
 }
 
 /// Two connected AF_UNIX descriptors. The connection end is non-blocking, as a real socket is.
-private final class ConnectedSocketPair {
+/// The test body uses it from one task at a time.
+private final class ConnectedSocketPair: @unchecked Sendable {
 	let clientDescriptor: Int32
 	let peerDescriptor: Int32
 	private var received = Data()
@@ -186,8 +187,18 @@ private final class ConnectedSocketPair {
 		}
 	}
 
-	/// Blocks until a frame with `opcode` arrives, skipping others. Returns nil on end of file.
-	func readFrame(opcode: DiscordIPCOpcode) throws -> DiscordIPCFrame? {
+	/// Waits for a frame with `opcode`, skipping others. Returns nil on end of file.
+	/// The blocking read runs on a dispatch thread. A cooperative thread would starve the connection's
+	/// own tasks on a runner with few cores, because parallel tests would all park in `read`.
+	func readFrame(opcode: DiscordIPCOpcode) async throws -> DiscordIPCFrame? {
+		try await withCheckedThrowingContinuation { continuation in
+			DispatchQueue.global().async {
+				continuation.resume(with: Result { try self.blockingReadFrame(opcode: opcode) })
+			}
+		}
+	}
+
+	private func blockingReadFrame(opcode: DiscordIPCOpcode) throws -> DiscordIPCFrame? {
 		while true {
 			while let frame = try DiscordIPCFrameCodec.decode(
 				from: &received, maximumPayloadBytes: 4_096)
