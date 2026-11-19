@@ -18,6 +18,7 @@ preview:
     set -euo pipefail
     {{ uv }} scripts/swift_build.py --configuration debug
     binary_dir="$({{ uv }} scripts/swift_build.py --configuration debug --show-bin-path)"
+    {{ uv }} scripts/stage_preview.py "$binary_dir"
     "$binary_dir/$({{ uv }} scripts/project_config.py executable-name)" --developer-preview
 
 # Start the website or build the local app bundle or dmg; add run to open app artifacts (default: app).

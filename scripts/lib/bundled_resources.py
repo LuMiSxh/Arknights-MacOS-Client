@@ -12,10 +12,12 @@ build generates uses `deflate` (raw deflate of UTF-8 text).
 """
 
 import re
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, cast
 
+from lib.common import copy_file, fail, remove_path
 from lib.licenses import BUNDLE_NOTICES_NAME
 from lib.project_config import RUNTIME_CONFIG, ProjectConfiguration
 
@@ -157,3 +159,37 @@ def registry_drift(
             f"the build stages a resource {registry} does not list: {entry}"
         )
     return problems
+
+
+def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path], ...]:
+    """Return the (source, destination) copies of the app-origin resources."""
+    project = configuration.project_directory
+    entries = [
+        (project / resource.source, Path(resource.path))
+        for resource in staged_resources(configuration)
+        if resource.source is not None
+    ]
+    destinations = [destination for _, destination in entries]
+    if len(destinations) != len(set(destinations)):
+        fail("application resources contain duplicate destinations")
+    return tuple(entries)
+
+
+def copy_resource(source: Path, destination: Path) -> None:
+    if source.is_dir():
+        shutil.copytree(source, destination)
+    elif source.is_file():
+        copy_file(source, destination)
+    else:
+        fail(f"required resource not found: {source}")
+
+
+def stage_app_resources(configuration: ProjectConfiguration, resources: Path) -> None:
+    """Copy the app-origin resources that have a source into `resources`.
+
+    An earlier copy is replaced, so staging again leaves the same tree. Compatibility
+    is built by `build_compatibility.py`, and the notices by `stage_bundle`.
+    """
+    for source, destination in app_resources(configuration):
+        remove_path(resources / destination)
+        copy_resource(source, resources / destination)

@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
+from pathlib import Path
+
 import build_app
 import pytest
 from lib import bundled_resources
@@ -7,7 +9,11 @@ from lib.bundled_resources import (
     registry_drift,
     staged_resources,
 )
-from lib.project_config import ProjectConfiguration, load_project_configuration
+from lib.project_config import (
+    RUNTIME_CONFIG,
+    ProjectConfiguration,
+    load_project_configuration,
+)
 
 REGISTRY = """
 extension BundledResource {
@@ -60,3 +66,24 @@ def test_build_copies_every_resource_that_has_a_source(
                 == resource.path
             )
             assert (configuration.project_directory / resource.source).exists()
+
+
+def test_stage_app_resources_replaces_stale_copies(
+    configuration: ProjectConfiguration, tmp_path: Path
+) -> None:
+    resources = tmp_path / "Resources"
+    stale = resources / "SupportArticles" / "removed.md"
+    stale.parent.mkdir(parents=True)
+    stale.write_text("stale", encoding="utf-8")
+
+    bundled_resources.stage_app_resources(configuration, resources)
+    bundled_resources.stage_app_resources(configuration, resources)
+
+    project = configuration.project_directory
+    assert (resources / "RUNTIME.json").read_bytes() == (
+        project / RUNTIME_CONFIG
+    ).read_bytes()
+    assert sorted(p.name for p in (resources / "SupportArticles").iterdir()) == sorted(
+        p.name for p in (project / "docs/help/errors").iterdir()
+    )
+    assert not stale.exists()

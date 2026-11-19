@@ -101,6 +101,12 @@ def remove_path(path: Path) -> None:
         shutil.rmtree(path)
 
 
+def copy_file(source: Path, destination: Path, mode: int = 0o644) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, destination)
+    destination.chmod(mode)
+
+
 def is_safe_relative_path(value: object) -> TypeGuard[str]:
     """Return True when `value` is a relative path with safe components and characters."""
     return (

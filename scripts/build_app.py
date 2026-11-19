@@ -13,11 +13,12 @@ import tempfile
 from pathlib import Path
 
 from build_compatibility import build as build_compatibility
-from lib.bundled_resources import staged_resources
+from lib.bundled_resources import app_resources, stage_app_resources
 from lib.common import (
     BUILD_DIR,
     DIST_DIR,
     PROJECT_DIR,
+    copy_file,
     fail,
     output,
     remove_path,
@@ -33,21 +34,6 @@ from lib.swift_build import run_swift_build
 
 SPARKLE_FRAMEWORK_NAME = "Sparkle.framework"
 SPARKLE_PUBLIC_KEY_BYTES = 32
-
-
-def copy_file(source: Path, destination: Path, mode: int = 0o644) -> None:
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(source, destination)
-    destination.chmod(mode)
-
-
-def copy_resource(source: Path, destination: Path) -> None:
-    if source.is_dir():
-        shutil.copytree(source, destination)
-    elif source.is_file():
-        copy_file(source, destination)
-    else:
-        fail(f"required resource not found: {source}")
 
 
 def sparkle_framework(binary_dir: Path, configuration: ProjectConfiguration) -> Path:
@@ -146,20 +132,6 @@ def ensure_framework_rpath(binary: Path) -> None:
         run(["install_name_tool", "-add_rpath", rpath, binary])
 
 
-def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path], ...]:
-    """Return the (source, destination) copies of the table in `lib.bundled_resources`."""
-    project = configuration.project_directory
-    entries = [
-        (project / resource.source, Path(resource.path))
-        for resource in staged_resources(configuration)
-        if resource.source is not None
-    ]
-    destinations = [destination for _, destination in entries]
-    if len(destinations) != len(set(destinations)):
-        fail("application resources contain duplicate destinations")
-    return tuple(entries)
-
-
 def copy_compatibility_helpers(source: Path, destination: Path) -> tuple[Path, ...]:
     files = sorted(path for path in source.rglob("*") if path.is_file())
     if not files:
@@ -227,8 +199,7 @@ def build(
         configure_info_plist(
             project / "Resources/Info.plist", staged_app / "Contents/Info.plist"
         )
-        for source, destination in app_resources(project_configuration):
-            copy_resource(source, resources / destination)
+        stage_app_resources(project_configuration, resources)
 
         helper_root = project / BUILD_DIR.relative_to(PROJECT_DIR) / "helpers"
         remove_path(helper_root)
