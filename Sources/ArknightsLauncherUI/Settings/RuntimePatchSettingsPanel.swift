@@ -114,7 +114,7 @@ extension RuntimePatch {
 		case .hybridThread:
 			"Repairs how threads start in mixed ARM64 and x64 code. Turning it off can cause crashes."
 		case .loaderLink:
-			"Shows the game’s own name instead of Wine in the menu bar. Off restores Wine’s name."
+			"Shows the game’s own name instead of Wine in the menu bar and Dock. Off restores Wine’s name."
 		}
 	}
 }
