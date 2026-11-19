@@ -79,7 +79,7 @@
 <section class="hero" aria-labelledby="hero-title">
 	<div class="hero-hud">
 		<div class="hero-pills">
-			<p class="hero-status glass-surface">
+			<p class="hero-status glass-surface glass-float">
 				Free · macOS 15 or later
 				{#if version}· Version {version}{/if}
 			</p>
@@ -299,14 +299,12 @@
 		padding-right: 2px;
 	}
 
-	.hero-status {
-		--glass-tint: rgb(19 20 23 / 0.8);
-		border-radius: var(--site-radius-capsule);
-	}
-
-	/* Capsule like the buttons; the stacked mobile bar uses a fixed radius so the h1 stays inside the curve. */
+	/* Both HUD capsules share the glass, hairline, and entrance of the launcher's release HUD.
+	   The stacked mobile bar uses a fixed radius so the h1 stays inside the curve. */
+	.hero-status,
 	.hero-bar {
-		--glass-tint: rgb(19 20 23 / 0.8);
+		--glass-tint: var(--site-glass);
+		border-color: var(--site-hairline);
 		border-radius: var(--site-radius-capsule);
 	}
 
@@ -318,29 +316,53 @@
 		margin: 0;
 		padding: 0.375rem 0.75rem;
 		color: var(--site-text-secondary);
-		font-size: 0.75rem;
+		font-family: var(--site-font-ui);
+		font-size: 0.875rem;
 		font-weight: 500;
 		font-variant-numeric: tabular-nums;
 	}
 
-	/* Control bar: 16 pt panel padding, leading title, trailing actions. */
+	/* Matches the launcher's release HUD: a leading title, trailing actions. */
 	.hero-bar {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: var(--site-space-4);
-		padding: var(--site-space-4);
+		padding: var(--site-space-3) var(--site-space-3) var(--site-space-3)
+			var(--site-space-5);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.hero-status,
+		.hero-bar {
+			animation: hero-hud-rise 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 150ms
+				both;
+		}
+
+		.hero-status {
+			animation-delay: 80ms;
+		}
+	}
+
+	@keyframes hero-hud-rise {
+		from {
+			opacity: 0;
+			transform: translateY(24px) scale(0.98);
+		}
 	}
 
 	.hero-copy {
+		display: flex;
 		min-width: 0;
+		flex: 1;
+		align-items: center;
+		gap: var(--site-space-3);
 	}
 
 	.hero h1 {
 		margin: 0;
-		font-size: 1.375rem;
-		font-weight: 500;
-		line-height: 1.2;
+		font-size: 1rem;
+		font-weight: 700;
 		letter-spacing: -0.01em;
 	}
 
@@ -436,9 +458,10 @@
 		margin-top: calc(var(--site-space-12) * 2);
 	}
 
+	/* Stays below the hero title so the HUD keeps the top of the hierarchy. */
 	.home-section > h2 {
 		margin: 0 0 var(--site-space-6);
-		font-size: 1.375rem;
+		font-size: 1.125rem;
 		font-weight: 500;
 		line-height: 1.25;
 	}
@@ -721,13 +744,6 @@
 		.help-tiles {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
-	}
-
-	.hero-status {
-		margin: 0;
-		color: var(--site-text-secondary);
-		font-family: var(--site-font-ui);
-		font-size: 0.875rem;
 	}
 
 	@media (max-width: 760px) {

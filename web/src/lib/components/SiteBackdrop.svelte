@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
+	import { prefersReducedMotion } from 'svelte/motion';
 
 	type Props = {
 		/** Documentation pages draw the artwork's tones as CSS gradients and load no image. */
@@ -7,6 +8,9 @@
 	};
 
 	let { blurred = false }: Props = $props();
+	let scrollY = $state(0);
+	// Slow parallax: the artwork drifts up at a fraction of the scroll speed.
+	const drift = $derived(prefersReducedMotion.current ? 0 : scrollY * -0.12);
 
 	// Official Arknights Global wallpaper; the repository's only bundled artwork (see CLAUDE.md).
 	const widths = [960, 1600, 2400];
@@ -17,6 +21,8 @@
 	// The sharp copy always spans the full window width and is never cropped at the sides.
 	const sizes = '100vw';
 </script>
+
+<svelte:window bind:scrollY />
 
 <div class="site-backdrop" class:blurred aria-hidden="true">
 	{#if !blurred}
@@ -31,6 +37,7 @@
 				width="1600"
 				height="900"
 				fetchpriority="high"
+				style:translate={`0 ${drift}px`}
 			/>
 		</picture>
 	{/if}
@@ -68,22 +75,6 @@
 			#000 calc(100% - 4rem),
 			transparent
 		);
-	}
-
-	/* Parallax runs as a scroll-linked animation where supported. Elsewhere the artwork stays still. */
-	@supports (animation-timeline: scroll()) {
-		@media (prefers-reduced-motion: no-preference) {
-			.backdrop-art {
-				animation: backdrop-drift linear both;
-				animation-timeline: scroll();
-			}
-		}
-	}
-
-	@keyframes backdrop-drift {
-		to {
-			translate: 0 -20vh;
-		}
 	}
 
 	/* Docs pages skip the image: accent and chart tones over the page background. */
