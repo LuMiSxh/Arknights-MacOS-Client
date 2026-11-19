@@ -251,10 +251,8 @@ package enum AppConstants {
 		// Shares the artwork limits so the gallery never offers an image that cannot be applied.
 		package static let imageMaximumDimension = Artwork.maximumDimension
 		package static let imageMaximumPixels = Artwork.maximumPixels
-		// Matches the exact percentage the live Fankit gallery page itself requests, since
-		// the CDN only ever serves a resized response for a URL something has already
-		// requested with this precise query value — see syntheticThumbnailURL(for:).
-		package static let thumbnailResizePercent = 50
+		// The CDN resizes on demand. 480 px covers the 400 px decode in CachedPresetImage on Retina.
+		package static let thumbnailWidth = 480
 		package static let avatarIdentifierMaximumLength = 96
 		package static let wallpaperPageSize = 50
 		package static let wallpaperPageLimit = 5

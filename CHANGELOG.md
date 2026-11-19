@@ -58,7 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - The Home controls and the update dialog stay inside the window at every size.
-- Preset gallery images no longer time out while loading.
+- Preset gallery wallpapers load much faster and no longer time out.
 - The largest official wallpapers now apply. Unusable images show support code **UI-IMG**.
 - The "Wine configuration is being updated" window no longer appears after a runtime update.
 - The Notices window no longer stays above other apps (Thanks to @darkwebdev, #118, #119, #120).
