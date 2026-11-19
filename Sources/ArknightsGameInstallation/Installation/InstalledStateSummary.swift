@@ -14,7 +14,7 @@ package enum InstalledStateSummary {
 		guard let state = try JSONFileStore.installedState.read(InstalledState.self, at: url)
 		else { return nil }
 		return DiagnosticsEnvironment.InstallState(
-			schemaVersion: state.schemaVersion, version: state.version, basis: state.basis,
-			source: state.source, installedAt: state.installedAt)
+			schemaVersion: state.schemaVersion, version: state.version,
+			installedAt: state.installedAt)
 	}
 }

@@ -11,28 +11,36 @@ struct DiagnosticsArchiveTests {
 	private let redaction = DiagnosticsRedaction(homeDirectory: "/Users/tester", userName: "tester")
 
 	/// The archive collects recent game and macOS text logs, redacts them, and leaves out
-	/// databases, event logs, save data, old files, and other apps' crash reports.
+	/// databases, event logs, save data, oversized and old files, linked folders, and the crash
+	/// reports of other apps. `environment.json` carries no home path.
 	@Test(arguments: [
 		(
-			GameRegion.chinaBilibili,
+			GameRegion.chinaBilibili, false,
 			[
 				"Logs/CrashSight/china-bilibili/CrashSight.1.log",
 				"Logs/sdklogs/china-bilibili/BLPlatform64/BLWebBrowser/web.log",
 				"Logs/sdklogs/china-bilibili/BLPlatform64/platform.log",
 			]
 		),
-		(GameRegion.china, ["Logs/CrashSight/china/CrashSight.1.log"]),
-		(GameRegion.global, ["Logs/CrashSight/global/CrashSight.1.log"]),
+		(
+			GameRegion.chinaBilibili, true,
+			[
+				"Logs/CrashSight/china-bilibili/CrashSight.1.log",
+				"Logs/sdklogs/china-bilibili/BLPlatform64/platform.log",
+			]
+		),
+		(GameRegion.china, false, ["Logs/CrashSight/china/CrashSight.1.log"]),
+		(GameRegion.global, false, ["Logs/CrashSight/global/CrashSight.1.log"]),
 	])
 	func archiveCollectsRedactedRecentTextFilesOnly(
-		region: GameRegion, gameFiles: [String]
-	)
-		async throws
-	{
+		region: GameRegion, linksWebBrowser: Bool, gameFiles: [String]
+	) async throws {
 		let temporary = try TemporaryDirectory("DiagnosticsArchiveTests")
 		defer { temporary.remove() }
-		let game = temporary.url.appending(path: "game", directoryHint: .isDirectory)
+		let support = temporary.url.appending(path: "support", directoryHint: .isDirectory)
+		let game = support.appending(path: "Games/game", directoryHint: .isDirectory)
 		let reports = temporary.url.appending(path: "reports", directoryHint: .isDirectory)
+		let outside = temporary.url.appending(path: "outside", directoryHint: .isDirectory)
 		let leaky = "open /Users/tester/x https://h.example/p?token=abc by tester\n"
 		let now = Date()
 		let old = now.addingTimeInterval(-AppConstants.Diagnostics.recentFileWindow - 60)
@@ -41,42 +49,55 @@ struct DiagnosticsArchiveTests {
 			("CrashSightLog/CrashSight.1.db", now),
 			("BLPlatform64/platform.log", now), ("BLPlatform64/PLLog.db", now),
 			("BLPlatform64/PCGamePlatform.exe", now), ("BLPlatform64/HGEventLog.log", now),
-			("BLPlatform64/BLWebBrowser/web.log", now), ("HGEventLog_Encrypted/e.log", now),
-			("mmkv/save.log", now), ("platform.log", now),
+			("HGEventLog_Encrypted/e.log", now), ("mmkv/save.log", now), ("platform.log", now),
 		] {
 			try write(leaky, to: game.appending(path: path), modified: modified)
 		}
-		for (name, modified) in [
-			("ArknightsClient-2026-11-19.ips", now), ("wine64-preloader-2026-11-19.ips", now),
-			("Safari-2026-11-19.ips", now), ("ArknightsClient-2026-10-01.ips", old),
+		let webBrowser = game.appending(
+			path: "BLPlatform64/BLWebBrowser", directoryHint: .isDirectory)
+		if linksWebBrowser {
+			try write(leaky, to: outside.appending(path: "web.log"), modified: now)
+			try FileManager.default.createSymbolicLink(at: webBrowser, withDestinationURL: outside)
+		} else {
+			try write(leaky, to: webBrowser.appending(path: "web.log"), modified: now)
+		}
+		try write(
+			leaky + String(repeating: "x", count: AppConstants.Diagnostics.recentFileMaximumBytes),
+			to: game.appending(path: "BLPlatform64/big.log"), modified: now)
+		let wine = game.appending(path: "wine64-preloader").path
+		for (name, process, modified) in [
+			("wine64-preloader-1.ips", wine, now),
+			("QtWebEngineProcess-1.ips", "/Applications/Other.app/QtWebEngineProcess", now),
+			("wine64-preloader-0.ips", wine, old),
 		] {
-			try write(leaky, to: reports.appending(path: name), modified: modified)
+			let report =
+				"{\"app_name\":\"x\"}\n{\"procPath\":\"\(process)\",\"note\":\"\(leaky.dropLast())\"}\n"
+			try write(report, to: reports.appending(path: name), modified: modified)
 		}
 		let runtimePin = temporary.url.appending(path: "RUNTIME.json")
 		try write("{}", to: runtimePin, modified: now)
 
 		let archive = try await DiagnosticsArchive(
-			logFiles: [], sdkLogDirectory: temporary.url.appending(path: "none"),
-			publisher: region.publisher, environment: "{}\n",
+			logFiles: [temporary.url.appending(path: "vanished.log")],
+			sdkLogDirectory: temporary.url.appending(path: "none"),
+			publisher: region.publisher, environment: "{\"leak\":\"/Users/tester/x\"}\n",
 			gameDirectories: [(region, game)], crashReportsDirectory: reports, now: now,
 			readme: "# Readme", baseName: "Diagnostics", directory: temporary.url,
 			redaction: redaction, log: LauncherLog(fileURL: temporary.url.appending(path: "l.log")),
-			applicationSupportRoot: temporary.url, runtimeConfigurationURL: runtimePin
+			applicationSupportRoot: support, runtimeConfigurationURL: runtimePin
 		).write()
 
 		let extracted = temporary.url.appending(path: "extracted", directoryHint: .isDirectory)
 		try extract(archive, into: extracted)
 		let expected =
 			(gameFiles + [
-				"CrashReports/ArknightsClient-2026-11-19.ips",
-				"CrashReports/wine64-preloader-2026-11-19.ips",
-				"README.md", "RUNTIME.json", "environment.json",
+				"CrashReports/wine64-preloader-1.ips", "README.md", "RUNTIME.json",
+				"environment.json",
 			]).sorted()
 		#expect(try files(under: extracted) == expected)
-		for path in expected where path.hasSuffix(".log") || path.hasSuffix(".ips") {
-			#expect(
-				try String(contentsOf: extracted.appending(path: path), encoding: .utf8)
-					== "open ~/x https://h.example/p by <user>\n")
+		for path in expected where path != "README.md" && path != "RUNTIME.json" {
+			let text = try String(contentsOf: extracted.appending(path: path), encoding: .utf8)
+			#expect(!text.contains("/Users/tester") && !text.contains("token=abc"))
 		}
 	}
 

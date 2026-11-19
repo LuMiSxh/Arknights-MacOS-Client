@@ -8,7 +8,7 @@ import Foundation
 /// Every value is something the app already knows locally; collecting it makes no network call.
 /// The composition root fills the feature-owned groups, and this type only names and encodes them.
 package struct DiagnosticsEnvironment: Codable, Sendable, Equatable {
-	package static let currentSchema = 1
+	private static let currentSchema = 1
 
 	package struct App: Codable, Sendable, Equatable {
 		package var version: String
@@ -102,21 +102,16 @@ package struct DiagnosticsEnvironment: Codable, Sendable, Equatable {
 		}
 	}
 
-	/// The install state file without its file list.
+	/// The install state file without its file list. The download source and manifest path stay
+	/// out because they can hold paths.
 	package struct InstallState: Codable, Sendable, Equatable {
 		package var schemaVersion: Int
 		package var version: String
-		package var basis: String
-		package var source: String
 		package var installedAt: Date
 
-		package init(
-			schemaVersion: Int, version: String, basis: String, source: String, installedAt: Date
-		) {
+		package init(schemaVersion: Int, version: String, installedAt: Date) {
 			self.schemaVersion = schemaVersion
 			self.version = version
-			self.basis = basis
-			self.source = source
 			self.installedAt = installedAt
 		}
 	}

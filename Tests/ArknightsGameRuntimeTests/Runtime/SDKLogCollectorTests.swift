@@ -59,6 +59,19 @@ func sdkLogsAreFoundUnderEveryPrefixUserProfile() throws {
 		try FileManager.default.setAttributes(
 			[.modificationDate: modified], ofItemAtPath: file.path)
 	}
+	// A profile whose logs folder is a link must not lead the collector out of the prefix.
+	let outside = temporary.url.appending(path: "outside", directoryHint: .isDirectory)
+	try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
+	let linkedFile = outside.appending(path: "u8sdk_bilibili_pc.log")
+	try Data("linked".utf8).write(to: linkedFile)
+	try FileManager.default.setAttributes(
+		[.modificationDate: Date(timeIntervalSinceNow: 60)], ofItemAtPath: linkedFile.path)
+	let linkedParent = prefix.appending(
+		path: "drive_c/users/linked/AppData/LocalLow/HyperGryph/Arknights",
+		directoryHint: .isDirectory)
+	try FileManager.default.createDirectory(at: linkedParent, withIntermediateDirectories: true)
+	try FileManager.default.createSymbolicLink(
+		at: linkedParent.appending(path: "sdklogs"), withDestinationURL: outside)
 	let destination = temporary.url.appending(path: "out", directoryHint: .isDirectory)
 
 	try SDKLogCollector.collect(

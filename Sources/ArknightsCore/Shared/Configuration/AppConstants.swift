@@ -280,14 +280,12 @@ package enum AppConstants {
 	}
 
 	/// Bounds for the extra files a diagnostics archive collects from the game folder and macOS.
-	package enum Diagnostics {
-		package static let recentFileWindow: TimeInterval = 7 * 24 * 60 * 60
-		package static let recentFileLimit = 20
-		package static let recentFileMaximumBytes = 2 * 1_024 * 1_024
-		/// Process names whose macOS crash reports belong in the archive.
-		package static let crashReportProcessPrefixes = [
-			"Arknights", "wine", "PlatformProcess", "QtWebEngineProcess",
-		]
+	enum Diagnostics {
+		static let recentFileWindow: TimeInterval = 7 * 24 * 60 * 60
+		static let recentFileLimit = 20
+		static let recentFileMaximumBytes = 2 * 1_024 * 1_024
+		/// How much of a crash report is read to find its process path.
+		static let crashReportHeaderBytes = 8 * 1_024
 	}
 
 	package enum Playtime {

@@ -260,12 +260,12 @@ package struct AppPaths: Sendable {
 		} catch  where Self.isMissingPathError(error) {
 			return []
 		}
+		// Every folder from the profile down must be a real directory, so a link never leads out of the prefix.
 		return try profiles.sorted { $0.lastPathComponent < $1.lastPathComponent }.compactMap {
 			profile in
-			let values = try profile.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
-			guard values.isDirectory == true, values.isSymbolicLink != true else { return nil }
-			return profile.appending(
+			let logs = profile.appending(
 				path: "AppData/LocalLow/HyperGryph/Arknights/sdklogs", directoryHint: .isDirectory)
+			return try DiagnosticsFileSelection.isPlainFolder(logs, below: users) ? logs : nil
 		}
 	}
 

@@ -71,7 +71,9 @@ package struct DiagnosticsArchive: Sendable {
 			to: directory,
 			redaction: redaction,
 			reportCleanupFailure: {
-				log.error("Diagnostics cleanup failed: \(launcherDiagnosticDescription(for: $0))")
+				log.error(
+					"Diagnostics file skipped or cleanup failed:\(launcherDiagnosticDescription(for: $0))"
+				)
 			}
 		)
 	}
@@ -106,12 +108,17 @@ package struct DiagnosticsArchive: Sendable {
 		do {
 			items.append(
 				contentsOf: try Self.crashReportItems(
-					in: crashReportsDirectory, cutoff: cutoff, fileManager: fileManager))
+					in: crashReportsDirectory,
+					processRoots: [Bundle.main.bundleURL, applicationSupportRoot]
+						+ gameDirectories.map(\.directory),
+					cutoff: cutoff, fileManager: fileManager))
 		} catch {
 			log.error("Crash reports skipped: \(launcherDiagnosticDescription(for: error))")
 		}
 		items.append(contentsOf: runtimeConfigurationItems())
-		items.append(.init(archivePath: "environment.json", content: .text(environment)))
+		// The facts hold no paths by design; redaction is the backstop for any free-form value.
+		items.append(
+			.init(archivePath: "environment.json", content: .redactedText(environment)))
 		return items
 	}
 
@@ -220,7 +227,8 @@ package struct DiagnosticsArchive: Sendable {
 		return try sources.flatMap { folder, archiveFolder in
 			try DiagnosticsFileSelection.recentFiles(
 				in: directory.appending(path: folder, directoryHint: .isDirectory),
-				extensions: ["log", "txt"], newerThan: cutoff, fileManager: fileManager
+				below: directory, extensions: ["log", "txt"], newerThan: cutoff,
+				fileManager: fileManager
 			).map {
 				DiagnosticsBundle.Item(
 					archivePath: "\(archiveFolder)/\($0.lastPathComponent)",
@@ -229,20 +237,44 @@ package struct DiagnosticsArchive: Sendable {
 		}
 	}
 
-	/// Recent macOS crash reports of the app, Wine, and the game processes.
+	/// Recent macOS crash reports of processes that run from `processRoots`: the app bundle, the
+	/// app's support folder (runtime, game environments), and the game folders. Other apps'
+	/// reports stay out, whatever their process is called.
 	static func crashReportItems(
 		in directory: URL,
+		processRoots: [URL],
 		cutoff: Date,
 		fileManager: FileManager = .default
 	) throws -> [DiagnosticsBundle.Item] {
-		let prefixes = AppConstants.Diagnostics.crashReportProcessPrefixes
+		let roots = processRoots.map { $0.standardizedFileURL.path + "/" }
 		return try DiagnosticsFileSelection.recentFiles(
 			in: directory, extensions: ["ips"],
-			matching: { name in prefixes.contains(where: name.hasPrefix) },
+			matching: { report in
+				guard let process = Self.processPath(ofCrashReportAt: report) else { return false }
+				return roots.contains { process.hasPrefix($0) }
+			},
 			newerThan: cutoff, fileManager: fileManager
 		).map {
 			DiagnosticsBundle.Item(
 				archivePath: "CrashReports/\($0.lastPathComponent)", content: .redactedLog($0))
 		}
+	}
+
+	/// The `procPath` of a `.ips` report, read from its first few KB. A report that cannot be read is skipped.
+	private static func processPath(ofCrashReportAt report: URL) -> String? {
+		let head: Data
+		do {
+			// A failed read skips the close; the handle closes when it deallocates.
+			let handle = try FileHandle(forReadingFrom: report)
+			head =
+				try handle.read(upToCount: AppConstants.Diagnostics.crashReportHeaderBytes)
+				?? Data()
+			try handle.close()
+		} catch {
+			return nil
+		}
+		let text = String(decoding: head, as: UTF8.self)
+		guard let match = text.firstMatch(of: /"procPath"\s*:\s*"([^"]*)"/) else { return nil }
+		return String(match.1).replacing("\\/", with: "/")
 	}
 }
