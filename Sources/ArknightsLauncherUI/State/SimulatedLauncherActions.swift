@@ -13,19 +13,18 @@ import ArknightsCore
 
 		private var simulation: DeveloperSimulationState? { model.developerSimulation }
 
-		private var isMigratingStorage: Bool {
-			model.lifecycle.activity == .maintaining(.migratingStorage)
+		var canRequestDockLaunch: Bool {
+			model.canRequestDockLaunch
 		}
 
-		var canRequestDockLaunch: Bool {
-			model.lifecycle.activity == .idle && !model.lifecycle.state.refresh.isChecking
-		}
+		/// A preview never writes to disk.
+		var isSavingDiagnostics: Bool { false }
+
+		func saveDiagnostics() async {}
 
 		func selectRegion(_ newRegion: GameRegion) {
 			model.updateDeveloperSimulation { simulation in
-				if simulation.selectableRegions.contains(newRegion) {
-					simulation.selectedRegion = newRegion
-				}
+				simulation.selectedRegion = newRegion
 			}
 		}
 
@@ -49,7 +48,7 @@ import ArknightsCore
 		}
 
 		func checkGameUpdates() {
-			guard !isMigratingStorage else { return }
+			guard !model.isMigratingStorage else { return }
 			model.updateDeveloperSimulation {
 				$0.failure = .none
 				$0.lifecycle = .ready
@@ -58,7 +57,7 @@ import ArknightsCore
 		}
 
 		func checkLauncherUpdates() {
-			guard !isMigratingStorage else { return }
+			guard !model.isMigratingStorage else { return }
 			model.updateDeveloperSimulation {
 				$0.failure = .none
 				$0.launcherUpdate = .available
@@ -66,7 +65,7 @@ import ArknightsCore
 		}
 
 		func checkAnnouncements() {
-			guard !isMigratingStorage else { return }
+			guard !model.isMigratingStorage else { return }
 			model.updateDeveloperSimulation { $0.announcement = true }
 		}
 
@@ -136,7 +135,6 @@ import ArknightsCore
 			guard var simulation,
 				canRequestDockLaunch,
 				model.intelTranslation.allowsWine,
-				simulation.selectableRegions.contains(region),
 				simulation.installedRegions.contains(region),
 				simulation.isInstalled,
 				!simulation.hasPartialDownload,
@@ -167,6 +165,25 @@ import ArknightsCore
 		func uninstallGame() {}
 
 		func resetArtwork() {}
+
+		func installRuntime(_ lane: RuntimeLane) async -> Bool {
+			model.runtimeSelection.simulateSelect(lane: lane)
+			model.updateDeveloperSimulation { $0.runtime = .installed }
+			return true
+		}
+
+		func pauseRuntimeDownload() {
+			model.runtimeSelection.simulatePause()
+		}
+
+		func selectRuntimeLane(_ lane: RuntimeLane) -> Bool {
+			model.runtimeSelection.simulateSelect(lane: lane)
+			return true
+		}
+
+		func removeOtherRuntime() async -> Bool { true }
+
+		func removeSelectedRuntime() async -> Bool { true }
 
 		func installRosetta() async -> IntelTranslationState {
 			guard simulation?.rosettaMissing == true else {

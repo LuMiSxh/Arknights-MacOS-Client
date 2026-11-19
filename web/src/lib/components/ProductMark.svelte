@@ -21,14 +21,12 @@
 		min-height: var(--site-touch-target);
 		align-items: center;
 		gap: var(--site-space-3);
-		color: var(--site-text);
-		font-family: var(--site-font-mono);
+		color: var(--site-text-primary);
+		font-family: var(--site-font-ui);
 		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.08em;
+		font-weight: 500;
 		line-height: 1.2;
 		text-decoration: none;
-		text-transform: uppercase;
 	}
 
 	img {

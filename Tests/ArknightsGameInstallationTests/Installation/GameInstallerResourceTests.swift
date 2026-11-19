@@ -16,7 +16,7 @@ struct GameInstallerResourceTests {
 	private static let expectedResult = "fresh=180\nrepair=0\n"
 	private static let descriptorLimit: rlim_t = 128
 
-	@Test
+	@Test(.timeLimit(.minutes(2)))
 	func pendingDownloadsCompletesUnderLowDescriptorLimit() async throws {
 		if ProcessInfo.processInfo.environment[Self.childEnvironmentKey] == "1" {
 			try await runDescriptorLimitedCases()
@@ -148,8 +148,10 @@ struct GameInstallerResourceTests {
 		process.environment = environment
 		process.standardOutput = try FileHandle(forWritingTo: stdoutFile)
 		process.standardError = try FileHandle(forWritingTo: stderrFile)
+		let exited = Signal()
+		process.terminationHandler = { _ in exited.fire() }
 		try process.run()
-		try await waitForChild(process)
+		try await waitForChild(process, exited: exited)
 
 		let stdout = try String(contentsOf: stdoutFile, encoding: .utf8)
 		let stderr = try String(contentsOf: stderrFile, encoding: .utf8)
@@ -164,16 +166,14 @@ struct GameInstallerResourceTests {
 		}
 	}
 
-	private func waitForChild(_ process: Process) async throws {
-		let deadline = ContinuousClock.now.advanced(by: .seconds(60))
-		defer {
-			if process.isRunning { _ = kill(process.processIdentifier, SIGKILL) }
+	/// Returns once the child exits; a stalled child is killed so it cannot outlive the test.
+	private func waitForChild(_ process: Process, exited: Signal) async throws {
+		guard await exited.wait(timeout: .seconds(60)) else {
+			kill(process.processIdentifier, SIGKILL)
 			process.waitUntilExit()
+			throw ResourceTestError.childTimedOut
 		}
-		while process.isRunning {
-			guard ContinuousClock.now < deadline else { throw ResourceTestError.childTimedOut }
-			try await Task.sleep(for: .milliseconds(50), tolerance: .milliseconds(5))
-		}
+		process.waitUntilExit()
 	}
 }
 

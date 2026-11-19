@@ -3,29 +3,23 @@
 import Foundation
 
 package struct GameConfiguration: Codable, Sendable {
-	let gameLowestVersion: String
 	package let gameLatestVersion: String
 	package let gameLatestFilePath: String
 	let gameStartExeName: String
 	package let gameStartParams: [String]
-	let gameUninstallScript: String
 	package let decompressionSize: String
 
 	package init(
-		gameLowestVersion: String,
 		gameLatestVersion: String,
 		gameLatestFilePath: String,
 		gameStartExeName: String,
 		gameStartParams: [String],
-		gameUninstallScript: String,
 		decompressionSize: String
 	) {
-		self.gameLowestVersion = gameLowestVersion
 		self.gameLatestVersion = gameLatestVersion
 		self.gameLatestFilePath = gameLatestFilePath
 		self.gameStartExeName = gameStartExeName
 		self.gameStartParams = gameStartParams
-		self.gameUninstallScript = gameUninstallScript
 		self.decompressionSize = decompressionSize
 	}
 
@@ -68,18 +62,15 @@ package struct GameConfiguration: Codable, Sendable {
 	}
 
 	private enum CodingKeys: String, CodingKey {
-		case gameLowestVersion
 		case gameLatestVersion
 		case gameLatestFilePath
 		case gameStartExeName
 		case gameStartParams
-		case gameUninstallScript
 		case decompressionSize
 	}
 
 	package init(from decoder: any Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
-		gameLowestVersion = try container.decode(String.self, forKey: .gameLowestVersion)
 		gameLatestVersion = try container.decode(String.self, forKey: .gameLatestVersion)
 		gameLatestFilePath = try container.decode(String.self, forKey: .gameLatestFilePath)
 		let executable = try container.decode(String.self, forKey: .gameStartExeName)
@@ -90,7 +81,6 @@ package struct GameConfiguration: Codable, Sendable {
 		}
 		gameStartExeName = executable
 		gameStartParams = try container.decode([String].self, forKey: .gameStartParams)
-		gameUninstallScript = try container.decode(String.self, forKey: .gameUninstallScript)
 		let size = try container.decode(String.self, forKey: .decompressionSize)
 		guard Self.parseByteSize(size) != nil else {
 			throw DecodingError.dataCorruptedError(

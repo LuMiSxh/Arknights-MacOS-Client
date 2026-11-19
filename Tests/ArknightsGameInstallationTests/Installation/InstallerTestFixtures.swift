@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsCustomization
 import ArknightsTestSupport
 import Foundation
 
 @testable import ArknightsGameInstallation
 
 let installerTestConfiguration = GameConfiguration(
-	gameLowestVersion: "1.0.0",
 	gameLatestVersion: "1.0.0",
 	gameLatestFilePath: "manifest.json",
 	gameStartExeName: "Arknights",
 	gameStartParams: [],
-	gameUninstallScript: "uninstall.exe",
 	decompressionSize: "1 MB"
 )
 
@@ -123,7 +120,6 @@ extension InstallerFixture {
 				installDirectory: installDirectory,
 				counter: ProgressCounter(
 					totalBytes: item.byteCount,
-					totalFiles: 1,
 					downloadedBytes: Int64(baseline)
 				),
 				progress: { update in await recorder.record(update) }

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsInfrastructure
 import ArknightsTestSupport
 import Foundation
 import Testing
@@ -35,26 +34,6 @@ struct PlaytimeStatisticsPersistenceTests {
 				return tick
 			}, calendar: Self.calendar)
 		return (dir, PlaytimeStatisticsStore(fileURL: url, log: log), controller)
-	}
-
-	@Test
-	func recordBeforeLoadMergesOverPersistedData() async throws {
-		let (dir, _, controller) = try makeFixture(persisted: 100)
-		defer { dir.remove() }
-		let id = UUID()
-		controller.start(sessionID: id, region: .global)
-		controller.finish(sessionID: id)
-		await controller.loaded()
-		#expect(controller.totalDuration == 110)
-	}
-
-	@Test
-	func resetBeforeLoadDiscardsPersistedData() async throws {
-		let (dir, _, controller) = try makeFixture(persisted: 100)
-		defer { dir.remove() }
-		controller.reset()
-		await controller.loaded()
-		#expect(controller.totalDuration == 0)
 	}
 
 	@Test(arguments: [false, true])

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsRuntimeTestSupport
 import ArknightsTestSupport
 import Foundation
 import Testing
@@ -53,6 +54,8 @@ import Testing
 			actions.resetAllLauncherSettings()
 			actions.uninstallGame()
 			actions.resetArtwork()
+			_ = await actions.removeOtherRuntime()
+			_ = await actions.removeSelectedRuntime()
 			_ = await actions.installRosetta()
 
 			#expect(await installer.installationCount() == 0)

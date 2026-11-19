@@ -3,17 +3,17 @@
 import AppKit
 import ArknightsCore
 import ArknightsCustomization
-import ArknightsGameInstallation
 import SwiftUI
 
 // Shows the launcher and game Dock icons as they are right now, so choosing an operator has a
 // visible result inside setup.
 struct OnboardingDockIconPreview: View {
+	@Environment(\.launcherTheme) private var theme
 	let customization: CustomizationController
 	@State private var gameIcon: NSImage?
 
 	var body: some View {
-		HStack(spacing: LauncherVisuals.Spacing.panel) {
+		HStack(spacing: LauncherTokens.Spacing.panel) {
 			iconTile(
 				Image(nsImage: customization.launcherIconManager.currentIcon),
 				title: "Launcher")
@@ -30,16 +30,16 @@ struct OnboardingDockIconPreview: View {
 	}
 
 	private func iconTile(_ image: Image, title: String) -> some View {
-		VStack(spacing: LauncherVisuals.Spacing.tight) {
+		VStack(spacing: LauncherTokens.Spacing.control) {
 			image
 				.resizable()
 				.scaledToFit()
 				.frame(width: 64, height: 64)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.accessibilityHidden(true)
 			Text(title)
 				.font(.caption)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 		}
 		.accessibilityElement(children: .combine)
 	}

@@ -18,9 +18,10 @@ preview:
     set -euo pipefail
     {{ uv }} scripts/swift_build.py --configuration debug
     binary_dir="$({{ uv }} scripts/swift_build.py --configuration debug --show-bin-path)"
+    {{ uv }} scripts/stage_preview.py "$binary_dir"
     "$binary_dir/$({{ uv }} scripts/project_config.py executable-name)" --developer-preview
 
-# Start the website or download the verified runtime and build a local app bundle or dmg; add run to open app artifacts (default: app).
+# Start the website or build the local app bundle or dmg; add run to open app artifacts (default: app).
 [group('Development')]
 dev target='app' run='':
     #!/usr/bin/env bash
@@ -31,8 +32,7 @@ dev target='app' run='':
         dmg) name="$({{ uv }} scripts/project_config.py dmg-name)" ;;
         *) echo "unknown target: "{{ quote(target) }}"; use app, dmg, or web" >&2; exit 2 ;;
     esac
-    {{ just }} runtime
-    {{ just }} {{ quote(target) }} .build/runtime
+    {{ just }} {{ quote(target) }}
     if [[ {{ quote(run) }} == "run" ]]; then open "dist/$name"; fi
 
 # Check core sources (default: all) or one of swift, scripts, shim, web.
@@ -47,7 +47,6 @@ check target='all':
     check_scripts() {
         {{ uv_dev }} ruff check scripts
         {{ uv_dev }} ruff format --check scripts
-        {{ uv_dev }} scripts/consistency.py
         {{ uv_dev }} actionlint .github/workflows/*.yml
         {{ uv_dev }} pytest -q
     }
@@ -58,7 +57,7 @@ check target='all':
         (cd web && pnpm check && pnpm format:check)
     }
     target={{ quote(target) }}
-    for name in $([[ $target == all ]] && echo swift scripts shim || echo "$target"); do
+    for name in $([[ $target == all ]] && echo scripts shim swift || echo "$target"); do
         [[ $name =~ ^(swift|scripts|shim|web)$ ]] || { echo "unknown target: $name; use all, swift, scripts, shim, or web" >&2; exit 2; }
         "check_$name"
     done
@@ -88,6 +87,12 @@ format target='all':
     done
     echo "format complete ($target)"
 
+# Regenerate the files built from scripts/config/support-codes.json and the license inventory.
+[group('Checks')]
+generate:
+    {{ uv }} scripts/support_codes.py
+    {{ uv }} scripts/licenses.py
+
 # Build the Apple Silicon release binary.
 [group('Checks')]
 build:
@@ -105,17 +110,11 @@ test filter: (swift-tests 'unit' filter)
 [group('Checks')]
 live-contracts: (swift-tests 'live')
 
-# Sample, compare, or export benchmark runs; sample takes CASE SECONDS TARGET NOTE, compare takes BASELINE CANDIDATE, export takes BASELINE CANDIDATE OUTPUT [EXTRA [EXTRA_LABEL]].
+# Run scripts/benchmark.py with its sample, compare, or export subcommand and flags, for example: just benchmark sample CASE --seconds 30.
 [group('Benchmarks')]
-benchmark action='sample' first='' second='' third='' fourth='' fifth='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    case {{ quote(action) }} in
-        sample) exec {{ uv }} scripts/benchmark.py sample {{ quote(first) }} --seconds {{ quote(second) }} --target {{ if third == '' { 'arknights-client' } else { quote(third) } }} --note {{ quote(fourth) }} ;;
-        compare) exec {{ uv }} scripts/benchmark.py compare {{ quote(first) }} {{ quote(second) }} ;;
-        export) [[ -n {{ quote(third) }} ]] || { echo "export needs an output path" >&2; exit 2; }; exec {{ uv }} scripts/benchmark.py export {{ quote(first) }} {{ quote(second) }} --output {{ quote(third) }} {{ if fourth != '' { '--extra ' + quote(fourth) } else { '' } }} {{ if fifth != '' { '--extra-label ' + quote(fifth) } else { '' } }} ;;
-        *) echo "unknown action: "{{ quote(action) }}"; use sample, compare, or export" >&2; exit 2 ;;
-    esac
+[positional-arguments]
+benchmark *args:
+    {{ uv }} scripts/benchmark.py "$@"
 
 # Build, then run one Swift test level (unit, integration, live) with isolated HOME and TMPDIR; only live may use the network.
 [private]
@@ -129,7 +128,7 @@ swift-tests level filter='':
     gate=""
     case "$level" in
         unit)
-            targets="$(perl -0ne 'print "$1\n" while /\.testTarget\(\s*name:\s*"([^"]+)"/g' Package.swift | grep -E 'Tests$' | grep -vxE "$integration|$live" | paste -sd'|' -)"
+            targets="$({{ uv }} scripts/project_config.py test-targets | grep -E 'Tests$' | grep -vxE "$integration|$live" | paste -sd'|' -)"
             ;;
         integration)
             targets="$integration"
@@ -169,30 +168,44 @@ swift-tests level filter='':
 [group('Checks')]
 ci: check integration build
 
-# Download the pinned runtime (default), pin a release with update (tag or latest; add prerelease to allow prereleases), or verify the pin with check.
+# Download the pinned runtime for a lane (--architecture), pin both lanes of a release with update, or verify the pin with check.
 [group('Runtime')]
-runtime action='download' tag='latest' prerelease='':
-    @case {{ quote(action) }} in download) {{ uv }} scripts/download_runtime.py;; check) {{ uv }} scripts/update_runtime.py --check;; update) if [[ {{ quote(prerelease) }} == "prerelease" ]]; then {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }} --include-prerelease; else {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }}; fi;; *) echo "unknown action: "{{ quote(action) }}"; use download, update, or check" >&2; exit 2;; esac
+runtime action='download' *arguments:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    action={{ quote(action) }}
+    set -- {{ arguments }}
+    case "$action" in
+        download) exec {{ uv }} scripts/download_runtime.py "$@" ;;
+        check) exec {{ uv }} scripts/update_runtime.py --check ;;
+        update)
+            # Accept `just runtime update TAG` as well as the script's `--tag TAG`.
+            if [[ $# -gt 0 && $1 != -* ]]; then set -- --tag "$@"; fi
+            exec {{ uv }} scripts/update_runtime.py "$@"
+            ;;
+        *) echo "unknown action: $action; use download, update, or check" >&2; exit 2 ;;
+    esac
 
-# Build the application bundle; optionally embed a Wine runtime directory.
+# Build the application bundle.
 [group('Packaging')]
-app runtime='':
-    {{ uv_packaging }} scripts/build_app.py {{ if runtime != '' { '--runtime ' + quote(runtime) } else { '' } }}
+app:
+    {{ uv_packaging }} scripts/build_app.py
 
-# Build a DMG with the required Wine runtime directory.
+# Build the distributable disk image that contains only the application bundle.
 [group('Packaging')]
-dmg runtime:
-    {{ uv_packaging }} scripts/build_dmg.py --runtime {{ quote(runtime) }}
+dmg *arguments:
+    {{ uv_packaging }} scripts/build_dmg.py {{ arguments }}
 
-# Regenerate the application icon assets.
+# Regenerate the application icon assets; fails rather than shipping fallback assets.
 [group('Packaging')]
 icon:
     {{ uv }} scripts/generate_icon.py
 
 # Prepare, replace, or remove a repository-hosted announcement (set/remove). Commit the change to main to publish or withdraw it.
 [group('Owner')]
-announcement mode id title='' body_file='' action_title='' action_url='' min_version='' max_version='' starts_at='' ends_at='':
-    if [[ {{ quote(mode) }} == "remove" ]]; then {{ uv }} scripts/manage_announcements.py remove {{ quote(id) }}; else {{ uv }} scripts/manage_announcements.py set {{ quote(id) }} {{ quote(title) }} {{ quote(body_file) }} --action-title {{ quote(action_title) }} --action-url {{ quote(action_url) }} --min-version {{ quote(min_version) }} --max-version {{ quote(max_version) }} --starts-at {{ quote(starts_at) }} --ends-at {{ quote(ends_at) }}; fi
+[positional-arguments]
+announcement *args:
+    {{ uv }} scripts/manage_announcements.py "$@"
 
 # Trigger a draft release for the required X.Y.Z version. Requires repository write access.
 [group('Owner')]

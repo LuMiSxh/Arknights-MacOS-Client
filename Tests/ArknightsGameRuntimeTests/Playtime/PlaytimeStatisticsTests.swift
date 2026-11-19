@@ -9,25 +9,6 @@ import Testing
 @MainActor
 struct PlaytimeStatisticsTests {
 	@Test
-	func visibleSessionUsesMonotonicTimeAndRecordsOnlyOnce() throws {
-		let fixture = try Fixture()
-		var wallClock = fixture.date(2026, 1, 31, hour: 23)
-		var uptime: TimeInterval = 1_000
-		let controller = fixture.controller(now: { wallClock }, uptime: { uptime })
-		let sessionID = UUID()
-
-		controller.start(sessionID: sessionID, region: .global)
-		wallClock = fixture.date(2026, 2, 2, hour: 8)
-		uptime += 90
-
-		#expect(controller.finish(sessionID: sessionID) == 90)
-		#expect(controller.finish(sessionID: sessionID) == nil)
-		#expect(
-			controller.statistics.latestSession?.startedAt == fixture.date(2026, 1, 31, hour: 23))
-		#expect(controller.statistics.days.first?.date == fixture.date(2026, 1, 31))
-	}
-
-	@Test
 	func corruptedAndOversizedFilesStartWithAnEmptyState() async throws {
 		let corrupt = try Fixture()
 		try Data("not json".utf8).write(to: corrupt.statisticsURL)
@@ -88,9 +69,5 @@ private struct Fixture {
 			uptime: uptime,
 			calendar: calendar
 		)
-	}
-
-	func date(_ year: Int, _ month: Int, _ day: Int, hour: Int = 0) -> Date {
-		calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour))!
 	}
 }

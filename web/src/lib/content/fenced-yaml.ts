@@ -1,14 +1,14 @@
-import { ContentError } from './frontmatter.js';
+import { ContentError, isRecord } from './frontmatter.js';
 
 export function mapping(
 	value: unknown,
 	source: string,
 	where: string
 ): Record<string, unknown> {
-	if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+	if (!isRecord(value)) {
 		throw new ContentError(source, `${where} must be a mapping`);
 	}
-	return value as Record<string, unknown>;
+	return value;
 }
 
 export function rejectUnknownKeys(

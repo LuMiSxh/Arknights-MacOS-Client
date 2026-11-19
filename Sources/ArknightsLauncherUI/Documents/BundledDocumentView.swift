@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsGameInstallation
 import SwiftUI
 
 enum BundledDocument: String, Identifiable {
@@ -27,15 +26,17 @@ enum BundledDocument: String, Identifiable {
 		}
 	}
 
-	func load(bundle: Bundle? = nil) throws -> String {
-		try resource.text(in: bundle)
+	func loadAndParse(bundle: Bundle? = nil) async throws -> ParsedMarkdownDocument {
+		try await Self.readAndParse(resource, bundle: bundle)
 	}
 
-	func loadAndParse(bundle: Bundle? = nil) async throws -> ParsedMarkdownDocument {
-		let resource = resource
-		return try await Task.detached(priority: .utility) {
-			ParsedMarkdownDocument(source: try resource.text(in: bundle))
-		}.value
+	// Reading and parsing run on the concurrent executor, so the main actor only awaits the result.
+	@concurrent
+	private static func readAndParse(
+		_ resource: BundledResource,
+		bundle: Bundle?
+	) async throws -> ParsedMarkdownDocument {
+		ParsedMarkdownDocument(source: try resource.text(in: bundle))
 	}
 }
 
@@ -45,6 +46,12 @@ nonisolated struct ParsedMarkdownDocument: Sendable {
 
 	init(source: String) {
 		self.init(blocks: MarkdownParser(source: source).blocks)
+	}
+
+	// Parsing is CPU work, so callers await it on the concurrent executor, off the main actor.
+	@concurrent
+	static func parse(source: String) async -> ParsedMarkdownDocument {
+		ParsedMarkdownDocument(source: source)
 	}
 
 	init(blocks: [MarkdownBlock]) {
@@ -71,41 +78,42 @@ nonisolated struct ParsedMarkdownDocument: Sendable {
 private enum BundledDocumentLoadState {
 	case loading
 	case loaded(ParsedMarkdownDocument)
-	case failed(BundledResourceError)
+	case failed
 }
 
 struct BundledDocumentView: View {
 	let document: BundledDocument
-	package let accentColor: Color
-	let hudTintColor: Color
+	let accentColor: Color
+
 	@State private var loadState = BundledDocumentLoadState.loading
 	@Environment(\.dismiss) private var dismiss
 
 	var body: some View {
 		ThemedModalView(
 			title: document.title,
-			hudTintColor: hudTintColor,
-			width: 760,
-			height: 600
+
+			width: LauncherTokens.Layout.modalWidth,
+			height: LauncherTokens.Layout.documentModalHeight
 		) {
 			switch loadState {
 			case .loading:
 				ProgressView()
-					.controlSize(.large)
+					.controlSize(.regular)
 					.frame(maxWidth: .infinity, minHeight: 180)
 					.accessibilityLabel(Text("Loading document"))
 			case .loaded(let parsedDocument):
-				MarkdownDocument(parsed: parsedDocument, accentColor: accentColor)
+				MarkdownDocument(parsed: parsedDocument)
 					.textSelection(.enabled)
-			case .failed(let error):
-				DocumentLoadErrorView(error: error)
+			case .failed:
+				DocumentLoadErrorView()
 			}
 		} actions: {
-			FloatingDoneButton(accentColor: accentColor) {
+			FloatingDoneButton {
 				dismiss()
 			}
 		}
 		.onExitCommand(perform: dismiss.callAsFunction)
+		.launcherTheme(accent: accentColor)
 		.task(id: document) {
 			loadState = .loading
 			do {
@@ -114,26 +122,19 @@ struct BundledDocumentView: View {
 				loadState = .loaded(parsedDocument)
 			} catch is CancellationError {
 				return
-			} catch let error as BundledResourceError {
-				guard !Task.isCancelled else { return }
-				loadState = .failed(error)
 			} catch {
 				guard !Task.isCancelled else { return }
-				loadState = .failed(
-					.unreadable(path: document.resource.path, reason: error.localizedDescription)
-				)
+				loadState = .failed
 			}
 		}
 	}
 }
 
 private struct DocumentLoadErrorView: View {
-	let error: BundledResourceError
-
 	var body: some View {
 		ContentUnavailableView {
 			Label(
-				"This document is unavailable in the current build.",
+				"Document unavailable",
 				systemImage: "doc.badge.exclamationmark")
 		} description: {
 			Text("This document is unavailable in the current build.")
@@ -144,50 +145,54 @@ private struct DocumentLoadErrorView: View {
 }
 
 struct MarkdownDocument: View {
-	package let accentColor: Color
-	private let initialDocument: ParsedMarkdownDocument?
-	private let source: String?
-	@State private var loadedDocument: ParsedMarkdownDocument?
-
-	init(source: String, accentColor: Color) {
-		self.accentColor = accentColor
-		initialDocument = nil
-		self.source = source
+	enum Style {
+		case document
+		case compact
 	}
 
-	init(parsed: ParsedMarkdownDocument, accentColor: Color) {
-		self.accentColor = accentColor
+	@Environment(\.launcherTheme) private var theme
+	private let initialDocument: ParsedMarkdownDocument?
+	private let source: String?
+	private let style: Style
+	@State private var loadedDocument: ParsedMarkdownDocument?
+
+	init(source: String, style: Style = .document) {
+		initialDocument = nil
+		self.source = source
+		self.style = style
+	}
+
+	init(parsed: ParsedMarkdownDocument, style: Style = .document) {
 		initialDocument = parsed
 		source = nil
+		self.style = style
 	}
 
 	var body: some View {
 		Group {
 			if let document = initialDocument ?? loadedDocument {
-				LazyVStack(alignment: .leading, spacing: 10) {
+				LazyVStack(alignment: .leading, spacing: LauncherTokens.Spacing.content) {
 					ForEach(document.blocks.indices, id: \.self) { index in
 						MarkdownBlockView(
 							block: document.blocks[index],
-							accentColor: accentColor,
-							columnWidths: document.tableColumnWidths[index] ?? []
+							columnWidths: document.tableColumnWidths[index] ?? [],
+							style: style
 						)
 					}
 				}
 			} else {
 				ProgressView()
-					.controlSize(.small)
+					.controlSize(.regular)
 					.frame(maxWidth: .infinity, minHeight: 80)
 					.accessibilityLabel(Text("Loading document"))
 			}
 		}
-		.tint(accentColor)
+		.tint(theme.accentInk)
 		.pointerStyle(.default)
 		.task(id: source) {
 			guard let source else { return }
 			loadedDocument = nil
-			let document = await Task.detached(priority: .utility) {
-				ParsedMarkdownDocument(source: source)
-			}.value
+			let document = await ParsedMarkdownDocument.parse(source: source)
 			guard !Task.isCancelled else { return }
 			loadedDocument = document
 		}
@@ -195,9 +200,10 @@ struct MarkdownDocument: View {
 }
 
 private struct MarkdownBlockView: View {
+	@Environment(\.launcherTheme) private var theme
 	let block: MarkdownBlock
-	package let accentColor: Color
 	let columnWidths: [CGFloat]
+	let style: MarkdownDocument.Style
 
 	@ViewBuilder
 	var body: some View {
@@ -205,88 +211,116 @@ private struct MarkdownBlockView: View {
 		case .heading(let level, let source):
 			Text(markdownInline(source))
 				.font(headingFont(level: level))
-				.padding(.top, level == 1 ? 0 : 10)
+				.foregroundStyle(style == .compact ? theme.textSecondary : theme.textPrimary)
+				.padding(
+					.top,
+					level == 1 ? 0 : (style == .compact ? LauncherTokens.Spacing.control : 12)
+				)
 				.accessibilityHeading(level == 1 ? .h1 : level == 2 ? .h2 : .h3)
 		case .paragraph(let source):
 			Text(markdownInline(source))
 				.font(.body)
-				.lineSpacing(3)
+				.lineSpacing(4)
 		case .bullet(let source):
-			HStack(alignment: .firstTextBaseline, spacing: 9) {
+			HStack(alignment: .firstTextBaseline, spacing: LauncherTokens.Spacing.control) {
 				Circle()
-					.fill(accentColor)
-					.frame(width: 5, height: 5)
+					.fill(theme.accentFill)
+					.frame(width: 4, height: 4)
 				Text(markdownInline(source))
 			}
-			.padding(.leading, 6)
+			.padding(.leading, LauncherTokens.Spacing.control)
 		case .numbered(let number, let source):
-			HStack(alignment: .firstTextBaseline, spacing: 9) {
+			HStack(alignment: .firstTextBaseline, spacing: LauncherTokens.Spacing.control) {
 				Text("\(number).")
-					.foregroundStyle(accentColor)
+					.foregroundStyle(theme.accentInk)
 					.monospacedDigit()
 				Text(markdownInline(source))
 			}
-			.padding(.leading, 6)
+			.padding(.leading, LauncherTokens.Spacing.control)
 		case .table(let rows):
-			MarkdownTable(rows: rows, accentColor: accentColor, columnWidths: columnWidths)
-				.padding(.vertical, 4)
+			MarkdownTable(rows: rows, columnWidths: columnWidths)
+				.padding(.vertical, LauncherTokens.Spacing.compact)
 		case .code(let source):
 			Text(source)
 				.font(.system(.callout, design: .monospaced))
-				.padding(12)
+				.padding(LauncherTokens.Spacing.content)
 				.frame(maxWidth: .infinity, alignment: .leading)
-				.background(.black.opacity(0.18), in: .rect(cornerRadius: 8))
+				.background(
+					theme.controlFill, in: .rect(cornerRadius: LauncherTokens.Radius.control))
 		case .divider:
-			Divider().padding(.vertical, 5)
+			Divider().padding(.vertical, LauncherTokens.Spacing.compact)
 		}
 	}
 
 	private func headingFont(level: Int) -> Font {
+		if style == .compact {
+			return level <= 2
+				? LauncherTokens.Typography.sectionLabel
+				: .subheadline.weight(.semibold)
+		}
 		switch level {
-		case 1: .title.bold()
-		case 2: .title2.bold()
-		default: .headline
+		case 1: return .title.weight(.medium)
+		case 2: return .title2.weight(.medium)
+		default: return .headline
 		}
 	}
 }
 
 private struct MarkdownTable: View {
+	@Environment(\.launcherTheme) private var theme
 	let rows: [[String]]
-	package let accentColor: Color
 	let columnWidths: [CGFloat]
 
 	var body: some View {
 		ScrollView(.horizontal) {
 			VStack(alignment: .leading, spacing: 0) {
-				ForEach(rows.indices, id: \.self) { rowIndex in
-					let row = rows[rowIndex]
+				ForEach(Array(rows.enumerated()), id: \.offset) { entry in
 					HStack(alignment: .top, spacing: 0) {
-						ForEach(row.indices, id: \.self) { columnIndex in
-							Text(markdownInline(row[columnIndex]))
-								.font(rowIndex == 0 ? .callout.bold() : .callout)
-								.frame(
-									width: columnWidths[columnIndex],
-									alignment: .leading
-								)
-								.padding(10)
-								.background(
-									rowIndex == 0 ? accentColor.opacity(0.14) : .clear
-								)
-								.overlay(alignment: .trailing) { Divider() }
+						ForEach(entry.element.indices, id: \.self) { columnIndex in
+							MarkdownTableCell(
+								source: entry.element[columnIndex],
+								width: columnWidths[columnIndex],
+								isHeader: entry.offset == 0
+							)
 						}
 					}
-					.overlay(alignment: .bottom) { Divider() }
+					.overlay(alignment: .bottom) { SettingsHairline() }
 				}
 			}
 			.overlay {
-				RoundedRectangle(cornerRadius: 9)
-					.stroke(.secondary.opacity(0.28), lineWidth: 1)
+				RoundedRectangle(cornerRadius: LauncherTokens.Radius.control)
+					.stroke(theme.hairline, lineWidth: 1)
 			}
-			.clipShape(.rect(cornerRadius: 9))
+			.clipShape(.rect(cornerRadius: LauncherTokens.Radius.control))
 		}
 		.scrollIndicators(.visible)
 	}
 
+}
+
+private struct MarkdownTableCell: View {
+	@Environment(\.launcherTheme) private var theme
+	let source: String
+	let width: CGFloat
+	let isHeader: Bool
+
+	private var font: Font {
+		isHeader ? .callout.weight(.medium) : .callout
+	}
+
+	private var fill: Color {
+		guard isHeader else { return Color.clear }
+		return theme.controlFill
+	}
+
+	var body: some View {
+		Text(markdownInline(source))
+			.font(font)
+			.frame(width: width, alignment: .leading)
+			.padding(LauncherTokens.Spacing.control)
+			.background(fill)
+			.overlay(alignment: .trailing) { Divider() }
+	}
 }
 
 private func markdownInline(_ source: String) -> AttributedString {

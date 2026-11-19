@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import Foundation
+import Synchronization
 
 struct LocalFixtureNetwork: Sendable {
 	let recorder: FixtureRequestRecorder
@@ -70,18 +71,15 @@ struct LocalFixtureNetwork: Sendable {
 	}
 }
 
-final class FixtureRequestRecorder: @unchecked Sendable {
-	private let lock = NSLock()
-	private var requests: [URLRequest] = []
+final class FixtureRequestRecorder: Sendable {
+	private let requests = Mutex<[URLRequest]>([])
 
 	func record(_ request: URLRequest) {
-		lock.withLock {
-			requests.append(request)
-		}
+		requests.withLock { $0.append(request) }
 	}
 
 	func recordedRequests() -> [URLRequest] {
-		lock.withLock { requests }
+		requests.withLock { $0 }
 	}
 }
 

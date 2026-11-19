@@ -79,31 +79,3 @@ func cleanerRemovesOnlyWineBuiltinsAndLauncherDXMTLibraries() throws {
 		#expect(fixture.exists(kept), "\(kept) should be kept")
 	}
 }
-
-@Test
-func cleanerSkipsWhenTheRuntimeStillShipsI386() throws {
-	let fixture = try CleanerFixture(runtimeShipsI386: true)
-	defer { fixture.remove() }
-	try fixture.write(CleanerFixture.peData(marker: "Wine builtin DLL"), "kernel32.dll")
-	try fixture.write(Data("x32-d3d11.dll".utf8), "d3d11.dll")
-
-	let report = cleaner.clean(prefixDirectory: fixture.prefix, runtimeRoot: fixture.runtimeRoot)
-
-	#expect(report.skipped)
-	#expect(fixture.exists("kernel32.dll"))
-	#expect(fixture.exists("d3d11.dll"))
-
-	let notARuntime = try CleanerFixture(runtimeShipsI386: false)
-	defer { notARuntime.remove() }
-	try notARuntime.write(CleanerFixture.peData(marker: "Wine builtin DLL"), "kernel32.dll")
-	let missingRoot = notARuntime.root.appending(path: "Missing", directoryHint: .isDirectory)
-	#expect(cleaner.clean(prefixDirectory: notARuntime.prefix, runtimeRoot: missingRoot).skipped)
-	#expect(notARuntime.exists("kernel32.dll"))
-
-	let withoutSyswow64 = try CleanerFixture(runtimeShipsI386: false)
-	defer { withoutSyswow64.remove() }
-	try FileManager.default.removeItem(at: withoutSyswow64.syswow64)
-	let empty = cleaner.clean(
-		prefixDirectory: withoutSyswow64.prefix, runtimeRoot: withoutSyswow64.runtimeRoot)
-	#expect(empty == WinePrefixLegacyLibraryCleaner.Report())
-}

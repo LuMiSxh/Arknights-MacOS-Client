@@ -101,10 +101,12 @@ extension GameSessionController {
 		if let activeGameSessionID {
 			playtimeStatistics.finish(sessionID: activeGameSessionID)
 		}
-		disableActiveGameMode()
+		disableActiveGameMode(blocking: true)
+		let lane = session?.lane ?? currentRuntimeLane()
 		let runtime: WineRuntime
 		do {
-			runtime = try discoverRuntime()
+			runtime = try Self.discoverRuntime(
+				paths: paths, lane: lane, compatibilityManager: gameCompatibilityManager)
 		} catch {
 			log.error(
 				"Could not stop Wine during app termination: \(launcherDiagnosticDescription(for: error))"
@@ -112,7 +114,8 @@ extension GameSessionController {
 			return
 		}
 		runtime.stopSynchronously(
-			prefixDirectory: paths.winePrefix(for: session?.region ?? installation.region),
+			prefixDirectory: paths.winePrefix(
+				for: session?.region ?? installation.region, lane: lane),
 			log: log
 		)
 	}
@@ -156,7 +159,8 @@ extension GameSessionController {
 				let diagnostics = await Self.collectExitDiagnostics(
 					exit,
 					since: since,
-					logURL: logURL
+					logURL: logURL,
+					log: log
 				)
 				guard activeGameSessionID == sessionID else { return }
 				log.error("Game process exited unexpectedly; \(diagnostics)")
@@ -178,7 +182,8 @@ extension GameSessionController {
 				let diagnostics = await Self.collectExitDiagnostics(
 					exit,
 					since: since,
-					logURL: exit.status == 0 && exit.reason == .exit ? nil : logURL
+					logURL: exit.status == 0 && exit.reason == .exit ? nil : logURL,
+					log: log
 				)
 				guard activeGameSessionID == sessionID else { return }
 				if exit.status == 0, exit.reason == .exit {
@@ -211,8 +216,10 @@ extension GameSessionController {
 		sessionID: UUID
 	) {
 		session?.monitorTask?.cancel()
-		let prefixDirectory = paths.winePrefix(for: session?.region ?? installation.region)
-		session?.monitorTask = Task { [weak self, log, prefixDirectory] in
+		let region = session?.region ?? installation.region
+		let lane = session?.lane ?? currentRuntimeLane()
+		let prefixDirectory = paths.winePrefix(for: region, lane: lane)
+		session?.monitorTask = Task { [weak self, log, prefixDirectory, region, lane] in
 			do {
 				try await runtime.waitUntilStopped(prefixDirectory: prefixDirectory)
 			} catch {
@@ -226,7 +233,7 @@ extension GameSessionController {
 					using: runtime,
 					sessionID: sessionID,
 					processIdentifier: lifecycle.activity.gameProcessIdentifier,
-					region: session?.region ?? installation.region
+					region: region
 				)
 				return
 			}
@@ -236,6 +243,8 @@ extension GameSessionController {
 			}
 			guard !Task.isCancelled, activeGameSessionID == sessionID else { return }
 			finishGameSession(sessionID)
+			await SDKLogCollector.collect(
+				publisher: region.publisher, paths: paths, lane: lane, log: log)
 		}
 	}
 
@@ -258,8 +267,9 @@ extension GameSessionController {
 		spawnGate?.denyFurtherSpawns()
 		rememberTerminalFailure(terminalFailure, for: sessionID)
 		markGameSessionStopping(sessionID, processIdentifier: processIdentifier)
+		let lane = session?.lane ?? currentRuntimeLane()
 		do {
-			let prefixDirectory = paths.winePrefix(for: region)
+			let prefixDirectory = paths.winePrefix(for: region, lane: lane)
 			// Cancelling the owning task must not skip prefix shutdown; the wineserver wait runs inside stop.
 			// An unstructured task does not inherit cancellation, and `withTaskCancellationShield` needs macOS 27.
 			try await Task {
@@ -278,6 +288,8 @@ extension GameSessionController {
 		}
 		guard activeGameSessionID == sessionID else { return }
 		finishGameSession(sessionID)
+		await SDKLogCollector.collect(
+			publisher: region.publisher, paths: paths, lane: lane, log: log)
 	}
 
 	func finishGameSession(_ sessionID: UUID) {
@@ -319,9 +331,27 @@ extension GameSessionController {
 		lifecycle.update(lease, to: activity)
 	}
 
-	func disableActiveGameMode() {
+	func disableActiveGameMode(blocking: Bool = false) {
 		guard session?.usesGameMode == true else { return }
 		session?.usesGameMode = false
-		GamePolicyControl.setGameMode(on: false, log: log)
+		if blocking {
+			GamePolicyControl.setGameModeBlocking(on: false, log: log)
+		} else {
+			requestGameMode(on: false, sessionID: nil)
+		}
+	}
+
+	/// Queues a Game Mode change behind the previous one. An `on` request is dropped when its
+	/// session ended or the app is quitting by the time it reaches the front.
+	func requestGameMode(on: Bool, sessionID: UUID?) {
+		let previous = gameModeChain
+		gameModeChain = Task { [weak self, log] in
+			await previous?.value
+			if on {
+				guard let self, activeGameSessionID == sessionID, !applicationTerminationRequested
+				else { return }
+			}
+			await GamePolicyControl.setGameMode(on: on, log: log)
+		}
 	}
 }

@@ -18,16 +18,19 @@ struct GameLaunchCancellationTests {
 		sessionID: UUID
 	) -> Task<Void, Never> {
 		Task {
-			while !Task.isCancelled { await Task.yield() }
+			// Never fired: `wait()` returns only when this task is cancelled.
+			await Signal().wait()
 			await model.gameSession.stopAndFinishGameSession(
 				using: runtime, sessionID: sessionID, processIdentifier: nil, region: .global)
 		}
 	}
 
-	@Test(arguments: [
-		LauncherActivity.preparingGame(sessionID: UUID()),
-		.launchingGame(sessionID: UUID(), processIdentifier: nil),
-	])
+	@Test(
+		.timeLimit(.minutes(1)),
+		arguments: [
+			LauncherActivity.preparingGame(sessionID: UUID()),
+			.launchingGame(sessionID: UUID(), processIdentifier: nil),
+		])
 	func stopDuringLaunchStepsEndsIdleWithoutAnOrphanTask(activity: LauncherActivity) async {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
@@ -47,7 +50,7 @@ struct GameLaunchCancellationTests {
 		#expect(throws: CancellationError.self) {
 			try spawnGate.runIfAllowed(process: Process()) {}
 		}
-		#expect(await waitForCondition { runtime.isStopPending })
+		await runtime.stopStarted.wait()
 		runtime.finishStop()
 		await launch.value
 
@@ -57,7 +60,7 @@ struct GameLaunchCancellationTests {
 		await api.resolveBranding()
 	}
 
-	@Test
+	@Test(.timeLimit(.minutes(1)))
 	func stopAfterTheProcessIsKnownCancelsTheLaunchTaskAndStopsThePrefix() async {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
@@ -65,7 +68,8 @@ struct GameLaunchCancellationTests {
 		let sessionID = UUID()
 		let runtime = ControlledLaunchRuntime()
 		let launch = Task<Void, Never> {
-			while !Task.isCancelled { await Task.yield() }
+			// Never fired: `wait()` returns only when this task is cancelled.
+			await Signal().wait()
 		}
 		model.beginTestGameSession(
 			.launchingGame(sessionID: sessionID, processIdentifier: 42), launchTask: launch)
@@ -73,7 +77,7 @@ struct GameLaunchCancellationTests {
 
 		model.gameSession.stopGame()
 		let cleanup = model.gameSession.session?.monitorTask
-		#expect(await waitForCondition { runtime.isStopPending })
+		await runtime.stopStarted.wait()
 		#expect(launch.isCancelled)
 		runtime.finishStop()
 		await cleanup?.value

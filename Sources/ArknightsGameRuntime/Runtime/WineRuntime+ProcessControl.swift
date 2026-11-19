@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsInfrastructure
 import Darwin
 import Foundation
 
 protocol WineRuntimeSessionControlling: Sendable {
 	func waitUntilStopped(prefixDirectory: URL) async throws
-	func stop(prefixDirectory: URL) async throws
 	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws
-}
-
-extension WineRuntimeSessionControlling {
-	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
-		try await stop(prefixDirectory: prefixDirectory)
-	}
 }
 
 extension WineRuntime: WineRuntimeSessionControlling {}
 
 extension WineRuntime {
+	// wineserver only signals and waits; it never draws, so shutdown sets no frame cap.
+	private func shutdownEnvironment(prefixDirectory: URL) -> [String: String] {
+		runtimeEnvironment(prefixDirectory: prefixDirectory, frameRateLimit: nil)
+	}
+
 	func waitUntilStopped(prefixDirectory: URL) async throws {
 		guard let wineserverURL else {
 			throw GameRuntimeError.runtimeConfiguration(
@@ -27,29 +26,13 @@ extension WineRuntime {
 		let status = try await runAndWait(
 			executable: wineserverURL,
 			arguments: ["-w"],
-			environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+			environment: shutdownEnvironment(prefixDirectory: prefixDirectory),
 			output: .nullDevice
 		)
 		guard status == 0 else {
 			throw GameRuntimeError.runtimeConfiguration(
 				"Wine could not monitor the game process (status \(status)).")
 		}
-	}
-
-	func stop(prefixDirectory: URL) async throws {
-		try await stop(
-			prefixDirectory: prefixDirectory,
-			timeout: AppConstants.Timeouts.runtimeShutdown,
-			spawnGate: nil
-		)
-	}
-
-	func stop(prefixDirectory: URL, timeout: Duration) async throws {
-		try await stop(
-			prefixDirectory: prefixDirectory,
-			timeout: timeout,
-			spawnGate: nil
-		)
 	}
 
 	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
@@ -77,7 +60,7 @@ extension WineRuntime {
 			_ = try await runAndWait(
 				executable: wineserverURL,
 				arguments: ["-k"],
-				environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+				environment: shutdownEnvironment(prefixDirectory: prefixDirectory),
 				output: .nullDevice,
 				timeout: remainingShutdownTime(clock: clock, deadline: deadline)
 			)
@@ -88,7 +71,7 @@ extension WineRuntime {
 				_ = try await runAndWait(
 					executable: wineserverURL,
 					arguments: ["-k"],
-					environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+					environment: shutdownEnvironment(prefixDirectory: prefixDirectory),
 					output: .nullDevice,
 					timeout: remainingShutdownTime(clock: clock, deadline: deadline)
 				)
@@ -96,7 +79,7 @@ extension WineRuntime {
 			let waitStatus = try await runAndWait(
 				executable: wineserverURL,
 				arguments: ["-w"],
-				environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+				environment: shutdownEnvironment(prefixDirectory: prefixDirectory),
 				output: .nullDevice,
 				timeout: remainingShutdownTime(clock: clock, deadline: deadline)
 			)
@@ -107,6 +90,9 @@ extension WineRuntime {
 		} catch is ChildProcessTimeout {
 			throw GameRuntimeError.runtimeConfiguration(
 				"Wine could not finish stopping Arknights before the shutdown deadline.")
+		} catch is WineProcessSpawnGateNotSealed {
+			throw GameRuntimeError.runtimeConfiguration(
+				"Wine shutdown waited for launch processes before new launches were blocked.")
 		} catch is WineProcessRetirementTimeout {
 			throw GameRuntimeError.runtimeConfiguration(
 				"Wine launch processes did not exit before the shutdown deadline.")
@@ -121,9 +107,12 @@ extension WineRuntime {
 		let process = Process()
 		process.executableURL = wineserverURL
 		process.arguments = ["-k"]
-		process.environment = runtimeEnvironment(prefixDirectory: prefixDirectory)
+		process.environment = shutdownEnvironment(prefixDirectory: prefixDirectory)
 		process.standardOutput = FileHandle.nullDevice
 		process.standardError = FileHandle.nullDevice
+		// Blocking is intentional: applicationShouldTerminate needs wineserver gone before it returns.
+		// Foundation runs terminationHandler on its own queue, never the main actor, so waiting on
+		// the main thread cannot deadlock. Both waits are bounded by AppConstants.Timeouts.
 		let terminated = DispatchSemaphore(value: 0)
 		process.terminationHandler = { _ in terminated.signal() }
 		do {

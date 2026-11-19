@@ -19,7 +19,7 @@ struct CustomizationControllerTests {
 		case manualIconOverStartupRestore
 	}
 
-	@Test(arguments: Race.allCases)
+	@Test(.timeLimit(.minutes(1)), arguments: Race.allCases)
 	func newerArtworkSelectionRejectsAnOlderDelayedRead(race: Race) async throws {
 		switch race {
 		case .artworkSelection: try await artworkSelectionRace()
@@ -47,11 +47,10 @@ struct CustomizationControllerTests {
 		fixture.controller.applyCustomArtwork(from: secondURL)
 		await loader.waitForRequestCount(2)
 		await loader.resolve(1, with: secondData)
-		#expect(
-			await waitForCondition {
-				(try? Data(contentsOf: fixture.paths.customArtwork)) == secondData
-			}
-		)
+		let artwork = fixture.paths.customArtwork
+		await waitForDirectoryChange(containing: artwork) {
+			(try? Data(contentsOf: artwork)) == secondData
+		}
 
 		await loader.resolve(0, with: firstData)
 		await Task.yield()
@@ -137,7 +136,7 @@ struct CustomizationControllerTests {
 		await extractor.waitForRequestCount(2)
 		await extractor.resolve(
 			1, with: ExtractedAccent(hue: 0.7, saturation: 0.8, brightness: 0.9))
-		#expect(await waitForCondition { fixture.controller.dynamicThemeHue == 0.7 })
+		await waitForCondition { fixture.controller.dynamicThemeHue == 0.7 }
 
 		await extractor.resolve(
 			0, with: ExtractedAccent(hue: 0.1, saturation: 0.8, brightness: 0.9))
@@ -188,30 +187,11 @@ struct CustomizationControllerTests {
 		await loader.waitForRequestCount(2)
 		let selectedData = try #require(selected.tiffRepresentation)
 		await loader.resolve(1, with: selectedData)
-		#expect(
-			await waitForCondition {
-				FileManager.default.fileExists(atPath: fixture.paths.customAppIcon.path)
-			}
-		)
+		await waitForFile(at: fixture.paths.customAppIcon)
 		await loader.resolve(0, with: staleData)
 		_ = await restore.value
 
 		#expect(try Data(contentsOf: fixture.paths.customAppIcon) != staleData)
-	}
-
-	@Test
-	func failedLauncherIconApplicationDoesNotPublishCustomIcon() async throws {
-		let fixture = try makeCustomizationController(setBundleIcon: { _ in false })
-		defer { fixture.temporary.remove() }
-		let data = try #require(solidImage(.systemGreen).tiffRepresentation)
-		try FileManager.default.createDirectory(
-			at: fixture.paths.customAppIcon.deletingLastPathComponent(),
-			withIntermediateDirectories: true
-		)
-		try data.write(to: fixture.paths.customAppIcon)
-
-		#expect(await !fixture.controller.loadCustomAppIcon())
-		#expect(!fixture.controller.hasCustomAppIcon)
 	}
 }
 
@@ -241,7 +221,8 @@ func makeCustomizationController(
 	)
 	let defaults = makeIsolatedDefaults("CustomizationControllerTests").defaults
 	let lifecycle = LauncherLifecycleStore(log: LauncherLog(fileURL: paths.launcherLogFile))
-	let preferences = LauncherPreferencesStore(defaults: defaults)
+	let preferences = LauncherPreferencesStore(
+		defaults: defaults, themeCacheURL: paths.themeCache)
 	let iconManager = LauncherIconManager(
 		setBundleIcon: setBundleIcon,
 		setRunningIcon: setRunningIcon,

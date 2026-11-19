@@ -2,7 +2,6 @@
 
 import ArknightsCore
 import ArknightsCustomization
-import ArknightsGameInstallation
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -15,42 +14,73 @@ struct AppearanceSettingsPage: View {
 
 	@Bindable var settings: LauncherPreferencesController
 	let customization: CustomizationController
-	package let lifecycle: LauncherLifecycleStore
+	let lifecycle: LauncherLifecycleStore
 	let presetCatalog: PresetCatalogService
-	package let accentColor: Color
-	let actions: any LauncherActions
+	let actions: any LauncherSettingsActions
 	@State private var presentedGallery: PresetGalleryDestination?
 
 	var body: some View {
 		SettingsPage(
 			title: "Appearance",
-			subtitle: "Artwork, colors, and icons",
-			accentColor: accentColor
+			subtitle: "Artwork, theme, appearance, and icons"
 		) {
-			SettingsPanel(title: "Artwork", systemImage: "photo") {
+			SettingsPanel(title: "Artwork") {
 				artworkRow
 			}
-			SettingsPanel(title: "Colors", systemImage: "paintpalette") {
+			SettingsPanel(title: "Theme") {
 				SettingsActionRow(
-					title: "Match colors to the artwork",
+					title: "Dynamic Theme",
 					detail:
-						"The launcher and the generated Dock icons borrow the artwork's colors.",
+						"The launcher accent and the generated Dock icons use the colors of the current artwork.",
 					help:
-						"Dynamic Theme: derives the launcher accent, HUD tint, and generated Dock icon pair from the selected artwork."
+						"Dynamic Theme: derives the launcher accent and the generated Dock icon pair from the selected artwork."
 				) {
 					SettingsToggle(
-						"Match colors to the artwork",
+						"Dynamic Theme",
 						isOn: $settings.usesDynamicTheme,
-						accentColor: accentColor
 					)
 				}
-			}
-			SettingsPanel(title: "Dock icons", systemImage: "dock.rectangle") {
-				operatorRow
 				SettingsHairline()
-				customIconRow
+				SettingsActionRow(
+					title: "Appearance",
+					detail: "Settings, setup, and dialogs. Home keeps its own controls."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $settings.launcherAppearance,
+						options: LauncherAppearance.allCases,
+						systemImages: ["circle.lefthalf.filled", "sun.max", "moon"]
+					) { appearance in
+						Text(appearanceTitle(appearance))
+					}
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Home controls",
+					detail:
+						"The music, version, and status buttons, and the settings button. Automatic follows the artwork."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $settings.homeTheme,
+						options: HomeTheme.allCases
+					) { homeTheme in
+						Text(themeTitle(homeTheme))
+					}
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Branding colors",
+					detail:
+						"Logo and backdrop in the top left corner. Automatic follows Home controls."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $settings.brandingTheme,
+						options: HomeTheme.allCases
+					) { brandingTheme in
+						Text(themeTitle(brandingTheme))
+					}
+				}
 			}
-			SettingsPanel(title: "Launcher shows", systemImage: "sparkles") {
+			SettingsPanel(title: "Home screen") {
 				SettingsActionRow(
 					title: "Branding",
 					detail: "Shows the server logo and its backdrop in the top left corner."
@@ -58,7 +88,6 @@ struct AppearanceSettingsPage: View {
 					SettingsToggle(
 						"Branding",
 						isOn: $settings.showsBranding,
-						accentColor: accentColor
 					)
 				}
 				SettingsHairline()
@@ -69,20 +98,23 @@ struct AppearanceSettingsPage: View {
 					SettingsToggle(
 						"Game version",
 						isOn: $settings.showsGameVersion,
-						accentColor: accentColor
 					)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Server time & reset countdown",
+					title: "Server time and reset countdown",
 					detail: "Shows the server clock and the time until its next daily reset."
 				) {
 					SettingsToggle(
-						"Server time & reset countdown",
+						"Server time and reset countdown",
 						isOn: $settings.showsServerResetCountdown,
-						accentColor: accentColor
 					)
 				}
+			}
+			SettingsPanel(title: "Dock icons") {
+				operatorRow
+				SettingsHairline()
+				customIconRow
 			}
 		}
 		.sheet(item: $presentedGallery) { destination in
@@ -95,6 +127,22 @@ struct AppearanceSettingsPage: View {
 		}
 	}
 
+	private func themeTitle(_ theme: HomeTheme) -> String {
+		switch theme {
+		case .automatic: "Automatic"
+		case .dark: "Dark"
+		case .light: "Light"
+		}
+	}
+
+	private func appearanceTitle(_ appearance: LauncherAppearance) -> String {
+		switch appearance {
+		case .system: "System"
+		case .light: "Light"
+		case .dark: "Dark"
+		}
+	}
+
 	private var artworkRow: some View {
 		SettingsActionRow(
 			title: "Artwork",
@@ -103,7 +151,7 @@ struct AppearanceSettingsPage: View {
 			CapsuleActionButton(
 				title: "Presets…",
 				systemImage: "photo.on.rectangle",
-				tone: .accent(accentColor), presentation: .compact
+				tone: .neutral, presentation: .compact
 			) {
 				presentedGallery = .artwork
 			}
@@ -135,7 +183,7 @@ struct AppearanceSettingsPage: View {
 			CapsuleActionButton(
 				title: "Choose Operator…",
 				systemImage: "person.2.crop.square.stack",
-				tone: .accent(accentColor),
+				tone: .neutral,
 				presentation: .compact
 			) {
 				presentedGallery = .operatorIcons
@@ -153,12 +201,12 @@ struct AppearanceSettingsPage: View {
 	private var customIconRow: some View {
 		SettingsActionRow(
 			title: "Custom icons",
-			detail: "Launcher and game Dock icons."
+			detail:
+				"Launcher and game Dock icons. Each new image or operator replaces the one before."
 		) {
 			GlassActionMenu(
 				title: "Launcher",
 				systemImage: "macwindow",
-				accentColor: accentColor
 			) {
 				Button(
 					"Choose Image…", systemImage: "folder",
@@ -176,7 +224,6 @@ struct AppearanceSettingsPage: View {
 			GlassActionMenu(
 				title: "Game",
 				systemImage: "gamecontroller",
-				accentColor: accentColor
 			) {
 				Button(
 					"Choose Image…", systemImage: "folder",

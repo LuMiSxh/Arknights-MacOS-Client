@@ -9,10 +9,12 @@ import Foundation
 @MainActor
 package struct OnboardingProgressStore {
 	// 2: launcher 0.7.0 replaced display settings with setup questions, so everyone answers them.
-	static let currentSchemaVersion = 2
+	// 3: launcher 1.0 downloads the runtime separately, merges it with the game location and
+	// Rosetta 2 into one Install step, and adds the Look step. Returning players keep their answers.
+	static let currentSchemaVersion = 3
 	// Schemas returning players must finish before Skip Setup returns. Give each one a reason in
 	// `OnboardingWelcomeView.requiredSetupReason(schema:)`.
-	static let requiredSchemaVersions: Set<Int> = [2]
+	static let requiredSchemaVersions: Set<Int> = [2, 3]
 
 	private typealias Key = LauncherPreferencesStore.Key
 

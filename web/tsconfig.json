@@ -3,12 +3,14 @@
 	"compilerOptions": {
 		"allowJs": true,
 		"checkJs": true,
+		"erasableSyntaxOnly": true,
 		"esModuleInterop": true,
+		"exactOptionalPropertyTypes": true,
 		"forceConsistentCasingInFileNames": true,
 		"moduleResolution": "bundler",
+		"noUncheckedIndexedAccess": true,
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
-		"sourceMap": true,
-		"strict": true
+		"sourceMap": true
 	}
 }

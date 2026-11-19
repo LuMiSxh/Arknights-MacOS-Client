@@ -9,33 +9,24 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 	static let helperDirectory = "BLPlatform64"
 	static let helperName = "PCGamePlatform.exe"
 	package static let controllerName = "BilibiliWindowController.exe"
-	static let originalDirectoryName = ".arknights-client-bilibili"
-	static let browserDirectoryName = "BLWebBrowser"
-	static let injectionName = "PCGamePlatformInjection.dylib"
-	static let bridgeName = "PCGamePlatformWindowBridge.dylib"
 	static let launcherControllerMarker = Data(
 		"Arknights Client Bilibili window controller".utf8)
-	private static let launcherShimMarkers = [
-		Data("Arknights Client Bilibili platform compatibility".utf8),
-		Data("Arknights Client Bilibili single-process compatibility".utf8),
-	]
-	static let launcherBridgeMarker = Data(
-		"Arknights Client Bilibili platform window bridge".utf8)
-	static let launcherInjectionMarker = Data(
-		"Arknights Client Bilibili platform injection selector".utf8)
 	private static let officialHelperMarker = Data("PCGamePlatform.exe".utf8)
 	private static let temporaryPrefix = ".arknights-client-bilibili-platform-"
 
 	private let controllerURL: URL?
+	private let log: LauncherLog?
 
-	init(bundle: Bundle = .main) {
+	init(bundle: Bundle = .main, log: LauncherLog? = nil) {
+		self.log = log
 		let directory = bundle.resourceURL.map(BundledResource.compatibility.location)?
 			.appending(path: "BilibiliPlatform", directoryHint: .isDirectory)
 		controllerURL = directory?.appending(path: Self.controllerName)
 	}
 
-	init(controllerURL: URL?) {
+	init(controllerURL: URL?, log: LauncherLog? = nil) {
 		self.controllerURL = controllerURL
+		self.log = log
 	}
 
 	@discardableResult
@@ -44,28 +35,29 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 		fileManager: FileManager = .default
 	) throws -> Bool {
 		let paths = paths(in: gameDirectory)
-		var changed = try migrateLegacyWrapper(paths: paths, fileManager: fileManager)
 		try removeTemporaryFiles(in: paths.directory, fileManager: fileManager)
-		changed = try removeLegacyArtifacts(paths: paths, fileManager: fileManager) || changed
-		changed = try removeOwnedLegacyStorage(paths: paths, fileManager: fileManager) || changed
 		guard let controllerURL,
 			fileManager.fileExists(atPath: controllerURL.path),
 			fileManager.fileExists(atPath: paths.helper.path)
-		else { return changed }
+		else { return false }
 
 		guard try containsMarker(Self.officialHelperMarker, at: paths.helper) else {
-			return changed
+			return false
 		}
 		try validateOwnedController(paths: paths, fileManager: fileManager)
 		let controllerMatches = fileManager.contentsEqual(
 			atPath: paths.controller.path, andPath: controllerURL.path)
-		guard !controllerMatches else { return changed }
+		guard !controllerMatches else { return false }
 
 		let stagedController = temporaryURL(in: paths.directory, suffix: "controller")
 		let previousController = temporaryURL(in: paths.directory, suffix: "previous-controller")
 		defer {
-			try? fileManager.removeItem(at: stagedController)
-			try? fileManager.removeItem(at: previousController)
+			GameShimIO.attempt("Could not remove the staged Bilibili controller", log: log) {
+				try fileManager.removeItem(at: stagedController)
+			}
+			GameShimIO.attempt("Could not remove the previous Bilibili controller", log: log) {
+				try fileManager.removeItem(at: previousController)
+			}
 		}
 		try fileManager.copyItem(at: controllerURL, to: stagedController)
 		if fileManager.fileExists(atPath: paths.controller.path) {
@@ -73,7 +65,9 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 		}
 		do {
 			try fileManager.moveItem(at: stagedController, to: paths.controller)
-			try? fileManager.removeItem(at: previousController)
+			GameShimIO.attempt("Could not remove the previous Bilibili controller", log: log) {
+				try fileManager.removeItem(at: previousController)
+			}
 		} catch {
 			try GameShimIO.rethrowAfterRollback(
 				error,
@@ -100,92 +94,12 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 		fileManager: FileManager = .default
 	) throws -> Bool {
 		let paths = paths(in: gameDirectory)
-		var changed = try migrateLegacyWrapper(paths: paths, fileManager: fileManager)
 		try removeTemporaryFiles(in: paths.directory, fileManager: fileManager)
-		changed = try removeLegacyArtifacts(paths: paths, fileManager: fileManager) || changed
-		if fileManager.fileExists(atPath: paths.controller.path),
+		guard fileManager.fileExists(atPath: paths.controller.path),
 			try containsMarker(Self.launcherControllerMarker, at: paths.controller)
-		{
-			try fileManager.removeItem(at: paths.controller)
-			changed = true
-		}
-		changed = try removeOwnedLegacyStorage(paths: paths, fileManager: fileManager) || changed
-		return changed
-	}
-
-	private func migrateLegacyWrapper(
-		paths: Paths,
-		fileManager: FileManager
-	) throws -> Bool {
-		let helperExists = fileManager.fileExists(atPath: paths.helper.path)
-		let originalExists = fileManager.fileExists(atPath: paths.original.path)
-		let helperIsLegacyShim: Bool
-		if helperExists {
-			helperIsLegacyShim = try isLegacyShim(at: paths.helper)
-		} else {
-			helperIsLegacyShim = false
-		}
-
-		if helperIsLegacyShim {
-			guard originalExists else {
-				throw GameCompatibilityError.setupFailed(
-					"The official Bilibili platform helper is missing. Repair the game before launching."
-				)
-			}
-			try fileManager.removeItem(at: paths.helper)
-			try fileManager.moveItem(at: paths.original, to: paths.helper)
-			return true
-		}
-		if !helperExists, originalExists {
-			try fileManager.moveItem(at: paths.original, to: paths.helper)
-			return true
-		}
-		return false
-	}
-
-	private func isLegacyShim(at url: URL) throws -> Bool {
-		for marker in Self.launcherShimMarkers where try containsMarker(marker, at: url) {
-			return true
-		}
-		return false
-	}
-
-	private func removeLegacyArtifacts(paths: Paths, fileManager: FileManager) throws -> Bool {
-		var changed = false
-		for (url, marker) in [
-			(paths.bridge, Self.launcherBridgeMarker),
-			(paths.injection, Self.launcherInjectionMarker),
-		] {
-			guard fileManager.fileExists(atPath: url.path),
-				try containsMarker(marker, at: url)
-			else { continue }
-			try fileManager.removeItem(at: url)
-			changed = true
-		}
-		return changed
-	}
-
-	private func removeOwnedLegacyStorage(paths: Paths, fileManager: FileManager) throws -> Bool {
-		var changed = false
-		if fileManager.fileExists(atPath: paths.original.path),
-			fileManager.fileExists(atPath: paths.helper.path),
-			try containsMarker(Self.officialHelperMarker, at: paths.original),
-			try containsMarker(Self.officialHelperMarker, at: paths.helper)
-		{
-			try fileManager.removeItem(at: paths.original)
-			changed = true
-		}
-		if browserLinkIsCurrent(paths, fileManager) {
-			try fileManager.removeItem(at: paths.browserLink)
-			changed = true
-		}
-		if fileManager.fileExists(atPath: paths.privateDirectory.path),
-			try fileManager.contentsOfDirectory(atPath: paths.privateDirectory.path).isEmpty
-		{
-			try fileManager.removeItem(at: paths.privateDirectory)
-			changed = true
-		}
-		return changed
+		else { return false }
+		try fileManager.removeItem(at: paths.controller)
+		return true
 	}
 
 	private func validateOwnedController(paths: Paths, fileManager: FileManager) throws {
@@ -194,11 +108,6 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 		else { return }
 		throw GameCompatibilityError.setupFailed(
 			"The game directory contains an unknown Bilibili window controller.")
-	}
-
-	private func browserLinkIsCurrent(_ paths: Paths, _ fileManager: FileManager) -> Bool {
-		(try? fileManager.destinationOfSymbolicLink(atPath: paths.browserLink.path))
-			== "../\(Self.browserDirectoryName)"
 	}
 
 	private func containsMarker(_ marker: Data, at url: URL) throws -> Bool {
@@ -224,29 +133,16 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 	private func paths(in gameDirectory: URL) -> Paths {
 		let directory = gameDirectory.appending(
 			path: Self.helperDirectory, directoryHint: .isDirectory)
-		let privateDirectory = directory.appending(
-			path: Self.originalDirectoryName, directoryHint: .isDirectory)
 		return Paths(
 			directory: directory,
-			privateDirectory: privateDirectory,
 			helper: directory.appending(path: Self.helperName),
-			controller: directory.appending(path: Self.controllerName),
-			original: privateDirectory.appending(path: Self.helperName),
-			browserLink: privateDirectory.appending(
-				path: Self.browserDirectoryName, directoryHint: .isDirectory),
-			injection: directory.appending(path: Self.injectionName),
-			bridge: directory.appending(path: Self.bridgeName)
+			controller: directory.appending(path: Self.controllerName)
 		)
 	}
 
 	private struct Paths {
 		let directory: URL
-		let privateDirectory: URL
 		let helper: URL
 		let controller: URL
-		let original: URL
-		let browserLink: URL
-		let injection: URL
-		let bridge: URL
 	}
 }

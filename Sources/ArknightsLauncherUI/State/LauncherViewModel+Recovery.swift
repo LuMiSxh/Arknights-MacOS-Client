@@ -5,12 +5,26 @@ import ArknightsCore
 import Foundation
 
 extension LauncherViewModel {
+	/// Opens the GitHub report with the presented failure's code and context, when one is shown.
+	package func openProblemReport(source: IssueReportSource) {
+		let failure = lifecycle.state.presentation.failure
+		NSWorkspace.shared.open(
+			IssueReportURL.build(
+				runtimeName: gameSession.runtimeName, code: failure?.code,
+				context: failure?.context, source: source)
+		)
+	}
+
 	func performRecoveryAction(
 		_ action: RecoveryAction,
 		failureID: UUID
 	) -> RecoveryActionDisposition {
 		guard let failure = lifecycle.state.presentation.failure, failure.id == failureID else {
 			logRecovery(action: action, result: "ignored-stale")
+			return .ignored
+		}
+		guard !failure.isBusy else {
+			logRecovery(action: action, result: "ignored-busy")
 			return .ignored
 		}
 		guard failure.actions.contains(action) else {
@@ -60,8 +74,13 @@ extension LauncherViewModel {
 				started = intelTranslation.retryRosettaFailure(id: failureID)
 			case .intelTranslationPreflight:
 				started = intelTranslation.retryAvailabilityFailure(id: failureID)
+			case .runtimeSetup:
+				started = retryRuntimeSetup(failureID: failureID)
 			case .launcher:
-				guard retryStorageMigration(failureID: failureID) else {
+				guard
+					communication.launcherUpdater.retryFailure(id: failureID)
+						|| retryStorageMigration(failureID: failureID)
+				else {
 					logRecovery(action: action, result: "ignored-no-retry-route")
 					return .ignored
 				}
@@ -81,15 +100,27 @@ extension LauncherViewModel {
 			logRecovery(action: action, result: "opened")
 			return .completed
 		case .reportProblem:
-			NSWorkspace.shared.open(
-				IssueReportURL.build(
-					runtimeName: gameSession.runtimeName, code: failure.code,
-					context: failure.context)
-			)
+			openProblemReport(source: .error)
 			logRecovery(action: action, result: "opened")
 			return .completed
 		case .repair:
 			return .repairConfirmationRequired
+		case .deleteDataFolder:
+			logRecovery(action: action, result: "confirmation-required")
+			return .deleteDataFolderConfirmationRequired
+		case .tryAgain:
+			guard
+				retryStorageMigration(failureID: failureID)
+					|| retryLegacyDataDeletion(failureID: failureID)
+			else {
+				logRecovery(action: action, result: "ignored-ineligible")
+				return .ignored
+			}
+			return .completed
+		case .quit:
+			logRecovery(action: action, result: "requested")
+			requestApplicationQuit()
+			return .completed
 		case .installRosetta:
 			guard failure.context.operation == .intelTranslationPreflight,
 				lifecycle.state.readiness.intelTranslation == .rosettaMissing,
@@ -138,6 +169,13 @@ extension LauncherViewModel {
 		#endif
 		logRecovery(action: .repair, result: "started")
 		installation.repairGame()
+	}
+
+	private func retryRuntimeSetup(failureID: UUID) -> Bool {
+		guard lifecycle.activity == .idle, !runtimeSelection.isInstalling else { return false }
+		guard lifecycle.consumeFailure(id: failureID) != nil else { return false }
+		installSelectedRuntime()
+		return true
 	}
 
 	private func logRecovery(action: RecoveryAction, result: String) {

@@ -6,6 +6,3 @@ contact_links:
   - name: Account, payment, or in-game problems
     url: https://lumisxh.github.io/Arknights-MacOS-Client/help/#publisher-support-routing
     about: The publisher of your region handles these problems. This project cannot help with them.
-  - name: Request source code for a runtime component
-    url: https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new?title=Source+code+request&body=App+version%3A%0AComponent%3A
-    about: Name the app version and the component. See the written offer in the source code notice.

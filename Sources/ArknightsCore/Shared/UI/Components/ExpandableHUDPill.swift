@@ -39,8 +39,6 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 	let iconFont: Font
 	let toggleNoun: String
 	let accessibilityValue: String
-	let accentColor: Color
-	let hudTintColor: Color
 	let canExpand: Bool
 	let expandedSpacing: CGFloat
 	let sizing: HUDPillSizing
@@ -48,17 +46,16 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 	let title: Title
 	let detail: Detail
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
 
 	/// - Parameter toggleNoun: Completes the "Show …" and "Hide …" accessibility label and help.
 	package init(
 		systemImage: String,
-		iconFont: Font = .caption.weight(.semibold),
+		iconFont: Font = .caption.weight(.medium),
 		toggleNoun: String,
 		accessibilityValue: String,
-		accentColor: Color,
-		hudTintColor: Color,
 		canExpand: Bool = true,
-		expandedSpacing: CGFloat = 10,
+		expandedSpacing: CGFloat = 8,
 		sizing: HUDPillSizing,
 		isExpanded: Binding<Bool>,
 		@ViewBuilder title: () -> Title,
@@ -68,8 +65,6 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 		self.iconFont = iconFont
 		self.toggleNoun = toggleNoun
 		self.accessibilityValue = accessibilityValue
-		self.accentColor = accentColor
-		self.hudTintColor = hudTintColor
 		self.canExpand = canExpand
 		self.expandedSpacing = expandedSpacing
 		self.sizing = sizing
@@ -88,7 +83,7 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 					HUDPillMotion.expandedContentTransition(reduceMotion: reduceMotion))
 			}
 		}
-		.padding(.vertical, expanded ? 11 : 0)
+		.padding(.vertical, expanded ? LauncherTokens.Spacing.content : 0)
 		.frame(width: expanded ? sizing.expandedWidth : nil)
 		.frame(
 			minHeight: expanded ? sizing.expandedMinHeight : sizing.collapsedHeight,
@@ -99,7 +94,7 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 			maxWidth: expanded ? sizing.expandedMaxWidth : sizing.collapsedMaxWidth
 		)
 		.fixedSize(horizontal: sizing.fixesWidthWhenExpanded || !expanded, vertical: false)
-		.hudPillSurface(isExpanded: expanded, tint: hudTintColor)
+		.hudPillSurface(isExpanded: expanded)
 		.shadow(
 			color: Color.black.opacity(expanded ? 0.35 : 0),
 			radius: expanded ? 12 : 0,
@@ -125,22 +120,27 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 	}
 
 	private var headerLabel: some View {
-		HStack(spacing: 5) {
+		HStack(spacing: LauncherTokens.Spacing.compact) {
 			Image(systemName: systemImage)
 				.font(iconFont)
-				.adaptiveControlForeground(accentColor)
+				.adaptiveControlForeground(theme.accentInk)
 				.accessibilityHidden(true)
 			title
 			Spacer(minLength: canExpand ? 6 : 0)
 			if canExpand {
 				Image(systemName: expanded ? "chevron.up" : "chevron.down")
-					.font(.caption.bold())
-					.adaptiveControlForeground(accentColor)
+					.font(.caption.weight(.medium))
+					.adaptiveControlForeground(theme.accentInk)
 					.contentTransition(HUDPillMotion.chevronTransition(reduceMotion: reduceMotion))
 					.accessibilityHidden(true)
 			}
 		}
-		.padding(.horizontal, expanded ? 14 : 12)
+		.padding(
+			.horizontal,
+			expanded
+				? LauncherTokens.Layout.hudExpandedHorizontalPadding
+				: LauncherTokens.Spacing.content
+		)
 		.frame(minHeight: expanded ? nil : sizing.collapsedHeight)
 		.contentShape(Rectangle())
 	}

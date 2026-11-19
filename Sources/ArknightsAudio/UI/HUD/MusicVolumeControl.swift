@@ -6,8 +6,8 @@ import SwiftUI
 /// Keeps volume secondary to playback: hovering or focusing reveals the level, while the
 /// compact speaker remains a direct mute toggle and restores the last audible setting.
 struct MusicVolumeControl: View {
+	@Environment(\.launcherTheme) private var theme
 	@Binding var volume: Double
-	package let accentColor: Color
 	let isMuted: Bool
 	let isDisabled: Bool
 	let toggleMute: () -> Void
@@ -16,14 +16,14 @@ struct MusicVolumeControl: View {
 	@State private var isHovering = false
 
 	var body: some View {
-		HStack(spacing: 7) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			Button(action: toggleMute) {
 				Label(muteButtonTitle, systemImage: speakerSymbol)
 					.labelStyle(.iconOnly)
-					.font(LauncherVisuals.Typography.hudControlGlyph)
+					.font(LauncherTokens.Typography.hudControlGlyph)
 					.adaptiveControlForeground(
-						LauncherVisuals.controlTint,
-						disabledTint: LauncherVisuals.disabled,
+						theme.textPrimary,
+						disabledTint: theme.textTertiary,
 						isDisabled: isDisabled
 					)
 					.frame(
@@ -44,7 +44,7 @@ struct MusicVolumeControl: View {
 
 			if isExpanded {
 				Slider(value: $volume, in: 0...1, step: 0.05)
-					.tint(accentColor)
+					.tint(theme.accentFill)
 					.frame(width: AppConstants.Music.volumeSliderWidth)
 					.focused($focusedElement, equals: .slider)
 					.focusEffectDisabled(true)
@@ -66,7 +66,7 @@ struct MusicVolumeControl: View {
 			alignment: .leading
 		)
 		.adaptiveControlSurface(
-			tint: LauncherVisuals.controlTint,
+			tint: theme.textPrimary,
 			isDisabled: isDisabled,
 			in: Capsule()
 		)

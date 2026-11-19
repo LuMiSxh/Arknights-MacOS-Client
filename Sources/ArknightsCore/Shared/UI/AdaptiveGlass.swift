@@ -36,6 +36,113 @@ extension View {
 
 }
 
+/// Visual role of a launcher surface. Each role owns its default shape, fill, and edge.
+package enum LauncherSurfaceKind: Equatable {
+	/// Dialogs layered over the sheet.
+	case modal
+	/// Rows grouped under a section label. No glass.
+	case group
+	/// Floating action pill at the foot of a surface.
+	case footer
+}
+
+extension View {
+	/// The only place that chooses between glass, tinted glass, and the macOS 15 material
+	/// fallback for launcher surfaces. Reduce Transparency skips the glass and keeps the tint.
+	package func launcherSurface(_ kind: LauncherSurfaceKind) -> some View {
+		modifier(LauncherSurfaceModifier(kind: kind, customShape: nil))
+	}
+
+	/// Same as `launcherSurface(_:)`, with a caller-supplied shape for surfaces whose shape
+	/// changes at runtime, such as an expandable footer.
+	package func launcherSurface<S: Shape>(_ kind: LauncherSurfaceKind, in shape: S) -> some View {
+		modifier(LauncherSurfaceModifier(kind: kind, customShape: AnyShape(shape)))
+	}
+}
+
+private struct LauncherSurfaceModifier: ViewModifier {
+	let kind: LauncherSurfaceKind
+	let customShape: AnyShape?
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.colorScheme) private var colorScheme
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+	private var isDark: Bool { colorScheme == .dark }
+
+	private var defaultShape: AnyShape {
+		switch kind {
+		case .modal: AnyShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.glassModal))
+		case .group: AnyShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.glassGroup))
+		case .footer: AnyShape(Capsule())
+		}
+	}
+
+	@ViewBuilder
+	func body(content: Content) -> some View {
+		let shape = customShape ?? defaultShape
+		switch kind {
+		case .modal:
+			surface(content, tint: theme.modalTint, shape: shape)
+				.clipShape(shape)
+				.background {
+					shape.fill(theme.modalTint)
+						.shadow(
+							color: LauncherVisuals.opaqueDim.opacity(
+								isDark
+									? LauncherVisuals.Shadow.modalDarkOpacity
+									: LauncherVisuals.Shadow.modalLightOpacity),
+							radius: isDark ? 32 : 24, y: isDark ? 12 : 8)
+				}
+				.overlay { shape.stroke(theme.dialogHairline) }
+		case .group:
+			content
+				.background {
+					shape.fill(theme.groupFill)
+						.shadow(
+							color: isDark
+								? .clear
+								: LauncherVisuals.opaqueDim.opacity(
+									LauncherVisuals.Shadow.groupLightOpacity),
+							radius: 2, y: 1)
+				}
+				.overlay { shape.stroke(theme.hairline) }
+		case .footer:
+			if isDark {
+				surface(content, tint: theme.footerGlassTint, shape: shape)
+					.shadow(
+						color: LauncherVisuals.opaqueDim.opacity(
+							LauncherVisuals.Shadow.footerDarkOpacity),
+						radius: 10, y: 4)
+			} else {
+				// Light footers skip Liquid Glass: macOS 27 glass adds a black backplate under
+				// the tint, which greys the pill.
+				content
+					.background {
+						if !reduceTransparency { shape.fill(.regularMaterial) }
+					}
+					.background { shape.fill(theme.footerGlassTint) }
+					.overlay { shape.stroke(theme.hairline) }
+					.shadow(
+						color: LauncherVisuals.opaqueDim.opacity(
+							LauncherVisuals.Shadow.footerLightOpacity),
+						radius: 12, y: 4)
+			}
+		}
+	}
+
+	/// Fills the tint under the glass. Glass sits above the tint, since a tint under the glass
+	/// lightens to grey. Reduce Transparency keeps the tint and skips the glass.
+	@ViewBuilder
+	private func surface(_ content: Content, tint: Color, shape: AnyShape) -> some View {
+		let filled = content.background { shape.fill(tint) }
+		if reduceTransparency {
+			filled
+		} else {
+			filled.adaptiveGlassEffect(in: shape)
+		}
+	}
+}
+
 enum AdaptiveGlassBorderTintSource: Equatable {
 	case semanticEdge
 	case surface
@@ -43,7 +150,7 @@ enum AdaptiveGlassBorderTintSource: Equatable {
 }
 
 enum AdaptiveGlassSurfaceTreatment: Equatable {
-	private static let macOS27MinimumTintOpacity = 0.24
+	static let macOS27MinimumTintOpacity = 0.24
 	static let macOS27BackplateOpacity = 0.68
 	static let macOS27ChromaticBackplateOpacity = 0.44
 
@@ -74,44 +181,6 @@ enum AdaptiveGlassSurfaceTreatment: Equatable {
 		max(macOS27MinimumTintOpacity, min(opacity, 1))
 	}
 
-	/// Returns whether a caller must draw its semantic edge outside the adaptive surface.
-	/// macOS 27 Glass owns the accessibility border; older fallbacks and the ordinary
-	/// presentation leave the semantic edge to the caller. Reduced transparency always
-	/// draws its own accessibility edge.
-	static func ownsExternalBorder(
-		reduceTransparency: Bool,
-		showBorders: Bool
-	) -> Bool {
-		borderOwner(
-			isMacOS27Available: isMacOS27Available,
-			isMacOS26Available: isMacOS26Available,
-			reduceTransparency: reduceTransparency,
-			showBorders: showBorders
-		) == .external
-	}
-
-	static func borderOwner(
-		isMacOS27Available: Bool,
-		isMacOS26Available: Bool,
-		reduceTransparency: Bool,
-		showBorders: Bool
-	) -> AdaptiveGlassBorderOwner {
-		switch resolve(
-			isMacOS27Available: isMacOS27Available,
-			isMacOS26Available: isMacOS26Available,
-			reduceTransparency: reduceTransparency,
-			showBorders: showBorders,
-			hasTint: false
-		) {
-		case .reducedTransparency:
-			.adaptiveSurface
-		case .macOS27(let showBorders, _):
-			showBorders ? .adaptiveSurface : .external
-		case .macOS26, .material:
-			.external
-		}
-	}
-
 	static func borderTintSource(
 		hasSemanticEdgeTint: Bool,
 		hasSurfaceTint: Bool
@@ -136,12 +205,8 @@ enum AdaptiveGlassSurfaceTreatment: Equatable {
 	}
 }
 
-enum AdaptiveGlassBorderOwner: Equatable {
-	case adaptiveSurface
-	case external
-}
-
 private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
+	@Environment(\.launcherTheme) private var theme
 	let tint: Color?
 	let borderTint: Color?
 	let shape: ShapeType
@@ -150,6 +215,8 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@Environment(\.accessibilityShowBorders) private var showBorders
 	@Environment(\.isEnabled) private var isEnabled
+	@Environment(\.colorScheme) private var colorScheme
+	@Environment(\.self) private var environment
 
 	@ViewBuilder
 	func body(content: Content) -> some View {
@@ -162,11 +229,14 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 		) {
 		case .reducedTransparency(let showBorders):
 			content
-				.background(Color.black.opacity(0.92), in: shape)
+				.background {
+					shape.fill(theme.sheetSolid)
+						.overlay { shape.fill(tint ?? Color.clear) }
+				}
 				.overlay {
 					shape
 						.stroke(
-							(effectiveBorderTint ?? Color.white).opacity(
+							(effectiveBorderTint ?? theme.controlStroke).opacity(
 								showBorders ? 0.68 : 0.42
 							),
 							lineWidth: 1
@@ -232,24 +302,29 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 			content
 				.background(tint, in: shape)
 				.background(
-					Color.black.opacity(
+					backplate.opacity(
 						AdaptiveGlassSurfaceTreatment.macOS27ChromaticBackplateOpacity
 					),
 					in: shape
 				)
 		} else {
 			content.background(
-				Color.black.opacity(AdaptiveGlassSurfaceTreatment.macOS27BackplateOpacity),
+				backplate.opacity(AdaptiveGlassSurfaceTreatment.macOS27BackplateOpacity),
 				in: shape
 			)
 		}
+	}
+
+	// macOS 27 glass needs a backplate to hold its tint. A black one turns glass on a light sheet muddy.
+	private var backplate: Color {
+		colorScheme == .dark ? .black : .white
 	}
 
 	// Keep high-chroma accents visible on macOS 27, while near-neutral HUD tints use
 	// the darker neutral backplate. The chroma test also avoids turning a black tint blue.
 	private var macOS27ColorTint: Color? {
 		guard let tint else { return nil }
-		let resolved = tint.resolve(in: EnvironmentValues())
+		let resolved = tint.resolve(in: environment)
 		let chroma =
 			max(resolved.red, resolved.green, resolved.blue)
 			- min(resolved.red, resolved.green, resolved.blue)
@@ -267,12 +342,12 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 
 	private var macOS27BorderTint: Color {
 		guard let tint = effectiveBorderTint else { return .white }
-		let resolved = tint.resolve(in: EnvironmentValues())
+		let resolved = tint.resolve(in: environment)
 		let red = Double(resolved.red)
 		let green = Double(resolved.green)
 		let blue = Double(resolved.blue)
 		let chroma = max(red, green, blue) - min(red, green, blue)
-		guard chroma > 0.08 else { return LauncherVisuals.quietControlTint }
+		guard chroma > 0.08 else { return theme.textSecondary }
 		return Color(.sRGB, red: red, green: green, blue: blue)
 	}
 

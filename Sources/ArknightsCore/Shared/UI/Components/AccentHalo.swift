@@ -5,18 +5,18 @@ import SwiftUI
 /// A still accent halo behind the current primary operation. It plays one pulse when it
 /// appears, unless Reduce Motion or the decorative motion gate forbids it.
 private struct AccentHaloModifier<S: Shape>: ViewModifier {
-	let tint: Color
 	let isActive: Bool
 	let shape: S
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+	@Environment(\.launcherTheme) private var theme
 
 	func body(content: Content) -> some View {
 		content
 			.background {
 				ZStack {
 					if isActive && !reduceTransparency {
-						AccentHalo(tint: tint, shape: shape)
+						AccentHalo(tint: theme.accentFill, shape: shape)
 							.transition(.opacity)
 							.allowsHitTesting(false)
 							.accessibilityHidden(true)
@@ -36,7 +36,7 @@ private struct AccentHalo<S: Shape>: View {
 	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
 	@State private var pulseCount = 0
 
-	private var cycle: TimeInterval { LauncherMotion.Cycle.breathing }
+	private var cycle: TimeInterval { LauncherMotion.Cycle.pulse }
 
 	var body: some View {
 		shape
@@ -45,8 +45,10 @@ private struct AccentHalo<S: Shape>: View {
 				content, intensity in
 				content
 					.scaleEffect(0.94 + 0.08 * intensity)
-					.blur(radius: 12 + 8 * intensity)
-					.opacity(0.18 + 0.22 * intensity)
+					.blur(radius: 4.8 + 3.2 * intensity)
+					.opacity(
+						LauncherVisuals.Halo.restingOpacity
+							+ LauncherVisuals.Halo.pulseOpacityGain * intensity)
 			} keyframes: { _ in
 				CubicKeyframe(1, duration: cycle / 2)
 				CubicKeyframe(Self.restingIntensity, duration: cycle / 2)
@@ -60,7 +62,7 @@ private struct AccentHalo<S: Shape>: View {
 }
 
 extension View {
-	package func accentHalo<S: Shape>(tint: Color, isActive: Bool, in shape: S) -> some View {
-		modifier(AccentHaloModifier(tint: tint, isActive: isActive, shape: shape))
+	package func accentHalo<S: Shape>(isActive: Bool, in shape: S) -> some View {
+		modifier(AccentHaloModifier(isActive: isActive, shape: shape))
 	}
 }

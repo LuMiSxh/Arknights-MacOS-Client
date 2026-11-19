@@ -6,6 +6,7 @@ import SwiftUI
 package struct FloatingActionFooterFade: View {
 	package let height: CGFloat?
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+	@Environment(\.launcherTheme) private var theme
 
 	package init(height: CGFloat? = nil) {
 		self.height = height
@@ -14,10 +15,16 @@ package struct FloatingActionFooterFade: View {
 	package var body: some View {
 		Group {
 			if reduceTransparency {
-				Color.black.opacity(0.72)
+				// Opaque in this mode, so the footer matches the sheet instead of a black strip.
+				theme.sheetTint
 			} else {
+				// Fades into the sheet itself. A black fade stays see-through on a dark sheet
+				// and lets scrolled rows show behind the floating controls.
 				LinearGradient(
-					colors: [.clear, Color.black.opacity(0.45)],
+					stops: [
+						.init(color: .clear, location: 0),
+						.init(color: theme.sheetTint, location: 0.6),
+					],
 					startPoint: .top,
 					endPoint: .bottom
 				)
@@ -32,13 +39,15 @@ package struct FloatingActionFooterFade: View {
 /// Shared floating glass container for modal and onboarding actions. Single-row actions remain
 /// capsule-like; expanded action groups use a fixed-radius rounded rectangle.
 package struct FloatingActionBar<Content: View>: View {
-	let tint: Color
-	var spacing: CGFloat = 12
+
+	var spacing: CGFloat = LauncherTokens.Spacing.content
 	@ViewBuilder package let content: Content
 	@State private var contentHeight: CGFloat = 0
 
-	package init(tint: Color, spacing: CGFloat = 12, @ViewBuilder content: () -> Content) {
-		self.tint = tint
+	package init(
+		spacing: CGFloat = LauncherTokens.Spacing.content,
+		@ViewBuilder content: () -> Content
+	) {
 		self.spacing = spacing
 		self.content = content()
 	}
@@ -47,7 +56,7 @@ package struct FloatingActionBar<Content: View>: View {
 		HStack(spacing: spacing) {
 			content
 		}
-		.padding(10)
+		.padding(LauncherTokens.Spacing.control)
 		.background {
 			GeometryReader { proxy in
 				Color.clear.preference(
@@ -56,8 +65,7 @@ package struct FloatingActionBar<Content: View>: View {
 				)
 			}
 		}
-		.adaptiveGlassEffect(tint: tint, in: barShape)
-		.shadow(color: Color.black.opacity(0.35), radius: 10, x: 0, y: 4)
+		.launcherSurface(.footer, in: barShape)
 		.onPreferenceChange(FloatingActionBarHeightPreferenceKey.self) { height in
 			guard abs(height - contentHeight) > 0.5 else { return }
 			contentHeight = height
@@ -65,14 +73,15 @@ package struct FloatingActionBar<Content: View>: View {
 	}
 
 	private var isExpanded: Bool {
-		contentHeight > 56
+		contentHeight > LauncherTokens.Layout.footerFadeHeight
 	}
 
-	private var barShape: RoundedRectangle {
-		RoundedRectangle(
-			cornerRadius: isExpanded ? LauncherVisuals.Radius.panel : 999,
-			style: .continuous
-		)
+	private var barShape: AnyShape {
+		isExpanded
+			? AnyShape(
+				RoundedRectangle(
+					cornerRadius: LauncherTokens.Radius.panel, style: .continuous))
+			: AnyShape(Capsule())
 	}
 }
 
@@ -86,12 +95,9 @@ private struct FloatingActionBarHeightPreferenceKey: PreferenceKey {
 
 package struct FloatingDoneButton: View {
 	var title = "Done"
-	package let accentColor: Color
 	let action: () -> Void
-
-	package init(title: String = "Done", accentColor: Color, action: @escaping () -> Void) {
+	package init(title: String = "Done", action: @escaping () -> Void) {
 		self.title = title
-		self.accentColor = accentColor
 		self.action = action
 	}
 
@@ -99,7 +105,7 @@ package struct FloatingDoneButton: View {
 		CapsuleActionButton(
 			title: title,
 			systemImage: "checkmark",
-			tone: .accent(accentColor),
+			tone: .accent,
 			action: action
 		)
 		.controlSize(.large)

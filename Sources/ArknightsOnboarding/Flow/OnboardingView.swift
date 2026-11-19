@@ -3,12 +3,15 @@
 import ArknightsCore
 import ArknightsCustomization
 import ArknightsGameInstallation
+import ArknightsGameRuntime
 import SwiftUI
 
 package struct OnboardingView: View {
+	@Environment(\.launcherTheme) private var theme
 	let preferences: LauncherPreferencesController
 	let customization: CustomizationController
 	let installation: InstallationController
+	let runtimeSelection: RuntimeSelectionController
 	let lifecycle: LauncherLifecycleStore
 	let presetCatalog: PresetCatalogService
 	let canSwitchRegion: Bool
@@ -18,6 +21,10 @@ package struct OnboardingView: View {
 	@State private var presentedGallery: PresetGalleryDestination?
 	@State private var isSkipConfirmationPresented = false
 	@State private var scrollPosition = ScrollPosition(edge: .top)
+	@State private var runtimeLane: RuntimeLane?
+	@State private var pendingRuntimeLane: RuntimeLane?
+	@State private var isRuntimeWarningPresented = false
+	@State private var didInitializeRuntimeLane = false
 
 	let retryUpdateCheck: () -> Void
 
@@ -25,6 +32,7 @@ package struct OnboardingView: View {
 		preferences: LauncherPreferencesController,
 		customization: CustomizationController,
 		installation: InstallationController,
+		runtimeSelection: RuntimeSelectionController,
 		lifecycle: LauncherLifecycleStore,
 		presetCatalog: PresetCatalogService,
 		canSwitchRegion: Bool,
@@ -35,6 +43,7 @@ package struct OnboardingView: View {
 		self.preferences = preferences
 		self.customization = customization
 		self.installation = installation
+		self.runtimeSelection = runtimeSelection
 		self.lifecycle = lifecycle
 		self.presetCatalog = presetCatalog
 		self.canSwitchRegion = canSwitchRegion
@@ -47,12 +56,19 @@ package struct OnboardingView: View {
 		HStack(spacing: 0) {
 			OnboardingProgressRail(
 				currentStep: coordinator.step,
-				accentColor: customization.accentColor,
-				appVersion: IssueReportURL.appVersion
+				appVersion: IssueReportURL.appVersion,
+				installation: installation,
+				runtimeSelection: runtimeSelection,
+				lifecycle: lifecycle,
+				pauseDownload: actions.pauseDownload,
+				pauseRuntime: actions.pauseRuntime,
+				resumeRuntime: resumeRuntimeInstall,
+				resumeDownload: actions.installOrUpdate,
+				retryDownload: actions.installOrUpdate
 			)
 
 			Divider()
-				.overlay(LauncherVisuals.hairline)
+				.overlay(theme.hairline)
 
 			ZStack(alignment: .bottom) {
 				ScrollView {
@@ -60,30 +76,36 @@ package struct OnboardingView: View {
 						switch coordinator.step {
 						case .welcome:
 							OnboardingWelcomeView(
-								accentColor: customization.accentColor,
 								updateState: coordinator.updateState,
-								intelTranslationState: coordinator.intelTranslationState,
 								requiredSchema: coordinator.requiredSchema,
-								rosettaInstallationState: lifecycle.state.readiness
-									.rosettaInstallation,
-								retry: retryUpdateCheck,
-								retryIntelTranslation: retryIntelTranslation,
-								installRosetta: installRosetta
+								retry: retryUpdateCheck
 							)
 						case .region:
 							OnboardingRegionView(
 								preferences: preferences,
 								installation: installation,
-								lifecycle: lifecycle,
-								accentColor: customization.accentColor,
 								canSwitchRegion: canSwitchRegion,
 								selectRegion: actions.selectRegion
+							)
+						case .install:
+							OnboardingInstallView(
+								installation: installation,
+								lifecycle: lifecycle,
+								runtimeSelection: runtimeSelection,
+								selectedLane: runtimeLaneBinding,
+								isDisabled: runtimeSelection.isInstalling,
+								intelTranslationState: coordinator.intelTranslationState,
+								rosettaInstallationState: lifecycle.state.readiness
+									.rosettaInstallation,
+								chooseInstallDirectory: actions.chooseInstallDirectory,
+								locateExistingInstallation: actions.locateExistingInstallation,
+								retryIntelTranslation: retryIntelTranslation,
+								installRosetta: installRosetta
 							)
 						case .display:
 							OnboardingDisplayView(
 								preferences: preferences,
-								lifecycle: lifecycle,
-								accentColor: customization.accentColor
+								lifecycle: lifecycle
 							)
 						case .look:
 							OnboardingLookView(
@@ -95,37 +117,37 @@ package struct OnboardingView: View {
 							)
 						case .extras:
 							OnboardingExtrasView(
-								preferences: preferences,
-								accentColor: customization.accentColor
+								preferences: preferences
 							)
 						case .finish:
 							OnboardingFinishView(
 								installation: installation,
 								lifecycle: lifecycle,
-								accentColor: customization.accentColor,
 								install: actions.installOrUpdate
 							)
 						}
 					}
 					.id(coordinator.step)
-					.transition(
-						reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity)
-					)
-					.padding(.horizontal, 26)
-					.padding(.top, 26)
+					.transition(stepTransition)
+					.padding(.horizontal, LauncherTokens.Spacing.page)
+					.padding(.top, LauncherTokens.Spacing.page)
 					.padding(.bottom, 96)
 				}
-				.contentMargins(.top, 14, for: .scrollIndicators)
-				.contentMargins(.bottom, 22, for: .scrollIndicators)
+				.contentMargins(.top, LauncherTokens.Spacing.page, for: .scrollIndicators)
+				.contentMargins(.bottom, LauncherTokens.Spacing.page, for: .scrollIndicators)
 				.scrollIndicators(.automatic)
 				.scrollPosition($scrollPosition)
 				.onChange(of: coordinator.step) {
 					scrollPosition.scrollTo(edge: .top)
+					if coordinator.step == .install, !didInitializeRuntimeLane {
+						runtimeLane = runtimeSelection.selectedLane
+						didInitializeRuntimeLane = true
+					}
 				}
 
 				FloatingActionFooterFade(height: 76)
 
-				FloatingActionBar(tint: customization.hudTintColor) {
+				FloatingActionBar {
 					if coordinator.updateState.allowsSetup && coordinator.requiredSchema == nil
 						&& coordinator.step != .finish
 					{
@@ -141,14 +163,14 @@ package struct OnboardingView: View {
 							"Skip setup?",
 							isPresented: $isSkipConfirmationPresented
 						) {
-							Button("Continue Setup", role: .cancel) {}
+							Button("Cancel", role: .cancel) {}
 								.keyboardShortcut(.defaultAction)
-							Button("Skip Anyway", role: .destructive) {
+							Button("Skip Anyway") {
 								coordinator.skip()
 							}
 						} message: {
 							Text(
-								"Setup picks your server, how the game looks on your screen, and how the launcher behaves. You can run it again from Settings → Installation."
+								"Setup picks your server, how the game looks on your screen, and how the launcher behaves. You can run it again from Settings → Help → Troubleshooting."
 							)
 						}
 					}
@@ -165,29 +187,25 @@ package struct OnboardingView: View {
 					CapsuleActionButton(
 						title: primaryTitle,
 						systemImage: primarySystemImage,
-						tone: .accent(customization.accentColor),
+						tone: .accent,
 						action: performPrimaryAction
 					)
 					.controlSize(.large)
 					.disabled(!canPerformPrimaryAction)
 					.keyboardShortcut(.defaultAction)
 				}
-				.padding(.horizontal, 24)
-				.padding(.bottom, 18)
+				.padding(.horizontal, LauncherTokens.Spacing.page)
+				.padding(.bottom, LauncherTokens.Spacing.panel)
 			}
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.background {
-			ZStack {
-				LauncherVisuals.modalBackground
-				customization.hudTintColor
-			}
-			.ignoresSafeArea(.container, edges: .top)
+			theme.sheetSolid
+				.ignoresSafeArea(.container, edges: .top)
 		}
-		.tint(customization.accentColor)
-		.preferredColorScheme(.dark)
+		.tint(theme.accentFill)
 		.animation(
-			LauncherMotion.animation(.page, reduceMotion: reduceMotion),
+			LauncherMotion.animation(for: .present, reduceMotion: reduceMotion),
 			value: coordinator.step
 		)
 		.animation(
@@ -202,25 +220,49 @@ package struct OnboardingView: View {
 				destination: destination
 			)
 		}
+		.onAppear {
+			if !didInitializeRuntimeLane {
+				runtimeLane = runtimeSelection.selectedLane
+				didInitializeRuntimeLane = true
+			}
+		}
+		.confirmationDialog(
+			runtimeWarningTitle,
+			isPresented: $isRuntimeWarningPresented,
+			titleVisibility: .visible
+		) {
+			Button(runtimeWarningButtonTitle) {
+				if let pendingRuntimeLane { runtimeLane = pendingRuntimeLane }
+				pendingRuntimeLane = nil
+				runtimeSelection.clearFailure()
+			}
+			Button("Cancel", role: .cancel) { pendingRuntimeLane = nil }
+		} message: {
+			Text(runtimeWarningMessage)
+		}
+	}
+
+	// The new page enters from the side it travels toward and the old page fades out. SwiftUI reads
+	// a leaving view's transition from its last render, so only the entering page can follow the
+	// direction. Reduce Motion keeps the fade alone.
+	private var stepTransition: AnyTransition {
+		guard !reduceMotion else { return .opacity }
+		let edge: Edge = coordinator.direction == .forward ? .trailing : .leading
+		return .asymmetric(
+			insertion: .move(edge: edge).combined(with: .opacity),
+			removal: .opacity
+		)
 	}
 
 	private var primaryTitle: String {
 		if coordinator.step == .welcome {
 			return switch coordinator.updateState {
 			case .checking: OnboardingUpdateState.checkingTitle
-			case .current, .checkFailed:
-				coordinator.intelTranslationState == .checking
-					? OnboardingUpdateState.checkingTitle : "Continue"
+			case .current, .checkFailed: "Continue"
 			case .updateRequired(let version): "Install Update \(version)"
 			}
 		}
-		if coordinator.step == .region {
-			if installation.isInstalled || installation.isDownloading {
-				return "Continue Setup"
-			}
-			return installation.hasPartialDownload
-				? "Resume & Continue" : "Install & Continue"
-		}
+		if coordinator.step == .install { return installPlan.primaryTitle }
 		if coordinator.step == .finish { return "Finish Setup" }
 		return "Continue"
 	}
@@ -233,14 +275,10 @@ package struct OnboardingView: View {
 			case .updateRequired:
 				return true
 			case .current, .checkFailed:
-				return coordinator.intelTranslationState != .checking
-					&& coordinator.intelTranslationState != .waitingForLauncherCheck
+				return true
 			}
 		}
-		if coordinator.step == .region {
-			return installation.isInstalled || installation.isDownloading
-				|| installation.canInstall
-		}
+		if coordinator.step == .install { return canInstall }
 		return true
 	}
 
@@ -248,10 +286,9 @@ package struct OnboardingView: View {
 		if coordinator.step == .welcome, case .updateRequired = coordinator.updateState {
 			return "arrow.down.app"
 		}
-		if coordinator.step == .region && !installation.isInstalled
-			&& !installation.isDownloading
-		{
-			return installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
+		if coordinator.step == .install, installPlan.needsDownload {
+			return installation.hasPartialDownload && !installPlan.runtimeNeedsDownload
+				? "arrow.clockwise" : "arrow.down"
 		}
 		if coordinator.step == .finish { return "checkmark" }
 		return "chevron.forward"
@@ -264,12 +301,114 @@ package struct OnboardingView: View {
 			actions.openLauncherUpdate()
 			return
 		}
-		if coordinator.step == .region && !installation.isInstalled
-			&& !installation.isDownloading
-		{
-			actions.installOrUpdate()
+		if coordinator.step == .install {
+			performInstallAction()
+			return
 		}
 		coordinator.advance()
+	}
+
+	// The game download and runtime install start here and nowhere else. A complete install
+	// downloads nothing, so a setup rerun only confirms what is already there. A runtime that is
+	// installing for the chosen lane counts as present: the install owns its download.
+	private var installPlan: OnboardingInstallPlan {
+		OnboardingInstallPlan(
+			gameIsInstalled: installation.isInstalled,
+			gameIsDownloading: installation.isDownloading,
+			runtimeIsInstalled: runtimeLane.map {
+				runtimeSelection.state(for: $0) == .current || runtimeSelection.installingLane == $0
+			} ?? false
+		)
+	}
+
+	private var canInstall: Bool {
+		guard let runtimeLane, runtimeSelection.availableLanes.contains(runtimeLane) else {
+			return false
+		}
+		// The install already runs for this lane, so **Continue** only advances.
+		if runtimeSelection.installingLane == runtimeLane { return true }
+		guard !runtimeSelection.isInstalling, !coordinator.installRunner.isRunning else {
+			return false
+		}
+		if runtimeLane == .x86 {
+			switch coordinator.intelTranslationState {
+			case .checking, .waitingForLauncherCheck: return false
+			default: break
+			}
+		}
+		let plan = installPlan
+		if plan.gameNeedsDownload && !installation.canInstall { return false }
+		if plan.runtimeNeedsDownload {
+			return lifecycle.activity == .idle || lifecycle.activity.isInstalling
+		}
+		return runtimeLane == runtimeSelection.selectedLane || lifecycle.activity == .idle
+	}
+
+	// Resuming re-runs the install; the installer continues from its partial archive.
+	private func resumeRuntimeInstall() {
+		guard let lane = runtimeSelection.pausedLane else { return }
+		coordinator.installRunner.installRuntime(lane, startsGameDownload: false, actions: actions)
+	}
+
+	private func performInstallAction() {
+		guard let runtimeLane else { return }
+		let plan = installPlan
+		if plan.runtimeNeedsDownload {
+			// Like a game download, the install runs in the background while setup advances.
+			coordinator.installRunner.installRuntime(
+				runtimeLane,
+				startsGameDownload: plan.gameNeedsDownload,
+				actions: actions
+			)
+			coordinator.advance()
+			return
+		}
+		if runtimeLane != runtimeSelection.selectedLane {
+			guard actions.selectRuntimeLane(runtimeLane) else { return }
+		}
+		if plan.gameNeedsDownload { actions.installOrUpdate() }
+		coordinator.advance()
+	}
+
+	private var runtimeLaneBinding: Binding<RuntimeLane?> {
+		Binding(
+			get: { runtimeLane },
+			set: { newLane in
+				guard let newLane, newLane != runtimeLane else { return }
+				if runtimeSelection.switchRequiresWarning,
+					newLane == .arm || runtimeLane == .arm
+				{
+					pendingRuntimeLane = newLane
+					isRuntimeWarningPresented = true
+				} else {
+					runtimeLane = newLane
+					runtimeSelection.clearFailure()
+				}
+			}
+		)
+	}
+
+	private var runtimeWarningTitle: String {
+		runtimeWarningLane == .arm ? "Switch to ARM64?" : "Switch to x86_64?"
+	}
+
+	private var runtimeWarningButtonTitle: String {
+		runtimeWarningLane == .arm ? "Use ARM64" : "Use x86_64"
+	}
+
+	private var runtimeWarningLane: RuntimeLane {
+		pendingRuntimeLane ?? runtimeLane ?? .x86
+	}
+
+	private var runtimeWarningMessage: String {
+		let lane = runtimeWarningLane
+		guard let pin = runtimeSelection.pinnedRuntime(for: lane) else {
+			return RuntimeSwitchWarning.message
+		}
+		return RuntimeSwitchWarning.message(
+			for: pin,
+			isInstalled: runtimeSelection.state(for: lane) == .current
+		)
 	}
 
 	private func retryIntelTranslation() {

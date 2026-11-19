@@ -12,10 +12,20 @@ import Foundation
 // and renames over the destination, so the destination never goes missing.
 struct WinePrefixLibraryDeduplicator: Sendable {
 	/// Runtime library directory paired with the prefix directory Wine fills from it.
-	static let directoryPairs = [
-		(runtime: "lib/wine/x86_64-windows", prefix: "drive_c/windows/system32"),
-		(runtime: "lib/wine/i386-windows", prefix: "drive_c/windows/syswow64"),
-	]
+	static func directoryPairs(for lane: RuntimeLane) -> [(runtime: String, prefix: String)] {
+		switch lane {
+		case .x86:
+			[
+				("lib/wine/x86_64-windows", "drive_c/windows/system32"),
+				("lib/wine/i386-windows", "drive_c/windows/syswow64"),
+			]
+		case .arm:
+			[
+				("lib/wine/aarch64-windows", "drive_c/windows/system32"),
+				("lib/wine/i386-windows", "drive_c/windows/syswow64"),
+			]
+		}
+	}
 
 	private static let cloneUnsupportedCodes: Set<Int32> = [EXDEV, ENOTSUP, EOPNOTSUPP, ENOSYS]
 
@@ -46,9 +56,9 @@ struct WinePrefixLibraryDeduplicator: Sendable {
 		}
 	}
 
-	func deduplicate(prefixDirectory: URL, runtimeRoot: URL) -> Report {
+	func deduplicate(prefixDirectory: URL, runtimeRoot: URL, lane: RuntimeLane = .x86) -> Report {
 		var report = Report()
-		for pair in Self.directoryPairs {
+		for pair in Self.directoryPairs(for: lane) {
 			let runtimeDirectory = runtimeRoot.appending(
 				path: pair.runtime, directoryHint: .isDirectory)
 			let prefixLibraries = prefixDirectory.appending(
@@ -129,6 +139,7 @@ struct WinePrefixLibraryDeduplicator: Sendable {
 			let lhsCount = try Self.fill(lhsFD, &lhsBuffer)
 			let rhsCount = try Self.fill(rhsFD, &rhsBuffer)
 			guard lhsCount == rhsCount else { return false }
+			if lhsCount == 0 { return true }
 			let equal = lhsBuffer.withUnsafeBufferPointer { lhsPointer in
 				rhsBuffer.withUnsafeBufferPointer { rhsPointer in
 					memcmp(lhsPointer.baseAddress!, rhsPointer.baseAddress!, lhsCount) == 0
@@ -144,7 +155,8 @@ struct WinePrefixLibraryDeduplicator: Sendable {
 		var filled = 0
 		while filled < buffer.count {
 			let count = buffer.withUnsafeMutableBytes { raw in
-				read(fd, raw.baseAddress!.advanced(by: filled), raw.count - filled)
+				guard let base = raw.baseAddress else { return 0 }
+				return read(fd, base.advanced(by: filled), raw.count - filled)
 			}
 			if count < 0 {
 				if errno == EINTR { continue }

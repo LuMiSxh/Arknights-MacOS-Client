@@ -17,12 +17,12 @@ export interface ParsedMarkdown {
 }
 
 const FRONTMATTER = /^\uFEFF?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
-const ERROR_CODE = /^[A-Z]+$/;
-const AUDIENCES = new Set<DocumentMetadata['audience']>([
+const ERROR_CODE = /^[A-Z]{2}-[A-Z]{3}$/;
+const AUDIENCES = [
 	'all',
 	'developers',
 	'users'
-]);
+] as const satisfies readonly DocumentMetadata['audience'][];
 const FRONTMATTER_KEYS = new Set<keyof DocumentMetadata>([
 	'title',
 	'description',
@@ -35,10 +35,14 @@ const FRONTMATTER_KEYS = new Set<keyof DocumentMetadata>([
 	'domain'
 ]);
 
+export function isRecord(value: unknown): value is Record<string, unknown> {
+	return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function isAudience(value: unknown): value is DocumentMetadata['audience'] {
 	return (
 		typeof value === 'string' &&
-		AUDIENCES.has(value as DocumentMetadata['audience'])
+		AUDIENCES.some((audience) => audience === value)
 	);
 }
 
@@ -106,7 +110,7 @@ function readFrontmatter(source: string, input: string): RawFrontmatter {
 
 	let parsed: unknown;
 	try {
-		parsed = parseYaml(match[1]);
+		parsed = parseYaml(match[1] ?? '');
 	} catch (cause) {
 		const message = cause instanceof Error ? cause.message : 'invalid YAML';
 		throw new ContentError(
@@ -114,16 +118,12 @@ function readFrontmatter(source: string, input: string): RawFrontmatter {
 			`frontmatter is not valid YAML: ${message}`
 		);
 	}
-	if (
-		parsed === null ||
-		typeof parsed !== 'object' ||
-		Array.isArray(parsed)
-	) {
+	if (!isRecord(parsed)) {
 		throw new ContentError(source, 'frontmatter must be a YAML mapping');
 	}
 
 	const body = input.slice(match[0].length);
-	return { values: parsed as Record<string, unknown>, body };
+	return { values: parsed, body };
 }
 
 export function parseFrontmatter(
@@ -149,7 +149,7 @@ export function parseFrontmatter(
 	if (code !== undefined && !ERROR_CODE.test(code)) {
 		throw new ContentError(
 			source,
-			'frontmatter.code must be one uppercase English word'
+			'frontmatter.code must match XX-XXX with uppercase English letters'
 		);
 	}
 	if (code !== undefined && domain === undefined) {
@@ -189,6 +189,8 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 function isCalendarDate(value: string): boolean {
 	if (!ISO_DATE.test(value)) return false;
 	const [year, month, day] = value.split('-').map(Number);
+	if (year === undefined || month === undefined || day === undefined)
+		return false;
 	const date = new Date(Date.UTC(year, month - 1, day));
 	return (
 		date.getUTCFullYear() === year &&

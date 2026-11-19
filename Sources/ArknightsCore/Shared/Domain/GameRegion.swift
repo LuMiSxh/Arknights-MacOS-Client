@@ -2,7 +2,7 @@
 
 import Foundation
 
-package enum GamePublisher: String, Codable, Sendable {
+package enum GamePublisher: String, CaseIterable, Codable, Sendable {
 	case yostar
 	case hypergryph
 	case gryphline
@@ -32,30 +32,7 @@ package enum GameClientVariant: String, Codable, Sendable {
 struct GameClientProfile: Sendable {
 	let publisher: GamePublisher
 	let variant: GameClientVariant
-	let runtimeEnvironmentOverrides: [String: String]
-	let requiresCanaryPermission: Bool
-	package let requiresACEWarning: Bool
-}
-
-/// The Canary permissions that expose extra regions. This is the single source of truth for
-/// whether a region may be selected, installed, listed, or launched. Only Taiwan is still gated.
-package struct RegionAccess: Equatable, Sendable {
-	package var canaryFeaturesEnabled: Bool
-	package var taiwanClientEnabled: Bool
-
-	package init(canaryFeaturesEnabled: Bool, taiwanClientEnabled: Bool) {
-		self.canaryFeaturesEnabled = canaryFeaturesEnabled
-		self.taiwanClientEnabled = taiwanClientEnabled
-	}
-
-	package var selectableRegions: [GameRegion] { GameRegion.allCases.filter(allows) }
-
-	package func allows(_ region: GameRegion) -> Bool {
-		guard region.requiresCanaryPermission else { return true }
-		guard canaryFeaturesEnabled else { return false }
-		if region.requiresTaiwanClientPermission { return taiwanClientEnabled }
-		return true
-	}
+	let requiresACEWarning: Bool
 }
 
 package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
@@ -66,15 +43,7 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 	case china
 	case chinaBilibili
 
-	package static let allCases: [GameRegion] = [
-		.global, .japan, .korea, .taiwan, .china, .chinaBilibili,
-	]
 	package static let yostarCases: [GameRegion] = [.global, .japan, .korea]
-	static let generallyAvailableCases: [GameRegion] = yostarCases + [.china, .chinaBilibili]
-
-	var requiresTaiwanClientPermission: Bool {
-		self == .taiwan
-	}
 
 	package var id: String { rawValue }
 
@@ -83,10 +52,36 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		case .global: "Global"
 		case .japan: "Japan"
 		case .korea: "Korea"
-		case .taiwan: "Taiwan (Canary)"
+		case .taiwan: "Taiwan"
 		case .china: "China"
 		case .chinaBilibili: "China (Bilibili)"
 		}
+	}
+
+	/// Server time is a fixed UTC offset, not a named zone, so daylight saving never moves a reset.
+	package var serverTimeZone: TimeZone {
+		let hoursFromUTC =
+			switch self {
+			case .global: -7
+			case .japan, .korea: 9
+			case .taiwan, .china, .chinaBilibili: 8
+			}
+		return TimeZone(secondsFromGMT: hoursFromUTC * 3600) ?? .gmt
+	}
+
+	/// The first 04:00 server reset strictly after `date`.
+	package func dailyReset(after date: Date) -> Date {
+		var calendar = Calendar(identifier: .gregorian)
+		calendar.timeZone = serverTimeZone
+		var components = calendar.dateComponents([.year, .month, .day], from: date)
+		components.hour = 4
+		components.minute = 0
+		components.second = 0
+		guard let todayReset = calendar.date(from: components) else { return date }
+		guard todayReset > date else {
+			return calendar.date(byAdding: .day, value: 1, to: todayReset) ?? todayReset
+		}
+		return todayReset
 	}
 
 	var clientProfile: GameClientProfile {
@@ -95,41 +90,24 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 			GameClientProfile(
 				publisher: .yostar,
 				variant: .standard,
-				runtimeEnvironmentOverrides: [:],
-				requiresCanaryPermission: false,
 				requiresACEWarning: false
 			)
 		case .taiwan:
 			GameClientProfile(
 				publisher: .gryphline,
 				variant: .standard,
-				// Taiwan signs in through the macOS default browser, so it needs no CEF profile.
-				runtimeEnvironmentOverrides: [
-					AppConstants.Runtime.aceCompactEnvironmentKey: "1"
-				],
-				requiresCanaryPermission: true,
 				requiresACEWarning: true
 			)
 		case .china:
 			GameClientProfile(
 				publisher: .hypergryph,
 				variant: .standard,
-				runtimeEnvironmentOverrides: [
-					AppConstants.Runtime.aceCompactEnvironmentKey: "1"
-				],
-				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
 		case .chinaBilibili:
 			GameClientProfile(
 				publisher: .hypergryph,
 				variant: .bilibili,
-				runtimeEnvironmentOverrides: [
-					AppConstants.Runtime.aceCompactEnvironmentKey: "1",
-					AppConstants.Runtime.cefCompatEnvironmentKey: "1",
-					AppConstants.Runtime.cnCompatEnvironmentKey: "1",
-				],
-				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
 		}
@@ -137,12 +115,34 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 
 	package var publisher: GamePublisher { clientProfile.publisher }
 
+	/// The stable folder name for this server under `Games`. It never changes after release.
+	package var serverIdentifier: String {
+		switch self {
+		case .global: "global"
+		case .japan: "japan"
+		case .korea: "korea"
+		case .taiwan: "taiwan"
+		case .china: "china"
+		case .chinaBilibili: "china-bilibili"
+		}
+	}
+
+	package var publisherName: String {
+		switch publisher {
+		case .yostar: "Yostar"
+		case .hypergryph: "Hypergryph"
+		case .gryphline: "Gryphline"
+		}
+	}
+
 	package var clientVariant: GameClientVariant { clientProfile.variant }
 
-	package var requiresCanaryPermission: Bool { clientProfile.requiresCanaryPermission }
-
-	package var runtimeEnvironmentOverrides: [String: String] {
-		clientProfile.runtimeEnvironmentOverrides
+	/// China servers sign in through the embedded CEF window. Taiwan uses the default browser.
+	package var usesEmbeddedLoginWindow: Bool {
+		switch self {
+		case .china, .chinaBilibili: true
+		case .global, .japan, .korea, .taiwan: false
+		}
 	}
 
 	package var requiresACEWarning: Bool { clientProfile.requiresACEWarning }
@@ -159,14 +159,44 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		}
 	}
 
-	package var apiBaseURL: URL {
-		switch self {
-		case .global: URL(string: "https://api-launcher-en.yo-star.com")!
-		case .japan: URL(string: "https://api-launcher-jp.yo-star.com")!
-		case .korea: URL(string: "https://api-launcher-kr.yo-star.com")!
-		case .taiwan, .china, .chinaBilibili:
-			preconditionFailure("This region has no Yostar launcher API")
+}
+
+/// The Yostar-published servers, the only ones with a Yostar launcher API. Narrow a
+/// `GameRegion` here before reaching a Yostar endpoint.
+package enum YostarRegion: Sendable {
+	case global
+	case japan
+	case korea
+
+	package init?(_ region: GameRegion) {
+		switch region {
+		case .global: self = .global
+		case .japan: self = .japan
+		case .korea: self = .korea
+		case .taiwan, .china, .chinaBilibili: return nil
 		}
 	}
 
+	package var region: GameRegion {
+		switch self {
+		case .global: .global
+		case .japan: .japan
+		case .korea: .korea
+		}
+	}
+
+	package var apiBaseURL: URL {
+		switch self {
+		case .global: Self.url("https://api-launcher-en.yo-star.com")
+		case .japan: Self.url("https://api-launcher-jp.yo-star.com")
+		case .korea: Self.url("https://api-launcher-kr.yo-star.com")
+		}
+	}
+
+	private static func url(_ string: String) -> URL {
+		guard let url = URL(string: string) else {
+			preconditionFailure("Invalid Yostar API base URL: \(string)")
+		}
+		return url
+	}
 }

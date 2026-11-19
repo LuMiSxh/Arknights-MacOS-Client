@@ -1,8 +1,12 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
-import { ContentError, parseFrontmatter } from '../frontmatter.js';
-import type { SourceDocument, SupportCodeRegistryEntry } from './model.js';
+import { ContentError, isRecord, parseFrontmatter } from '../frontmatter.js';
+import type {
+	SourceDocument,
+	SupportCodeDocument,
+	SupportCodeRegistryEntry
+} from './model.js';
 import { docsRoot, supportCodeRegistryPath } from './paths.js';
 import { routeForRelative, sourceName } from './routes.js';
 
@@ -27,6 +31,14 @@ function walkMarkdown(directory: string, prefix = ''): string[] {
 	return files.sort();
 }
 
+function isRegistryEntry(value: unknown): value is SupportCodeRegistryEntry {
+	return (
+		isRecord(value) &&
+		typeof value.code === 'string' &&
+		typeof value.domain === 'string'
+	);
+}
+
 function readSupportCodeRegistry(): SupportCodeRegistryEntry[] {
 	let parsed: unknown;
 	try {
@@ -41,27 +53,25 @@ function readSupportCodeRegistry(): SupportCodeRegistryEntry[] {
 		throw new ContentError(registrySource, 'registry must be an array');
 	}
 	return parsed.map((entry, index) => {
-		if (
-			entry === null ||
-			typeof entry !== 'object' ||
-			typeof (entry as Record<string, unknown>).code !== 'string' ||
-			typeof (entry as Record<string, unknown>).domain !== 'string'
-		) {
+		if (!isRegistryEntry(entry)) {
 			throw new ContentError(
 				registrySource,
 				`entry ${index + 1} must contain string code and domain fields`
 			);
 		}
-		return entry as SupportCodeRegistryEntry;
+		return entry;
 	});
 }
 
 function validateSupportCodeRegistry(
-	documents: Map<string, { source: string; domain: string; route: string }>
+	documents: Map<string, SupportCodeDocument>
 ): void {
 	const registry = new Map<string, SupportCodeRegistryEntry>();
 	for (const entry of readSupportCodeRegistry()) {
-		if (!/^[A-Z]+$/.test(entry.code) || entry.domain.trim() === '') {
+		if (
+			!/^[A-Z]{2}-[A-Z]{3}$/.test(entry.code) ||
+			entry.domain.trim() === ''
+		) {
 			throw new ContentError(
 				registrySource,
 				`invalid support-code entry ${entry.code}`
@@ -110,10 +120,7 @@ function validateSupportCodeRegistry(
 }
 
 export function readSources(): SourceDocument[] {
-	const codes = new Map<
-		string,
-		{ source: string; domain: string; route: string }
-	>();
+	const codes = new Map<string, SupportCodeDocument>();
 	const documents = walkMarkdown(docsRoot).map((relative) => {
 		if (basename(relative).toLowerCase() === 'index.md') {
 			throw new ContentError(

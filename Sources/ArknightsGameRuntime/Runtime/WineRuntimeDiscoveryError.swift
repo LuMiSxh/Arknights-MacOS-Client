@@ -3,21 +3,29 @@
 import Foundation
 
 enum WineRuntimeDiscoveryError: LocalizedError, Sendable {
-	case missingResourceDirectory
+	case missingRuntime(URL)
 	case missingExecutable(URL)
 	case unreadableConfiguration(URL, String)
 	case invalidConfiguration(URL, String)
 
+	/// No runtime is installed yet, which is the normal state before the player installs one.
+	static func isNotInstalled(_ error: any Error) -> Bool {
+		guard let discovery = error as? WineRuntimeDiscoveryError,
+			case .missingRuntime = discovery
+		else { return false }
+		return true
+	}
+
 	var errorDescription: String? {
 		switch self {
-		case .missingResourceDirectory:
-			"The app bundle has no resource directory."
+		case .missingRuntime(let url):
+			"No Windows runtime is installed at \(url.path)."
 		case .missingExecutable(let url):
-			"The bundled Windows runtime executable is missing or not executable: \(url.path)"
+			"The installed Windows runtime executable is missing or not executable: \(url.path)"
 		case .unreadableConfiguration(let url, let reason):
-			"The bundled runtime metadata could not be read at \(url.path): \(reason)"
+			"The installed runtime metadata could not be read at \(url.path): \(reason)"
 		case .invalidConfiguration(let url, let reason):
-			"The bundled runtime metadata is invalid at \(url.path): \(reason)"
+			"The installed runtime metadata is invalid at \(url.path): \(reason)"
 		}
 	}
 }

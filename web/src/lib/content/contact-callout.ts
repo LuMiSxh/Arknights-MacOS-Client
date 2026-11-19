@@ -1,5 +1,5 @@
 import { parse as parseYaml } from 'yaml';
-import { contactFormUrl, contactTopics } from '../site.js';
+import { contactFormUrl, contactTopics, type ContactTopic } from '../site.js';
 import { ContentError } from './frontmatter.js';
 import { escapeHtml } from './html.js';
 import { mapping, rejectUnknownKeys } from './fenced-yaml.js';
@@ -7,7 +7,7 @@ import { mapping, rejectUnknownKeys } from './fenced-yaml.js';
 export interface ContactCallout {
 	title: string;
 	text: string;
-	topic?: string;
+	topic?: ContactTopic;
 }
 
 const CALLOUT_KEYS = new Set(['title', 'text', 'topic']);
@@ -27,9 +27,16 @@ function requiredText(
 	return value.trim();
 }
 
-function optionalTopic(value: unknown, source: string): string | undefined {
+function isContactTopic(value: unknown): value is ContactTopic {
+	return typeof value === 'string' && Object.hasOwn(contactTopics, value);
+}
+
+function optionalTopic(
+	value: unknown,
+	source: string
+): ContactTopic | undefined {
 	if (value === undefined) return undefined;
-	if (typeof value !== 'string' || !Object.hasOwn(contactTopics, value)) {
+	if (!isContactTopic(value)) {
 		throw new ContentError(
 			source,
 			`contact.topic must be one of: ${Object.keys(contactTopics).join(', ')}`
@@ -52,14 +59,15 @@ export function parseContactCallout(
 	}
 	const callout = mapping(parsed, source, 'contact');
 	rejectUnknownKeys(callout, CALLOUT_KEYS, source, 'contact');
+	const topic = optionalTopic(callout.topic, source);
 	return {
 		title: requiredText(callout, 'title', source),
 		text: requiredText(callout, 'text', source),
-		topic: optionalTopic(callout.topic, source)
+		...(topic === undefined ? {} : { topic })
 	};
 }
 
-export function contactHref(topic: string | undefined): string {
+function contactHref(topic: ContactTopic | undefined): string {
 	if (!topic) return contactFormUrl;
 	return `${contactFormUrl}?${new URLSearchParams({ topic: contactTopics[topic] }).toString()}`;
 }

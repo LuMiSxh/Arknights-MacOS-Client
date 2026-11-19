@@ -22,7 +22,6 @@ enum LauncherUpdatePhase: Equatable {
 @Observable
 final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	static let errorDetail = "The update could not be completed."
-
 	var phase: LauncherUpdatePhase = .hidden
 	var version: String?
 	private(set) var releaseNotes: String?
@@ -36,7 +35,6 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	private(set) var applicationTerminated = false
 	private(set) var gameIsRunning = false
 	private(set) var terminationBlocked = false
-	private(set) var relaunched = false
 	var message: String?
 
 	enum PendingReply {
@@ -54,6 +52,9 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	private let activateApplication: () -> Void
 	private let canRetryTermination: () -> Bool
 	private let gameRunningProvider: () -> Bool
+	/// Receives each failure before the overlay shows it. Returns true when the failure sheet
+	/// presents it, so the overlay stays idle.
+	private let reportFailure: (any Error) -> Bool
 	private let automaticRetryScheduler: (@escaping @MainActor () -> Void) -> Task<Void, Never>
 
 	static func activateApplicationInFront() {
@@ -66,6 +67,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 			{ LauncherUpdateUserDriver.activateApplicationInFront() },
 		canRetryTermination: @escaping () -> Bool = { true },
 		isGameRunning: @escaping () -> Bool = { false },
+		reportFailure: @escaping (any Error) -> Bool = { _ in false },
 		automaticRetryScheduler: @escaping (@escaping @MainActor () -> Void) -> Task<Void, Never> =
 			{
 				action in
@@ -79,6 +81,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		self.activateApplication = activateApplication
 		self.canRetryTermination = canRetryTermination
 		self.gameRunningProvider = isGameRunning
+		self.reportFailure = reportFailure
 		self.automaticRetryScheduler = automaticRetryScheduler
 		super.init()
 	}
@@ -132,13 +135,11 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func showUpdateNotFoundWithError(_ error: Error, acknowledgement: @escaping () -> Void) {
 		resetCallbacks()
 		phase = .noUpdate
-		message = LauncherUpdateUserDriver.errorDetail
 		pendingReply = .acknowledgement(acknowledgement)
 	}
 	func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
 		resetCallbacks()
-		showError(error)
-		pendingReply = .acknowledgement(acknowledgement)
+		showError(error, acknowledgement: acknowledgement)
 	}
 	func showDownloadInitiated(cancellation: @escaping () -> Void) {
 		cancelAutomaticTerminationRetry()
@@ -193,7 +194,6 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 			return
 		}
 		phase = .installed
-		self.relaunched = relaunched
 		pendingReply = .acknowledgement(acknowledgement)
 	}
 	func dismissUpdateInstallation() {
@@ -217,7 +217,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		hide()
 		cancellation()
 	}
-	package func cancelDownload() {
+	func cancelDownload() {
 		guard let cancellation = takeAction(&downloadCancellation) else { return }
 		hide()
 		cancellation()
@@ -262,10 +262,22 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		}
 	}
 	func showError(_ error: Error) {
+		showError(error, acknowledgement: nil)
+	}
+
+	private func showError(_ error: Error, acknowledgement: (() -> Void)?) {
 		cancelAutomaticTerminationRetry()
+		if reportFailure(error) {
+			// The failure sheet owns this failure, so the overlay stays idle.
+			hide()
+			acknowledgement?()
+			return
+		}
 		phase = .failed
 		message = LauncherUpdateUserDriver.errorDetail
-		if pendingReply == nil {
+		if let acknowledgement {
+			pendingReply = .acknowledgement(acknowledgement)
+		} else if pendingReply == nil {
 			pendingReply = .acknowledgement {}
 		}
 	}
@@ -289,9 +301,8 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func recordAvailableUpdate(_ item: SUAppcastItem) {
 		setUpdateDetails(item)
 	}
-	func recordNoUpdate(_ error: Error) {
+	func recordNoUpdate() {
 		if phase == .hidden || phase == .checking { phase = .noUpdate }
-		message = LauncherUpdateUserDriver.errorDetail
 	}
 	func recordAvailabilityError(_ error: Error) {
 		if phase == .hidden || phase == .checking { showError(error) }

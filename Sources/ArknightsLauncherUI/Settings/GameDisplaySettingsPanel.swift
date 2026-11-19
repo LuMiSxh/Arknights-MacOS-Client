@@ -3,60 +3,142 @@
 import ArknightsCore
 import SwiftUI
 
-// Windowed sizes are macOS points; the launcher converts them into the game's pixel resolution.
+extension EnvironmentValues {
+	/// Developer-simulated displays for the Game display row. Nil reads the connected ones.
+	@Entry var simulatedGameScreens: GameScreenList? = nil
+}
+
 struct GameDisplaySettingsPanel: View {
+	@Environment(\.launcherTheme) private var theme
 	@Bindable var settings: LauncherPreferencesController
 	let isLocked: Bool
-	package let accentColor: Color
+	/// nil while runtime discovery runs. False means the game falls back to Standard.
+	let metalFXSpatialUpscalingSupported: Bool?
+	@State private var screens = GameScreenMonitor()
+	@Environment(\.simulatedGameScreens) private var simulatedGameScreens
+	/// Set by the Custom… choice so its fields stay visible even when the size matches a preset.
+	@State private var pickedCustomSize = false
 
 	private var options: GameLaunchOptions { settings.launchOptions }
 	private var isSizeLocked: Bool { options.usesGameSettings || isLocked }
-	private var screen: GameScreenMetrics? { GameScreenMetrics.main }
-	private var nativeFullscreenSize: GameDisplaySize? { GameFullscreenDisplay.primary?.pixelSize }
+	/// A saved custom size reopens with its fields, so the Custom… state derives from the size.
+	private var showsCustomSize: Bool {
+		pickedCustomSize || isCustomWindowSize(options.windowSize, on: screen)
+	}
+	/// Reports only the explicit pick; the row reads the derived visibility through the getter.
+	private var showsCustomSizeBinding: Binding<Bool> {
+		Binding(
+			get: { showsCustomSize },
+			set: { pickedCustomSize = $0 }
+		)
+	}
+	/// The screen the game opens on, from the connected displays.
+	private var resolution: GameScreenResolution? { displayList.resolve(options.display) }
+	private var screen: GameScreenMetrics? { resolution?.metrics }
+	private var nativeFullscreenSize: GameDisplaySize? { resolution?.fullscreenDisplay.pixelSize }
+	private var plan: GameDisplayPlan {
+		GameDisplayPlan(
+			options: options, backingScaleFactor: resolution?.screen.backingScaleFactor ?? 1,
+			fullscreenDisplay: resolution?.fullscreenDisplay)
+	}
+	private var showsInGameResolutionNote: Bool {
+		options.usesGameSettings && plan.gamePixelsPerPoint > 1
+			&& !settings.dismissedInGameResolutionNote
+	}
 
 	var body: some View {
-		SettingsPanel(title: "Display", systemImage: "display") {
+		SettingsPanel(title: "Display") {
+			if showsDisplayRow {
+				SettingsActionRow(
+					title: "Game display",
+					detail: displayDetail
+				) {
+					GlassMenuPicker(
+						selection: $settings.launchOptions.display,
+						options: displayChoices,
+						isDisabled: isLocked
+					)
+				}
+				SettingsHairline()
+			}
+			SettingsActionRow(
+				title: "Override in-game display settings",
+				detail:
+					"On: the launcher sets mode and resolution at each start. Off: the game uses its own settings.",
+				help:
+					"Arknights’ own resolution setting counts the pixels the game draws. With the sharpest picture, every window point holds several pixels, so an in-game resolution opens a smaller window than its number suggests."
+			) {
+				SettingsToggle(
+					"Override in-game display settings",
+					isOn: launcherDisplayControl
+				)
+				.disabled(isLocked)
+			}
+			SettingsHairline()
 			SettingsActionRow(
 				title: "Display mode",
-				detail: displayModeDetail,
-				help: "Applies the next time the game starts."
+				detail: displayModeDetail
 			) {
 				GlassMenuPicker(
 					selection: $settings.launchOptions.displayMode,
 					options: GameDisplayMode.allCases.map { ($0, displayModeTitle($0)) },
-					accentColor: accentColor,
 					isDisabled: isSizeLocked
 				)
 			}
 			SettingsHairline()
 			if options.displayMode == .fullscreen {
-				fullscreenResolutionRow
+				GameFullscreenResolutionRow(
+					settings: settings,
+					nativeFullscreenSize: nativeFullscreenSize,
+					isDisabled: isSizeLocked
+				)
 			} else {
-				windowSizeRow
+				GameWindowSizeRow(
+					settings: settings,
+					screen: screen,
+					isDisabled: isSizeLocked,
+					showsCustomSize: showsCustomSizeBinding
+				)
+				if showsCustomSize {
+					SettingsHairline()
+					CustomWindowSizeRow(settings: settings, isDisabled: isSizeLocked)
+				}
 			}
 			SettingsHairline()
 			SettingsActionRow(
 				title: "Rendering",
-				help:
-					"Retina: the game renders every pixel of the display.\nMetalFX: the game renders one pixel per point and MetalFX upscales each frame. Falls back to Standard if the runtime lacks support.\nStandard: the game renders one pixel per point and macOS scales the window. Softer image, lowest GPU load.\nApplies on next launch."
+				detail: renderingDetail
 			) {
 				GlassMenuPicker(
 					selection: $settings.launchOptions.renderingMode,
 					options: GameRenderingMode.allCases.map { ($0, renderingTitle($0)) },
-					accentColor: accentColor,
 					isDisabled: isLocked
 				)
 			}
 			SettingsHairline()
+			if let renderSize = plan.renderSize {
+				SettingsActionRow(
+					title: "Render resolution",
+					detail: scalingDetail
+				) {
+					Text(renderSize.displayName)
+						.monospacedDigit()
+						.foregroundStyle(theme.textSecondary)
+				}
+				SettingsHairline()
+			}
+			if showsInGameResolutionNote {
+				inGameResolutionNote
+				SettingsHairline()
+			}
 			SettingsActionRow(
 				title: "Cursor",
-				help:
-					"macOS cursor = hardware cursor. Older runtimes keep the game cursor. Applies on next launch."
+				detail:
+					"Sets whether the game shows the macOS pointer or its own cursor. Older runtimes keep the game cursor."
 			) {
 				AdaptiveSegmentedControl(
 					selection: $settings.usesHardwareCursor,
 					options: [true, false],
-					accentColor: accentColor,
 					isDisabled: isLocked
 				) { usesMacPointer in
 					Text(usesMacPointer ? "macOS" : "Game")
@@ -64,111 +146,84 @@ struct GameDisplaySettingsPanel: View {
 			}
 			if options.usesGameSettings {
 				SettingsHairline()
-				Text("The game uses the display settings chosen inside Arknights.")
-					.font(.callout)
-					.foregroundStyle(.secondary)
-					.fixedSize(horizontal: false, vertical: true)
+				SettingsFootnote(
+					"The game uses the display settings chosen inside Arknights. Turn on Override in-game display settings to change these."
+				)
 			}
 		}
+		.task { await screens.observe() }
 	}
 
-	// MARK: Window size
+	// MARK: Game display
 
-	private enum WindowSizeSelection: Hashable {
-		case choice(GameWindowSizeChoice)
-		case exact(GameDisplaySize)
+	/// The displays the row lists: the connected ones, or the developer simulation's.
+	private var displayList: GameScreenList { simulatedGameScreens ?? screens.list }
+
+	/// The row appears with several displays, or when the saved display is not connected.
+	private var showsDisplayRow: Bool {
+		displayList.screens.count > 1 || resolution?.isFallback == true
 	}
 
-	private var windowSizeRow: some View {
-		let exact = GameDisplaySize.windowOptions(
-			fitting: screen?.visibleSize, current: options.windowSize
-		).map(WindowSizeSelection.exact)
-		let choices =
-			screen == nil ? [] : GameWindowSizeChoice.allCases.map(WindowSizeSelection.choice)
-		return SettingsActionRow(
-			title: "Window size",
-			help:
-				"Measured like the resolutions in System Settings › Displays. The launcher works out the resolution the game draws from this size and the Rendering setting."
-		) {
-			GlassMenuPicker(
-				selection: windowSizeSelection,
-				options: (choices + exact).map { ($0, windowSizeTitle($0)) },
-				accentColor: accentColor,
-				isDisabled: isSizeLocked,
-				dividerBefore: { !choices.isEmpty && $0 == exact.first }
-			)
+	private var displayChoices: [(value: GameDisplayIdentity?, title: String)] {
+		var choices: [(value: GameDisplayIdentity?, title: String)] = [(nil, "Primary display")]
+		choices += displayList.screens.map {
+			(value: $0.identity as GameDisplayIdentity?, title: $0.identity.name)
 		}
+		if let saved = options.display, resolution?.isFallback == true {
+			choices.append((saved, "\(saved.name) (not connected)"))
+		}
+		return choices
 	}
 
-	private var windowSizeSelection: Binding<WindowSizeSelection> {
+	private var displayDetail: String {
+		guard resolution?.isFallback == true, let saved = options.display else {
+			return
+				"Sets the display for fullscreen and the window size. Primary display follows the menu bar."
+		}
+		return "\(saved.name) is not connected. The game opens on the primary display."
+	}
+
+	// MARK: Override and render resolution
+
+	private var launcherDisplayControl: Binding<Bool> {
 		Binding(
-			get: {
-				screen.flatMap { GameWindowSizeChoice.matching(options.windowSize, on: $0) }
-					.map(WindowSizeSelection.choice) ?? .exact(options.windowSize)
-			},
-			set: { selection in
-				switch selection {
-				case .choice(let choice):
-					guard let screen else { return }
-					settings.launchOptions.windowSize = choice.size(on: screen)
-				case .exact(let size):
-					settings.launchOptions.windowSize = size
-				}
-			}
+			get: { !settings.launchOptions.usesGameSettings },
+			set: { settings.launchOptions.usesGameSettings = !$0 }
 		)
 	}
 
-	private func windowSizeTitle(_ selection: WindowSizeSelection) -> String {
-		switch selection {
-		case .choice(.fillScreen): "Fill screen"
-		case .choice(.leaveRoom): "Compact"
-		case .exact(let size): size.displayName
+	private var scalingDetail: String {
+		switch plan.scaling {
+		case .native: "Shown without scaling."
+		case .metalFX: "MetalFX upscales it to fit your screen."
+		case .stretched: "macOS stretches it to fit your screen."
 		}
 	}
 
-	// MARK: Fullscreen resolution
-
-	private var fullscreenResolutionRow: some View {
-		var resolutions = GameFullscreenResolution.choices(native: nativeFullscreenSize)
-		// Keeps a resolution saved for another display selectable.
-		if !resolutions.contains(options.fullscreenResolution) {
-			resolutions.append(options.fullscreenResolution)
-		}
-		let choices = resolutions.map { ($0, resolutionChoiceTitle($0)) }
-		return SettingsActionRow(
-			title: "Resolution",
-			help:
-				"Fullscreen fills the display with the menu bar. Native matches that display exactly; lower resolutions are scaled up to fill it. With MetalFX or Standard rendering, the game draws one pixel per point, fewer pixels than the resolution on a Retina display, so every resolution needs less graphics power."
-		) {
-			GlassMenuPicker(
-				selection: fullscreenResolution,
-				options: choices,
-				accentColor: accentColor,
-				isDisabled: isSizeLocked
+	private var inGameResolutionNote: some View {
+		HStack(alignment: .firstTextBaseline, spacing: LauncherTokens.Spacing.control) {
+			Image(systemName: "info.circle")
+				.foregroundStyle(theme.textSecondary)
+				.accessibilityHidden(true)
+			Text(
+				"Resolutions inside Arknights count the pixels the game draws. With Retina rendering, "
+					+ "choose \(options.windowSize.scaled(by: plan.gamePixelsPerPoint).displayName) in the game for a "
+					+ "\(options.windowSize.displayName) window."
 			)
+			.font(.caption)
+			.foregroundStyle(theme.textSecondary)
+			.fixedSize(horizontal: false, vertical: true)
+			.frame(maxWidth: .infinity, alignment: .leading)
+			CapsuleActionButton(
+				title: "Got It", systemImage: "checkmark",
+				tone: .neutral, presentation: .compact
+			) {
+				settings.dismissedInGameResolutionNote = true
+			}
 		}
-	}
-
-	private func resolutionChoiceTitle(_ choice: GameFullscreenResolution) -> String {
-		switch choice {
-		case .native:
-			// For example "Native (6016 × 3384)", like games label the display's own resolution.
-			nativeFullscreenSize.map { "\(Self.nativeResolution) (\($0.displayName))" }
-				?? Self.nativeResolution
-		case .fixed(let size): resolutionTitle(size)
-		}
-	}
-
-	private var fullscreenResolution: Binding<GameFullscreenResolution> {
-		Binding(
-			get: { options.fullscreenResolution },
-			set: { settings.launchOptions.selectFullscreen($0, native: nativeFullscreenSize) }
-		)
 	}
 
 	// MARK: Text
-
-	private static let nativeResolution = "Native"
 
 	private var displayModeDetail: String? {
 		options.displayMode == .borderlessWindow ? "Window without a title bar." : nil
@@ -182,30 +237,21 @@ struct GameDisplaySettingsPanel: View {
 		}
 	}
 
+	private var renderingDetail: String {
+		guard options.renderingMode == .metalFX, metalFXSpatialUpscalingSupported == false else {
+			return
+				"Sets how the game renders: Retina is sharpest, MetalFX upscales a smaller render, and Standard uses the least GPU."
+		}
+		return "This runtime has no MetalFX. The game uses Standard rendering."
+	}
+
 	private func renderingTitle(_ mode: GameRenderingMode) -> String {
 		switch mode {
 		case .retina: "Retina"
-		case .metalFX: "MetalFX"
+		case .metalFX:
+			metalFXSpatialUpscalingSupported == false ? "MetalFX (unavailable)" : "MetalFX"
 		case .standard: "Standard"
 		}
 	}
 
-	/// For example "2560 × 1440 (WQHD)"; resolutions without a common name stay plain.
-	private func resolutionTitle(_ size: GameDisplaySize) -> String {
-		standardName(size).map { "\(size.displayName) (\($0))" } ?? size.displayName
-	}
-
-	/// Common names, only for the exact resolutions they stand for.
-	private func standardName(_ size: GameDisplaySize) -> String? {
-		switch (size.width, size.height) {
-		case (1280, 720): "HD"
-		case (1920, 1080): "Full HD"
-		case (2560, 1440): "WQHD"
-		case (3840, 2160): "4K"
-		case (5120, 2880): "5K"
-		case (6016, 3384): "6K"
-		case (7680, 4320): "8K"
-		default: nil
-		}
-	}
 }

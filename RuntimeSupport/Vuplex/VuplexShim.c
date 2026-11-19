@@ -20,14 +20,7 @@
  * Proven working config for PayPal (Issue #14):
  * --disable-webgl, --disable-gpu-rasterization, and --disable-accelerated-2d-canvas.
  *
- * CEF's asynchronous DNS resolver asks Windows to sort IPv6 destinations
- * through SIO_ADDRESS_LIST_SORT. Wine currently returns WSAEOPNOTSUPP for
- * that ioctl, and CEF retries it while an OAuth page appears blank. Disabling
- * only AsyncDns makes CEF use Wine's regular system resolver instead.
  * We also disable ClipboardMaximumAge to fix a copy-paste sync timeout under Wine.
- *
- * Chromium also imports AppContainer APIs for its sandbox. Those APIs are
- * stubbed in our process-local userenv compatibility DLL.
  *
  * The wrapper preserves every argument supplied by the game, appends only
  * missing compatibility arguments, starts the untouched official helper, and
@@ -40,15 +33,18 @@
  */
 static const volatile char launcher_marker[] = "Arknights Client Vuplex compatibility";
 static const wchar_t original_name[] = L"Vuplex WebView.original.helper.vuplex";
-static const wchar_t userenv_override[] = L"userenv=n,b";
 
 static const wchar_t *compatibility_arguments[] = {
     L"--vx-accelerated-paint-disabled",
     L"--disable-webgl",
     L"--disable-gpu-rasterization",
     L"--disable-accelerated-2d-canvas",
-    L"--disable-features=AsyncDns,ClipboardMaximumAge",
+    L"--disable-features=ClipboardMaximumAge",
     L"--log-file=L:\\chromium.log"};
+
+/* Native ARM64 lane only. The emulated GPU process aborts CEF popups, and FEX can run stale
+ * translations of V8 JIT code until the W^X model is fixed. */
+static const wchar_t *arm_compatibility_arguments[] = {L"--disable-gpu", L"--js-flags=--jitless"};
 
 static const wchar_t *high_resolution_arguments[] = {
     L"--high-dpi-support=1",
@@ -92,6 +88,17 @@ static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected
 			return TRUE;
 	}
 	return FALSE;
+}
+
+/* The client sets this only when it launches the native ARM64 runtime. The x86_64 lane keeps
+ * Chromium's own GPU and JIT paths. Keep the key in sync with
+ * AppConstants.Runtime.runtimeLaneEnvironmentKey. */
+static BOOL uses_native_arm_runtime(void) {
+	wchar_t value[8];
+	DWORD length =
+	    GetEnvironmentVariableW(L"ARKNIGHTS_CLIENT_RUNTIME_LANE", value, ARRAYSIZE(value));
+
+	return length == 3 && value[0] == L'a' && value[1] == L'r' && value[2] == L'm';
 }
 
 /* Reads the scale factor WineRuntime.swift sets before launch: "2" means the Swift launcher
@@ -147,49 +154,11 @@ static wchar_t *append_quoted(wchar_t *destination, const wchar_t *argument) {
 	return destination;
 }
 
-/* Appends "userenv=n,b" to WINEDLLOVERRIDES so Wine loads the process-local userenv.dll
- * compatibility stub (UserenvCompat.c) instead of its own unimplemented AppContainer APIs.
- * Preserves any override value already set rather than replacing it, since WINEDLLOVERRIDES
- * is a single semicolon-joined string and clobbering it would silently undo unrelated
- * overrides the launcher or user set elsewhere. */
-static BOOL enable_userenv_override(void) {
-	static const wchar_t variable_name[] = L"WINEDLLOVERRIDES";
-	DWORD existing_length = GetEnvironmentVariableW(variable_name, NULL, 0);
-	wchar_t *value;
-	SIZE_T value_length;
-	BOOL result;
-	HRESULT string_result;
-
-	if (existing_length == 0) {
-		return SetEnvironmentVariableW(variable_name, userenv_override);
-	}
-	value_length = (SIZE_T)existing_length + wcslen(userenv_override) + 1;
-	value = GlobalAlloc(GMEM_FIXED, value_length * sizeof(*value));
-	if (value == NULL)
-		return FALSE;
-	if (GetEnvironmentVariableW(variable_name, value, existing_length) == 0) {
-		GlobalFree(value);
-		return FALSE;
-	}
-	string_result = StringCchCatW(value, value_length, L";");
-	if (SUCCEEDED(string_result)) {
-		string_result = StringCchCatW(value, value_length, userenv_override);
-	}
-	if (FAILED(string_result)) {
-		GlobalFree(value);
-		SetLastError(ERROR_INSUFFICIENT_BUFFER);
-		return FALSE;
-	}
-	result = SetEnvironmentVariableW(variable_name, value);
-	GlobalFree(value);
-	return result;
-}
-
 /* Locates the original helper beside this shim, preserves every argument the game supplied,
  * appends only the compatibility (and, if enabled, high-resolution) flags that aren't
- * already present, enables the userenv.dll override, and launches the real helper hidden
- * and detached. Blocks until it exits and returns its exit code, so the game sees this
- * shim as behaviorally identical to the official helper it replaced. */
+ * already present, and launches the real helper hidden and detached. Blocks until it exits
+ * and returns its exit code, so the game sees this shim as behaviorally identical to the
+ * official helper it replaced. */
 int WINAPI
 WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int show_command) {
 	wchar_t *shim_path = NULL;
@@ -203,6 +172,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 	int compatibility_index;
 	int high_resolution_index;
 	BOOL use_high_resolution;
+	BOOL use_arm_compatibility;
 	SIZE_T command_length = 1;
 	STARTUPINFOW startup_info = {
 	    .cb = sizeof(startup_info), .dwFlags = STARTF_USESHOWWINDOW, .wShowWindow = SW_HIDE};
@@ -252,6 +222,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 		return (int)error;
 	}
 	use_high_resolution = high_resolution_enabled();
+	use_arm_compatibility = uses_native_arm_runtime();
 	command_length += 2 * wcslen(original_path) + 3;
 	for (index = 1; index < argument_count; index++)
 		command_length += 2 * wcslen(arguments[index]) + 3;
@@ -260,6 +231,15 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 		if (!has_argument(
 		        argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			command_length += 2 * wcslen(compatibility_arguments[compatibility_index]) + 3;
+		}
+	}
+	if (use_arm_compatibility) {
+		for (compatibility_index = 0; compatibility_index < ARRAYSIZE(arm_compatibility_arguments);
+		     compatibility_index++) {
+			if (!has_argument(
+			        argument_count, arguments, arm_compatibility_arguments[compatibility_index])) {
+				command_length += 2 * wcslen(arm_compatibility_arguments[compatibility_index]) + 3;
+			}
 		}
 	}
 	if (use_high_resolution) {
@@ -291,6 +271,16 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 			cursor = append_quoted(cursor, compatibility_arguments[compatibility_index]);
 		}
 	}
+	if (use_arm_compatibility) {
+		for (compatibility_index = 0; compatibility_index < ARRAYSIZE(arm_compatibility_arguments);
+		     compatibility_index++) {
+			if (!has_argument(
+			        argument_count, arguments, arm_compatibility_arguments[compatibility_index])) {
+				*cursor++ = L' ';
+				cursor = append_quoted(cursor, arm_compatibility_arguments[compatibility_index]);
+			}
+		}
+	}
 	if (use_high_resolution) {
 		for (high_resolution_index = 0;
 		     high_resolution_index < ARRAYSIZE(high_resolution_arguments);
@@ -304,12 +294,6 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 	}
 	*cursor = L'\0';
 	LocalFree(arguments);
-	if (!enable_userenv_override()) {
-		error = GetLastError();
-		GlobalFree(child_command_line);
-		GlobalFree(original_path);
-		return (int)error;
-	}
 	if (!CreateProcessW(
 	        original_path,
 	        child_command_line,

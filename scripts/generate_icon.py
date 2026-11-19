@@ -3,8 +3,7 @@
 
 """Regenerate the layered app icon, README preview, and fallback assets."""
 
-from __future__ import annotations
-
+import argparse
 import shutil
 import subprocess
 from pathlib import Path
@@ -20,7 +19,7 @@ from lib.common import (
     run,
     run_main,
 )
-from lib.console import spinner, success, warning
+from lib.console import info, success, warning
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 DEFAULT_ICON_COMPOSER = Path(
@@ -70,12 +69,6 @@ def compile_arguments(
 
 def write_tint_source(rendered: Path, destination: Path) -> None:
     """Ship the render as 8-bit PNG; the 16-bit export is 5x larger and is drawn at 8 bits."""
-    if shutil.which("magick") is None:
-        warning(
-            "ImageMagick is unavailable; shipping the unoptimized 16-bit tint source"
-        )
-        shutil.copyfile(rendered, destination)
-        return
     run(
         [
             "magick",
@@ -89,14 +82,18 @@ def write_tint_source(rendered: Path, destination: Path) -> None:
     )
 
 
-def generate(configuration: ProjectConfiguration | None = None) -> None:
+def generate(
+    configuration: ProjectConfiguration | None = None,
+    *,
+    allow_fallback: bool = False,
+) -> None:
     configuration = configuration or load_project_configuration()
     project = configuration.project_directory
     icon_name = configuration.product.icon_name
-    icon_file = configuration.product.icon_file
-    icon_filename = icon_file if Path(icon_file).suffix else f"{icon_file}.icns"
+    icon_filename = configuration.product.icon_filename
     require_command("actool")
     require_command("sips")
+    require_command("magick")
     composer = icon_composer()
     source = require_directory(project / f"Resources/{icon_name}.icon")
 
@@ -119,39 +116,39 @@ def generate(configuration: ProjectConfiguration | None = None) -> None:
     for path in (iconset, compiled, dynamic):
         path.mkdir(parents=True)
 
-    with spinner("Rendering the Icon Composer source"):
-        run(
-            [
-                composer,
-                source,
-                "--export-image",
-                "--output-file",
-                rendered,
-                "--platform",
-                "macOS",
-                "--rendition",
-                "Default",
-                "--width",
-                "1024",
-                "--height",
-                "1024",
-                "--scale",
-                "1",
-            ]
-        )
-        run(
-            ["sips", "--resampleHeightWidth", "512", "512", rendered, "--out", preview],
-            capture=True,
-        )
-        write_tint_source(rendered, tint_source)
+    info("Rendering the Icon Composer source")
+    run(
+        [
+            composer,
+            source,
+            "--export-image",
+            "--output-file",
+            rendered,
+            "--platform",
+            "macOS",
+            "--rendition",
+            "Default",
+            "--width",
+            "1024",
+            "--height",
+            "1024",
+            "--scale",
+            "1",
+        ]
+    )
+    run(
+        ["sips", "--resampleHeightWidth", "512", "512", rendered, "--out", preview],
+        capture=True,
+    )
+    write_tint_source(rendered, tint_source)
 
-    with spinner("Compiling the native layered icon"):
-        result = subprocess.run(
-            [str(value) for value in compile_arguments(source, dynamic, configuration)],
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+    info("Compiling the native layered icon")
+    result = subprocess.run(
+        [str(value) for value in compile_arguments(source, dynamic, configuration)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
     (dynamic / "actool.log").write_text(result.stdout + result.stderr, encoding="utf-8")
     if (
         result.returncode == 0
@@ -163,8 +160,13 @@ def generate(configuration: ProjectConfiguration | None = None) -> None:
         success("Built the native layered app icon")
         return
 
+    if not allow_fallback:
+        fail(
+            "native .icon compilation failed; see "
+            f"{dynamic / 'actool.log'}. Rerun with --allow-fallback to ship the "
+            "asset-catalog fallback."
+        )
     warning("Native .icon compilation is unavailable; using the asset-catalog fallback")
-    require_command("magick")
     contents = require_file(project / f"Resources/{icon_name}AssetContents.json")
     shutil.copyfile(contents, iconset / "Contents.json")
     for size in (16, 32, 128, 256, 512):
@@ -179,7 +181,14 @@ def generate(configuration: ProjectConfiguration | None = None) -> None:
 
 
 def main() -> None:
-    generate()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--allow-fallback",
+        action="store_true",
+        help="ship the asset-catalog fallback when native .icon compilation fails",
+    )
+    arguments = parser.parse_args()
+    generate(allow_fallback=arguments.allow_fallback)
 
 
 if __name__ == "__main__":

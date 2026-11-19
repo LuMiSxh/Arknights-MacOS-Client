@@ -6,63 +6,78 @@ import SwiftUI
 
 struct UpdatesSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
-	package let communication: LauncherCommunicationController
-	package let installation: InstallationController
-	package let lifecycle: LauncherLifecycleStore
-	package let accentColor: Color
+	let communication: LauncherCommunicationController
+	let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
 	let appVersion: String
 	private static let announcementsTitle = "Announcements"
-	let actions: any LauncherActions
+	let actions: any LauncherUpdateActions
 	let checkLauncherUpdates: () -> Void
 
 	var body: some View {
 		SettingsPage(
 			title: "Updates",
-			subtitle: "Keep the launcher and the game up to date",
-			accentColor: accentColor
+			subtitle: "Keep the launcher and the game up to date"
 		) {
 			SettingsPanel(
-				title: "Automatic Checks",
-				systemImage: "arrow.trianglehead.2.clockwise"
+				title: "Automatic checks"
 			) {
 				UpdateSettingsRow(
-					title: "Launcher",
+					title: "Launcher updates",
+					explanation:
+						"Checks for new launcher versions automatically. Turning it on checks now.",
 					status: launcherStatusText,
 					isEnabled: $settings.automaticallyChecksLauncherUpdates,
 					isChecking: communication.isCheckingLauncherUpdates,
 					isDisabled: !communication.canOpenLauncherUpdate,
-					accentColor: accentColor,
 					check: checkLauncherUpdates
 				)
 				SettingsHairline()
 				UpdateSettingsRow(
-					title: "Arknights",
+					title: "Game updates",
+					explanation:
+						"Checks for new game versions automatically. Turning it on checks now.",
 					status: gameStatusText,
 					isEnabled: $settings.automaticallyChecksGameUpdates,
 					isChecking: lifecycle.state.refresh.isChecking,
 					isDisabled: lifecycle.state.refresh.isChecking
 						|| !lifecycle.canBeginExclusiveActivity,
-					accentColor: accentColor,
 					check: actions.checkGameUpdates
 				)
+				if let activityLockReason {
+					SettingsFootnote(activityLockReason)
+				}
 			}
 
 			SettingsPanel(
-				title: Self.announcementsTitle, systemImage: "megaphone"
+				title: "Project news"
 			) {
 				SettingsActionRow(
 					title: Self.announcementsTitle,
-					detail: "Project news. Each message shows once."
+					detail: announcementsDetail
 				) {
 					SettingsToggle(
 						Self.announcementsTitle,
 						isOn: $settings.announcementsEnabled,
-						accentColor: accentColor
 					)
-					.disabled(lifecycle.activity == .maintaining(.migratingStorage))
+					.disabled(isAnnouncementsLocked)
 				}
 			}
 		}
+	}
+
+	private var isAnnouncementsLocked: Bool {
+		lifecycle.activity == .maintaining(.migratingStorage)
+	}
+
+	private var announcementsDetail: String? {
+		isAnnouncementsLocked
+			? lifecycle.activity.lockReason
+			: "Shows each project message once in the launcher."
+	}
+
+	private var activityLockReason: String? {
+		lifecycle.canBeginExclusiveActivity ? nil : lifecycle.activity.lockReason
 	}
 
 	private var launcherStatusText: String {
@@ -72,11 +87,13 @@ struct UpdatesSettingsPage: View {
 		if communication.launcherUpdateVersion != nil {
 			return "Update available"
 		}
-		return "v\(appVersion)"
+		return "Version \(appVersion)"
 	}
 
 	private var versionText: String {
-		installation.installedVersion ?? installation.configuration?.gameLatestVersion ?? "—"
+		(installation.installedVersion ?? installation.configuration?.gameLatestVersion).map {
+			"Version \($0)"
+		} ?? "—"
 	}
 
 	private var gameStatusText: String {

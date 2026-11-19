@@ -5,10 +5,9 @@ import SwiftUI
 /// An accent glass chip that stands in for `Picker`'s stock menu-button chrome, so option
 /// pickers read as the same interaction language as the landing page's region switcher
 /// rather than a default AppKit control.
-package struct GlassMenuPicker<Value: Hashable>: View {
+package struct GlassMenuPicker<Value: Hashable, TrailingMenuItems: View>: View {
 	let selection: Binding<Value>
 	let options: [(value: Value, title: String)]
-	package let accentColor: Color
 	var isDisabled = false
 	/// Overrides an option's displayed text inside the open menu only, leaving `title` as the
 	/// collapsed button's label — lets a caller show detail (e.g. a result count) that's only
@@ -17,28 +16,43 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 	var dividerBefore: (Value) -> Bool = { _ in false }
 	/// Additional menu content appended after the plain option list — e.g. a submenu that
 	/// doesn't itself change `selection`.
-	var trailingMenuItems: () -> AnyView = { AnyView(EmptyView()) }
+	var trailingMenuItems: () -> TrailingMenuItems
 
 	package init(
 		selection: Binding<Value>,
 		options: [(value: Value, title: String)],
-		accentColor: Color,
 		isDisabled: Bool = false,
 		listTitle: @escaping (Value) -> String? = { _ in nil },
 		dividerBefore: @escaping (Value) -> Bool = { _ in false },
-		trailingMenuItems: @escaping () -> AnyView = { AnyView(EmptyView()) }
+		@ViewBuilder trailingMenuItems: @escaping () -> TrailingMenuItems
 	) {
 		self.selection = selection
 		self.options = options
-		self.accentColor = accentColor
 		self.isDisabled = isDisabled
 		self.listTitle = listTitle
 		self.dividerBefore = dividerBefore
 		self.trailingMenuItems = trailingMenuItems
 	}
 
+	package init(
+		selection: Binding<Value>,
+		options: [(value: Value, title: String)],
+		isDisabled: Bool = false,
+		listTitle: @escaping (Value) -> String? = { _ in nil },
+		dividerBefore: @escaping (Value) -> Bool = { _ in false }
+	) where TrailingMenuItems == EmptyView {
+		self.init(
+			selection: selection,
+			options: options,
+			isDisabled: isDisabled,
+			listTitle: listTitle,
+			dividerBefore: dividerBefore,
+			trailingMenuItems: { EmptyView() }
+		)
+	}
+
 	package var body: some View {
-		GlassCapsuleMenu(accentColor: accentColor, isDisabled: isDisabled) {
+		GlassCapsuleMenu(isDisabled: isDisabled) {
 			optionButtons
 			trailingMenuItems()
 		} label: {
@@ -69,38 +83,39 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 
 package struct GlassActionMenu<Content: View>: View {
 	let title: String
-	let systemImage: String
-	package let accentColor: Color
+	var systemImage: String?
 	var isDisabled = false
 	@ViewBuilder package let content: Content
 
 	package init(
 		title: String,
-		systemImage: String,
-		accentColor: Color,
+		systemImage: String? = nil,
 		isDisabled: Bool = false,
 		@ViewBuilder content: () -> Content
 	) {
 		self.title = title
 		self.systemImage = systemImage
-		self.accentColor = accentColor
 		self.isDisabled = isDisabled
 		self.content = content()
 	}
 
 	package var body: some View {
-		GlassCapsuleMenu(accentColor: accentColor, isDisabled: isDisabled) {
+		GlassCapsuleMenu(isDisabled: isDisabled) {
 			content
 		} label: {
-			Image(systemName: systemImage)
-				.accessibilityHidden(true)
+			if let systemImage, !systemImage.isEmpty {
+				Image(systemName: systemImage)
+					.accessibilityHidden(true)
+			}
 			Text(title)
 		}
 	}
 }
 
 private struct GlassCapsuleMenu<Items: View, Label: View>: View {
-	let accentColor: Color
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.controlSize) private var controlSize
+	@State private var isHovering = false
 	let isDisabled: Bool
 	@ViewBuilder let items: Items
 	@ViewBuilder let label: Label
@@ -109,61 +124,92 @@ private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 		Menu {
 			items
 		} label: {
-			HStack(spacing: LauncherVisuals.Spacing.tight) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				label
+					.monospacedDigit()
+					.foregroundStyle(theme.textPrimary)
 				Image(systemName: "chevron.up.chevron.down")
-					.font(LauncherVisuals.Typography.menuChevron)
+					.font(LauncherTokens.Typography.menuChevron)
+					.foregroundStyle(theme.accentInk)
+					.frame(width: 16, height: 16)
+					.background {
+						Color.clear.adaptiveGlassEffect(
+							tint: theme.accentGlassTint,
+							borderTint: theme.accentGlassStroke,
+							in: Circle(),
+							showsBorder: true
+						)
+					}
 					.accessibilityHidden(true)
 			}
-			.settingsControlCapsule(tint: accentColor, isDisabled: isDisabled)
+			.padding(.leading, LauncherTokens.Spacing.content)
+			.padding(.trailing, LauncherTokens.Spacing.compact)
+			// The 16 pt chevron chip fixes the label height, so the chip only adds the insets.
+			.padding(.vertical, LauncherTokens.Control.verticalPadding(for: controlSize))
+			.background {
+				Capsule().fill(theme.controlFill)
+				Capsule().fill(theme.hoverTint)
+					.opacity(isHovering ? 1 : 0)
+					.launcherAnimation(isHovering ? .hoverIn : .hoverOut, value: isHovering)
+				Capsule().strokeBorder(theme.controlStroke, lineWidth: 1)
+			}
+			.contentShape(Capsule())
+			.opacity(isDisabled ? 0.4 : 1)
+			.onHover { isHovering = $0 }
 		}
 		.menuStyle(.button)
+		// On macOS the label takes the menu font unless the font is set on the Menu itself.
+		.font(LauncherTokens.Typography.control)
 		.buttonStyle(.plain)
 		.keyboardFocusIndicator(in: Capsule())
 		.disabled(isDisabled)
 	}
 }
 
-package struct AccentLink: View {
+package struct QuietLink: View {
 	let title: String
 	let destination: URL
-	package let accentColor: Color
 
-	package init(title: String, destination: URL, accentColor: Color) {
+	package init(title: String, destination: URL) {
 		self.title = title
 		self.destination = destination
-		self.accentColor = accentColor
 	}
 
+	@Environment(\.launcherTheme) private var theme
 	@State private var isHovering = false
 
+	/// Every destination opens in the browser, so the label carries the external-link icon inside the hit target.
 	package var body: some View {
-		Link(title, destination: destination)
-			.foregroundStyle(accentColor)
-			.underline(isHovering)
-			.onHover { isHovering = $0 }
+		Link(destination: destination) {
+			HStack(spacing: LauncherTokens.Spacing.compact) {
+				Text(title)
+					.underline(isHovering)
+				Image(systemName: "arrow.up.right.square")
+					.accessibilityHidden(true)
+			}
+		}
+		.foregroundStyle(theme.accentInk)
+		.onHover { isHovering = $0 }
 	}
 }
 
 package struct DocumentLinkRow: View {
 	let title: String
 	let systemImage: String
-	package let accentColor: Color
 	let action: () -> Void
 
 	package init(
 		title: String,
 		systemImage: String,
-		accentColor: Color,
 		action: @escaping () -> Void
 	) {
 		self.title = title
 		self.systemImage = systemImage
-		self.accentColor = accentColor
 		self.action = action
 	}
 
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
 	@State private var isHovering = false
 
 	package var body: some View {
@@ -172,23 +218,23 @@ package struct DocumentLinkRow: View {
 				Label(title, systemImage: systemImage)
 				Spacer()
 				Image(systemName: "chevron.right")
-					.font(.caption.weight(.semibold))
+					.font(.caption.weight(.medium))
 					.foregroundStyle(.tertiary)
 					.accessibilityHidden(true)
 			}
-			.foregroundStyle(isHovering ? accentColor : .primary)
-			.padding(.vertical, LauncherVisuals.Spacing.content)
-			.padding(.horizontal, LauncherVisuals.Spacing.tight)
+			.foregroundStyle(isHovering ? theme.accentFill : .primary)
+			.padding(.vertical, LauncherTokens.Spacing.content)
+			.padding(.horizontal, LauncherTokens.Spacing.control)
 			.background(
-				isHovering ? accentColor.opacity(0.08) : .clear,
-				in: .rect(cornerRadius: LauncherVisuals.Radius.row)
+				isHovering ? theme.accentFill.opacity(0.08) : .clear,
+				in: .rect(cornerRadius: LauncherTokens.Radius.control)
 			)
 			.contentShape(.rect)
 			.animation(
 				LauncherMotion.animation(.hover, reduceMotion: reduceMotion), value: isHovering)
 		}
 		.buttonStyle(ActionPressStyle(intensity: .pressOnly))
-		.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row))
+		.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.control))
 		.onHover { isHovering = $0 }
 	}
 }

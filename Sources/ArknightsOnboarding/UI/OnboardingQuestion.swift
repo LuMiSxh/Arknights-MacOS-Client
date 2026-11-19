@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsGameInstallation
 import SwiftUI
 
 struct OnboardingAnswer<Value: Hashable>: Identifiable {
@@ -22,6 +21,7 @@ struct OnboardingAnswer<Value: Hashable>: Identifiable {
 // launcher by answering instead of reading individual settings. A question picks one answer,
 // several answers, or offers action cards that open a chooser.
 struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
+	@Environment(\.launcherTheme) private var theme
 	private enum Interaction {
 		case single(Binding<Value?>)
 		case multiple(Binding<Set<Value>>)
@@ -29,25 +29,21 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	}
 
 	let question: String
-	let systemImage: String
 	let answers: [OnboardingAnswer<Value>]
 	private let interaction: Interaction
-	let accentColor: Color
 	let isDisabled: Bool
 	let footnote: String?
 	let accessory: Accessory
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	private init(
-		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
-		interaction: Interaction, accentColor: Color, isDisabled: Bool, footnote: String?,
+		question: String, answers: [OnboardingAnswer<Value>],
+		interaction: Interaction, isDisabled: Bool, footnote: String?,
 		accessory: Accessory
 	) {
 		self.question = question
-		self.systemImage = systemImage
 		self.answers = answers
 		self.interaction = interaction
-		self.accentColor = accentColor
 		self.isDisabled = isDisabled
 		self.footnote = footnote
 		self.accessory = accessory
@@ -56,18 +52,18 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	// Action cards, each with a chevron, that run their own closure. The accessory shows a
 	// preview of the current choice above the cards.
 	init(
-		question: String, systemImage: String, actions: [OnboardingAnswer<Value>],
-		accentColor: Color, @ViewBuilder accessory: () -> Accessory
+		question: String, actions: [OnboardingAnswer<Value>],
+		@ViewBuilder accessory: () -> Accessory
 	) {
 		self.init(
-			question: question, systemImage: systemImage, answers: actions, interaction: .action,
-			accentColor: accentColor, isDisabled: false, footnote: nil, accessory: accessory())
+			question: question, answers: actions, interaction: .action,
+			isDisabled: false, footnote: nil, accessory: accessory())
 	}
 
 	var body: some View {
-		SettingsPanel(title: question, systemImage: systemImage) {
+		SettingsPanel(title: question) {
 			accessory
-			VStack(spacing: LauncherVisuals.Spacing.control) {
+			VStack(spacing: LauncherTokens.Spacing.control) {
 				ForEach(answers) { answer in
 					answerButton(answer)
 				}
@@ -77,7 +73,7 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 			if let footnote {
 				Text(footnote)
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}
 		}
@@ -116,54 +112,55 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 
 	private func answerButton(_ answer: OnboardingAnswer<Value>) -> some View {
 		let isSelected = isSelected(answer)
-		let shape = RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row, style: .continuous)
+		let shape = RoundedRectangle(
+			cornerRadius: LauncherTokens.Radius.control, style: .continuous)
 		return Button {
 			// Answers can reveal follow-up panels or change the summary, so move those too.
 			withAnimation(LauncherMotion.animation(.state, reduceMotion: reduceMotion)) {
 				choose(answer)
 			}
 		} label: {
-			HStack(alignment: .center, spacing: LauncherVisuals.Spacing.content) {
+			HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
 				Image(systemName: answer.systemImage)
 					.font(.title3)
 					.symbolRenderingMode(.hierarchical)
-					.foregroundStyle(isSelected ? accentColor : .secondary)
+					.foregroundStyle(isSelected ? theme.accentInk : theme.textSecondary)
 					.frame(width: 28)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 3) {
-					HStack(spacing: LauncherVisuals.Spacing.tight) {
+				VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
+					HStack(spacing: LauncherTokens.Spacing.control) {
 						Text(answer.title)
-							.font(.body.weight(.semibold))
-							.foregroundStyle(.primary)
+							.font(.body.weight(.medium))
+							.foregroundStyle(theme.textPrimary)
 						if answer.isRecommended {
 							Text("Recommended")
-								.font(.caption2.weight(.semibold))
-								.foregroundStyle(.secondary)
-								.padding(.horizontal, LauncherVisuals.Spacing.tight)
-								.padding(.vertical, 1)
-								.overlay(Capsule().stroke(LauncherVisuals.hairline))
+								.font(.caption2.weight(.medium))
+								.foregroundStyle(theme.textSecondary)
+								.padding(.horizontal, LauncherTokens.Spacing.control)
+								.padding(.vertical, 2)
+								.overlay(Capsule().stroke(theme.hairline))
 						}
 					}
 					if !answer.detail.isEmpty {
 						Text(answer.detail)
 							.font(.callout)
-							.foregroundStyle(.secondary)
+							.foregroundStyle(theme.textSecondary)
 							.multilineTextAlignment(.leading)
 							.fixedSize(horizontal: false, vertical: true)
 					}
 				}
-				Spacer(minLength: LauncherVisuals.Spacing.content)
+				Spacer(minLength: LauncherTokens.Spacing.content)
 				Image(systemName: trailingGlyph(isSelected: isSelected))
 					.font(.title3)
-					.foregroundStyle(isSelected ? accentColor : .secondary)
+					.foregroundStyle(isSelected ? theme.accentInk : theme.textSecondary)
 					.accessibilityHidden(true)
 			}
-			.padding(LauncherVisuals.Spacing.content)
+			.padding(LauncherTokens.Spacing.content)
 			.frame(maxWidth: .infinity, alignment: .leading)
 			.contentShape(shape)
 		}
 		.buttonStyle(
-			OnboardingAnswerStyle(isSelected: isSelected, accentColor: accentColor, shape: shape)
+			OnboardingAnswerStyle(isSelected: isSelected, shape: shape)
 		)
 		.disabled(isDisabled)
 		.help(answer.help ?? "")
@@ -175,54 +172,55 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 extension OnboardingQuestion where Accessory == EmptyView {
 	// One answer, applied the moment it is picked. The footnote adds a hint under the cards.
 	init(
-		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
-		selection: Binding<Value?>, accentColor: Color, isDisabled: Bool = false,
+		question: String, answers: [OnboardingAnswer<Value>],
+		selection: Binding<Value?>, isDisabled: Bool = false,
 		footnote: String? = nil
 	) {
 		self.init(
-			question: question, systemImage: systemImage, answers: answers,
-			interaction: .single(selection), accentColor: accentColor, isDisabled: isDisabled,
+			question: question, answers: answers,
+			interaction: .single(selection), isDisabled: isDisabled,
 			footnote: footnote, accessory: EmptyView())
 	}
 
 	init(
-		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
-		selections: Binding<Set<Value>>, accentColor: Color
+		question: String, answers: [OnboardingAnswer<Value>],
+		selections: Binding<Set<Value>>
 	) {
 		self.init(
-			question: question, systemImage: systemImage, answers: answers,
-			interaction: .multiple(selections), accentColor: accentColor, isDisabled: false,
+			question: question, answers: answers,
+			interaction: .multiple(selections), isDisabled: false,
 			footnote: nil, accessory: EmptyView())
 	}
 }
 
-// Answer cards use the shared press and hover motion on a plain surface. A Glass surface is
-// rebuilt when the selection tint changes, which made the release spring snap to full size.
+// Answer cards press like large shared tiles and hover by changing the surface, as settings
+// controls do. A Glass surface is rebuilt when the selection tint changes, which made the release
+// spring snap to full size.
 private struct OnboardingAnswerStyle<S: InsettableShape>: ButtonStyle {
 	let isSelected: Bool
-	let accentColor: Color
 	let shape: S
 
 	func makeBody(configuration: Configuration) -> some View {
-		OnboardingAnswerBody(
-			configuration: configuration, isSelected: isSelected, accentColor: accentColor,
-			shape: shape)
+		OnboardingAnswerBody(configuration: configuration, isSelected: isSelected, shape: shape)
 	}
 }
 
 private struct OnboardingAnswerBody<S: InsettableShape>: View {
-	package let configuration: ButtonStyleConfiguration
+	let configuration: ButtonStyleConfiguration
 	let isSelected: Bool
-	let accentColor: Color
 	let shape: S
 	@Environment(\.isEnabled) private var isEnabled
+	@Environment(\.launcherTheme) private var theme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isHovered = false
 
 	var body: some View {
 		configuration.label
-			.background(shape.fill(fill))
-			.overlay(shape.strokeBorder(border, lineWidth: LauncherVisuals.Control.borderWidth))
+			.background {
+				shape.fill(isSelected ? theme.accentGlassTint : theme.controlFill)
+					.overlay(shape.fill(isHovered ? theme.hoverTint : .clear))
+			}
+			.overlay(shape.strokeBorder(border, lineWidth: LauncherTokens.Control.borderWidth))
 			.opacity(isEnabled ? 1 : LauncherVisuals.Control.disabledForegroundOpacity)
 			.scaleEffect(scale)
 			.onHover { isHovered = isEnabled && $0 }
@@ -234,25 +232,12 @@ private struct OnboardingAnswerBody<S: InsettableShape>: View {
 	}
 
 	private var scale: CGFloat {
-		guard isEnabled, !reduceMotion else { return 1 }
-		if configuration.isPressed { return LauncherMotion.pressedScale }
-		return isHovered ? LauncherMotion.hoverScale : 1
-	}
-
-	private var fill: Color {
-		let control = LauncherVisuals.Control.self
-		var opacity =
-			isSelected
-			? control.enabledChromaticSurfaceOpacity : control.enabledNeutralSurfaceOpacity
-		if isHovered { opacity += control.hudHoverSurfaceOpacity }
-		if configuration.isPressed { opacity += control.hudHoverSurfaceOpacity }
-		return (isSelected ? accentColor : Color.white).opacity(opacity)
+		guard isEnabled, !reduceMotion, configuration.isPressed else { return 1 }
+		return LauncherMotion.subtlePressedScale
 	}
 
 	private var border: Color {
-		isSelected
-			? accentColor.opacity(LauncherVisuals.Control.enabledChromaticBorderOpacity)
-			: Color.white.opacity(LauncherVisuals.Control.enabledNeutralBorderOpacity)
+		isSelected ? theme.accentGlassStroke : theme.controlStroke
 	}
 
 	private func curve(_ curve: LauncherMotion.Curve) -> Animation? {

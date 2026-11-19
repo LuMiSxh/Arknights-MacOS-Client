@@ -8,6 +8,7 @@ extension GameSessionController {
 		sessionID: UUID,
 		region: GameRegion,
 		options: GameLaunchOptions,
+		batterySaver: Bool,
 		graphicsDiagnosticsEnabled: Bool
 	) -> String {
 		// One long `+` chain exceeds the type checker's budget once the option types are imported.
@@ -23,6 +24,8 @@ extension GameSessionController {
 			"metalHUD=\(options.usesMetalPerformanceHUD)",
 			"gameMode=\(options.usesGameMode)",
 			"synchronization=\(options.synchronizationMode.displayName)",
+			"frameRateLimit=\(options.frameRateLimit.rawValue)",
+			"batterySaver=\(batterySaver ? "active" : "inactive")",
 			"graphicsDiagnostics=\(graphicsDiagnosticsEnabled)",
 		]
 		return "Game launch requested; " + fields.joined(separator: "; ")
@@ -39,20 +42,22 @@ extension GameSessionController {
 	static func collectExitDiagnostics(
 		_ exit: WineProcessExit,
 		since: Date?,
-		logURL: URL?
+		logURL: URL?,
+		log: LauncherLog
 	) async -> String {
-		exitDiagnostics(exit, since: since, logURL: logURL)
+		exitDiagnostics(exit, since: since, logURL: logURL, log: log)
 	}
 
 	nonisolated static func exitDiagnostics(
 		_ exit: WineProcessExit,
 		since: Date?,
-		logURL: URL?
+		logURL: URL?,
+		log: LauncherLog
 	) -> String {
 		var parts = ["status=\(exit.status)", "reason=\(Self.reasonDescription(exit.reason))"]
 		if let since { parts.append("ranFor=\(launchDuration(since: since))") }
 		guard let logURL else { return parts.joined(separator: " ") }
-		if let crashReport = recentCrashReportPath(near: .now) {
+		if let crashReport = recentCrashReportPath(near: .now, log: log) {
 			parts.append("crashReport=\(crashReport)")
 		}
 		if let tail = FileTail.read(
@@ -76,29 +81,46 @@ extension GameSessionController {
 
 	nonisolated static func recentCrashReportPath(
 		near date: Date,
+		log: LauncherLog,
 		in directory: URL = FileManager.default.homeDirectoryForCurrentUser
 			.appending(path: "Library/Logs/DiagnosticReports", directoryHint: .isDirectory),
-		window: TimeInterval = AppConstants.Logging.crashReportSearchWindow,
+		window: Duration = .seconds(AppConstants.Logging.crashReportSearchWindow),
 		fileManager: FileManager = .default
 	) -> String? {
-		guard
-			let entries = try? fileManager.contentsOfDirectory(
+		// A missing folder means there are no crash reports, which is not an error.
+		guard fileManager.fileExists(atPath: directory.path) else { return nil }
+		let entries: [URL]
+		do {
+			entries = try fileManager.contentsOfDirectory(
 				at: directory,
 				includingPropertiesForKeys: [.contentModificationDateKey]
 			)
-		else { return nil }
+		} catch {
+			log.error("Could not list crash reports: \(error.localizedDescription)")
+			return nil
+		}
 		return
 			entries
-			.filter { $0.lastPathComponent.hasPrefix("Arknights-") }
-			.compactMap { url -> (URL, Date)? in
-				guard
-					let modified = try? url.resourceValues(
-						forKeys: [.contentModificationDateKey]
-					).contentModificationDate
-				else { return nil }
-				return (url, modified)
+			.filter {
+				$0.lastPathComponent.hasPrefix(
+					"\(AppConstants.Runtime.applicationName)-")
 			}
-			.filter { abs($0.1.timeIntervalSince(date)) <= window }
+			.compactMap { url -> (URL, Date)? in
+				do {
+					guard
+						let modified = try url.resourceValues(
+							forKeys: [.contentModificationDateKey]
+						).contentModificationDate
+					else { return nil }
+					return (url, modified)
+				} catch {
+					log.error(
+						"Could not read the date of \(url.lastPathComponent): \(error.localizedDescription)"
+					)
+					return nil
+				}
+			}
+			.filter { Duration.seconds(abs($0.1.timeIntervalSince(date))) <= window }
 			.max { $0.1 < $1.1 }?
 			.0.path
 	}

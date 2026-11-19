@@ -6,6 +6,7 @@ import ArknightsCore
 import ArknightsLauncherUI
 import ArknightsOnboarding
 import SwiftUI
+@preconcurrency import UserNotifications
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -16,7 +17,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	var openSettings: (() -> Void)?
 	var blockingPresentationForQuit: (() -> LauncherPresentationDestination?)?
 	var dismissPresentationForQuit: (() -> Void)?
-	private var quitKeyMonitor: Any?
+	private var quitSheetObserver: Any?
+	private var quitSheetDetachTask: Task<Void, Never>?
 
 	// `swift run` (used by `just preview`) launches the executable directly rather than
 	// through LaunchServices: without a bundle, the process's activation policy isn't
@@ -29,6 +31,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		fixQuitMenuItemTarget()
 		installQuitKeyMonitor()
 		installQuitEventHandler()
+		installNotificationDelegate()
+	}
+
+	// `UNUserNotificationCenter.current()` traps outside an app bundle, as in `swift run`.
+	private func installNotificationDelegate() {
+		guard Bundle.main.bundleURL.pathExtension == "app" else { return }
+		UNUserNotificationCenter.current().delegate = self
 	}
 
 	// A key SwiftUI sheet can prevent the default nil target from reaching NSApp.
@@ -43,7 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 	// A key sheet can also bypass the menu item's Command-Q dispatch.
 	private func installQuitKeyMonitor() {
-		quitKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+		_ = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
 			guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
 				event.charactersIgnoringModifiers?.lowercased() == "q"
 			else { return event }
@@ -67,7 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	}
 
 	@objc private func handleQuitEvent(
-		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
+		_ event: NSAppleEventDescriptor, withReplyEvent _: NSAppleEventDescriptor
 	) {
 		// Logout, restart, and shutdown attach a quit reason; the launcher never vetoes them.
 		let isSystemInitiated =
@@ -76,6 +85,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	}
 
 	@objc private func requestQuitFromMenu() {
+		requestQuit(isSystemInitiated: false)
+	}
+
+	/// A button in a modal notice, which must close the sheet before AppKit accepts quitting.
+	func requestQuitFromApplication() {
 		requestQuit(isSystemInitiated: false)
 	}
 
@@ -98,29 +112,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 	}
 
-	private func terminateOnceSheetDetaches(attempt: Int = 0, installationID: UUID? = nil) {
+	private func terminateOnceSheetDetaches(installationID: UUID? = nil) {
 		if let installationID {
 			guard launcherUpdater?.installationID == installationID,
 				launcherUpdater?.canTerminateForUpdate == true
 			else { return }
 		}
-		guard NSApp.windows.contains(where: { $0.attachedSheet != nil }),
-			attempt < AppConstants.Timeouts.quitSheetDetachPollLimit
-		else {
+		guard NSApp.windows.contains(where: { $0.attachedSheet != nil }) else {
 			terminateApplication()
 			return
 		}
-		// SwiftUI clears presentation state before AppKit detaches the sheet.
-		let timer = Timer(
-			timeInterval: AppConstants.Timeouts.quitSheetDetachPollInterval,
-			repeats: false
+		// SwiftUI clears presentation state before AppKit detaches the sheet, so wait for
+		// the sheet-end event. The one-shot timeout covers the event never arriving.
+		guard quitSheetObserver == nil else { return }
+		quitSheetObserver = NotificationCenter.default.addObserver(
+			forName: NSWindow.didEndSheetNotification, object: nil, queue: .main
 		) { [weak self] _ in
 			MainActor.assumeIsolated {
-				self?.terminateOnceSheetDetaches(
-					attempt: attempt + 1, installationID: installationID)
+				self?.sheetDidEnd(installationID: installationID)
 			}
 		}
-		RunLoop.main.add(timer, forMode: .common)
+		quitSheetDetachTask = Task { [weak self] in
+			do {
+				try await Task.sleep(for: AppConstants.Timeouts.quitSheetDetachTimeout)
+			} catch {
+				return
+			}
+			self?.quitAfterSheetTimeout(installationID: installationID)
+		}
+	}
+
+	private func sheetDidEnd(installationID: UUID?) {
+		guard !NSApp.windows.contains(where: { $0.attachedSheet != nil }) else { return }
+		terminateOnce(installationID: installationID)
+	}
+
+	private func quitAfterSheetTimeout(installationID: UUID?) {
+		// The bounded fallback proceeds even when a sheet is still attached.
+		terminateOnce(installationID: installationID)
+	}
+
+	// The observer doubles as the arming token: the first path to reach this removes it,
+	// so the other path can no longer terminate twice.
+	private func terminateOnce(installationID: UUID?) {
+		guard let observer = quitSheetObserver else { return }
+		NotificationCenter.default.removeObserver(observer)
+		quitSheetObserver = nil
+		quitSheetDetachTask?.cancel()
+		quitSheetDetachTask = nil
+		if let installationID {
+			guard launcherUpdater?.installationID == installationID,
+				launcherUpdater?.canTerminateForUpdate == true
+			else { return }
+		}
+		terminateApplication()
 	}
 
 	// requestQuit(isSystemInitiated:) applies presentation policy before asking AppKit to terminate.
@@ -153,6 +198,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			}
 		}
 
+		let screenshotItem = NSMenuItem(
+			title: "Take Screenshot",
+			action: #selector(takeScreenshot),
+			keyEquivalent: ""
+		)
+		screenshotItem.target = self
+		screenshotItem.isEnabled = model?.screenshots.canTakeScreenshot == true
+		menu.addItem(screenshotItem)
+		menu.addItem(.separator())
+
 		let settingsItem = NSMenuItem(
 			title: "Settings…",
 			action: #selector(showSettings),
@@ -162,6 +217,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		settingsItem.target = self
 		settingsItem.isEnabled = openSettings != nil
 		menu.addItem(settingsItem)
+		let reportItem = NSMenuItem(
+			title: "Report a Problem…",
+			action: #selector(reportProblem),
+			keyEquivalent: ""
+		)
+		reportItem.target = self
+		menu.addItem(reportItem)
 		return menu
 	}
 
@@ -181,18 +243,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 	}
 
+	@objc private func takeScreenshot() {
+		model?.screenshots.takeScreenshot()
+	}
+
+	@objc private func reportProblem() {
+		model?.openProblemReport(source: .dock)
+	}
+
 	@objc private func showSettings() {
 		showMainWindow()
 		openSettings?()
 	}
 
-	private func showMainWindow() {
+	fileprivate func showMainWindow() {
 		NSApp.activate(ignoringOtherApps: true)
 		let window =
 			NSApp.mainWindow ?? NSApp.keyWindow
 			?? NSApp.windows.first(where: \.canBecomeMain)
 		window?.deminiaturize(nil)
 		window?.makeKeyAndOrderFront(nil)
+	}
+}
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+	// The system calls these off the main actor.
+	nonisolated func userNotificationCenter(
+		_ center: UNUserNotificationCenter,
+		willPresent notification: UNNotification
+	) async -> UNNotificationPresentationOptions {
+		// The launcher is the foreground app when its reminder is due, so show it as a banner.
+		[.banner, .sound]
+	}
+
+	nonisolated func userNotificationCenter(
+		_ center: UNUserNotificationCenter,
+		didReceive response: UNNotificationResponse
+	) async {
+		let path =
+			response.notification.request.content.userInfo[
+				AppConstants.Screenshots.pathUserInfoKey] as? String
+		let isScreenshot =
+			response.notification.request.content.categoryIdentifier
+			== AppConstants.Screenshots.notificationCategory
+		await MainActor.run {
+			if isScreenshot {
+				// A tap or the Show in Finder button both reveal the file. Neither needs the launcher.
+				if let path {
+					NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: path)])
+				}
+			} else {
+				showMainWindow()
+			}
+		}
 	}
 }
 
@@ -204,7 +307,9 @@ struct ArknightsClientApp: App {
 	@State private var onboarding: OnboardingCoordinator
 
 	init() {
-		let model = Self.makeModel()
+		StartupTimeline.shared.mark("app entry")
+		let model = LauncherViewModel.makeDefault()
+		StartupTimeline.shared.mark("composition done")
 		_model = State(wrappedValue: model)
 		#if DEBUG
 			let initialMusicTitle = model.developerAccessibilityMusicTitle
@@ -227,70 +332,64 @@ struct ArknightsClientApp: App {
 		)
 	}
 
-	private static func makeModel() -> LauncherViewModel {
-		let arguments = ProcessInfo.processInfo.arguments
-		#if DEBUG
-			if DeveloperSimulationState.isPreviewArgument(arguments) {
-				// One fixed preview store, cleared on every start, so previews never accumulate
-				// preference domains or temporary folders.
-				let suiteName = "com.lumisxh.arknights-client.preview"
-				let root = FileManager.default.temporaryDirectory.appending(
-					path: "ArknightsClientPreview",
-					directoryHint: .isDirectory
-				)
-				do {
-					if FileManager.default.fileExists(atPath: root.path) {
-						try FileManager.default.removeItem(at: root)
-					}
-				} catch {
-					NSLog("ArknightsClient could not clear the previous preview data: \(error)")
-				}
-				let paths = AppPaths(
-					applicationSupportDirectory: root.appending(path: "Support"),
-					cachesDirectory: root.appending(path: "Caches"),
-					libraryDirectory: root.appending(path: "Library")
-				)
-				let defaults = UserDefaults(suiteName: suiteName)!
-				defaults.removePersistentDomain(forName: suiteName)
-				return LauncherViewModel(
-					paths: paths,
-					preferences: LauncherPreferencesStore(defaults: defaults),
-					arguments: arguments
-				)
-			}
-		#endif
-		PreferencesMigrator().migrate(.standard)
-		return LauncherViewModel(
-			paths: AppPaths(),
-			preferences: LauncherPreferencesStore(),
-			arguments: arguments
-		)
-	}
-
 	var body: some Scene {
 		WindowGroup("Arknights Client") {
-			GeometryReader { geometry in
-				ContentView(
-					model: model,
-					musicController: musicController,
-					onboarding: onboarding,
-					registerOpenSettings: { appDelegate.openSettings = $0 },
-					registerQuitPresentationQuery: {
-						appDelegate.blockingPresentationForQuit = $0
-					},
-					registerQuitDismissal: { appDelegate.dismissPresentationForQuit = $0 }
-				)
-				.environment(\.launcherWindowSize, geometry.size)
-			}
+			ContentView(
+				model: model,
+				musicController: musicController,
+				onboarding: onboarding,
+				registerOpenSettings: { appDelegate.openSettings = $0 },
+				registerQuitPresentationQuery: {
+					appDelegate.blockingPresentationForQuit = $0
+				},
+				registerQuitDismissal: { appDelegate.dismissPresentationForQuit = $0 }
+			)
 			.frame(minWidth: 880, minHeight: 560)
-			.onAppear {
+			.onChange(of: model.settings.launcherAppearance, initial: true) { _, appearance in
+				NSApp.appearance = appearance.nsAppearance
+			}
+			.onAppear { [appDelegate] in
 				appDelegate.model = model
 				appDelegate.launcherUpdater = model.communication.launcherUpdater
 				appDelegate.stopGame = { model.actions.stopGameForApplicationTermination() }
+				model.requestApplicationQuit = { [weak appDelegate] in
+					appDelegate?.requestQuitFromApplication()
+				}
 				NSApp.activate(ignoringOtherApps: true)
 			}
 		}
 		.windowStyle(.hiddenTitleBar)
 		.defaultSize(width: 1040, height: 680)
+		.windowResizability(.contentMinSize)
+		.commands {
+			CommandMenu("Game") {
+				Button("Take Screenshot") {
+					model.screenshots.takeScreenshot()
+				}
+				.disabled(!model.screenshots.canTakeScreenshot)
+			}
+			CommandGroup(replacing: .help) {
+				Button("Report a Problem…") {
+					model.openProblemReport(source: .helpMenu)
+				}
+				Button("Save Diagnostics…") {
+					Task { await model.actions.saveDiagnostics() }
+				}
+				.disabled(model.actions.isSavingDiagnostics)
+				Divider()
+				Button("Troubleshooting Guide") {
+					NSWorkspace.shared.open(SupportLinks.troubleshootingGuide)
+				}
+				Button("Contact Publisher Support…") {
+					NSWorkspace.shared.open(
+						SupportLinks.contact(for: model.installation.region))
+				}
+			}
+		}
+		Window("Measure Game Window", id: GameWindowMeasureView.sceneID) {
+			GameWindowMeasureView(model: model)
+		}
+		.defaultLaunchBehavior(.suppressed)
+		.restorationBehavior(.disabled)
 	}
 }

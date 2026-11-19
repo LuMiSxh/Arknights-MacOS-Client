@@ -24,28 +24,23 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	/// The resolution fullscreen shows, like a game's output resolution. Native follows the
 	/// fullscreen display, so displays beyond 4K or with uncommon sizes are not scaled unevenly.
 	package var fullscreenResolution: GameFullscreenResolution
-	package var windowSize: GameDisplaySize = .defaultWindow
-	package var usesGameSettings: Bool = false
-	package var renderingMode: GameRenderingMode = .retina
-	package var usesMetalPerformanceHUD: Bool = false
-	package var usesGameMode: Bool = false
-	package var synchronizationMode: WineSynchronizationMode = .msync
+	package var windowSize: GameDisplaySize
+	package var usesGameSettings: Bool
+	package var renderingMode: GameRenderingMode
+	package var usesMetalPerformanceHUD: Bool
+	package var usesGameMode: Bool
+	package var synchronizationMode: WineSynchronizationMode
+	package var frameRateLimit: GameFrameRateLimit
+	/// The display the game opens on. Nil follows the primary display.
+	package var display: GameDisplayIdentity?
 
-	package static let `default` = GameLaunchOptions(
-		displayMode: .windowed,
-		resolution: .hd,
-		windowSize: .defaultWindow,
-		usesGameSettings: false,
-		renderingMode: .retina,
-		usesMetalPerformanceHUD: false,
-		usesGameMode: false,
-		synchronizationMode: .msync
-	)
+	// The initializer holds the only copy of each default; `default` is built from it.
+	package static let `default` = GameLaunchOptions(displayMode: .windowed, resolution: .hd)
 
 	private enum CodingKeys: String, CodingKey {
 		case displayMode, resolution, fullscreenResolution, windowSize, usesGameSettings
 		case renderingMode
-		case usesMetalPerformanceHUD, usesGameMode, synchronizationMode
+		case usesMetalPerformanceHUD, usesGameMode, synchronizationMode, frameRateLimit, display
 		/// Pre-0.7.0 Retina toggle; still written so older launchers keep their pixel density.
 		case usesHighResolutionMode
 	}
@@ -59,7 +54,9 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		renderingMode: GameRenderingMode = .retina,
 		usesMetalPerformanceHUD: Bool = false,
 		usesGameMode: Bool = false,
-		synchronizationMode: WineSynchronizationMode = .msync
+		synchronizationMode: WineSynchronizationMode = .msync,
+		frameRateLimit: GameFrameRateLimit = .fps120,
+		display: GameDisplayIdentity? = nil
 	) {
 		self.displayMode = displayMode
 		self.resolution = resolution
@@ -70,6 +67,8 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		self.usesMetalPerformanceHUD = usesMetalPerformanceHUD
 		self.usesGameMode = usesGameMode
 		self.synchronizationMode = synchronizationMode
+		self.frameRateLimit = frameRateLimit
+		self.display = display
 	}
 
 	/// Decodes each option independently, so one missing, retired, or malformed value falls
@@ -97,6 +96,8 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 			.usesMetalPerformanceHUD, defaults.usesMetalPerformanceHUD)
 		usesGameMode = value(.usesGameMode, defaults.usesGameMode)
 		synchronizationMode = value(.synchronizationMode, defaults.synchronizationMode)
+		frameRateLimit = value(.frameRateLimit, defaults.frameRateLimit)
+		display = value(.display, defaults.display)
 
 		renderingMode = value(.renderingMode, defaults.renderingMode)
 		windowSize = value(.windowSize, defaults.windowSize)
@@ -114,6 +115,8 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		try container.encode(usesMetalPerformanceHUD, forKey: .usesMetalPerformanceHUD)
 		try container.encode(usesGameMode, forKey: .usesGameMode)
 		try container.encode(synchronizationMode, forKey: .synchronizationMode)
+		try container.encode(frameRateLimit, forKey: .frameRateLimit)
+		try container.encodeIfPresent(display, forKey: .display)
 	}
 
 	func fullscreenSize(native: GameDisplaySize?) -> GameDisplaySize {
@@ -140,26 +143,76 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		}
 	}
 
+	/// Drops the options the game owns while **Override in-game display settings** is off:
+	/// Game Mode and the Metal HUD. The frame rate cap follows the same rule in `frameRateCap`.
+	package func yieldingToGameSettings() -> GameLaunchOptions {
+		guard usesGameSettings else { return self }
+		var options = self
+		options.usesGameMode = false
+		options.usesMetalPerformanceHUD = false
+		return options
+	}
+
+	/// The frame rate cap the runtime applies, or `nil` to leave pacing to the game. The user's
+	/// limit counts only with the override on. Battery Saver caps either way, because it is a
+	/// separate opt-in whose only effect on pacing is this cap, and it never raises the limit.
+	package func frameRateCap(batterySaverLimit: GameFrameRateLimit?) -> GameFrameRateLimit? {
+		let userLimit = usesGameSettings ? nil : frameRateLimit
+		guard let batterySaverLimit else { return userLimit }
+		guard let userLimit else { return batterySaverLimit }
+		return userLimit.framesPerSecond > batterySaverLimit.framesPerSecond
+			? batterySaverLimit : userLimit
+	}
+
+	/// Battery Saver lowers the options a launch uses. It never raises a value, and it leaves
+	/// the Metal HUD and the synchronization mode unchanged. The frame rate cap is in `frameRateCap`.
+	package func applyingBatterySaver(metalFXSupported: Bool) -> GameLaunchOptions {
+		var options = self
+		options.usesGameMode = false
+		// Only Retina draws more pixels than MetalFX or Standard, so only Retina changes.
+		// Game settings own the rendering mode, so the launcher leaves it alone.
+		if !usesGameSettings, renderingMode == .retina {
+			options.renderingMode = metalFXSupported ? .metalFX : .standard
+		}
+		return options
+	}
+
+	/// The windowed size the game opens with. A size larger than the screen or the custom
+	/// maximum is scaled down; the stored size stays unchanged.
+	package func launchWindowSize(on screen: GameScreenMetrics?) -> GameDisplaySize {
+		let maximum = AppConstants.Game.customWindowMaximumDimension
+		var bounds = GameDisplaySize(width: maximum, height: maximum)
+		if let screen {
+			// Fills the screen below the title bar, like the Fill screen choice.
+			let fill = GameWindowSizeChoice.fillScreen.size(on: screen)
+			bounds = GameDisplaySize(
+				width: min(fill.width, maximum), height: min(fill.height, maximum))
+		}
+		return windowSize.fitted(into: bounds)
+	}
+
 	/// Unity standalone-player arguments supported by the Windows client. Windowed sizes are
-	/// points, so they are multiplied by the game pixels Wine maps onto each point.
+	/// points, so they are fitted to `screen` and multiplied by the game pixels Wine maps onto
+	/// each point.
 	package func playerArguments(
-		gamePixelsPerPoint: Int, fullscreenDisplay: GameFullscreenDisplay? = nil
+		gamePixelsPerPoint: Int, fullscreenDisplay: GameFullscreenDisplay? = nil,
+		screen: GameScreenMetrics? = nil,
+		monitor: Int? = nil
 	) -> [String] {
 		guard !usesGameSettings else { return [] }
 		let fullscreen = displayMode == .fullscreen
 		let size =
 			fullscreen
 			? fullscreenDrawnSize(on: fullscreenDisplay, retina: gamePixelsPerPoint > 1)
-			: windowSize.scaled(by: max(1, gamePixelsPerPoint))
+			: launchWindowSize(on: screen).scaled(by: max(1, gamePixelsPerPoint))
 		var arguments = [
 			"-screen-fullscreen", fullscreen ? "1" : "0",
 			"-screen-width", String(size.width),
 			"-screen-height", String(size.height),
 		]
-		// Native sizes come from the primary display, so keep the game from reopening on the
-		// display Unity remembers from an earlier session.
-		if fullscreen && fullscreenResolution == .native && fullscreenDisplay != nil {
-			arguments += ["-monitor", "1"]
+		// Names the display Unity opens on. Without it, Unity may reuse a display it remembers.
+		if let monitor {
+			arguments += ["-monitor", String(monitor)]
 		}
 		if displayMode == .borderlessWindow { arguments.append("-popupwindow") }
 		return arguments

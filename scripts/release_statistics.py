@@ -3,22 +3,24 @@
 
 """Show app-delivery statistics for published GitHub releases."""
 
-from __future__ import annotations
-
 import json
+from typing import TYPE_CHECKING
 
-from lib.common import fail, output, require_command, run_main
+from lib.common import ScriptError, fail, output, require_command, run_main
 from lib.project_config import (
     github_asset_stem,
     load_project_configuration,
     sparkle_archive_names,
 )
 
+if TYPE_CHECKING:
+    from lib.github_release import GitHubRelease
+
 COLUMNS = ("Version", "DMG/manual", "Sparkle", "Recipe")
 
 
 def release_downloads(
-    pages: list[list[dict]], *, display_name: str
+    pages: list[list[GitHubRelease]], *, display_name: str
 ) -> list[tuple[str, int, int, int]]:
     """Return (version, DMG, Sparkle, recipe) downloads per published release."""
     stem = github_asset_stem(display_name).lower()
@@ -41,6 +43,27 @@ def release_downloads(
                 totals[2] += count
         rows.append((version, *totals))
     return rows
+
+
+def traffic_referrers(repository: str) -> str:
+    try:
+        data = json.loads(
+            output(
+                [
+                    "gh",
+                    "api",
+                    f"repos/{repository}/traffic/popular/referrers",
+                ]
+            )
+        )
+    except ScriptError, json.JSONDecodeError:
+        return "Traffic data unavailable (requires repo owner access)."
+    lines = ["Traffic referrers (last 14 days):"]
+    for item in data:
+        lines.append(
+            f"  {item.get('referrer', '?'):20}  {item.get('count', 0):4} views  {item.get('uniques', 0):4} uniques"
+        )
+    return "\n".join(lines)
 
 
 def render_statistics(rows: list[tuple[str, int, int, int]]) -> str:
@@ -90,6 +113,8 @@ def main() -> None:
     )
     display_name = load_project_configuration().product.display_name
     print(render_statistics(release_downloads(pages, display_name=display_name)))
+    print()
+    print(traffic_referrers(repository))
 
 
 if __name__ == "__main__":

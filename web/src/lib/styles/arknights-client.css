@@ -4,42 +4,54 @@
 :root.dark {
 	color-scheme: dark;
 
+	/* Surfaces: neutral tints only. The accent never tints a surface. */
 	--site-bg: #0b0c0e;
-	--site-panel: #151619;
-	--site-panel-raised: #1b1c20;
 	--site-glass: rgb(23 24 26 / 0.62);
-	--site-border: rgb(255 255 255 / 0.08);
-	--site-line: rgb(255 255 255 / 0.12);
-	--site-hover: rgb(255 255 255 / 0.06);
-	--site-text: #f2f3f5;
-	--site-body: #d6d9de;
-	--site-muted: #a1a6ae;
-	--site-faint: #7d838c;
-	--site-signal: #477acc;
-	--site-signal-text: #7ea2db;
-	--site-signal-fill: color-mix(
+	--site-sheet: rgb(19 20 23 / 0.9);
+	--site-modal: rgb(19 20 23 / 0.94);
+	/* Sheet graphite lifted by about 5% white, nearly opaque so the artwork does not bleed through panels. */
+	--site-group-fill: rgb(30 31 35 / 0.94);
+	--site-control-fill: rgb(255 255 255 / 0.08);
+	--site-hover-tint: rgb(255 255 255 / 0.04);
+	--site-hairline: rgb(255 255 255 / 0.08);
+	--site-control-stroke: rgb(255 255 255 / 0.1);
+	--site-row-divider: rgb(255 255 255 / 0.06);
+
+	/* Text: three roles only. */
+	--site-text-primary: rgb(255 255 255 / 0.92);
+	--site-text-secondary: rgb(255 255 255 / 0.62);
+	--site-text-tertiary: rgb(255 255 255 / 0.46);
+
+	/* Accent. The fill is pinned from the hero artwork. Never use it as text color; use accent-ink. */
+	--site-accent-fill: #477acc;
+	/* Accent fill mixed with 28% white, as in LauncherVisuals; a literal hex so postbuild can check contrast. */
+	--site-accent-ink: #7b9fda;
+	--site-accent-glass-tint: color-mix(
 		in srgb,
-		var(--site-signal) 22%,
-		var(--site-bg)
-	);
-	--site-signal-border: color-mix(
-		in srgb,
-		var(--site-signal) 45%,
+		var(--site-accent-fill) 14%,
 		transparent
 	);
+	--site-accent-glass-stroke: color-mix(
+		in srgb,
+		var(--site-accent-fill) 40%,
+		transparent
+	);
+	--site-on-accent: color-mix(in srgb, var(--site-accent-fill) 8%, black);
 	--site-success: #6fd3a0;
 	--site-warning: #eab064;
 	--site-danger: #fa6b7a;
 	/* Chart series. Deliberately not the status colors: a comparison must not read as a verdict. */
-	--site-chart-1: var(--site-signal-text);
+	--site-chart-1: #7ea2db;
 	--site-chart-2: var(--site-warning);
 	--site-chart-3: #a88cdb;
-	--site-chart-4: var(--site-faint);
+	--site-chart-4: #7d838c;
 	--site-font-ui:
 		-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
 	--site-font-display:
 		-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
 	--site-font-mono: 'SFMono-Regular', 'SF Mono', ui-monospace, monospace;
+
+	/* Spacing: numbered steps, plus the role aliases the launcher uses. */
 	--site-space-1: 0.25rem;
 	--site-space-2: 0.5rem;
 	--site-space-3: 0.75rem;
@@ -48,33 +60,54 @@
 	--site-space-6: 1.5rem;
 	--site-space-8: 2rem;
 	--site-space-12: 3rem;
+	--site-space-compact: var(--site-space-1);
+	--site-space-control: var(--site-space-2);
+	--site-space-content: var(--site-space-3);
+	--site-space-panel: var(--site-space-4);
+	--site-space-section: var(--site-space-5);
+	--site-space-page: var(--site-space-6);
+
 	--site-radius-control: 10px;
 	--site-radius-panel: 16px;
 	--site-radius-hud: 22px;
 	--site-radius-modal: 24px;
 	--site-radius-capsule: 999px;
+	--site-radius-rail-row: 8px;
+	--site-radius-group: 12px;
+	--site-radius-glass-modal: 20px;
 	--site-touch-target: 2.75rem;
 	--site-rail-width: 15rem;
 	--site-gutter: clamp(1rem, 3vw, 2rem);
+
+	/* Motion: the launcher's roles. Reduced motion uses one short fade. */
 	--site-motion-fast: 140ms;
 	--site-motion-structure: 380ms;
+	--site-ease-state: cubic-bezier(0.2, 0, 0, 1);
+	--site-dur-state: 200ms;
+	--site-dur-hover-in: 120ms;
+	--site-dur-hover-out: 200ms;
+	--site-dur-present: 340ms;
+	--site-ease-dismiss: cubic-bezier(0.4, 0, 1, 1);
+	--site-dur-dismiss: 160ms;
+	--site-dur-reduced: 180ms;
+	--site-press-scale: 0.97;
 
 	--color-anasthasia-bg: var(--site-bg);
-	--color-anasthasia-surface: var(--site-panel);
-	--color-anasthasia-panel: var(--site-panel-raised);
-	--color-anasthasia-border: var(--site-line);
-	--color-anasthasia-divider: var(--site-border);
-	--color-anasthasia-text: var(--site-text);
-	--color-anasthasia-muted: var(--site-muted);
-	--color-anasthasia-accent: var(--site-signal-text);
+	--color-anasthasia-surface: var(--site-modal);
+	--color-anasthasia-panel: var(--site-control-fill);
+	--color-anasthasia-border: var(--site-control-stroke);
+	--color-anasthasia-divider: var(--site-hairline);
+	--color-anasthasia-text: var(--site-text-primary);
+	--color-anasthasia-muted: var(--site-text-secondary);
+	--color-anasthasia-accent: var(--site-accent-ink);
 	--color-anasthasia-accent-strong: #a9c2ea;
-	--color-anasthasia-action-secondary: var(--site-text);
-	--color-anasthasia-action-secondary-border: var(--site-line);
-	--color-anasthasia-on-accent: #0b0c0e;
+	--color-anasthasia-action-secondary: var(--site-text-primary);
+	--color-anasthasia-action-secondary-border: var(--site-control-stroke);
+	--color-anasthasia-on-accent: var(--site-on-accent);
 	--color-anasthasia-overlay: rgb(0 0 0 / 0.72);
-	--color-anasthasia-info: var(--site-signal-text);
-	--color-anasthasia-info-surface: var(--site-signal-fill);
-	--color-anasthasia-info-border: var(--site-signal-border);
+	--color-anasthasia-info: var(--site-accent-ink);
+	--color-anasthasia-info-surface: var(--site-accent-glass-tint);
+	--color-anasthasia-info-border: var(--site-accent-glass-stroke);
 	--color-anasthasia-success: var(--site-success);
 	--color-anasthasia-success-surface: #13241c;
 	--color-anasthasia-success-border: #2f5a45;
@@ -109,4 +142,15 @@
 	--radius-anasthasia-xl: var(--site-radius-panel);
 	--radius-anasthasia-2xl: var(--site-radius-modal);
 	--background-image-anasthasia-accent-gradient: none;
+}
+
+@media (prefers-contrast: more) {
+	:root,
+	:root.dark {
+		--site-hairline: rgb(255 255 255 / 0.12);
+		--site-control-stroke: rgb(255 255 255 / 0.15);
+		--site-row-divider: rgb(255 255 255 / 0.09);
+		--site-text-secondary: rgb(255 255 255 / 0.78);
+		--site-text-tertiary: rgb(255 255 255 / 0.62);
+	}
 }

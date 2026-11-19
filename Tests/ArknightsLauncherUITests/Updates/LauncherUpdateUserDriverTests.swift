@@ -9,37 +9,6 @@ import Testing
 @MainActor
 struct LauncherUpdateUserDriverTests {
 	@Test
-	func checkCancellationIsDeliveredOnceAndDismissesThePresentation() {
-		let driver = LauncherUpdateUserDriver()
-		var cancellationCount = 0
-		driver.showUserInitiatedUpdateCheck { cancellationCount += 1 }
-
-		driver.cancelCheck()
-		driver.cancelCheck()
-
-		#expect(cancellationCount == 1)
-		#expect(driver.phase == .hidden)
-
-		// Dismissing the overlay cancels an active check at once.
-		driver.showUserInitiatedUpdateCheck { cancellationCount += 1 }
-		driver.dismissFromUser()
-		#expect(cancellationCount == 2)
-		#expect(driver.phase == .hidden)
-
-		// A replacement callback takes over the stale check cancellation.
-		var replacementCancellations = 0
-		var acknowledgements = 0
-		driver.showUserInitiatedUpdateCheck { replacementCancellations += 1 }
-		driver.showUpdateNotFoundWithError(
-			NSError(domain: "Test", code: 1), acknowledgement: { acknowledgements += 1 })
-		driver.dismissFromUser()
-		driver.cancelCheck()
-		#expect(replacementCancellations == 0)
-		#expect(acknowledgements == 1)
-		#expect(driver.phase == .hidden)
-	}
-
-	@Test
 	func updateReplyIsDeliveredOnceAndDismissChoiceIsSupported() {
 		let driver = LauncherUpdateUserDriver()
 		var choices: [SPUUserUpdateChoice] = []

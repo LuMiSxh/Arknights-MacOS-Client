@@ -21,7 +21,8 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 			"SSH_AUTH_SOCK": "/host/private/agent.sock",
 			"AWS_SECRET_ACCESS_KEY": "secret",
 		],
-		userName: "tester"
+		userName: "tester",
+		frameRateLimit: GameLaunchOptions.default.frameRateLimit
 	)
 
 	#expect(environment["HOME"] == "/isolated/prefix/home")
@@ -43,19 +44,22 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
 		baseEnvironment: ["WINEMSYNC": "host", "WINEESYNC": "host"],
 		userName: "tester",
+		frameRateLimit: GameLaunchOptions.default.frameRateLimit,
 		synchronizationMode: .esync
 	)
 	#expect(esync["WINEMSYNC"] == nil)
 	#expect(esync["WINEESYNC"] == "1")
 
 	let controller = WineRuntime.bilibiliControllerEnvironment(from: [
-		"ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1",
-		"ARKNIGHTS_RUNTIME_CEF_COMPAT": "1",
+		"LMISXH_AKMOCL_CURSOR": "1",
+		"LMISXH_AKMOCL_CEF": "1",
+		"DXMT_METALFX_SPATIAL_SWAPCHAIN": "1",
 		"DYLD_INSERT_LIBRARIES": "/runtime/bridge.dylib",
 	])
-	#expect(controller["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == nil)
+	#expect(controller["LMISXH_AKMOCL_CURSOR"] == "0")
+	#expect(controller["DXMT_METALFX_SPATIAL_SWAPCHAIN"] == "0")
 	#expect(controller["DYLD_INSERT_LIBRARIES"] == nil)
-	#expect(controller["ARKNIGHTS_RUNTIME_CEF_COMPAT"] == "1")
+	#expect(controller["LMISXH_AKMOCL_CEF"] == "1")
 }
 
 @Test
@@ -69,7 +73,7 @@ func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 	try Data("old-x32".utf8).write(to: stale)
 
 	try WineRuntime.installDXMT(from: fixture.payload, in: fixture.prefix)
-	#expect(WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
+	#expect(try WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
 	#expect(try Data(contentsOf: stale) == Data("old-x32".utf8))
 
 	for library in WineRuntime.dxmtLibraryNames {
@@ -80,7 +84,7 @@ func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 	try fileManager.removeItem(
 		at: fixture.prefix.appending(path: "drive_c/windows/system32/d3d11.dll")
 	)
-	#expect(!WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
+	#expect(!(try WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix)))
 }
 
 @Test
@@ -93,6 +97,7 @@ func runtimeProcessWaitTerminatesAndResumesWhenCancelled() async throws {
 	)
 	let pidFile = FileManager.default.temporaryDirectory.appending(
 		path: "runtime-wait-\(UUID().uuidString).pid")
+	// best effort: the test owns this temporary file.
 	defer { try? FileManager.default.removeItem(at: pidFile) }
 	let task = Task {
 		try await runtime.runAndWait(
@@ -102,10 +107,7 @@ func runtimeProcessWaitTerminatesAndResumesWhenCancelled() async throws {
 			output: .nullDevice
 		)
 	}
-	let started = await waitForCondition(timeout: .seconds(5)) {
-		FileManager.default.fileExists(atPath: pidFile.path)
-	}
-	try #require(started)
+	await waitForFile(at: pidFile)
 	task.cancel()
 
 	await #expect(throws: CancellationError.self) {
@@ -137,6 +139,7 @@ func runtimeProvidesOnlyPrivateUnixUserDirectoriesAndRejectsInvalidConfiguration
 	let fileManager = FileManager.default
 	let root = fileManager.temporaryDirectory.appending(
 		path: "wine-environment-test-\(UUID().uuidString)", directoryHint: .isDirectory)
+	// best effort: the test owns this temporary directory.
 	defer { try? fileManager.removeItem(at: root) }
 	for directory in WineRuntime.isolatedEnvironmentDirectories(prefixDirectory: root) {
 		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -166,7 +169,11 @@ private struct DXMTFixture {
 	let payload: URL
 	let prefix: URL
 
-	init(fileManager: FileManager, architectures: [String] = ["x64"]) throws {
+	init(
+		fileManager: FileManager,
+		architectures: [String] = ["x64"],
+		libraries: [String] = WineRuntime.dxmtLibraryNames
+	) throws {
 		root = fileManager.temporaryDirectory.appending(
 			path: "dxmt-test-\(UUID().uuidString)",
 			directoryHint: .isDirectory
@@ -174,7 +181,7 @@ private struct DXMTFixture {
 		payload = root.appending(path: "DXMT", directoryHint: .isDirectory)
 		prefix = root.appending(path: "prefix", directoryHint: .isDirectory)
 		for architecture in architectures {
-			for library in WineRuntime.dxmtLibraryNames {
+			for library in libraries {
 				let source = payload.appending(path: architecture).appending(path: library)
 				try fileManager.createDirectory(
 					at: source.deletingLastPathComponent(),

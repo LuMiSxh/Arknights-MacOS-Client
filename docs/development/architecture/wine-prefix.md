@@ -8,9 +8,9 @@ toc: true
 
 # Wine prefix architecture
 
-A Wine prefix is the mutable Windows environment of the bundled runtime. It holds the Wine registry,
+A Wine prefix is the mutable Windows environment of the installed runtime. It holds the Wine registry,
 Windows profiles, embedded-browser sessions, DXMT libraries, caches, and launcher migration state. The
-runtime is read-only in the app bundle. Prefixes persist below Application Support across launcher
+runtime is read-only in Application Support. Prefixes persist below Application Support across launcher
 updates.
 
 [`GameSessionController`](../../../Sources/ArknightsGameRuntime/Runtime/GameSessionController.swift)
@@ -20,10 +20,14 @@ is the only source of prefix locations.
 ## Prefix topology
 
 Each publisher family has its own prefix: Yostar (Global, Japan, Korea), Gryphline (Taiwan), and
-Hypergryph (China and China (Bilibili)). Windows-side state, logins, registry, and processes never mix
-across families. [Storage](../../help/storage.md#where-files-live) lists the default paths.
+Hypergryph (China and China (Bilibili)). Each runtime lane also has its own prefix under
+`Environments/<publisher>-<lane>`: the x86 lane uses `<publisher>-x86`, and the native ARM64 lane uses
+`<publisher>-arm`. Windows-side state, logins, registry, and processes never mix across families or
+lanes. A lane switch keeps the other lane's environment.
+[Storage](../../help/storage.md#where-files-live) lists the default paths.
 
 - Resolve the active path with `AppPaths.winePrefix(for:)`. Never select a directory name in other code.
+- `AppPaths` reads the selected runtime lane and applies it to every publisher prefix.
 - Tests and the isolated preview inject temporary `AppPaths` roots.
 - The launcher permits one install, maintenance operation, or Wine-backed session at a time. A session
   keeps its launch-time region and prefix until prefix-wide shutdown finishes.
@@ -33,7 +37,7 @@ across families. [Storage](../../help/storage.md#where-files-live) lists the def
 The launcher owns this structure inside Wine's prefix:
 
 ```text
-{Yostar,Gryphline,Hypergryph}/Prefix/
+Environments/{yostar,gryphline,hypergryph}-{x86,arm}/
 ├── .arknights-runtime-migrations.json
 ├── dosdevices/
 │   ├── c: -> ../drive_c
@@ -77,13 +81,16 @@ launcher variable. It:
   selected prefix;
 - keeps XDG, GStreamer, and DXMT paths below the private home, and `TMPDIR`, `TMP`, and `TEMP` below
   `<prefix>/home/tmp`;
-- restricts `PATH` to the bundled runtime, `/usr/bin`, and `/bin`;
-- points the dynamic-library fallback path at the bundled runtime libraries;
-- adds only launcher-owned synchronization, diagnostics, icon, audio, and cursor overrides for the
-  current launch.
+- restricts `PATH` to the selected runtime, `/usr/bin`, and `/bin`;
+- points the dynamic-library fallback path at the selected runtime libraries;
+- adds only launcher-owned synchronization, frame-rate, diagnostics, icon, audio, cursor, and
+  compatibility overrides for the current launch.
 
-Launch-scoped options (MSYNC or ESYNC, Mac pointer) change only the next process environment, not
-migrations.
+Launch-scoped options (MSYNC or ESYNC, Mac pointer, frame rate limit) change only the next process
+environment, not migrations. A frame rate cap sets `DXMT_CONFIG=d3d11.preferredMaxFrameRate=N`,
+where N is 30, 60, or 120. DXMT
+reads it when it creates the swapchain. The launcher sets no `DXMT_CONFIG` value when the limit is
+unlimited.
 
 ## Preparation and migrations
 
@@ -96,10 +103,11 @@ Migration state lives in `.arknights-runtime-migrations.json`. The effective run
 <runtime archive SHA-256>-prefix-<prefixRevision>
 ```
 
-The plan comes from the bundled runtime, not the game version. The ordered migrations are:
+Each lane keeps its own state inside its own prefix, so a lane switch runs that lane's plan without
+touching the other environment. The plan comes from the selected runtime, not the game version. The ordered migrations are:
 
 1. `initialize-wine-prefix` runs `wineboot.exe -u`.
-2. `install-dxmt` copies the bundled x64 DXMT libraries into `system32`. Step 5 removes x32 copies from
+2. `install-dxmt` copies the selected x64 DXMT libraries into `system32`. Step 5 removes x32 copies from
    earlier builds.
 3. `configure-registry` installs stable DLL overrides, disables Wine's crash dialog, and maps the
    Command keys to Control.
@@ -123,6 +131,15 @@ Replay rules:
 - Missing or stale DXMT files invalidate `install-dxmt` and every later step.
 - A new migration ID runs only that step.
 - Legacy single-file markers (version 0.1) are imported once and removed.
+
+A runtime update leaves every prefix holding APFS clones of the previous runtime, so the old files stay on
+disk until the prefix migrates. `GameEnvironmentRefreshController` runs the same plan in the background
+for each installed publisher's existing prefix of the selected lane. It starts after a runtime install and
+at app start, only while the launcher is idle, through `refreshPrefixIfPending`. That method wraps
+`preparePrefixIfNeeded` with a spawn gate and a prefix-wide shutdown. The pass holds a
+`.maintaining(.updatingGameEnvironments)` lease, runs one prefix at a time, and never creates a prefix.
+A game launch cancels the pass. The shutdown (`wineserver -k`, then `-w`) still completes before the lease
+ends. State is saved after each step, so a cancelled prefix resumes at its first incomplete step.
 
 `prefixRevision` is a revision of the prefix contract, not the runtime version. Do not increment it when
 Wine or DXMT changes, because the archive checksum already changes the effective revision. Increment it
@@ -168,7 +185,7 @@ When you change the prefix contract:
 3. Preserve the migration order and atomic state write.
 4. Keep the selected prefix and session UUID captured across every suspension and callback.
 5. Preserve the private homes, the `G:` and `L:` mappings, and the removal of `Z:`.
-6. Update [Runtime compatibility](../../help/runtime-compatibility.md), [Storage](../../help/storage.md),
+6. Update [Game runtime](../../help/runtime.md), [Storage](../../help/storage.md),
    and [Data and persistence](data-and-persistence.md) when a user-visible path, reset consequence, or
    persistence rule changes.
 

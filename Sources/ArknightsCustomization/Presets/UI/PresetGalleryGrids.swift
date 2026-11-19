@@ -5,26 +5,38 @@ import SwiftUI
 
 private let applyingLabel = "Applying…"
 
+private enum AvatarGridMetrics {
+	static let minimumColumnWidth: CGFloat = 120
+	static let maximumColumnWidth: CGFloat = 140
+	static let labelWidth: CGFloat = 128
+	static let shadowRadius: CGFloat = 4
+	static let shadowYOffset: CGFloat = 2
+}
+
 struct PresetAvatarGrid: View {
+	@Environment(\.launcherTheme) private var theme
 	let catalog: PresetCatalogService
-	let accentColor: Color
 	let avatars: [PresetAvatar]
 	let applyingItemID: String?
 	let onSelect: (PresetAvatar) -> Void
 
 	private let columns = [
-		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 16)
+		GridItem(
+			.adaptive(
+				minimum: AvatarGridMetrics.minimumColumnWidth,
+				maximum: AvatarGridMetrics.maximumColumnWidth),
+			spacing: LauncherTokens.Spacing.panel)
 	]
 
 	var body: some View {
-		LazyVGrid(columns: columns, spacing: 18) {
+		LazyVGrid(columns: columns, spacing: LauncherTokens.Spacing.panel) {
 			ForEach(avatars) { avatar in
 				let isApplying = applyingItemID == avatar.id
 				let isBlocked = applyingItemID != nil && !isApplying
 				Button {
 					onSelect(avatar)
 				} label: {
-					VStack(spacing: 6) {
+					VStack(spacing: LauncherTokens.Spacing.control) {
 						ZStack {
 							CachedPresetImage(
 								catalog: catalog,
@@ -33,56 +45,57 @@ struct PresetAvatarGrid: View {
 								contentMode: .fit,
 								placeholderIcon: "person.crop.square"
 							)
-							.frame(width: 104, height: 104)
-							.background(
-								LinearGradient(
-									colors: [
-										LauncherVisuals.galleryPlateTop,
-										LauncherVisuals.galleryPlateBottom,
-									],
-									startPoint: .top,
-									endPoint: .bottom
-								)
+							.frame(
+								width: LauncherTokens.Layout.presetAvatarTileSize,
+								height: LauncherTokens.Layout.presetAvatarTileSize
 							)
-							.clipShape(RoundedRectangle(cornerRadius: 22))
+							.background(theme.groupFill)
+							.clipShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel))
 							if isApplying {
 								ZStack {
-									Color.black.opacity(0.65)
+									LauncherVisuals.opaqueDim.opacity(
+										LauncherVisuals.Shade.loadingScrimOpacity)
 									ProgressView()
 										.controlSize(.small)
-										.tint(accentColor)
+										.tint(theme.accentFill)
 								}
-								.clipShape(RoundedRectangle(cornerRadius: 22))
+								.clipShape(
+									RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel))
 							}
 						}
-						.frame(width: 104, height: 104)
+						.frame(
+							width: LauncherTokens.Layout.presetAvatarTileSize,
+							height: LauncherTokens.Layout.presetAvatarTileSize
+						)
 						.overlay {
-							RoundedRectangle(cornerRadius: 22)
+							RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
 								.strokeBorder(
-									isApplying ? accentColor : Color.white.opacity(0.14),
-									lineWidth: isApplying ? 2.5 : 1.5
+									isApplying ? theme.accentFill : theme.hairline,
+									lineWidth: LauncherTokens.Control.borderWidth
 								)
 						}
 						.shadow(
-							color: isApplying ? accentColor.opacity(0.5) : Color.black.opacity(0.4),
-							radius: isApplying ? 8 : 5,
+							color: LauncherVisuals.opaqueDim.opacity(
+								LauncherVisuals.Shade.artworkShadowOpacity),
+							radius: AvatarGridMetrics.shadowRadius,
 							x: 0,
-							y: 3
-						)
+							y: AvatarGridMetrics.shadowYOffset)
 						Text(avatar.name)
-							.font(.caption.weight(isApplying ? .bold : .medium))
+							.font(.caption.weight(.medium))
 							.lineLimit(2)
 							.truncationMode(.tail)
-							.foregroundStyle(isApplying ? accentColor : .primary)
-							.frame(maxWidth: 130)
+							.foregroundStyle(isApplying ? theme.accentInk : theme.textPrimary)
+							.frame(maxWidth: AvatarGridMetrics.labelWidth)
 					}
-					.padding(.vertical, 4)
+					.padding(.vertical, LauncherTokens.Spacing.compact)
 					.frame(maxWidth: .infinity)
 					.contentShape(Rectangle())
-					.opacity(isBlocked ? 0.46 : 1)
+					.opacity(isBlocked ? LauncherVisuals.Control.blockedOpacity : 1)
 				}
 				.buttonStyle(ActionPressStyle(intensity: .subtle))
-				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 22))
+				.keyboardFocusIndicator(
+					in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
+				)
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(avatar.name)
 				.accessibilityHint(
@@ -101,85 +114,87 @@ struct PresetAvatarGrid: View {
 }
 
 struct PresetWallpaperGrid: View {
+	@Environment(\.launcherTheme) private var theme
 	let catalog: PresetCatalogService
-	let accentColor: Color
 	let wallpapers: [PresetWallpaper]
 	let applyingItemID: String?
 	let onSelect: (PresetWallpaper) -> Void
 
 	private let columns = [
-		GridItem(.flexible(), spacing: 14),
-		GridItem(.flexible(), spacing: 14),
-		GridItem(.flexible(), spacing: 14),
+		GridItem(.flexible(), spacing: LauncherTokens.Spacing.panel),
+		GridItem(.flexible(), spacing: LauncherTokens.Spacing.panel),
+		GridItem(.flexible(), spacing: LauncherTokens.Spacing.panel),
 	]
+	// Nested radius: the card radius minus the card's padding.
+	private let thumbnailRadius: CGFloat =
+		LauncherTokens.Radius.panel - LauncherTokens.Spacing.control
 
 	var body: some View {
-		LazyVGrid(columns: columns, spacing: 14) {
+		LazyVGrid(columns: columns, spacing: LauncherTokens.Spacing.panel) {
 			ForEach(wallpapers) { wp in
 				let isApplying = applyingItemID == wp.id
 				let isBlocked = applyingItemID != nil && !isApplying
 				Button {
 					onSelect(wp)
 				} label: {
-					VStack(alignment: .leading, spacing: 6) {
+					VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 						ZStack {
 							CachedPresetImage(
 								catalog: catalog,
 								url: wp.thumbnailURL ?? wp.url,
-								cacheKey: "thumb_\(wp.id)",
+								// The width in the key retires thumbnails cached at another size.
+								cacheKey: "thumb_w\(AppConstants.Presets.thumbnailWidth)_\(wp.id)",
 								contentMode: .fill,
 								placeholderIcon: "photo"
 							)
 							.frame(minWidth: 0, maxWidth: .infinity)
-							.frame(height: 105)
+							.frame(height: LauncherTokens.Layout.presetThumbnailHeight)
 							.clipped()
-							.clipShape(RoundedRectangle(cornerRadius: 10))
+							.clipShape(RoundedRectangle(cornerRadius: thumbnailRadius))
 							if isApplying {
 								ZStack {
-									Color.black.opacity(0.68)
-									VStack(spacing: 6) {
+									LauncherVisuals.opaqueDim.opacity(
+										LauncherVisuals.Shade.loadingScrimOpacity)
+									VStack(spacing: LauncherTokens.Spacing.control) {
 										ProgressView()
 											.controlSize(.regular)
-											.tint(accentColor)
+											.tint(theme.accentFill)
 										Text(applyingLabel)
-											.font(.caption2.bold())
+											.font(.caption2.weight(.medium))
 											.foregroundStyle(.white)
 									}
 								}
-								.clipShape(RoundedRectangle(cornerRadius: 10))
+								.clipShape(RoundedRectangle(cornerRadius: thumbnailRadius))
 							}
 						}
-						.frame(height: 105)
-						.background(Color.white.opacity(0.05), in: .rect(cornerRadius: 10))
+						.frame(height: LauncherTokens.Layout.presetThumbnailHeight)
+						.background(
+							theme.trackFill, in: .rect(cornerRadius: thumbnailRadius))
 						Text(wp.displayTitle)
-							.font(.caption.weight(isApplying ? .bold : .medium))
+							.font(.caption.weight(.medium))
 							.lineLimit(2)
 							.truncationMode(.tail)
-							.foregroundStyle(isApplying ? accentColor : .primary)
+							.foregroundStyle(isApplying ? theme.accentInk : theme.textPrimary)
 					}
-					.padding(8)
+					.padding(LauncherTokens.Spacing.control)
 					.frame(maxWidth: .infinity)
 					.background(
-						isApplying ? accentColor.opacity(0.12) : Color.white.opacity(0.03),
-						in: .rect(cornerRadius: 12)
+						theme.groupFill,
+						in: .rect(cornerRadius: LauncherTokens.Radius.panel)
 					)
 					.overlay {
-						RoundedRectangle(cornerRadius: 12)
+						RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
 							.strokeBorder(
-								isApplying ? accentColor : Color.white.opacity(0.07),
-								lineWidth: isApplying ? 2 : 1
+								isApplying ? theme.accentFill : theme.hairline,
+								lineWidth: LauncherTokens.Control.borderWidth
 							)
 					}
-					.shadow(
-						color: isApplying ? accentColor.opacity(0.4) : .clear,
-						radius: 8,
-						x: 0,
-						y: 2
-					)
-					.opacity(isBlocked ? 0.46 : 1)
+					.opacity(isBlocked ? LauncherVisuals.Control.blockedOpacity : 1)
 				}
 				.buttonStyle(ActionPressStyle(intensity: .subtle))
-				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 12))
+				.keyboardFocusIndicator(
+					in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
+				)
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(wp.displayTitle)
 				.accessibilityHint(

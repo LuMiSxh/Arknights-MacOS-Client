@@ -9,12 +9,14 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 	case duplicateManifestPath(String)
 	case conflictingManifestPaths(String, String)
 	case symbolicLinkInInstallPath(URL)
+	case invalidRemoteAsset(URL)
 	case invalidDownloadResponse(status: Int, path: String)
 	case downloadedSizeMismatch(path: String, expected: Int64, actual: Int64)
 	case checksumMismatch(path: String, expected: String, actual: String)
 	case cannotCreateFile(URL)
 	case unsafeInstallerTemporaryFile(URL)
 	case installDirectoryInUse(URL)
+	case installedFilesUnknown(URL)
 	case missingConfiguration
 	case insufficientDiskSpace(required: Int64, available: Int64)
 
@@ -25,6 +27,8 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 			"The game's file list contains unsafe or conflicting paths. Installation was stopped. Try again later."
 		case .symbolicLinkInInstallPath:
 			"The install folder contains a symbolic link. Choose a regular folder and try again."
+		case .invalidRemoteAsset:
+			"The requested content uses an unsupported download address. Check for a launcher update and try again."
 		case .invalidDownloadResponse:
 			"A game file could not be downloaded. Check your connection and try again."
 		case .downloadedSizeMismatch, .checksumMismatch:
@@ -35,10 +39,12 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 			"The launcher could not safely write to the install folder. Choose another folder and try again."
 		case .installDirectoryInUse:
 			"Another launcher process is changing this install folder. Wait for it to finish and try again."
+		case .installedFilesUnknown:
+			"The launcher could not tell which files it installed, so it left the folder in place. Delete the game files from the folder yourself."
 		case .missingConfiguration:
 			"Game information has not loaded yet. Refresh the launcher and try again."
 		case .insufficientDiskSpace(let required, let available):
-			"Arknights needs about \(ByteCountFormatter.string(fromByteCount: required, countStyle: .file)) free, but only \(ByteCountFormatter.string(fromByteCount: available, countStyle: .file)) is available. Free up space and try again."
+			"Arknights needs about \(DownloadProgressFormatting.byteCount(required)) free, but only \(DownloadProgressFormatting.byteCount(available)) is available. Free up space and try again."
 		}
 	}
 
@@ -50,6 +56,8 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 			"Conflicting paths in game manifest: \(parent) and \(child)"
 		case .symbolicLinkInInstallPath(let url):
 			"The game installer refused a symbolic link in its destination: \(url.path)"
+		case .invalidRemoteAsset(let url):
+			"Refused an unsupported remote asset URL: \(url.absoluteString)"
 		case .invalidDownloadResponse(let status, let path):
 			"Download for \(path) returned HTTP \(status)."
 		case .downloadedSizeMismatch(let path, let expected, let actual):
@@ -61,6 +69,8 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 			"The installer refused a non-regular or multiply linked temporary file: \(url.path)"
 		case .installDirectoryInUse(let url):
 			"Another launcher process holds the install lease for \(url.path)."
+		case .installedFilesUnknown(let url):
+			"No installed-file list was found, so uninstall left the folder in place: \(url.path)"
 		case .missingConfiguration: "The current game configuration has not been loaded yet."
 		case .insufficientDiskSpace:
 			errorDescription ?? "The operation could not be completed."

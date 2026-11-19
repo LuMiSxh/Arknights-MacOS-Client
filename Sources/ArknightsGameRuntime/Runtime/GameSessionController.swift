@@ -13,7 +13,7 @@ enum GameProcessExitAction: Equatable {
 
 struct GameSessionTerminalFailure {
 	let error: any Error
-	package let operation: SupportOperation
+	let operation: SupportOperation
 	let blocksGameLaunch: Bool
 }
 
@@ -25,15 +25,26 @@ package final class GameSessionController {
 		get { lifecycle.state.readiness.runtimeName }
 		set { lifecycle.state.readiness.runtimeName = newValue }
 	}
+	/// nil until discovery finishes. Settings reads it to explain a fallback before a launch.
+	package internal(set) var metalFXSpatialUpscalingSupported: Bool?
+	/// nil until discovery finishes or when no runtime is installed. Settings → About reads it.
+	package internal(set) var installedRuntime: InstalledRuntimeDetails?
 	package var isGameActive: Bool { lifecycle.activity.isGameActive }
-	var isGameProcessRunning: Bool { lifecycle.activity.isGameProcessRunning }
 	var activeGameSessionID: UUID? { lifecycle.activity.activeGameSessionID }
 	package var canStopGame: Bool { Self.canStopGame(for: lifecycle.activity) }
+	/// True while a launch has claimed a click but has no session yet, or a session owns the runtime.
+	package var isLaunchPendingOrActive: Bool {
+		pendingLaunchID != nil || lifecycle.activity.isGameActive
+	}
 	package var canLaunch: Bool {
 		!applicationTerminationRequested
 			&& installation.isInstalled && runtimeName != nil
 			&& intelTranslation.allowsWine
-			&& lifecycle.activity == .idle
+			&& (lifecycle.activity == .idle || isYieldingMaintenance)
+	}
+	/// Background game environment updates give way to a launch instead of blocking it.
+	var isYieldingMaintenance: Bool {
+		lifecycle.activity == .maintaining(.updatingGameEnvironments)
 	}
 
 	let lifecycle: LauncherLifecycleStore
@@ -41,21 +52,29 @@ package final class GameSessionController {
 	let settings: LauncherPreferencesController
 	let intelTranslation: IntelTranslationController
 	package let paths: AppPaths
-	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
 	let gameCompatibilityManager: GameCompatibilityManager
 	let playtimeStatistics: PlaytimeStatisticsController
 	let graphicsDiagnosticsEnabled: Bool
 	@ObservationIgnored package var customGameIconURL: () -> URL? = { nil }
+	/// Sets the Finder icon of the loader bundle. AppKit work stays in the composition root.
+	@ObservationIgnored package var applyLoaderIcon: (URL) throws -> Void = { _ in }
 	@ObservationIgnored var runtimeSessionControllerProvider:
 		@MainActor () throws -> any WineRuntimeSessionControlling
+	/// Resolves the selected lane when an operation starts. Callers capture the result so one
+	/// launch never switches runtimes midway.
+	@ObservationIgnored var currentRuntimeLane: @MainActor () -> RuntimeLane
 	@ObservationIgnored var session: ActiveGameSession?
 	@ObservationIgnored var applicationTerminationRequested = false
+	/// Cancels background maintenance and returns once it released the launcher. Set by the composition root.
+	@ObservationIgnored package var yieldMaintenanceToLaunch: @MainActor () async -> Void = {}
+	/// Orders Game Mode requests: each one awaits the previous one, so `off` never overtakes `on`.
+	@ObservationIgnored var gameModeChain: Task<Void, Never>?
 	// Launch that passed the click guard but has no session yet. Blocks a second launch.
 	@ObservationIgnored var pendingLaunchID: UUID?
 	var gameRunningSince: Date?
 	var sessionLease: ActivityLease? { session?.lease }
-	var activeGameRegion: GameRegion? { session?.region }
+	package var activeGameRegion: GameRegion? { session?.region }
 
 	package init(
 		lifecycle: LauncherLifecycleStore,
@@ -63,28 +82,34 @@ package final class GameSessionController {
 		settings: LauncherPreferencesController,
 		intelTranslation: IntelTranslationController,
 		paths: AppPaths,
-		preferences: LauncherPreferencesStore,
 		log: LauncherLog,
 		gameCompatibilityManager: GameCompatibilityManager,
 		playtimeStatistics: PlaytimeStatisticsController,
-		graphicsDiagnosticsEnabled: Bool
+		graphicsDiagnosticsEnabled: Bool,
+		runtimeLane: (@MainActor () -> RuntimeLane)? = nil
 	) {
 		self.lifecycle = lifecycle
 		self.installation = installation
 		self.settings = settings
 		self.intelTranslation = intelTranslation
 		self.paths = paths
-		self.preferences = preferences
 		self.log = log
 		self.gameCompatibilityManager = gameCompatibilityManager
+		let runtimePaths = paths
+		let runtimeCompatibility = gameCompatibilityManager
+		let laneProvider: @MainActor () -> RuntimeLane = runtimeLane ?? { paths.runtimeLane }
+		self.currentRuntimeLane = laneProvider
 		runtimeSessionControllerProvider = {
-			try WineRuntime.discover(compatibilityManager: gameCompatibilityManager)
+			try Self.discoverRuntime(
+				paths: runtimePaths,
+				lane: laneProvider(),
+				compatibilityManager: runtimeCompatibility)
 		}
 		self.playtimeStatistics = playtimeStatistics
 		self.graphicsDiagnosticsEnabled = graphicsDiagnosticsEnabled
 	}
 
-	deinit {
+	isolated deinit {
 		session?.cancelTasks()
 	}
 

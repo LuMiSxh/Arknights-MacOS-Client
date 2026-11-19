@@ -4,28 +4,18 @@ import AppKit
 import ArknightsCore
 import SwiftUI
 
-// One hue, rendered twice: a legible signal color for controls and text,
-// and a muted tint for neutral chrome.
+// The accent color taken from artwork; neutrals stay graphite and never take its hue.
 struct ExtractedAccent: Sendable {
 	let hue: Double
 	let saturation: Double
 	let brightness: Double
-	package let accentColor: Color
+	let accentColor: Color
 
 	init(hue: Double, saturation: Double, brightness: Double) {
 		self.hue = hue
 		self.saturation = saturation
 		self.brightness = brightness
 		accentColor = Color(hue: hue, saturation: saturation, brightness: brightness)
-	}
-
-	var backgroundTint: Color {
-		Color(
-			hue: hue,
-			saturation: AppConstants.Theme.backgroundTintSaturation,
-			brightness: AppConstants.Theme.backgroundTintBrightness
-		)
-		.opacity(AppConstants.Theme.backgroundTintOpacity)
 	}
 }
 
@@ -34,15 +24,16 @@ struct ExtractedAccent: Sendable {
 @MainActor
 enum WallpaperColorExtractor {
 	// Returns nil when no sampled pixel has a real hue (grayscale or near-black artwork).
-	// Callers then use the fixed cyan. Otherwise saturation and brightness are clamped into a
-	// legible range, so dark, pale, and neon artwork all yield a readable accent.
+	// Callers then use the fixed cyan. Otherwise the accent keeps the artwork's dominant hue,
+	// with saturation and brightness clamped so dark, pale, and neon artwork all stay legible.
 	static func extractAccent(from image: NSImage) async -> ExtractedAccent? {
-		guard let pixels = samplePixels(from: image) else { return nil }
+		guard
+			let pixels = samplePixels(from: image, side: AppConstants.Theme.wallpaperSampleSide)
+		else { return nil }
 		return await bestAccentColor(in: pixels)
 	}
 
-	private static func samplePixels(from image: NSImage) -> [UInt8]? {
-		let side = AppConstants.Theme.wallpaperSampleSide
+	private static func samplePixels(from image: NSImage, side: Int) -> [UInt8]? {
 		let bounds = NSRect(x: 0, y: 0, width: side, height: side)
 		guard
 			let bitmap = RGBABitmap.render(
@@ -56,6 +47,23 @@ enum WallpaperColorExtractor {
 		guard let data = bitmap.bitmapData else { return nil }
 		return Array(UnsafeBufferPointer(start: data, count: side * side * 4))
 	}
+}
+
+// Home controls follow the artwork's composition. The pixel sampling stays on the main actor;
+// the scoring runs off it.
+extension WallpaperColorExtractor {
+	// Returns nil when the artwork cannot be sampled.
+	static func homeLuminance(from image: NSImage) async -> Double? {
+		let side = AppConstants.Theme.artworkLuminanceSampleSide
+		guard let pixels = samplePixels(from: image, side: side) else { return nil }
+		return await scoreHomeLuminance(pixels: pixels, side: side)
+	}
+}
+
+// Pure pixel math with no AppKit dependency; `@concurrent` keeps the scan off the main actor.
+@concurrent
+private func scoreHomeLuminance(pixels: [UInt8], side: Int) async -> Double? {
+	HomeLuminance.score(pixels: pixels, side: side)
 }
 
 // Pure pixel math with no AppKit dependency; `@concurrent` keeps the scan off the main actor.
@@ -101,6 +109,10 @@ private func bestAccentColor(in pixels: [UInt8]) async -> ExtractedAccent? {
 	else { return nil }
 
 	let window = windows[winner]
+	// The circular mean is the angle of the summed unit vectors. Shifting by one turn before
+	// wrapping keeps the result in [0, 1) when the angle is negative.
+	let turns = atan2(window.sine, window.cosine) / (2 * .pi)
+	let hue = (turns + 1).truncatingRemainder(dividingBy: 1)
 	let renderSaturation = min(
 		max(window.saturation / window.weight, AppConstants.Theme.minimumRenderSaturation),
 		AppConstants.Theme.maximumRenderSaturation
@@ -109,10 +121,6 @@ private func bestAccentColor(in pixels: [UInt8]) async -> ExtractedAccent? {
 		max(window.brightness / window.weight, AppConstants.Theme.minimumRenderBrightness),
 		AppConstants.Theme.maximumRenderBrightness
 	)
-	// The circular mean is the angle of the summed unit vectors. Shifting by one turn before
-	// wrapping keeps the result in [0, 1) when the angle is negative.
-	let turns = atan2(window.sine, window.cosine) / (2 * .pi)
-	let hue = (turns + 1).truncatingRemainder(dividingBy: 1)
 	return ExtractedAccent(
 		hue: hue,
 		saturation: renderSaturation,

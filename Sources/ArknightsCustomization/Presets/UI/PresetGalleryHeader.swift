@@ -9,15 +9,16 @@ struct PresetGalleryHeader: View {
 	let customization: CustomizationController
 	let avatars: [PresetAvatar]
 	@Binding var showsIconStylePreview: Bool
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		HStack {
-			VStack(alignment: .leading, spacing: 3) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 				Text(destination.title)
-					.font(.title3.bold())
+					.font(.title3.weight(.medium))
 				Text(destination.subtitle)
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 			}
 			Spacer()
 			if destination == .operatorIcons {
@@ -33,13 +34,12 @@ struct PresetGalleryHeader: View {
 					OperatorIconStylePreview(
 						catalog: catalog,
 						avatar: avatars.first,
-						accentHue: customization.dynamicThemeHue,
-						accentColor: customization.accentColor
+						accentHue: customization.dynamicThemeHue
 					)
 				}
 			}
 		}
-		.padding(.horizontal, 24)
-		.padding(.vertical, 16)
+		.padding(.horizontal, LauncherTokens.Spacing.page)
+		.padding(.vertical, LauncherTokens.Spacing.panel)
 	}
 }

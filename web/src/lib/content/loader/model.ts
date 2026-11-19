@@ -7,6 +7,13 @@ export interface SupportCodeRegistryEntry {
 	domain: string;
 }
 
+/** The page facts that the support-code registry cross-checks. */
+export interface SupportCodeDocument {
+	source: string;
+	domain: string;
+	route: string;
+}
+
 export interface SourceDocument extends ParsedMarkdown {
 	relative: string;
 	source: string;

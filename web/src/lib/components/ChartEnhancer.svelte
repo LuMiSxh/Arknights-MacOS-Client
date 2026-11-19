@@ -4,8 +4,29 @@
 	import { base } from '$app/paths';
 	import BenchmarkChart from './BenchmarkChart.svelte';
 	import type { BenchmarkDataset, ChartSpec } from '$lib/content/chart.js';
+	import { escapeHtml } from '$lib/content/html.js';
 
 	let { route }: { route: string } = $props();
+
+	function hasSrc(value: unknown): value is { src: string } {
+		return (
+			typeof value === 'object' &&
+			value !== null &&
+			'src' in value &&
+			typeof value.src === 'string'
+		);
+	}
+
+	function isBenchmarkDataset(value: unknown): value is BenchmarkDataset {
+		return (
+			typeof value === 'object' &&
+			value !== null &&
+			'schemaVersion' in value &&
+			typeof value.schemaVersion === 'number' &&
+			'runs' in value &&
+			Array.isArray(value.runs)
+		);
+	}
 
 	onMount(() => {
 		let cancelled = false;
@@ -15,33 +36,19 @@
 		}> = [];
 		const cache = new Map<string, Promise<BenchmarkDataset>>();
 
-		function escapeHtml(value: string): string {
-			return value
-				.replaceAll('&', '&amp;')
-				.replaceAll('<', '&lt;')
-				.replaceAll('>', '&gt;')
-				.replaceAll('"', '&quot;')
-				.replaceAll("'", '&#39;');
-		}
-
 		function showError(block: HTMLElement, message: string): void {
 			block.innerHTML = `<p class="chart-status chart-error">${escapeHtml(message)}</p>`;
 		}
 
 		function parseSpec(source: string): ChartSpec {
 			const value: unknown = JSON.parse(source);
-			if (
-				!value ||
-				typeof value !== 'object' ||
-				typeof (value as { src?: unknown }).src !== 'string'
-			) {
+			if (!hasSrc(value)) {
 				throw new Error('Chart spec needs a src string');
 			}
-			const spec = value as ChartSpec;
-			if (!spec.src.startsWith('/') || spec.src.startsWith('//')) {
+			if (!value.src.startsWith('/') || value.src.startsWith('//')) {
 				throw new Error('Chart src must be a site path');
 			}
-			return spec;
+			return value;
 		}
 
 		async function load(src: string): Promise<BenchmarkDataset> {
@@ -54,7 +61,11 @@
 							`Unable to load ${src} (HTTP ${response.status})`
 						);
 					}
-					return (await response.json()) as BenchmarkDataset;
+					const value: unknown = await response.json();
+					if (!isBenchmarkDataset(value)) {
+						throw new Error(`Invalid chart dataset for ${src}`);
+					}
+					return value;
 				});
 				cache.set(url, promise);
 			}

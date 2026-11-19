@@ -5,22 +5,27 @@ import ArknightsGameInstallation
 import SwiftUI
 
 struct StatusHUDPill: View {
-	package let settings: LauncherPreferencesController
-	package let installation: InstallationController
+	let settings: LauncherPreferencesController
+	let installation: InstallationController
 	let canSwitchRegion: Bool
-	package let accentColor: Color
-	let hudTintColor: Color
-	package let selectRegion: (GameRegion) -> Void
+	let accentColor: Color
+	let selectRegion: (GameRegion) -> Void
 	@Binding var isExpanded: Bool
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
-		if settings.showsServerResetCountdown {
+		if Self.shows(for: settings) {
 			// Countdowns show whole minutes, so redrawing on minute boundaries keeps them exact.
 			TimelineView(.everyMinute) { context in
 				pill(now: context.date)
 			}
 		}
+	}
+
+	/// Shared with the Home HUD so the pill and its row spacing appear together.
+	static func shows(for settings: LauncherPreferencesController) -> Bool {
+		settings.showsServerResetCountdown
 	}
 
 	private func pill(now: Date) -> some View {
@@ -29,8 +34,6 @@ struct StatusHUDPill: View {
 			systemImage: "clock",
 			toggleNoun: "reset details",
 			accessibilityValue: countdown(for: installation.region, now: now),
-			accentColor: accentColor,
-			hudTintColor: hudTintColor,
 			canExpand: canExpand,
 			sizing: HUDPillSizing(
 				collapsedHeight: AppConstants.Music.collapsedPlayerHeight,
@@ -42,8 +45,8 @@ struct StatusHUDPill: View {
 			isExpanded: $isExpanded
 		) {
 			Text(countdown(for: installation.region, now: now))
-				.font(.caption.monospaced().weight(.medium))
-				.foregroundStyle(.secondary)
+				.font(LauncherTokens.Typography.hudPillCaption)
+				.foregroundStyle(theme.textSecondary)
 				.lineLimit(2)
 				.truncationMode(.tail)
 				.fixedSize(horizontal: false, vertical: true)
@@ -61,11 +64,22 @@ struct StatusHUDPill: View {
 	}
 
 	private func countdown(for region: GameRegion, now: Date) -> String {
-		ServerReset.countdownText(for: region, now: now)
+		let remaining = max(0, region.dailyReset(after: now).timeIntervalSince(now))
+		return "Reset in \(Self.countdownText(for: Duration.seconds(remaining)))"
+	}
+
+	/// Whole hours plus zero-padded minutes, like "5h 03m". The HUD redraws on minute
+	/// boundaries, so seconds never appear.
+	private static func countdownText(for duration: Duration) -> String {
+		let seconds = Int(duration.components.seconds)
+		let hours = seconds / 3600
+		let minutes = (seconds % 3600) / 60
+		let minuteText = minutes < 10 ? "0\(minutes)" : "\(minutes)"
+		return "\(hours)h \(minuteText)m"
 	}
 
 	private func installedRegionRows(now: Date) -> some View {
-		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 			ForEach(installation.installedRegions) { region in
 				let countdown = countdown(for: region, now: now)
 				Button {
@@ -78,7 +92,7 @@ struct StatusHUDPill: View {
 				}
 				.buttonStyle(ActionPressStyle())
 				.keyboardFocusIndicator(
-					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
+					in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.control)
 				)
 				.disabled(!canSwitchRegion)
 				.accessibilityElement(children: .ignore)
@@ -87,56 +101,56 @@ struct StatusHUDPill: View {
 				.accessibilityAddTraits(
 					region == installation.region ? .isSelected : []
 				)
-				.accessibilityHint(Text("Switch between installed regions"))
+				.accessibilityHint(Text("Switch between installed servers"))
 			}
 		}
-		.padding(.horizontal, LauncherVisuals.Spacing.control)
-		.padding(.vertical, LauncherVisuals.Spacing.control)
+		.padding(.horizontal, LauncherTokens.Spacing.control)
+		.padding(.vertical, LauncherTokens.Spacing.control)
 		.frame(maxWidth: .infinity, alignment: .leading)
 	}
 
 	private func regionRowLabel(region: GameRegion, countdown: String) -> some View {
-		HStack(spacing: LauncherVisuals.Spacing.control) {
-			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 				Text(region.displayName)
-					.font(.caption.weight(.semibold))
+					.font(.caption.weight(.medium))
 					.adaptiveControlForeground(
-						.primary,
-						disabledTint: LauncherVisuals.disabled
+						theme.textPrimary,
+						disabledTint: theme.textTertiary
 					)
 					.fixedSize(horizontal: false, vertical: true)
 				Text(countdown)
-					.font(.caption.monospacedDigit().weight(.medium))
+					.font(LauncherTokens.Typography.hudPillCaption)
 					.adaptiveControlForeground(
-						.secondary,
-						disabledTint: LauncherVisuals.disabled
+						theme.textSecondary,
+						disabledTint: theme.textTertiary
 					)
 					.fixedSize(horizontal: false, vertical: true)
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
 
 			Image(systemName: "checkmark")
-				.font(.caption.bold())
+				.font(.caption.weight(.medium))
 				.adaptiveControlForeground(
-					accentColor,
-					disabledTint: LauncherVisuals.disabled
+					theme.accentInk,
+					disabledTint: theme.textTertiary
 				)
 				.opacity(region == installation.region ? 1 : 0)
-				.frame(width: 16, alignment: .center)
+				.frame(width: LauncherTokens.Layout.hudCheckmarkWidth, alignment: .center)
 				.accessibilityHidden(true)
 		}
-		.padding(.horizontal, LauncherVisuals.Spacing.control)
-		.padding(.vertical, LauncherVisuals.Spacing.tight)
+		.padding(.horizontal, LauncherTokens.Spacing.control)
+		.padding(.vertical, LauncherTokens.Spacing.control)
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.background(
-			rowFill(for: region), in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
+			rowFill(for: region), in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.control)
 		)
-		.contentShape(RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row))
+		.contentShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.control))
 	}
 
 	private func rowFill(for region: GameRegion) -> Color {
 		guard region == installation.region else { return .clear }
-		let opacity = canSwitchRegion ? 1 : 0.45
+		let opacity = canSwitchRegion ? 1 : LauncherVisuals.Control.inactiveSelectionOpacity
 		return LauncherVisuals.selectedNavigationFill(for: accentColor).opacity(opacity)
 	}
 }

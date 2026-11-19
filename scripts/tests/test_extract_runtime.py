@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 
-from __future__ import annotations
-
 import tarfile
 from io import BytesIO
 from pathlib import Path

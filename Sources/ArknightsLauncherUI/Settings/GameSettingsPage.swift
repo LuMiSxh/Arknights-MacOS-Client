@@ -5,28 +5,38 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct GameSettingsPage: View {
-	package let settings: LauncherPreferencesController
+	let settings: LauncherPreferencesController
 	let gameSession: GameSessionController
-	package let lifecycle: LauncherLifecycleStore
-	package let accentColor: Color
+	let lifecycle: LauncherLifecycleStore
 
 	var body: some View {
 		SettingsPage(
 			title: "Game",
-			subtitle: "How Arknights looks and plays",
-			accentColor: accentColor
+			subtitle: "How Arknights looks and plays"
 		) {
+			if isDisplayLocked, let reason = lifecycle.activity.lockReason {
+				SettingsLockBanner(reason: reason)
+			}
+
 			GameDisplaySettingsPanel(
 				settings: settings,
-				isLocked: gameSession.isGameActive
-					|| lifecycle.activity == .maintaining(.migratingStorage),
-				accentColor: accentColor
+				isLocked: isDisplayLocked,
+				metalFXSpatialUpscalingSupported: gameSession.metalFXSpatialUpscalingSupported
 			)
-			GameAdvancedSettingsPanel(
+			GamePerformanceSettingsPanel(
 				settings: settings,
 				isLocked: gameSession.isGameActive,
-				accentColor: accentColor
+				isFrameRateLocked: isDisplayLocked
+			)
+			GameBatterySaverSettingsPanel(
+				settings: settings,
+				isLocked: gameSession.isGameActive
 			)
 		}
+	}
+
+	/// Display settings and the frame rate also wait for storage migration.
+	private var isDisplayLocked: Bool {
+		gameSession.isGameActive || lifecycle.activity == .maintaining(.migratingStorage)
 	}
 }

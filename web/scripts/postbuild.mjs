@@ -7,6 +7,7 @@ import {
 	writeFileSync
 } from 'node:fs';
 import { relative, resolve } from 'node:path';
+import sharp from 'sharp';
 
 const build = resolve(import.meta.dirname, '../build');
 const basePath = normalizeBasePath(process.env.BASE_PATH ?? '');
@@ -69,7 +70,7 @@ function assertSignalContrast() {
 	const token = (name) =>
 		new RegExp(`--${name}:[^;]*?(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
 	const background = token('site-bg');
-	const accent = token('site-signal-text');
+	const accent = token('site-accent-ink');
 	assert.ok(background && accent, 'signal contrast tokens are missing');
 	const ratio = contrastRatio(background, accent);
 	assert.ok(
@@ -125,9 +126,9 @@ function assertPages(pages, routes) {
 		const canonical = page === '404.html' ? `${siteUrl}/404.html` : `${siteUrl}${route.slice(basePath.length)}`;
 		for (const [tag, key, value, expected, attributeName] of [
 			['meta', 'name', 'description'], ['link', 'rel', 'canonical', canonical, 'href'],
-			['meta', 'property', 'og:url', canonical], ['meta', 'property', 'og:image', `${siteUrl}/AppIcon-128.png`],
-			['meta', 'name', 'twitter:card'], ['meta', 'name', 'twitter:title'],
-			['meta', 'name', 'twitter:description'], ['meta', 'name', 'twitter:image', `${siteUrl}/AppIcon-128.png`]
+			['meta', 'property', 'og:url', canonical], ['meta', 'property', 'og:image', `${siteUrl}/share-card.jpg`], ['meta', 'property', 'og:image:width', '1200'], ['meta', 'property', 'og:image:height', '630'],
+			['meta', 'name', 'twitter:card', 'summary_large_image'], ['meta', 'name', 'twitter:title'],
+			['meta', 'name', 'twitter:description'], ['meta', 'name', 'twitter:image', `${siteUrl}/share-card.jpg`]
 		]) {
 			const matches = elements(html, tag).filter((element) => attribute(element, key) === value);
 			assert.equal(matches.length, 1, `${page}: ${key}=${value}`);
@@ -147,7 +148,7 @@ function assertPages(pages, routes) {
 			const pathname = new URL(href, `https://build.invalid${route}`).pathname;
 			if (!routes.has(pathname) && !pathname.startsWith(`${basePath}/_app/`) && !/\.(?:css|js|json|map|png|svg|ico|txt|xml)$/i.test(pathname)) assert.fail(`${page}: missing internal route ${href}`);
 		}
-		const navigation = [...html.matchAll(/<nav\b[\s\S]*?<\/nav>/gi)].map(([markup]) => markup).filter((markup) => /\bsite-nav\b|aria-label=["']Mobile primary["']/i.test(markup)).join('\n');
+		const navigation = [...html.matchAll(/<nav\b[\s\S]*?<\/nav>/gi)].map(([markup]) => markup).filter((markup) => /\bsite-nav\b|aria-label=["']Primary["']/i.test(markup)).join('\n');
 		const expectedPath = normalizePath(route);
 		for (const anchor of elements(navigation, 'a')) {
 			const href = attribute(anchor, 'href');
@@ -167,12 +168,25 @@ function writeDiscoveryFiles() {
 	const locations = [...routes].sort().map((route) => `  <url><loc>${siteUrl}${route.slice(basePath.length)}</loc></url>`).join('\n');
 	writeFileSync(resolve(build, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${siteUrl}/sitemap.xml\n`, 'utf8');
 	writeFileSync(resolve(build, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${locations}\n</urlset>\n`, 'utf8');
-	const home = `${basePath}/`, canonical = `${siteUrl}/404.html`, description = 'The requested Arknights Client documentation page could not be found.', icon = `${siteUrl}/AppIcon-128.png`, favicon = `${basePath}/favicon.ico`;
-	const notFound = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>404 · Page not found · Arknights Client</title><meta name="description" content="${description}"><meta name="robots" content="noindex, max-image-preview:none"><link rel="icon" type="image/x-icon" sizes="any" href="${favicon}"><link rel="canonical" href="${canonical}"><meta property="og:type" content="website"><meta property="og:title" content="Page not found · Arknights Client"><meta property="og:description" content="${description}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${icon}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Page not found · Arknights Client"><meta name="twitter:description" content="${description}"><meta name="twitter:image" content="${icon}"><style>body{max-width:42rem;margin:10vh auto;padding:1.5rem;font:1rem/1.6 system-ui,sans-serif;color:#f2f3f5;background:#0b0c0e}a{color:#7ea2db}</style></head><body><main><p>Error 404</p><h1>Page not found</h1><p>The page may have moved, or the link may be stale.</p><a href="${home}">Return home</a></main></body></html>\n`;
+	const home = `${basePath}/`, canonical = `${siteUrl}/404.html`, description = 'The requested Arknights Client documentation page could not be found.', card = `${siteUrl}/share-card.jpg`, cardAlt = 'Arknights Client share image, Dissociative Recombination artwork', favicon = `${basePath}/favicon.ico`;
+	const notFound = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>404 · Page not found · Arknights Client</title><meta name="description" content="${description}"><meta name="robots" content="noindex, max-image-preview:none"><link rel="icon" type="image/x-icon" sizes="any" href="${favicon}"><link rel="canonical" href="${canonical}"><meta property="og:type" content="website"><meta property="og:title" content="Page not found · Arknights Client"><meta property="og:description" content="${description}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${card}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${cardAlt}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Page not found · Arknights Client"><meta name="twitter:description" content="${description}"><meta name="twitter:image" content="${card}"><meta name="twitter:image:alt" content="${cardAlt}"><style>body{max-width:42rem;margin:10vh auto;padding:1.5rem;font:1rem/1.6 system-ui,sans-serif;color:#f2f3f5;background:#0b0c0e}a{color:#7ea2db}</style></head><body><main><p>Error 404</p><h1>Page not found</h1><p>The page may have moved, or the link may be stale.</p><a href="${home}">Return home</a></main></body></html>\n`;
 	writeFileSync(resolve(build, '404.html'), notFound, 'utf8');
 }
 
-function assertBuildOutput() {
+// The card is generated from the hero artwork at build time and is never committed.
+async function writeShareCard() {
+	await sharp(
+		resolve(
+			import.meta.dirname,
+			'../static/artwork/dissociative-recombination-2400.webp'
+		)
+	)
+		.resize(1200, 630, { fit: 'cover', position: 'centre' })
+		.jpeg({ quality: 82, mozjpeg: true })
+		.toFile(resolve(build, 'share-card.jpg'));
+}
+
+async function assertBuildOutput() {
 	const pages = publicPages();
 	const routes = new Set(
 		pages.filter((path) => !path.endsWith('/404.html')).map(routeFor)
@@ -195,6 +209,18 @@ function assertBuildOutput() {
 		statSync(webFavicon).size <= 32 * 1024,
 		'web favicon exceeds 32 KiB'
 	);
+	const shareCard = resolve(build, 'share-card.jpg');
+	assert.ok(existsSync(shareCard), 'share card is missing');
+	const card = await sharp(shareCard).metadata();
+	assert.deepEqual(
+		[card.width, card.height],
+		[1200, 630],
+		'share card is not 1200x630'
+	);
+	assert.ok(
+		statSync(shareCard).size <= 300 * 1024,
+		'share card exceeds 300 KiB'
+	);
 	const robots = readFileSync(resolve(build, 'robots.txt'), 'utf8');
 	const sitemap = readFileSync(resolve(build, 'sitemap.xml'), 'utf8');
 	assert.match(robots, new RegExp(`Sitemap: ${siteUrl}/sitemap\\.xml`));
@@ -204,5 +230,6 @@ function assertBuildOutput() {
 }
 
 writeDiscoveryFiles();
-assertBuildOutput();
+await writeShareCard();
+await assertBuildOutput();
 console.log('✔ post-build assertions passed');

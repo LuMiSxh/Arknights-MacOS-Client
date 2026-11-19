@@ -5,28 +5,37 @@ import ArknightsGameInstallation
 import SwiftUI
 
 package struct PlaytimeStatisticsPage: View {
+	@Environment(\.launcherTheme) private var theme
 	let controller: PlaytimeStatisticsController
 	let regions: [GameRegion]
-	package let accentColor: Color
 	@State private var confirmsReset = false
 
 	package init(
-		controller: PlaytimeStatisticsController, regions: [GameRegion], accentColor: Color
+		controller: PlaytimeStatisticsController, regions: [GameRegion]
 	) {
 		self.controller = controller
 		self.regions = regions
-		self.accentColor = accentColor
+	}
+
+	private var resetIsEmpty: Bool {
+		controller.totalDuration == 0
+			&& controller.statistics.activeSession == nil
+	}
+
+	private var resetDetail: String {
+		if resetIsEmpty {
+			return "Play the game to collect statistics first."
+		}
+		return "Deletes all local totals and daily data. This cannot be undone."
 	}
 
 	package var body: some View {
 		SettingsPage(
 			title: "Playtime",
-			subtitle: "How long the game has been running on this Mac",
-			accentColor: accentColor
+			subtitle: "How long the game has been running on this Mac"
 		) {
 			SettingsPanel(
-				title: "Overview",
-				systemImage: "clock"
+				title: "Overview"
 			) {
 				HStack(spacing: 0) {
 					metric(
@@ -50,8 +59,7 @@ package struct PlaytimeStatisticsPage: View {
 
 			if !regions.isEmpty {
 				SettingsPanel(
-					title: "Servers",
-					systemImage: "globe"
+					title: "Servers"
 				) {
 					ForEach(Array(regions.enumerated()), id: \.element.id) {
 						index, region in
@@ -62,8 +70,7 @@ package struct PlaytimeStatisticsPage: View {
 			}
 
 			SettingsPanel(
-				title: "About playtime",
-				systemImage: "info.circle"
+				title: "About playtime"
 			) {
 				explanation(
 					title: "What counts",
@@ -83,21 +90,17 @@ package struct PlaytimeStatisticsPage: View {
 			DangerZonePanel {
 				SettingsActionRow(
 					title: "Playtime statistics",
-					detail: "Deletes all local totals and daily data. This cannot be undone."
+					detail: resetDetail
 				) {
 					CapsuleActionButton(
 						title: "Reset Statistics…",
-						systemImage: "trash",
 						tone: .danger,
 						presentation: .compact,
 						role: .destructive
 					) {
 						confirmsReset = true
 					}
-					.disabled(
-						controller.totalDuration == 0
-							&& controller.statistics.activeSession == nil
-					)
+					.disabled(resetIsEmpty)
 					.confirmationDialog(
 						"Reset playtime statistics?",
 						isPresented: $confirmsReset,
@@ -123,9 +126,9 @@ package struct PlaytimeStatisticsPage: View {
 
 	private var metricDivider: some View {
 		Rectangle()
-			.fill(LauncherVisuals.hairline)
+			.fill(theme.hairline)
 			.frame(width: 1, height: 42)
-			.padding(.horizontal, 18)
+			.padding(.horizontal, LauncherTokens.Spacing.panel)
 	}
 
 	private var latestSession: some View {
@@ -151,46 +154,46 @@ package struct PlaytimeStatisticsPage: View {
 	}
 
 	private func metric(_ title: String, duration: TimeInterval) -> some View {
-		VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 			Text(durationText(duration))
 				.font(.title3.monospacedDigit().weight(.semibold))
 			Text(title)
 				.font(.caption)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 		}
 		.frame(maxWidth: .infinity, alignment: .leading)
+		.padding(.vertical, 10)
 	}
 
 	private func explanation(title: String, detail: String, systemImage: String) -> some View {
-		HStack(alignment: .top, spacing: 12) {
+		HStack(alignment: .top, spacing: LauncherTokens.Spacing.content) {
 			Image(systemName: systemImage)
-				.frame(width: 18)
-				.foregroundStyle(.secondary)
+				.frame(width: 24)
+				.foregroundStyle(theme.textSecondary)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 				Text(title)
+					.frame(maxWidth: .infinity, alignment: .leading)
 				Text(detail)
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}
 		}
-		.padding(.vertical, LauncherVisuals.Spacing.control)
 	}
 
 	private func regionRow(_ region: GameRegion) -> some View {
-		HStack(spacing: LauncherVisuals.Spacing.control) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			Image(systemName: "globe")
 				.font(.caption)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.frame(width: 18)
 				.accessibilityHidden(true)
 			Text(region.displayName)
-			Spacer(minLength: LauncherVisuals.Spacing.control)
+			Spacer(minLength: LauncherTokens.Spacing.control)
 			Text(durationText(controller.duration(for: region)))
 				.font(.callout.monospacedDigit().weight(.semibold))
 		}
-		.padding(.vertical, LauncherVisuals.Spacing.control)
 	}
 
 	private func durationText(_ duration: TimeInterval) -> String {

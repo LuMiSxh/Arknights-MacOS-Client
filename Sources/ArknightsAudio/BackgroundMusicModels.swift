@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+@preconcurrency import Combine
 import Foundation
 import YouTubePlayerKit
 
@@ -8,12 +9,45 @@ import YouTubePlayerKit
 struct BackgroundMusicPlayerCommands {
 	typealias PlayerCommand = @MainActor (YouTubePlayer) async throws -> Void
 	typealias VolumeCommand = @MainActor (YouTubePlayer, Int) async throws -> Void
+	typealias SourceCommand = @MainActor (YouTubePlayer, YouTubePlayer.Source) async throws -> Void
+	typealias IndexCommand = @MainActor (YouTubePlayer, Int) async throws -> Void
+	typealias FlagCommand = @MainActor (YouTubePlayer, Bool) async throws -> Void
 
+	/// A subscription to one player's changes. Each call starts an independent stream that ends
+	/// when its consumer stops iterating or drops it.
+	let events: @MainActor (YouTubePlayer) -> BackgroundMusicPlayerEvents
+	let load: SourceCommand
+	let getPlaylist: @MainActor (YouTubePlayer) async throws -> [String]?
+	let getPlaybackMetadata:
+		@MainActor (YouTubePlayer) async throws -> YouTubePlayer.PlaybackMetadata
+	let getPlaybackState: @MainActor (YouTubePlayer) async throws -> YouTubePlayer.PlaybackState
+	let playVideoInPlaylist: IndexCommand
+	let nextVideo: PlayerCommand
+	let previousVideo: PlayerCommand
+	let setLoop: FlagCommand
+	let setShuffle: FlagCommand
 	let play: PlayerCommand
 	let pause: PlayerCommand
 	let setVolume: VolumeCommand
 
 	static let live = Self(
+		events: { liveEvents(of: $0) },
+		// A cued playlist waits for the launcher to pick its first track; loading would play track 0.
+		load: { player, source in
+			if case .playlist = source {
+				try await player.cue(source: source)
+			} else {
+				try await player.load(source: source)
+			}
+		},
+		getPlaylist: { try await $0.getPlaylist() },
+		getPlaybackMetadata: { try await $0.getPlaybackMetadata() },
+		getPlaybackState: { try await $0.getPlaybackState() },
+		playVideoInPlaylist: { try await $0.playVideoInPlaylist(at: $1) },
+		nextVideo: { try await $0.nextVideoInPlaylist() },
+		previousVideo: { try await $0.previousVideoInPlaylist() },
+		setLoop: { try await $0.setLoopPlaylist(enabled: $1) },
+		setShuffle: { try await $0.setShufflePlaylist(enabled: $1) },
 		play: { try await $0.play() },
 		pause: { try await $0.pause() },
 		setVolume: { player, volume in
@@ -25,12 +59,110 @@ struct BackgroundMusicPlayerCommands {
 			)
 		}
 	)
+
+	private static func liveEvents(
+		of player: YouTubePlayer
+	) -> BackgroundMusicPlayerEvents {
+		// The player replays its current playback state to a new subscriber; only changes are events.
+		let replaysPlaybackState = player.playbackState != nil
+		let playback = player.playbackStatePublisher
+			.dropFirst(replaysPlaybackState ? 1 : 0)
+			.removeDuplicates()
+			.map(BackgroundMusicPlayerEvent.playback)
+			.eraseToAnyPublisher()
+		let metadata = player.playbackMetadataPublisher
+			.map(BackgroundMusicPlayerEvent.metadata)
+			.eraseToAnyPublisher()
+		// The iframe reports a video failure as an event; the state publisher drops repeats of it.
+		let playerEvents = player.eventPublisher
+			.compactMap { event -> BackgroundMusicPlayerEvent? in
+				switch event.name {
+				case .error: .failure(.unplayableTrack)
+				case .connectionIssue, .iFrameApiFailedToLoad: .failure(.unreachable)
+				default: nil
+				}
+			}
+			.eraseToAnyPublisher()
+		let webViewFailures = player.statePublisher
+			.compactMap { state -> BackgroundMusicPlayerEvent? in
+				switch state.error {
+				case .setupFailed, .didFailProvisionalNavigation, .didFailNavigation,
+					.webContentProcessDidTerminate:
+					.failure(.unreachable)
+				default: nil
+				}
+			}
+			.eraseToAnyPublisher()
+		return BackgroundMusicPlayerEvents(
+			Publishers.MergeMany([playback, metadata, playerEvents, webViewFailures])
+				.eraseToAnyPublisher()
+		)
+	}
+}
+
+/// The events of one subscription, as an `AsyncSequence`.
+///
+/// The Combine subscription is owned by this value and its iterators, never by the stream's
+/// continuation. The sink retains the continuation, so a continuation that owned the subscription
+/// would form a cycle. Dropping the sequence (or ending iteration) cancels the subscription.
+nonisolated struct BackgroundMusicPlayerEvents: AsyncSequence, Sendable {
+	typealias Element = BackgroundMusicPlayerEvent
+
+	private let stream: AsyncStream<Element>
+	// `AnyCancellable.cancel()` is thread-safe; it is only stored and cancelled.
+	nonisolated(unsafe) private let subscription: AnyCancellable
+
+	init(_ publisher: AnyPublisher<Element, Never>) {
+		let (stream, continuation) = AsyncStream.makeStream(
+			of: Element.self,
+			bufferingPolicy: .bufferingNewest(AppConstants.Music.playerEventBufferLimit)
+		)
+		let subscription = publisher.sink(
+			receiveCompletion: { _ in continuation.finish() },
+			receiveValue: { continuation.yield($0) }
+		)
+		continuation.onTermination = { [weak subscription] _ in subscription?.cancel() }
+		self.stream = stream
+		self.subscription = subscription
+	}
+
+	func makeAsyncIterator() -> Iterator {
+		Iterator(base: stream.makeAsyncIterator(), subscription: subscription)
+	}
+
+	struct Iterator: AsyncIteratorProtocol {
+		var base: AsyncStream<Element>.Iterator
+		// Keeps the subscription alive while this iterator exists.
+		nonisolated(unsafe) let subscription: AnyCancellable
+
+		mutating func next() async -> Element? { await base.next() }
+	}
+}
+
+enum BackgroundMusicPlayerEvent: Sendable {
+	case playback(YouTubePlayer.PlaybackState)
+	case metadata(YouTubePlayer.PlaybackMetadata)
+	case failure(BackgroundMusicFailure)
+}
+
+extension YouTubePlayer.Source {
+	var isPlaylist: Bool {
+		if case .playlist = self { return true }
+		return false
+	}
+}
+
+enum BackgroundMusicFailure: Sendable {
+	/// YouTube refuses this video: it is removed, private, or not embeddable.
+	case unplayableTrack
+	/// The player cannot reach YouTube.
+	case unreachable
 }
 
 /// The value types the background-music controller passes between its track, playback, and
 /// fade paths.
 
-package enum PlaybackIntent {
+enum PlaybackIntent {
 	case playing
 	case paused
 }
@@ -45,7 +177,7 @@ struct BackgroundMusicPlaybackExpectation {
 	let intent: PlaybackIntent
 }
 
-package enum BackgroundMusicOperation {
+enum BackgroundMusicOperation {
 	case idle
 	case trackChange(TaskSlot.Token)
 	case playbackChange(TaskSlot.Token, PlaybackIntent)
@@ -58,14 +190,5 @@ package enum BackgroundMusicOperation {
 	var isChangingPlayback: Bool {
 		if case .playbackChange = self { return true }
 		return false
-	}
-
-	package var token: TaskSlot.Token? {
-		switch self {
-		case .idle:
-			nil
-		case .trackChange(let token), .playbackChange(let token, _):
-			token
-		}
 	}
 }

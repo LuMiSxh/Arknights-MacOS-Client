@@ -10,6 +10,7 @@ import Observation
 @Observable
 package final class IntelTranslationController {
 	private let lifecycle: LauncherLifecycleStore
+	private let runtimeLane: @MainActor () -> RuntimeLane
 	private let checkIntelTranslation: @Sendable () async -> IntelTranslationCheck
 	private let installRosettaSystemSoftware:
 		@Sendable () async throws -> IntelTranslationProcessResult
@@ -17,13 +18,14 @@ package final class IntelTranslationController {
 
 	// The task handles are deliberately unobserved: they only deduplicate in-flight work and are
 	// cancelled on teardown. The user-visible state remains in the lifecycle store.
-	@ObservationIgnored private var checkTask: Task<IntelTranslationCheck, Never>?
+	@ObservationIgnored private let checkSlot = TaskSlot()
 	@ObservationIgnored private var installationTask:
 		Task<IntelTranslationProcessResult, any Error>?
 	@ObservationIgnored private var installationID: UUID?
 
 	package init(
 		lifecycle: LauncherLifecycleStore,
+		runtimeLane: @escaping @MainActor () -> RuntimeLane,
 		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 			await RosettaAvailability.check()
 		},
@@ -34,13 +36,13 @@ package final class IntelTranslationController {
 		log: LauncherLog? = nil
 	) {
 		self.lifecycle = lifecycle
+		self.runtimeLane = runtimeLane
 		self.checkIntelTranslation = checkIntelTranslation
 		self.installRosettaSystemSoftware = installRosettaSystemSoftware
 		self.log = log ?? lifecycle.log
 	}
 
 	deinit {
-		checkTask?.cancel()
 		installationTask?.cancel()
 	}
 
@@ -51,6 +53,18 @@ package final class IntelTranslationController {
 
 	@discardableResult
 	package func refreshAvailability(force: Bool = false) async -> IntelTranslationState {
+		// The native ARM64 runtime has no Intel translation step, so Rosetta must not
+		// block launch. `.available` is the existing state that allows Wine to start.
+		if runtimeLane() == .arm {
+			checkSlot.invalidate()
+			lifecycle.state.readiness.intelTranslation = .available
+			lifecycle.state.readiness.rosettaInstallation = .idle
+			updatePreflightFailure(
+				for: IntelTranslationCheck(
+					state: .available, diagnostics: "lane=arm intelTranslation=notRequired"))
+			log.info("Intel translation preflight skipped; lane=arm state=not-required")
+			return .available
+		}
 		if !force,
 			lifecycle.state.readiness.intelTranslation != .checking,
 			lifecycle.state.readiness.intelTranslation != .waitingForLauncherCheck
@@ -59,18 +73,20 @@ package final class IntelTranslationController {
 		}
 
 		lifecycle.state.readiness.intelTranslation = .checking
-		let task: Task<IntelTranslationCheck, Never>
-		if let checkTask {
-			task = checkTask
-		} else {
-			task = Task { [checkIntelTranslation] in await checkIntelTranslation() }
-			checkTask = task
+		let running = checkSlot.replace { [weak self] token in
+			guard let self else { return }
+			let check = await checkIntelTranslation()
+			guard !Task.isCancelled, checkSlot.owns(token) else { return }
+			applyAvailabilityCheck(check)
 		}
+		await running.value
+		return lifecycle.state.readiness.intelTranslation
+	}
 
-		let check = await task.value
-		checkTask = nil
-		applyAvailabilityCheck(check)
-		return check.state
+	/// Invalidates a probe for the old lane and clears its result before the new probe runs.
+	package func runtimeLaneDidChange() {
+		checkSlot.invalidate()
+		lifecycle.state.readiness.intelTranslation = .checking
 	}
 
 	/// Applies real and simulated probe results through the same recovery presentation.
@@ -83,6 +99,13 @@ package final class IntelTranslationController {
 		log.info(
 			"Intel translation preflight; state=\(check.state.diagnosticName) \(check.diagnostics)"
 		)
+	}
+
+	// A stale awaiter must not clear the handle of a newer installation.
+	private func clearInstallation(ownedBy operationID: UUID) {
+		guard installationID == operationID else { return }
+		installationTask = nil
+		installationID = nil
 	}
 
 	@discardableResult
@@ -106,8 +129,7 @@ package final class IntelTranslationController {
 
 		do {
 			let result = try await task.value
-			installationTask = nil
-			installationID = nil
+			clearInstallation(ownedBy: operationID)
 			let output = Self.boundedDiagnostics(result.output)
 			log.info(
 				"Rosetta installation finished; status=\(result.status) output=\(output)")
@@ -125,13 +147,11 @@ package final class IntelTranslationController {
 			lifecycle.state.readiness.rosettaInstallation = .idle
 			return await refreshAvailability(force: true)
 		} catch is CancellationError {
-			installationTask = nil
-			installationID = nil
+			clearInstallation(ownedBy: operationID)
 			lifecycle.state.readiness.rosettaInstallation = .idle
 			return lifecycle.state.readiness.intelTranslation
 		} catch {
-			installationTask = nil
-			installationID = nil
+			clearInstallation(ownedBy: operationID)
 			let message =
 				"Apple’s Rosetta installer could not start. Use the Terminal command below or check the launcher log for details."
 			lifecycle.state.readiness.rosettaInstallation = .failed(message)
@@ -184,7 +204,7 @@ package final class IntelTranslationController {
 		}
 		return switch lifecycle.state.readiness.intelTranslation {
 		case .waitingForLauncherCheck, .checking:
-			"The launcher is verifying that the bundled Wine runtime can start."
+			"The launcher is verifying that the x86_64 runtime can start."
 		case .available:
 			nil
 		case .rosettaMissing:
@@ -194,7 +214,7 @@ package final class IntelTranslationController {
 		case .unavailable:
 			"macOS could not start an Intel test process. Check Rosetta, restart your Mac, then check again."
 		case .unsupportedOS:
-			"The launcher currently blocks this macOS version. Apple retains Rosetta only for certain legacy games, and whether this Wine and game setup qualifies is unconfirmed."
+			"Rosetta 2 is not available on macOS 28 and later. Switch to the ARM64 runtime in Settings → Runtime."
 		}
 	}
 
@@ -230,7 +250,7 @@ package final class IntelTranslationController {
 			}
 			return
 		}
-		guard lifecycle.state.readiness.isInstalled else { return }
+		guard lifecycle.state.readiness.installPresence.isInstalled else { return }
 		guard check.state != .waitingForLauncherCheck, check.state != .checking else { return }
 		guard
 			lifecycle.state.presentation.failure == nil
@@ -239,36 +259,32 @@ package final class IntelTranslationController {
 		else { return }
 
 		let error = launchError
-		var actions: [RecoveryAction] = [.retry, .openTroubleshooting, .reportProblem]
-		if check.state == .rosettaMissing { actions.insert(.installRosetta, at: 0) }
+		let isRosettaMissing = check.state == .rosettaMissing
 		let existingID =
 			lifecycle.state.presentation.failure?.message == error.errorDescription
 			? lifecycle.state.presentation.failure?.id
 			: nil
 		lifecycle.presentFailure(
-			LauncherFailurePresentation(
-				id: existingID ?? UUID(),
-				message: error.errorDescription
-					?? "The operation could not be completed because of an unexpected error.",
-				code: .limpet,
-				context: SupportContext(operation: .intelTranslationPreflight, region: nil),
-				actions: actions,
-				blocksGameLaunch: true
-			),
+			message: error.errorDescription
+				?? "The operation could not be completed because of an unexpected error.",
+			id: existingID ?? UUID(),
+			code: isRosettaMissing ? .rosettaMissing : .intelTranslationBlocked,
+			context: SupportContext(operation: .intelTranslationPreflight, region: nil),
+			canRepair: false,
+			leadingActions: isRosettaMissing ? [.installRosetta] : [],
+			blocksGameLaunch: true,
 			diagnostic: check.diagnostics
 		)
 	}
 
 	private func presentRosettaFailure(message: String, diagnostic: String, id: UUID) {
 		lifecycle.presentFailure(
-			LauncherFailurePresentation(
-				id: id,
-				message: message,
-				code: .limpet,
-				context: SupportContext(operation: .rosettaInstallation, region: nil),
-				actions: [.retry, .openTroubleshooting, .reportProblem],
-				blocksGameLaunch: true
-			),
+			message: message,
+			id: id,
+			code: .rosettaMissing,
+			context: SupportContext(operation: .rosettaInstallation, region: nil),
+			canRepair: false,
+			blocksGameLaunch: true,
 			diagnostic: diagnostic
 		)
 	}

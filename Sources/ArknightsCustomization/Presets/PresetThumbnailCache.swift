@@ -7,6 +7,7 @@ import SwiftUI
 // In-memory gallery cache so a cell that scrolls back into view skips the on-disk catalog
 // round trip, the thumbnail decode, and the icon render. `NSCache` is thread-safe and evicts
 // under memory pressure.
+// `@unchecked`: the only state is two `NSCache`s, which are documented thread-safe.
 final class PresetThumbnailCache: @unchecked Sendable {
 	static let shared = PresetThumbnailCache()
 

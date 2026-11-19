@@ -2,9 +2,8 @@
 
 """Build SwiftPM products with the active macOS SDK recorded in Mach-O metadata."""
 
-from __future__ import annotations
-
 import os
+import subprocess
 
 from lib.common import output, run
 from lib.project_config import ProjectConfiguration
@@ -69,7 +68,7 @@ def run_swift_build(
     sdk_name: str = "macosx",
     show_bin_path: bool = False,
     capture: bool = False,
-):
+) -> subprocess.CompletedProcess[str]:
     """Build a SwiftPM product using the selected SDK and return the process result."""
     sdk_path, sdk_version = active_macos_sdk(sdk_name)
     return run(

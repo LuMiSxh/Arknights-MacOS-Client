@@ -4,8 +4,9 @@ import ArknightsCore
 import SwiftUI
 
 struct PresetGallerySearchBar: View {
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	let destination: PresetGalleryDestination
-	package let accentColor: Color
 	@Binding var searchText: String
 	@Binding var committedTags: [String]
 	@FocusState private var isFocused: Bool
@@ -18,16 +19,13 @@ struct PresetGallerySearchBar: View {
 			uniquingKeysWith: { first, _ in first }
 		)
 	}
-	private static let contentHeight: CGFloat = 18
+	private static let contentHeight: CGFloat = 20
 
 	var body: some View {
-		HStack(spacing: 6) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			Image(systemName: "magnifyingglass")
 				.font(.caption)
-				.adaptiveControlForeground(
-					isFocused ? accentColor : .secondary,
-					disabledTint: .secondary
-				)
+				.adaptiveControlForeground(theme.accentInk, disabledTint: theme.textSecondary)
 				.accessibilityHidden(true)
 
 			if destination == .artwork {
@@ -55,7 +53,9 @@ struct PresetGallerySearchBar: View {
 					Image(systemName: "xmark.circle.fill")
 						.font(.callout)
 						.imageScale(.large)
-						.adaptiveControlForeground(.secondary, disabledTint: .secondary)
+						.adaptiveControlForeground(
+							theme.textSecondary, disabledTint: theme.textSecondary
+						)
 						.frame(width: Self.contentHeight, height: Self.contentHeight)
 						.contentShape(Rectangle())
 				}
@@ -64,14 +64,9 @@ struct PresetGallerySearchBar: View {
 			}
 		}
 		.font(.callout)
-		.padding(.horizontal, 10)
-		.padding(.vertical, 7)
-		.adaptiveControlSurface(
-			tint: accentColor,
-			borderOpacity: isFocused ? 0.62 : nil,
-			in: Capsule()
-		)
+		.launcherFieldSurface(isFocused: isFocused)
 		.focusEffectDisabled(true)
+		.animation(LauncherMotion.animation(.state, reduceMotion: reduceMotion), value: isFocused)
 		.onChange(of: searchText) { _, _ in promoteTrailingTag() }
 	}
 
@@ -79,20 +74,24 @@ struct PresetGallerySearchBar: View {
 		Button {
 			committedTags.removeAll { $0 == tag }
 		} label: {
-			HStack(spacing: 4) {
+			HStack(spacing: LauncherTokens.Spacing.compact) {
 				Text(tag)
-					.font(.caption.weight(.semibold))
+					.font(.caption.weight(.medium))
 					.lineLimit(1)
 				Image(systemName: "xmark")
-					.font(LauncherVisuals.Typography.tagGlyph)
+					.font(LauncherTokens.Typography.tagGlyph)
 					.frame(width: Self.contentHeight, height: Self.contentHeight)
 			}
-			.adaptiveControlForeground(.secondary, disabledTint: .secondary.opacity(0.44))
-			.padding(.leading, 8)
-			.padding(.trailing, 4)
-			.padding(.vertical, 3)
+			.adaptiveControlForeground(
+				theme.textSecondary,
+				disabledTint: theme.textSecondary.opacity(
+					LauncherVisuals.Control.disabledForegroundOpacity)
+			)
+			.padding(.leading, LauncherTokens.Spacing.control)
+			.padding(.trailing, LauncherTokens.Spacing.compact)
+			.padding(.vertical, LauncherTokens.Spacing.compact)
 			.contentShape(Capsule())
-			.adaptiveControlSurface(tint: LauncherVisuals.controlTint, in: Capsule())
+			.adaptiveControlSurface(tint: theme.controlStroke, in: Capsule())
 		}
 		.buttonStyle(ActionPressStyle())
 		.keyboardFocusIndicator(in: Capsule())

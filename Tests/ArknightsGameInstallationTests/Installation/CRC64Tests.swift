@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import CryptoKit
 import Foundation
 import Testing
 
@@ -13,7 +12,6 @@ func crc64MatchesXZReferenceVector(chunkSize: Int) {
 	let reference = Data("123456789".utf8)
 	var checksum = CRC64()
 	var pointerChecksum = CRC64()
-	var md5 = Insecure.MD5()
 	let step = max(chunkSize, 1)
 	var offset = 0
 	while offset < reference.count {
@@ -21,15 +19,11 @@ func crc64MatchesXZReferenceVector(chunkSize: Int) {
 		checksum.update(chunk)
 		chunk.withUnsafeBytes {
 			pointerChecksum.update($0)
-			md5.update(bufferPointer: $0)
 		}
 		offset += step
 	}
 	#expect(checksum.decimalString == "11051210869376104954")
 	#expect(pointerChecksum.decimalString == "11051210869376104954")
-	#expect(
-		md5.finalize().map { String(format: "%02x", $0) }.joined()
-			== "25f9e794323b453885f5181f1b624d0b")
 
 	var empty = CRC64()
 	Data().withUnsafeBytes { empty.update($0) }

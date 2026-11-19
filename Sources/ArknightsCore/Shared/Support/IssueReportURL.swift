@@ -9,6 +9,15 @@ extension Bundle {
 	}
 }
 
+/// Where a report started. The raw value is the `source` answer the issue form receives.
+package enum IssueReportSource: String, CaseIterable, Sendable {
+	case error
+	case settings
+	case helpMenu = "help-menu"
+	case dock
+	case onboarding
+}
+
 /// Builds a pre-filled GitHub bug-report URL with safe diagnostic metadata.
 ///
 /// Log files are never included because they can contain private paths, URLs,
@@ -19,10 +28,11 @@ package enum IssueReportURL {
 	package static func build(
 		runtimeName: String?,
 		code: SupportCode? = nil,
-		context: SupportContext? = nil
+		context: SupportContext? = nil,
+		source: IssueReportSource
 	) -> URL {
-		var components = URLComponents(
-			string: "https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new")!
+		var components = StaticURL.components(
+			"https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new")
 		var items = [
 			URLQueryItem(name: "template", value: "problem-report.yml"),
 			URLQueryItem(name: "version", value: appVersion),
@@ -40,11 +50,13 @@ package enum IssueReportURL {
 				items.append(URLQueryItem(name: "region", value: region.rawValue))
 			}
 		}
+		items.append(URLQueryItem(name: "source", value: source.rawValue))
 		components.queryItems = items
-		return components.url!
+		return StaticURL.url(components)
 	}
 
-	private static var environment: String {
+	/// The macOS, chip, and memory line that a report carries. The diagnostics bundle shares it.
+	package static var environment: String {
 		let os = ProcessInfo.processInfo.operatingSystemVersion
 		let memoryGB = ProcessInfo.processInfo.physicalMemory / 1_073_741_824
 		return "macOS \(os.majorVersion).\(os.minorVersion); \(chipName); \(memoryGB) GB"

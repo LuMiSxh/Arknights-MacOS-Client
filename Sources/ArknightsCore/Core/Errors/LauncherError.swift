@@ -7,13 +7,19 @@ package protocol LauncherDiagnosticError: LocalizedError {
 }
 
 /// Keeps alerts concise while carrying operation details into `launcher.log`.
-package struct ContextualLauncherError: LocalizedError, LauncherDiagnosticError, Sendable {
+package struct ContextualLauncherError: LocalizedError, LauncherDiagnosticError,
+	SupportCodeProviding, Sendable
+{
 	let userMessage: String
 	package let diagnosticDescription: String
+	package let supportCode: SupportCode?
 
-	package init(userMessage: String, diagnosticDescription: String) {
+	package init(
+		userMessage: String, diagnosticDescription: String, supportCode: SupportCode? = nil
+	) {
 		self.userMessage = userMessage
 		self.diagnosticDescription = diagnosticDescription
+		self.supportCode = supportCode
 	}
 
 	package var errorDescription: String? { userMessage }
@@ -35,9 +41,25 @@ package func launcherUserMessage(for error: any Error) -> String {
 }
 
 extension LauncherError: SupportCodeProviding {
-	var supportCode: SupportCode? {
-		if case .storageMigrationFailed = self { .basalt } else { nil }
+	package var supportCode: SupportCode? {
+		if case .storageMigrationFailed = self { .dataMigrationFailed } else { nil }
 	}
+}
+
+/// The diagnostics archive could not be saved. The user text names no path; the detail goes to the log.
+package struct DiagnosticsError: LauncherDiagnosticError, SupportCodeProviding, Sendable {
+	let detail: String
+
+	package init(detail: String) {
+		self.detail = detail
+	}
+
+	package var errorDescription: String? {
+		"The diagnostics archive could not be saved. Check free disk space and the Downloads folder permissions, then try again."
+	}
+
+	package var diagnosticDescription: String { "Diagnostics archive failed: \(detail)" }
+	package var supportCode: SupportCode? { .localFileFailed }
 }
 
 /// Failures shared by every feature; feature-specific failures live in their own error types.
@@ -66,7 +88,7 @@ package enum LauncherError: LocalizedError, LauncherDiagnosticError, Sendable {
 		case .invalidResponse: "The game service returned an invalid response."
 		case .server(let code, let message): "Game service API error \(code): \(message)"
 		case .remoteContentTooLarge(let url, let maximumBytes):
-			"Remote content from \(url.host ?? url.absoluteString) exceeded the \(ByteCountFormatter.string(fromByteCount: Int64(maximumBytes), countStyle: .file)) limit."
+			"Remote content from \(url.host ?? url.absoluteString) exceeded the \(maximumBytes.formatted(.byteCount(style: .file))) limit."
 		case .storageMigrationFailed(let diagnostic):
 			"Application storage migration failed: \(diagnostic)"
 		}

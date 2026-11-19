@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 struct CachedPresetOperatorPair: View {
 	let catalog: PresetCatalogService
 	let url: URL
-	package let cacheKey: String
+	let cacheKey: String
 	let accentHue: Double?
 	var iconDimension: CGFloat = 82
 	var itemWidth: CGFloat = 104
 
 	@State private var icons: (launcher: NSImage, game: NSImage)?
 	@State private var hasFailed = false
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		Group {
 			if let icons {
-				HStack(spacing: 16) {
+				HStack(spacing: LauncherTokens.Spacing.panel) {
 					preview(icons.launcher)
 					preview(icons.game)
 				}
@@ -27,7 +29,7 @@ struct CachedPresetOperatorPair: View {
 				)
 				.labelStyle(.iconOnly)
 				.font(.title2)
-				.foregroundStyle(.tertiary)
+				.foregroundStyle(theme.textTertiary)
 			} else {
 				ProgressView()
 					.controlSize(.small)

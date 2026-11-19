@@ -8,20 +8,21 @@ package struct MusicHUDPill: View {
 	@Bindable var settings: LauncherPreferencesController
 	let musicTitle: String?
 	package let accentColor: Color
-	let hudTintColor: Color
 	let openCurrentMusicURL: () -> Void
 	let controller: BackgroundMusicController
 	@Binding var isExpanded: Bool
+	@Environment(\.launcherTheme) private var theme
 	@ScaledMetric(relativeTo: .caption) private var titleLineHeight =
 		AppConstants.Music.titleLineHeight
 	@ScaledMetric(relativeTo: .caption) private var collapsedPlayerHeight =
 		AppConstants.Music.collapsedPlayerHeight
+	private static let expandedSpacing: CGFloat = 9
+	private static let titleStackSpacing: CGFloat = 1
 
 	package init(
 		settings: LauncherPreferencesController,
 		musicTitle: String?,
 		accentColor: Color,
-		hudTintColor: Color,
 		openCurrentMusicURL: @escaping () -> Void,
 		controller: BackgroundMusicController,
 		isExpanded: Binding<Bool>
@@ -29,7 +30,6 @@ package struct MusicHUDPill: View {
 		self.settings = settings
 		self.musicTitle = musicTitle
 		self.accentColor = accentColor
-		self.hudTintColor = hudTintColor
 		self.openCurrentMusicURL = openCurrentMusicURL
 		self.controller = controller
 		_isExpanded = isExpanded
@@ -39,12 +39,10 @@ package struct MusicHUDPill: View {
 		if let musicTitle {
 			ExpandableHUDPill(
 				systemImage: "music.note",
-				iconFont: .caption2.weight(.semibold),
+				iconFont: .caption2.weight(.medium),
 				toggleNoun: "music controls",
 				accessibilityValue: musicTitle,
-				accentColor: accentColor,
-				hudTintColor: hudTintColor,
-				expandedSpacing: 9,
+				expandedSpacing: Self.expandedSpacing,
 				sizing: HUDPillSizing(
 					collapsedHeight: collapsedPlayerHeight,
 					collapsedMaxWidth: AppConstants.Music.expandedPlayerWidth,
@@ -54,10 +52,10 @@ package struct MusicHUDPill: View {
 				),
 				isExpanded: $isExpanded
 			) {
-				VStack(alignment: .leading, spacing: 1) {
+				VStack(alignment: .leading, spacing: Self.titleStackSpacing) {
 					OverflowingMusicTitle(title: musicTitle)
 						.font(.caption.monospaced().weight(.medium))
-						.foregroundStyle(.secondary)
+						.foregroundStyle(theme.textSecondary)
 						.frame(height: titleLineHeight, alignment: .leading)
 						.frame(
 							maxWidth: isExpanded
@@ -68,18 +66,18 @@ package struct MusicHUDPill: View {
 					if isExpanded {
 						Text(playbackStatus)
 							.font(.caption)
-							.adaptiveControlForeground(accentColor)
+							.adaptiveControlForeground(theme.accentInk)
 							.transition(.opacity)
 					}
 				}
 			} detail: {
-				HStack(spacing: 6) {
+				HStack(spacing: LauncherTokens.Spacing.compact) {
 					if controller.canNavigatePlaylist {
 						MusicPlayerControlButton(
 							title: "Previous Track",
 							systemImage: "backward.end.fill",
 							accentColor: accentColor,
-							isDisabled: controller.controlsAreDisabled,
+							isDisabled: controller.controlsAreUnavailable,
 							action: controller.playPreviousTrack
 						)
 					}
@@ -90,7 +88,7 @@ package struct MusicHUDPill: View {
 						systemImage: controller.isPlaying ? "pause.fill" : "play.fill",
 						accentColor: accentColor,
 						isProminent: true,
-						isDisabled: controller.controlsAreDisabled,
+						isDisabled: controller.controlsAreUnavailable,
 						action: controller.togglePlayback
 					)
 
@@ -99,16 +97,15 @@ package struct MusicHUDPill: View {
 							title: "Next Track",
 							systemImage: "forward.end.fill",
 							accentColor: accentColor,
-							isDisabled: controller.controlsAreDisabled,
+							isDisabled: controller.controlsAreUnavailable,
 							action: controller.playNextTrack
 						)
 					}
 
 					MusicVolumeControl(
 						volume: $settings.launcherMusicVolume,
-						accentColor: accentColor,
 						isMuted: controller.isMuted,
-						isDisabled: controller.controlsAreDisabled,
+						isDisabled: controller.controlsAreUnavailable,
 						toggleMute: controller.toggleMute
 					)
 
@@ -118,18 +115,19 @@ package struct MusicHUDPill: View {
 						title: "Open on YouTube",
 						systemImage: "arrow.up.right.square",
 						accentColor: accentColor,
-						isDisabled: controller.controlsAreDisabled,
+						isDisabled: controller.controlsAreUnavailable,
 						action: openCurrentMusicURL
 					)
 				}
-				.padding(.horizontal, 14)
+				.padding(.horizontal, LauncherTokens.Spacing.content)
 				.frame(maxWidth: .infinity, alignment: .leading)
 			}
 		}
 	}
 
 	private var playbackStatus: String {
-		if controller.isGameProcessRunning { return "Paused while the game is running" }
+		if controller.isSilencedForGame { return "Paused while the game is running" }
+		if controller.isUnavailable { return "Music unavailable" }
 		if controller.isChangingTrack { return "Changing track…" }
 		return controller.isPlaying ? "Playing" : "Paused"
 	}

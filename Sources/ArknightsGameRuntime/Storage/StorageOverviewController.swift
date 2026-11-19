@@ -10,14 +10,23 @@ import Observation
 @Observable
 package final class StorageOverviewController {
 	private(set) var usages: [StorageUsage]
-	package private(set) var isMeasuring = false
+	private(set) var isMeasuring = false
+	/// Categories with a result from the cache or a finished measurement. A missing size for one
+	/// of these rows means "None", not a measurement that has not returned yet.
+	private(set) var measuredCategoryIDs: Set<String> = []
 
 	let lifecycle: LauncherLifecycleStore
 	private let paths: AppPaths
 	private let preferences: LauncherPreferencesStore
 	private let log: LauncherLog
 	private let regionProvider: @MainActor () -> GameRegion
+	@ObservationIgnored private let now: () -> Date
 	@ObservationIgnored private let measurementSlot = TaskSlot()
+	@ObservationIgnored private let cacheStore: StorageOverviewCacheStore
+	@ObservationIgnored private var cachedEntries: [StorageOverviewCacheEntry]
+	@ObservationIgnored private var pendingCacheWrite: Task<Void, Never>?
+	/// The context whose values `usages` shows, whether cached or measured.
+	@ObservationIgnored private var displayedContext: StorageOverviewContext?
 	@ObservationIgnored private var lastMeasuredContext: StorageOverviewContext?
 	@ObservationIgnored private var lastMeasuredAt: Date?
 
@@ -26,14 +35,30 @@ package final class StorageOverviewController {
 		paths: AppPaths,
 		preferences: LauncherPreferencesStore,
 		log: LauncherLog,
-		regionProvider: @escaping @MainActor () -> GameRegion = { .global }
+		regionProvider: @escaping @MainActor () -> GameRegion = { .global },
+		now: @escaping () -> Date = { .now }
 	) {
 		self.lifecycle = lifecycle
 		self.paths = paths
 		self.preferences = preferences
 		self.log = log
 		self.regionProvider = regionProvider
+		self.now = now
+		let cacheStore = StorageOverviewCacheStore(
+			fileURL: paths.storageOverviewCache,
+			log: log
+		)
+		self.cacheStore = cacheStore
+		cachedEntries = cacheStore.loadSynchronously()
 		usages = []
+		// Seed from the cache now, so the first Settings frame already shows sizes.
+		let context = StorageOverviewResolver.context(
+			preferences: preferences,
+			region: regionProvider()
+		)
+		usages = displayedUsages(for: context)
+		measuredCategoryIDs = cachedCategoryIDs(for: context)
+		displayedContext = context
 	}
 
 	var canModifyStorage: Bool {
@@ -62,16 +87,18 @@ package final class StorageOverviewController {
 			preferences: preferences,
 			region: regionProvider()
 		)
+		if displayedContext != context {
+			// Work for the previous context must not publish over the values shown now.
+			measurementSlot.invalidate()
+			isMeasuring = false
+			usages = displayedUsages(for: context)
+			measuredCategoryIDs = cachedCategoryIDs(for: context)
+			displayedContext = context
+		}
 		if !force {
-			if isMeasuring { return }
-			if hasFreshMeasurement(for: context) { return }
+			if isMeasuring || hasFreshMeasurement(for: context) { return }
 		}
 
-		if lastMeasuredContext != context {
-			usages = StorageOverviewResolver.placeholderLocations(context: context).map {
-				StorageUsage(location: $0, byteCount: nil, exists: false)
-			}
-		}
 		isMeasuring = true
 		let paths = self.paths
 		let log = self.log
@@ -80,10 +107,7 @@ package final class StorageOverviewController {
 			do {
 				let measured = try await Self.measure(paths: paths, context: context)
 				guard !Task.isCancelled, let self, self.measurementSlot.owns(token) else { return }
-				self.usages = measured
-				self.lastMeasuredContext = context
-				self.lastMeasuredAt = Date()
-				self.isMeasuring = false
+				self.finishMeasurement(measured, for: context)
 			} catch is CancellationError {
 				guard let self, self.measurementSlot.owns(token) else { return }
 				self.isMeasuring = false
@@ -95,17 +119,75 @@ package final class StorageOverviewController {
 		}
 	}
 
+	private func finishMeasurement(
+		_ measured: [StorageUsage],
+		for context: StorageOverviewContext
+	) {
+		isMeasuring = false
+		measuredCategoryIDs = Set(measured.map(\.id))
+		lastMeasuredContext = context
+		lastMeasuredAt = now()
+		// Skip the publish when nothing changed, so Observation does not redraw the page.
+		if usages.map(CachedStorageUsage.init) != measured.map(CachedStorageUsage.init) {
+			usages = measured
+		}
+		let entry = StorageOverviewCacheEntry(
+			key: StorageOverviewCacheKey(context: context),
+			usages: measured.map(CachedStorageUsage.init)
+		)
+		guard cachedEntries.first(where: { $0.key == entry.key }) != entry else { return }
+		cachedEntries.removeAll { $0.key == entry.key }
+		cachedEntries.insert(entry, at: 0)
+		cachedEntries = Array(cachedEntries.prefix(AppConstants.Storage.overviewCacheEntryLimit))
+		persistCachedEntries(cachedEntries)
+	}
+
+	/// Seeds the page with the last measurement for `context`, or with placeholders.
+	private func displayedUsages(for context: StorageOverviewContext) -> [StorageUsage] {
+		let key = StorageOverviewCacheKey(context: context)
+		let cached = cachedEntries.first { $0.key == key }?.usages ?? []
+		return StorageOverviewResolver.placeholderLocations().map { location in
+			let entry = cached.first { $0.categoryID == location.category.id }
+			return StorageUsage(
+				location: location,
+				byteCount: entry?.byteCount,
+				exists: entry?.exists ?? false
+			)
+		}
+	}
+
+	/// The categories the stored cache holds a result for.
+	private func cachedCategoryIDs(for context: StorageOverviewContext) -> Set<String> {
+		let key = StorageOverviewCacheKey(context: context)
+		let cached = cachedEntries.first { $0.key == key }?.usages ?? []
+		return Set(cached.map(\.categoryID))
+	}
+
+	/// Writes are chained so an older snapshot cannot land after a newer one.
+	private func persistCachedEntries(_ entries: [StorageOverviewCacheEntry]) {
+		let previousWrite = pendingCacheWrite
+		let store = cacheStore
+		pendingCacheWrite = Task {
+			await previousWrite?.value
+			await store.save(entries)
+		}
+	}
+
 	private func hasFreshMeasurement(for context: StorageOverviewContext) -> Bool {
 		guard
-			!usages.isEmpty,
 			lastMeasuredContext == context,
 			let lastMeasuredAt
 		else { return false }
-		return Date().timeIntervalSince(lastMeasuredAt)
+		return now().timeIntervalSince(lastMeasuredAt)
 			< AppConstants.Storage.overviewCacheLifetime
 	}
 
 	func usage(for category: StorageCategory) -> StorageUsage? {
 		usages.first { $0.location.category == category }
+	}
+
+	/// Whether `category` has a result yet. Rows without one show the calculating placeholder.
+	func hasMeasuredValue(for category: StorageCategory) -> Bool {
+		measuredCategoryIDs.contains(category.id)
 	}
 }

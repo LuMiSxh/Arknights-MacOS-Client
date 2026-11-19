@@ -1,9 +1,10 @@
 #!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
-"""Print project metadata derived from Info.plist and Package.swift."""
+"""Print project metadata derived from Info.plist and Package.swift.
 
-from __future__ import annotations
+With github-env, print the release-job names as NAME=value lines for GITHUB_ENV.
+"""
 
 import argparse
 from collections.abc import Callable
@@ -24,6 +25,9 @@ FIELDS: dict[str, Callable[[ProjectConfiguration], str]] = {
     "sparkle-update-name": lambda configuration: configuration.sparkle_update_name,
     "sparkle-delta-sources": lambda configuration: str(SPARKLE_DELTA_SOURCE_COUNT),
     "marketing-version": lambda configuration: configuration.product.marketing_version,
+    "test-targets": lambda configuration: "\n".join(
+        configuration.package.test_target_names
+    ),
     "swift-architecture-arguments": lambda configuration: " ".join(
         f"--arch {architecture}"
         for architecture in configuration.product.architecture_priority
@@ -31,11 +35,27 @@ FIELDS: dict[str, Callable[[ProjectConfiguration], str]] = {
 }
 
 
+# One run exports these names, so the release job parses Package.swift once.
+GITHUB_ENV_COMMAND = "github-env"
+GITHUB_ENVIRONMENT: dict[str, str] = {
+    "APP_NAME": "app-bundle-name",
+    "DISPLAY_NAME": "display-name",
+    "DMG_NAME": "dmg-name",
+    "UPDATE_NAME": "sparkle-update-name",
+    "DELTA_SOURCES": "sparkle-delta-sources",
+}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("field", choices=tuple(FIELDS))
+    parser.add_argument("field", choices=(*FIELDS, GITHUB_ENV_COMMAND))
     arguments = parser.parse_args()
-    print(FIELDS[arguments.field](load_project_configuration()))
+    configuration = load_project_configuration()
+    if arguments.field == GITHUB_ENV_COMMAND:
+        for name, field in GITHUB_ENVIRONMENT.items():
+            print(f"{name}={FIELDS[field](configuration)}")
+        return
+    print(FIELDS[arguments.field](configuration))
 
 
 if __name__ == "__main__":

@@ -7,9 +7,22 @@ audience: developers
 
 # Development
 
+## Guides
+
+| Topic                            | Page                                                                                                                                                                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Targets, ownership, boundaries   | [Architecture](architecture/README.md#targets)                                                                                                                                                                                       |
+| Install, launch, prefix, data    | [Installation](architecture/installation.md), [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md), [Wine prefix](architecture/wine-prefix.md), [Data and persistence](architecture/data-and-persistence.md) |
+| Remote sources, announcements    | [Communication and boundaries](architecture/communication-and-boundaries.md)                                                                                                                                                         |
+| Support codes, recovery          | [Error recovery](error-recovery.md)                                                                                                                                                                                                  |
+| UI                               | [Design](design.md)                                                                                                                                                                                                                  |
+| Tests                            | [Testing](testing.md)                                                                                                                                                                                                                |
+| Releases, Sparkle, runtime pins  | [Releases and updates](releases-and-updates.md)                                                                                                                                                                                      |
+| Licenses, wallpapers, benchmarks | [License automation](license-automation.md), [Wallpaper tagging](wallpaper-tagging.md), [Performance comparison](performance-comparison.md)                                                                                          |
+
 ## Before handing off a change
 
-1. Run the narrowest focused check while you iterate. Add regression coverage where behavior changed.
+1. Run the narrowest focused check while you iterate. Add a test only for behavior that no type, compiler check, or existing test covers.
 2. Update the affected guide or contract. Add user-visible changes to `CHANGELOG.md`.
 3. Run the relevant formatter, inspect its diff, and rerun the focused check.
 4. Run `just ci`.
@@ -35,9 +48,9 @@ toc: true
 | `order`                  | Finite number for sorting.                                                                 |
 | `hidden`, `draft`, `toc` | Booleans. `hidden` removes the page from navigation. `toc` controls the table of contents. |
 | `audience`               | `all`, `developers`, or `users`.                                                           |
-| `code`                   | Optional. One uppercase English word. Requires a non-empty `domain`.                       |
+| `code`                   | Optional. A code in the form `XX-XXX`. Requires a non-empty `domain`.                      |
 
-- Error codes are unique across documentation files. Register public codes in `docs/help/errors/registry.json`. Each code needs exactly one page at `/help/errors/<lowercase-code>/`.
+- Public error codes come from `scripts/config/support-codes.json`. Do not edit the generated code pages, the generated tables in `docs/help/errors/README.md`, or `docs/help/errors/registry.json`. Each active code has one page at `/help/errors/<lowercase-code>/`.
 - A top-level section with `audience: developers` appears under **Contributors** in the sidebar.
 - A `draft: true` file fails the production build.
 - Use `README.md` for a directory landing page. It maps to the directory route. Do not add `index.md`. Without a README, the build lists the visible children.
@@ -45,12 +58,23 @@ toc: true
 - Use GitHub alert markers (`[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`) in blockquotes. The launcher shows them as labeled text, so meaning must not depend on color. Use one marker per point. Do not nest alerts.
 - Put diagrams in fenced `mermaid` blocks with short labels. The launcher shows the block as text, so the prose must explain the contract.
 
+### Terms
+
+Use these terms in user help. Keep one term for each concept.
+
+- **Server**: a publisher server, such as Global, Japan, or China. User help says "server", not "region".
+- **Game environment**: the Wine prefix that runs the game. On the first mention on each page, write "game environment (Wine prefix)". Then write "game environment".
+- **Runtime**: the files that run the game. User help names the architecture when the choice matters.
+- **Lane**: one runtime architecture and its artifact. Use this term in developer documentation only, not in user help.
+- Keep developer terms out of user help, such as Wine internals and partial files. The only exception is the first mention of game environment, which adds "(Wine prefix)".
+
 ## Documentation website
 
 The SvelteKit site in `web/` builds `docs/` and `CHANGELOG.md` into the project website. It is dark-only and uses the tokens in `web/src/lib/styles/arknights-client.css`.
 
 - The home page shows one official Arknights Global wallpaper from `web/static/artwork/`, the only artwork the repository bundles. Show it uncropped at 16:9. Credit the artist, Hypergryph, and Yostar beside it.
-- `--site-signal` is the accent that `WallpaperColorExtractor` derives from that wallpaper. `--site-signal-text` is its AA-readable text variant. Update both together when the wallpaper changes.
+- `--site-accent-fill` is the accent that `WallpaperColorExtractor` derives from that wallpaper. `--site-accent-ink` is its AA-readable text variant. Update both together when the wallpaper changes.
+- Keep `--site-accent-ink` a literal hex. `web/scripts/postbuild.mjs` checks its contrast against `--site-bg`, which needs a parsed value.
 - Use the signal only for the primary download action, active navigation, and focus. Use tinted fills. Keep secondary controls as quiet neutral capsules.
 
 Use Node 24.14 or newer and the `pnpm` version in `web/package.json`. The website has no Vitest suite. Validate it with these commands:
@@ -94,10 +118,12 @@ items:
 ````
 
 - `title` is required. It names the chart.
+- `type` is optional. Use `bar` (default) or `pie`. A `pie` draws a donut with a legend.
 - `items` is a non-empty list. Each item needs a `label` and a `share`.
 - A `share` is a number from 0 to 1. The build fails for any other value.
-- The chart shows no numbers. Screen readers hear a coarse wording, such as "about a third".
-- The bars keep the order you write.
+- For `type: pie`, the shares must add up to between 0.98 and 1.02. The build fails otherwise.
+- The chart shows the rounded percentage next to each bar or slice. Screen readers hear a coarse wording, such as "about a third".
+- The bars and slices keep the order you write. Colours repeat after seven items, and the seventh is a neutral grey.
 - Quote a value that contains a colon, such as `"Chip family: TODO"`. Unquoted colons break the YAML.
 
 Use a fenced block with the info string `contact` to add a contact callout. Write the block as YAML:
@@ -111,8 +137,27 @@ topic: testing
 ````
 
 - `title` and `text` are required. Each must be a non-empty string.
-- `topic` is optional. Use `testing` or `translation`. The button selects the matching answer for the first form question and adds `topic=<topic>`. To add a topic, add it with its exact form option text to `contactTopics` in `web/src/lib/site.ts`.
+- `topic` is optional. Use `testing` or `translation`. The button adds `?topic=<Topic>` with a capitalized value to the form URL, which fills the hidden `topic` field. To add a topic, add its key and capitalized value to `contactTopics` in `web/src/lib/site.ts`.
 - The button opens the contact form in a new tab. Other keys fail the build.
 - The form URL comes from `contactFormUrl` in `web/src/lib/site.ts`. Do not write the URL in the block.
+
+Use a fenced block with the info string `chart` to show benchmark data. Write the block as JSON:
+
+````markdown
+```chart
+{
+  "src": "/benchmarks/comparison.json",
+  "metric": "cpu_percent",
+  "title": "CPU use",
+  "unit": "% of one core",
+  "caption": "Lower is better."
+}
+```
+````
+
+- `src` is required. It is a site path that starts with `/`. `//` fails the build.
+- `mode` is optional. Use `timeseries`, `summary`, or `stats`.
+- `metric` is optional. Use a name from `CHART_METRICS` in `web/src/lib/content/chart.ts`.
+- `title`, `unit`, and `caption` are optional text. `height` is an optional positive number.
 
 To add developer notes, use `<details>` and `<summary>`. Use no attributes. Leave a blank line before and after the Markdown inside. Other raw HTML is escaped.

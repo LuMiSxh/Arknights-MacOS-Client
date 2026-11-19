@@ -4,8 +4,8 @@ import ArknightsCore
 import SwiftUI
 
 struct OnboardingExtrasView: View {
+	@Environment(\.launcherTheme) private var theme
 	@Bindable var preferences: LauncherPreferencesController
-	let accentColor: Color
 
 	private var updateBinding: Binding<UpdateCheckAnswer?> {
 		Binding(
@@ -25,56 +25,91 @@ struct OnboardingExtrasView: View {
 		)
 	}
 
+	private var presenceBinding: Binding<DiscordPresenceAnswer?> {
+		Binding(
+			get: { preferences.discordPresenceAnswer },
+			set: { answer in
+				guard let answer else { return }
+				preferences.discordPresenceAnswer = answer
+			}
+		)
+	}
+
+	private var reminderBinding: Binding<ResetReminderAnswer?> {
+		Binding(
+			get: { ResetReminderAnswer(timing: preferences.resetReminderTiming) },
+			set: { answer in
+				guard let answer else { return }
+				// The launcher asks macOS for permission and sets this back to Off if refused.
+				preferences.resetReminderTiming = answer.timing
+			}
+		)
+	}
+
 	var body: some View {
 		OnboardingPage(
-			title: "Updates & Audio",
-			subtitle: "Update checks only notify you. Nothing downloads until you choose.",
-			accentColor: accentColor
+			step: .extras,
+			subtitle: "Update checks only notify you. Nothing downloads until you choose"
 		) {
 			OnboardingQuestion(
 				question: "Update checks",
-				systemImage: "arrow.trianglehead.2.clockwise",
 				answers: UpdateCheckAnswer.allCases.map(\.answer),
-				selection: updateBinding,
-				accentColor: accentColor
+				selection: updateBinding
 			)
 
-			SettingsPanel(title: "Music", systemImage: "speaker.wave.2") {
+			OnboardingQuestion(
+				question: "Remind you before the daily reset?",
+				answers: ResetReminderAnswer.allCases.map(\.answer),
+				selection: reminderBinding
+			)
+
+			SettingsPanel(title: "Music") {
 				OnboardingToggleRow(
 					title: "Launcher music",
 					detail: "YouTube playlist. Pauses while the game runs.",
 					isOn: $preferences.playsLauncherMusic,
-					accentColor: accentColor
 				)
+			}
+
+			OnboardingMoreOptions {
+				OnboardingQuestion(
+					question: "Discord presence",
+					answers: DiscordPresenceAnswer.allCases.map(\.answer),
+					selection: presenceBinding
+				)
+
 				if preferences.playsLauncherMusic {
-					SettingsHairline()
-					LabeledContent("Volume") {
-						HStack(spacing: 10) {
-							Image(systemName: "speaker.fill")
-								.foregroundStyle(.secondary)
-								.accessibilityHidden(true)
-							Slider(value: $preferences.launcherMusicVolume, in: 0...1, step: 0.05)
-								.tint(accentColor)
-								.accessibilityLabel("Volume")
-							Text(
-								preferences.launcherMusicVolume,
-								format: .percent.precision(.fractionLength(0))
-							)
-							.font(.caption.monospacedDigit())
-							.foregroundStyle(.secondary)
-							.frame(width: 42, alignment: .trailing)
-							.accessibilityHidden(true)
-						}
-					}
-					SettingsHairline()
-					OnboardingToggleRow(
-						title: "Show what's playing",
-						detail: "Adds the current track and playback controls to the launcher.",
-						isOn: $preferences.showsPlayingMusic,
-						accentColor: accentColor
-					)
+					playbackPanel
 				}
 			}
+		}
+	}
+
+	private var playbackPanel: some View {
+		SettingsPanel(title: "Playback") {
+			LabeledContent("Volume") {
+				HStack(spacing: LauncherTokens.Spacing.control) {
+					Image(systemName: "speaker.fill")
+						.foregroundStyle(theme.textSecondary)
+						.accessibilityHidden(true)
+					Slider(value: $preferences.launcherMusicVolume, in: 0...1, step: 0.05)
+						.tint(theme.accentFill)
+						.accessibilityLabel("Volume")
+					Text(
+						preferences.launcherMusicVolume,
+						format: .percent.precision(.fractionLength(0))
+					)
+					.font(.caption.monospacedDigit())
+					.foregroundStyle(theme.textSecondary)
+					.frame(minWidth: 44, alignment: .trailing)
+					.accessibilityHidden(true)
+				}
+			}
+			OnboardingToggleRow(
+				title: "Now playing",
+				detail: "Shows the current track and playback controls on the Home screen.",
+				isOn: $preferences.showsPlayingMusic,
+			)
 		}
 	}
 }

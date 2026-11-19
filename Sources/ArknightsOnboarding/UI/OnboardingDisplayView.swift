@@ -6,57 +6,57 @@ import SwiftUI
 struct OnboardingDisplayView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	let lifecycle: LauncherLifecycleStore
-	let accentColor: Color
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		OnboardingPage(
-			title: "Display",
-			subtitle: "The launcher sets the resolution for this screen.",
-			accentColor: accentColor
+			step: .display,
+			subtitle: "The launcher sets the resolution for this screen"
 		) {
 			OnboardingQuestion(
 				question: "Display mode",
-				systemImage: "macwindow",
 				answers: GamePlacementAnswer.allCases.map(\.answer),
 				selection: answerBinding(\.placement),
-				accentColor: accentColor,
 				isDisabled: isLocked
 			)
 			if answers.placement == .window {
 				OnboardingQuestion(
 					question: "Window size",
-					systemImage: "rectangle.expand.diagonal",
-					answers: GameWindowSizeChoice.allCases.map {
-						$0.answer(on: GameScreenMetrics.main)
+					answers: answers.offeredWindowSizes.map {
+						$0.answer(on: gameScreen)
 					},
 					selection: answerBinding(\.windowSize),
-					accentColor: accentColor,
 					isDisabled: isLocked
 				)
 			}
-			OnboardingQuestion(
-				question: "Rendering",
-				systemImage: "sparkles",
-				answers: GameRenderingMode.allCases.map(\.answer),
-				selection: answerBinding(\.rendering),
-				accentColor: accentColor,
-				isDisabled: isLocked
-			)
-			// The runtime reports pointer support only while launching, so the question is always
-			// shown; a runtime without it falls back to the game's own cursor at launch.
-			OnboardingQuestion(
-				question: "Cursor",
-				systemImage: "cursorarrow.motionlines",
-				answers: PointerAnswer.allCases.map(\.answer),
-				selection: pointerBinding,
-				accentColor: accentColor,
-				isDisabled: isLocked
-			)
+			OnboardingMoreOptions {
+				OnboardingQuestion(
+					question: "Rendering",
+					answers: GameRenderingMode.allCases.map(\.answer),
+					selection: answerBinding(\.rendering),
+					isDisabled: isLocked
+				)
+				OnboardingQuestion(
+					question: "Frame rate limit",
+					answers: GameFrameRateLimit.allCases.map(\.answer),
+					selection: answerBinding(\.frameRateLimit),
+					isDisabled: isLocked,
+					footnote: "Lower limits save battery."
+				)
+				// The runtime reports pointer support only while launching, so the question is always
+				// shown; a runtime without it falls back to the game's own cursor at launch.
+				OnboardingQuestion(
+					question: "Cursor",
+					answers: PointerAnswer.allCases.map(\.answer),
+					selection: pointerBinding,
+					isDisabled: isLocked
+				)
+			}
 			Text(displaySummary)
 				.font(.callout)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.fixedSize(horizontal: false, vertical: true)
-				.padding(.horizontal, LauncherVisuals.Spacing.panel)
+				.padding(.horizontal, LauncherTokens.Spacing.panel)
 				.onAppear(perform: applyRecommendedAnswers)
 		}
 	}
@@ -66,8 +66,9 @@ struct OnboardingDisplayView: View {
 	private var displaySummary: String {
 		let placement =
 			switch (answers.placement, answers.windowSize) {
-			case (.window, .fillScreen): "Windowed, fill screen"
-			case (.window, .leaveRoom): "Windowed, compact"
+			case (.window, .preset(.fillScreen)): "Windowed, fill screen"
+			case (.window, .preset(.leaveRoom)): "Windowed, compact"
+			case (.window, .custom(let size)): "Windowed, \(size.displayName)"
 			case (.fullscreen, _): "Fullscreen"
 			}
 		let rendering =
@@ -76,11 +77,17 @@ struct OnboardingDisplayView: View {
 			case .metalFX: "MetalFX"
 			case .standard: "Standard"
 			}
-		return "\(placement), \(rendering). Change this in Settings → Game."
+		let frameRate = answers.frameRateLimit.displayName + " limit"
+		return "\(placement), \(rendering), \(frameRate). Change this in Settings → Game."
+	}
+
+	/// The screen the game opens on, which sets the window size presets.
+	private var gameScreen: GameScreenMetrics? {
+		GameScreenList.system().resolve(preferences.launchOptions.display)?.metrics
 	}
 
 	private var answers: GameDisplayAnswers {
-		GameDisplayAnswers(preferences.launchOptions, screen: GameScreenMetrics.main)
+		GameDisplayAnswers(preferences.launchOptions, screen: gameScreen)
 	}
 
 	private func answerBinding<Value>(
@@ -89,7 +96,7 @@ struct OnboardingDisplayView: View {
 		Binding(
 			get: { answers[keyPath: keyPath] },
 			set: { value in
-				guard let value, let screen = GameScreenMetrics.main else { return }
+				guard let value, let screen = gameScreen else { return }
 				var updated = answers
 				updated[keyPath: keyPath] = value
 				preferences.launchOptions = updated.applied(
@@ -110,7 +117,7 @@ struct OnboardingDisplayView: View {
 	// so the answers shown are the answers in effect. The pointer has no untouched marker, so it
 	// is only recommended alongside untouched display defaults.
 	private func applyRecommendedAnswers() {
-		guard let screen = GameScreenMetrics.main else { return }
+		guard let screen = gameScreen else { return }
 		let options = preferences.launchOptions
 		if options == .default {
 			preferences.launchOptions = GameDisplayAnswers.recommended.applied(

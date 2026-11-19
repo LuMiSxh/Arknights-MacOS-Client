@@ -49,6 +49,32 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Resolve the Swift toolchain version
+        id: swift
+        run: |
+          set -euo pipefail
+          version="$(xcrun swift --version | sed -nE 's/.*Swift version ([0-9.]+).*/\1/p' | head -n 1)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the SwiftPM build directory
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ github.workspace }}/.build
+          key: ${{ runner.os }}-${{ runner.arch }}-swiftpm-${{ steps.swift.outputs.version }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-swiftpm-${{ steps.swift.outputs.version }}-
+            ${{ runner.os }}-${{ runner.arch }}-swiftpm-
+
+      - name: Restore the SwiftPM cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: ${{ runner.os }}-${{ runner.arch }}-swiftpm-cache-${{ steps.swift.outputs.version }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-swiftpm-cache-${{ steps.swift.outputs.version }}-
+            ${{ runner.os }}-${{ runner.arch }}-swiftpm-cache-
+
       - name: Set up uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
@@ -95,14 +121,7 @@ jobs:
           fi
 
       - name: Resolve project names
-        run: |
-          {
-            echo "APP_NAME=$(uv run --locked --no-dev scripts/project_config.py app-bundle-name)"
-            echo "DISPLAY_NAME=$(uv run --locked --no-dev scripts/project_config.py display-name)"
-            echo "DMG_NAME=$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
-            echo "UPDATE_NAME=$(uv run --locked --no-dev scripts/project_config.py sparkle-update-name)"
-            echo "DELTA_SOURCES=$(uv run --locked --no-dev scripts/project_config.py sparkle-delta-sources)"
-          } >> "$GITHUB_ENV"
+        run: uv run --locked --no-dev scripts/project_config.py github-env >> "$GITHUB_ENV"
 
       - name: Test source
         run: just ci
@@ -110,24 +129,55 @@ jobs:
       - name: Prepare release notes
         run: uv run --locked --no-dev scripts/release.py notes "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
 
-      - name: Download runtime and build recipe
-        run: |
-          mkdir -p dist
-          build_recipe="$RUNNER_TEMP/Runtime-Build-Recipe.tar.gz"
-          build_recipe_url="$(plutil -extract buildRecipe.url raw runtime.json)"
-          build_recipe_sha256="$(plutil -extract buildRecipe.sha256 raw runtime.json)"
-          uv run --locked --no-dev scripts/download_runtime.py
-          curl --fail --location --proto '=https' --tlsv1.2 "$build_recipe_url" --output "$build_recipe"
-          echo "$build_recipe_sha256  $build_recipe" | shasum -a 256 --check
-          mv "$build_recipe" "dist/Runtime-Build-Recipe.tar.gz"
-
       - name: Set release version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER" Resources/Info.plist
+          set -euo pipefail
+          # Sparkle orders updates by CFBundleVersion, so it must never fall below the
+          # newest published build. Only a repository without any published release falls
+          # back to the run number.
+          previous_appcast="$RUNNER_TEMP/previous-appcast.xml"
+          appcast_url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml"
+          appcast_args=()
+          rm -f "$previous_appcast"
+          status="$(curl --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --output "$previous_appcast" --write-out '%{http_code}' "$appcast_url")" || {
+            echo "Unable to fetch the previous Sparkle appcast from $appcast_url." >&2
+            exit 1
+          }
+          case "$status" in
+            200)
+              appcast_args=(--previous-appcast "$previous_appcast")
+              ;;
+            404)
+              rm -f "$previous_appcast"
+              # A 404 on the appcast also occurs when the latest release lacks the asset.
+              # Reusing the run number then could lower CFBundleVersion, so check for a release.
+              release_error="$RUNNER_TEMP/latest-release.err"
+              if latest_tag="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>"$release_error")"; then
+                echo "::error::Latest release $latest_tag has no appcast.xml asset; cannot derive CFBundleVersion." >&2
+                exit 1
+              fi
+              if ! grep -q 'HTTP 404' "$release_error"; then
+                cat "$release_error" >&2
+                echo "::error::Unable to query the latest release of $GITHUB_REPOSITORY." >&2
+                exit 1
+              fi
+              echo "::warning::No published release; CFBundleVersion uses the run number."
+              ;;
+            *)
+              echo "Unexpected HTTP $status fetching the previous Sparkle appcast." >&2
+              exit 1
+              ;;
+          esac
+          bundle_version="$(uv run --locked --no-dev scripts/release.py bundle-version \
+            "$GITHUB_RUN_NUMBER" ${appcast_args[@]+"${appcast_args[@]}"})"
+          echo "CFBundleVersion: $bundle_version"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $bundle_version" Resources/Info.plist
 
       - name: Build DMG
-        run: |
-          just dmg "$GITHUB_WORKSPACE/.build/runtime"
+        run: just dmg --strict-licenses
 
       - name: Create and sign Sparkle update
         env:
@@ -168,7 +218,9 @@ jobs:
             --directory "$update_directory" \
             --appcast "$update_directory/appcast.xml" \
             --output dist \
-            --sign-update "$sign_update"
+            --sign-update "$sign_update" \
+            --repository "$GITHUB_REPOSITORY" \
+            --release-version "$RELEASE_VERSION"
           uv run --locked --no-dev scripts/validate_sparkle_keys.py \
             --plist "dist/$APP_NAME/Contents/Info.plist" \
             --sign-update "$sign_update" \
@@ -180,7 +232,7 @@ jobs:
           deltas=(dist/*.delta)
           shasum -a 256 "dist/$DMG_NAME" \
             "dist/$UPDATE_NAME" "${deltas[@]}" \
-            dist/appcast.xml dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
+            dist/appcast.xml > dist/SHA256SUMS
 
       - name: Attest release provenance
         if: ${{ !inputs.dry_run }}
@@ -193,7 +245,6 @@ jobs:
             dist/*.tar.xz
             dist/*.delta
             dist/appcast.xml
-            dist/Runtime-Build-Recipe.tar.gz
             dist/SHA256SUMS
 
       - name: Upload dry-run files for inspection
@@ -206,7 +257,6 @@ jobs:
             dist/*.tar.xz
             dist/*.delta
             dist/appcast.xml
-            dist/Runtime-Build-Recipe.tar.gz
             dist/SHA256SUMS
           retention-days: 3
 
@@ -223,7 +273,6 @@ jobs:
             "dist/$UPDATE_NAME" \
             "${deltas[@]}" \
             dist/appcast.xml \
-            dist/Runtime-Build-Recipe.tar.gz \
             dist/SHA256SUMS \
             --draft \
             --notes-file "$RUNNER_TEMP/release-notes.md" \

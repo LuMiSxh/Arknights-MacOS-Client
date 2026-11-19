@@ -10,7 +10,7 @@
 />
 
 <article class="privacy-page">
-	<p class="eyebrow">Last updated 2026-10-29</p>
+	<p class="eyebrow">Last updated 2026-11-07</p>
 	<h1>Privacy notice</h1>
 	<p>
 		This notice covers the Arknights Client website and the Arknights Client
@@ -46,6 +46,27 @@
 		that receives app data. Settings, logs, and game files stay on your Mac.
 	</p>
 	<p>
+		Discord presence is off by default. When you turn it on, the app sends
+		your Discord client the game name, your server, the session start time,
+		and the launcher process ID. This data goes to the local Discord app,
+		not to a server run by the author. The app does not read your Discord
+		account and sends no account, operator, or playtime data. The card uses
+		the project icon and links to the project website. Both are public
+		project addresses. Discord controls what your profile shows.
+	</p>
+	<p>
+		The daily reset reminder is off by default. When you turn it on, the app
+		asks macOS to show local notifications at set times. macOS schedules and
+		shows them on your Mac. The app sends no data to any server for this
+		feature.
+	</p>
+	<p>
+		The screenshot shortcut is off by default. When you use it, the app asks
+		macOS for Screen Recording permission and saves a picture of the game
+		window to a folder on your Mac. The app sends the picture nowhere. The
+		banner after saving is a local macOS notification.
+	</p>
+	<p>
 		The app connects to the hosts below when you use the matching feature.
 		Each host receives your IP address and request data under its own
 		privacy policy.
@@ -62,8 +83,15 @@
 			for Yostar regions.
 		</li>
 		<li>
-			<code>launcher.gryphline.com</code>: game metadata for Taiwan
-			(Canary).
+			<code>*.hycdn.cn</code>: game package downloads for China and China
+			(Bilibili).
+		</li>
+		<li>
+			<code>launcher.gryphline.com</code>,
+			<code>launcher.hg-cdn.com</code>,
+			<code>ak-tw.hg-cdn.com</code>,
+			<code>gl-utils-public.hg-cdn.com</code>: game metadata and package
+			downloads for Taiwan.
 		</li>
 		<li>
 			<code>launcher.hypergryph.com</code>: game metadata for China and
@@ -71,6 +99,10 @@
 		</li>
 		<li>
 			<code>webusstatic.yo-star.com</code>: launcher logos and artwork.
+		</li>
+		<li>
+			<code>zh.wikifur.com</code>: community wiki logo for China, China
+			(Bilibili), and Taiwan.
 		</li>
 		<li>
 			<code>www.arknights.global</code>: wallpaper gallery for artwork
@@ -86,7 +118,8 @@
 		</li>
 		<li><code>api.github.com</code>: launcher announcements.</li>
 		<li>
-			<code>github.com</code>: update checks and the Report an issue link.
+			<code>github.com</code>: app updates and the pinned runtime download
+			for the runtime that you choose.
 		</li>
 		<li>
 			<code>www.youtube.com</code>: background music in the embedded
@@ -100,10 +133,22 @@
 
 	<h2>Issue reports</h2>
 	<p>
-		The Report an issue link opens a prefilled GitHub issue. It includes the
-		app version, macOS version, chip, memory, and, where known, the region,
-		operation name, and a support code. Log files are not included. You
-		decide whether to submit the issue.
+		The Report a Problem… command opens a prefilled GitHub issue in your
+		browser. It includes the app version, macOS version, chip, memory, and,
+		where known, the region, operation name, and a support code. Log files
+		are not included. You decide whether to submit the issue.
+	</p>
+	<p>
+		Save Diagnostics… in the Help menu writes a zip file to your Downloads
+		folder. The file holds the launcher and game logs, with your display and
+		runtime settings. The app redacts your home folder, your user name, and
+		URL queries from the logs. The app does not upload the file. The file
+		leaves your Mac only when you send it yourself, for example as an
+		attachment to an issue or a message.
+	</p>
+	<p>
+		On this website, the Report an issue footer link opens the public GitHub
+		issue list. It does not prefill an issue.
 	</p>
 
 	<h2>Contact form</h2>

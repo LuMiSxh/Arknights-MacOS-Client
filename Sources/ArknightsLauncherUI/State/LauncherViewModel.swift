@@ -4,6 +4,8 @@ import ArknightsCore
 import ArknightsCustomization
 import ArknightsGameInstallation
 import ArknightsGameRuntime
+import ArknightsInfrastructure
+import ArknightsPresence
 import Foundation
 import Observation
 
@@ -13,7 +15,9 @@ package final class LauncherViewModel {
 	package let lifecycle: LauncherLifecycleStore
 	package let settings: LauncherPreferencesController
 	package let installation: InstallationController
+	package let runtimeSelection: RuntimeSelectionController
 	let gameSession: GameSessionController
+	let environmentRefresh: GameEnvironmentRefreshController
 	package let intelTranslation: IntelTranslationController
 	let customization: CustomizationController
 	package let communication: LauncherCommunicationController
@@ -21,6 +25,9 @@ package final class LauncherViewModel {
 	let storage: StorageMaintenanceController
 	let storageOverview: StorageOverviewController
 	let playtimeStatistics: PlaytimeStatisticsController
+	let discordPresence: DiscordPresenceController
+	let reminders: ResetReminderController
+	package let screenshots: GameScreenshotController
 
 	let presetCatalog: PresetCatalogService
 	package let preferences: LauncherPreferencesStore
@@ -35,22 +42,40 @@ package final class LauncherViewModel {
 		var developerSimulation: DeveloperSimulationState?
 	#endif
 	var pendingACEWarningRegion: GameRegion?
+	package internal(set) var isSavingDiagnostics = false
+	/// True after the pre-0.6 data deletion finishes, so the view can start setup.
+	package internal(set) var legacyDataDeletionCompleted = false
 	let paths: AppPaths
+	/// The single owner of `runtime-selection.json`; every writer shares it.
+	let selectionStore: RuntimeSelectionStore
 	@ObservationIgnored var startupTask: Task<Bool, Never>?
 	@ObservationIgnored var startupOptions = StartupOptions()
 	@ObservationIgnored var storageMigrationFailureID: UUID?
-	@ObservationIgnored private var deferredCanaryRefreshTask: Task<Void, Never>?
-	@ObservationIgnored private var canaryRefreshPending = false
+	/// Set by the app composition to the sheet-aware quit path.
+	@ObservationIgnored package var requestApplicationQuit: @MainActor () -> Void = {}
+	@ObservationIgnored var legacyDataDeletionTask: Task<Void, Never>?
+
+	@ObservationIgnored let runtimeInstallSlot = TaskSlot()
+
+	/// True when no activity and no refresh is in flight. Shared by the real and simulated actions.
+	package var canRequestDockLaunch: Bool {
+		lifecycle.activity == .idle && !lifecycle.state.refresh.isChecking
+	}
+
+	/// True while a storage migration owns the launcher; checks and downloads wait.
+	var isMigratingStorage: Bool {
+		lifecycle.activity == .maintaining(.migratingStorage)
+	}
 	init(
 		api: any LauncherAPIProviding = LauncherAPI(),
 		installer: (any GameInstalling)? = nil,
 		paths: AppPaths = AppPaths(),
 		artworkCache: ArtworkCache? = nil,
-		preferences: LauncherPreferencesStore = LauncherPreferencesStore(),
+		preferences: LauncherPreferencesStore,
 		announcementService: LauncherAnnouncementService = LauncherAnnouncementService(),
 		launcherIconManager: LauncherIconManager? = nil,
 		presetCatalog: PresetCatalogService? = nil,
-		gameCompatibilityManager: GameCompatibilityManager = GameCompatibilityManager(),
+		gameCompatibilityManager: GameCompatibilityManager? = nil,
 		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 			await RosettaAvailability.check()
 		},
@@ -69,6 +94,10 @@ package final class LauncherViewModel {
 
 		let launcherLog = LauncherLog(fileURL: paths.launcherLogFile)
 		log = launcherLog
+		StartupTimeline.shared.attach(
+			launcherLog,
+			enabled: preferences.value(LauncherPreferencesStore.Key.debugLoggingEnabled)
+		)
 		let playtimeStatistics = PlaytimeStatisticsController(
 			fileURL: paths.playtimeStatistics,
 			log: launcherLog
@@ -76,7 +105,17 @@ package final class LauncherViewModel {
 		self.playtimeStatistics = playtimeStatistics
 		let lifecycle = LauncherLifecycleStore(log: launcherLog)
 		self.lifecycle = lifecycle
-		let settings = LauncherPreferencesController(store: preferences)
+		let selectionStore = RuntimeSelectionStore(
+			fileURL: paths.runtimeSelectionFile, log: launcherLog)
+		self.selectionStore = selectionStore
+		let runtimeSelection = RuntimeSelectionController(
+			paths: paths,
+			selectionStore: selectionStore,
+			lifecycle: lifecycle,
+			log: launcherLog
+		)
+		self.runtimeSelection = runtimeSelection
+		let settings = LauncherPreferencesController(store: preferences, log: launcherLog)
 		self.settings = settings
 		let iconManager = launcherIconManager ?? LauncherIconManager()
 		self.launcherIconManager = iconManager
@@ -84,16 +123,18 @@ package final class LauncherViewModel {
 			presetCatalog
 			?? PresetCatalogService(cacheDirectory: paths.presetGalleryCache, log: launcherLog)
 		self.presetCatalog = catalog
+		let resolvedCompatibilityManager =
+			gameCompatibilityManager ?? GameCompatibilityManager(log: launcherLog)
 		let resolvedArtworkCache = artworkCache ?? ArtworkCache(directory: paths.artworkCache)
 		let gameInstaller =
 			installer
 			?? GameInstaller(
 				api: api,
-				compatibilityManager: gameCompatibilityManager,
+				compatibilityManager: resolvedCompatibilityManager,
 				log: launcherLog,
 				reuseSourceDirectories: { [preferences] region in
 					await MainActor.run {
-						preferences.regionAccess().selectableRegions
+						GameRegion.allCases
 							.filter { $0 != region }
 							.map {
 								preferences.installDirectory(
@@ -112,6 +153,9 @@ package final class LauncherViewModel {
 		self.installation = installation
 		let intelTranslation = IntelTranslationController(
 			lifecycle: lifecycle,
+			runtimeLane: { [weak runtimeSelection] in
+				runtimeSelection?.selectedLane ?? paths.runtimeLane
+			},
 			checkIntelTranslation: checkIntelTranslation,
 			installRosettaSystemSoftware: installRosettaSystemSoftware,
 			log: launcherLog
@@ -148,9 +192,12 @@ package final class LauncherViewModel {
 		let storage = StorageMaintenanceController(
 			lifecycle: lifecycle,
 			paths: paths,
-			presetCatalog: catalog,
+			clearGalleryCache: { try await catalog.clearCaches() },
 			log: launcherLog,
-			regionProvider: { [weak installation] in installation?.region ?? .global }
+			regionProvider: { [weak installation] in installation?.region ?? .global },
+			laneProvider: { [weak runtimeSelection] in
+				runtimeSelection?.selectedLane ?? paths.runtimeLane
+			}
 		)
 		self.storage = storage
 		let storageOverview = StorageOverviewController(
@@ -161,51 +208,68 @@ package final class LauncherViewModel {
 			regionProvider: { [weak installation] in installation?.region ?? .global }
 		)
 		self.storageOverview = storageOverview
-		storage.onStorageOverviewChanged = { [weak storageOverview] in
-			storageOverview?.refreshNow()
-		}
 		let gameSession = GameSessionController(
 			lifecycle: lifecycle,
 			installation: installation,
 			settings: settings,
 			intelTranslation: intelTranslation,
 			paths: paths,
-			preferences: preferences,
 			log: launcherLog,
-			gameCompatibilityManager: gameCompatibilityManager,
+			gameCompatibilityManager: resolvedCompatibilityManager,
 			playtimeStatistics: playtimeStatistics,
-			graphicsDiagnosticsEnabled: arguments.contains("--graphics-diagnostics")
+			graphicsDiagnosticsEnabled: arguments.contains("--graphics-diagnostics"),
+			runtimeLane: { [weak runtimeSelection] in
+				runtimeSelection?.selectedLane ?? paths.runtimeLane
+			}
 		)
 		self.gameSession = gameSession
+		environmentRefresh = GameEnvironmentRefreshController(
+			lifecycle: lifecycle,
+			paths: paths,
+			compatibilityManager: resolvedCompatibilityManager,
+			lane: { [weak runtimeSelection] in
+				runtimeSelection?.selectedLane ?? paths.runtimeLane
+			},
+			installedRegions: { [weak installation] in installation?.installedRegions ?? [] },
+			gameDirectory: { [preferences] region in
+				preferences.installDirectory(for: region, default: paths.gameInstall(for: region))
+			},
+			isLaunchPendingOrActive: { [weak gameSession] in
+				gameSession?.isLaunchPendingOrActive ?? false
+			},
+			log: launcherLog
+		)
+		runtimeSelection.isLaunchInProgress = { [weak gameSession] in
+			gameSession?.isLaunchPendingOrActive ?? false
+		}
+		discordPresence = DiscordPresenceController(
+			lifecycle: lifecycle,
+			preferences: settings,
+			log: launcherLog,
+			region: { [weak installation] in installation?.region ?? .global }
+		)
 
-		settings.onLauncherUpdateCheckRequested = { [weak self] in
-			self?.actions.checkLauncherUpdates()
-		}
-		settings.onGameUpdateCheckRequested = { [weak self] in
-			self?.actions.checkGameUpdates()
-		}
-		settings.onAnnouncementCheckRequested = { [weak self] in
-			self?.actions.checkAnnouncements()
-		}
-		settings.onDynamicThemeChanged = { [weak customization] in
-			customization?.updateThemeColor()
-		}
-		settings.onCanaryFeaturesChanged = { [weak self] _ in
-			self?.refreshInstalledRegionsAfterCanaryChange()
-		}
-		settings.onTaiwanClientChanged = { [weak self] _ in
-			self?.refreshInstalledRegionsAfterCanaryChange()
-		}
-		_ = lifecycle.observeActivityChanges { [weak self] in
-			self?.scheduleCanaryRefreshIfIdle()
-		}
-		installation.onMetadataRefreshCancellationRequested = { [weak refreshController] in
-			refreshController?.cancelForInstallationStart()
-		}
-		installation.onLaunchRequested = { [weak gameSession] in gameSession?.launch() }
-		gameSession.customGameIconURL = { [weak customization, paths] in
-			customization?.hasCustomGameIcon == true ? paths.customGameIcon : nil
-		}
+		let notificationScheduler = makeNotificationScheduler()
+		let reminders = ResetReminderController(
+			scheduler: notificationScheduler,
+			settings: settings,
+			installedRegions: { [weak installation] in installation?.installedRegions ?? [] },
+			selectedRegion: { [weak installation] in installation?.region ?? .global },
+			log: launcherLog
+		)
+		self.reminders = reminders
+		screenshots = GameScreenshotController(
+			lifecycle: lifecycle,
+			settings: settings,
+			paths: paths,
+			scheduler: notificationScheduler,
+			region: { [weak gameSession, weak installation] in
+				gameSession?.activeGameRegion ?? installation?.region ?? .global
+			},
+			log: launcherLog
+		)
+
+		wireCallbacks()
 
 		#if DEBUG
 			developerSimulation =
@@ -227,48 +291,15 @@ package final class LauncherViewModel {
 
 		startupOptions = StartupOptions(arguments: arguments)
 		beginStartup()
+		reminders.start()
+		screenshots.start()
 
 		let appVersion = Bundle.main.shortVersionString ?? "Development"
 		log.info("Launcher \(appVersion) started")
 	}
 
-	private func refreshInstalledRegionsAfterCanaryChange() {
-		#if DEBUG
-			guard !isDeveloperMode else { return }
-		#endif
-		canaryRefreshPending = true
-		scheduleCanaryRefreshIfIdle()
-	}
-
-	private func scheduleCanaryRefreshIfIdle() {
-		guard
-			canaryRefreshPending, lifecycle.activity == .idle,
-			deferredCanaryRefreshTask == nil
-		else {
-			return
-		}
-		deferredCanaryRefreshTask = Task { @MainActor [weak self] in
-			await Task.yield()
-			guard let self else { return }
-			deferredCanaryRefreshTask = nil
-			guard lifecycle.activity == .idle, canaryRefreshPending else { return }
-			canaryRefreshPending = false
-			refreshInstalledRegionsNow()
-		}
-	}
-
-	private func refreshInstalledRegionsNow() {
-		if !settings.regionAccess.allows(installation.region),
-			refreshController.selectRegion(.global)
-		{
-			return
-		}
-		_ = installation.updateInstalledState()
-	}
-
 	deinit {
 		startupTask?.cancel()
-		deferredCanaryRefreshTask?.cancel()
 	}
 
 	func waitForStartup() async -> Bool {

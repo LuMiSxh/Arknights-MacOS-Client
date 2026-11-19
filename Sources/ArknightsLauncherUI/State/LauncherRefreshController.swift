@@ -82,7 +82,7 @@ final class LauncherRefreshController {
 		lifecycle.state.refresh = .idle
 	}
 
-	package func checkGameUpdates() {
+	func checkGameUpdates() {
 		guard lifecycle.canBeginExclusiveActivity, !installation.isDownloading else { return }
 		lifecycle.state.refresh = .idle
 		startRefresh(forceGameUpdateCheck: true)
@@ -108,7 +108,7 @@ final class LauncherRefreshController {
 	}
 
 	@discardableResult
-	package func selectRegion(_ newRegion: GameRegion) -> Bool {
+	func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard installation.selectRegion(newRegion) else { return false }
 		lifecycle.state.refresh = .checking(requestID: nil)
 		branding = nil
@@ -224,7 +224,8 @@ final class LauncherRefreshController {
 			LauncherFailurePresentation(
 				id: id,
 				message: message,
-				code: .virga,
+				code: (error as? any SupportCodeProviding)?.supportCode
+					?? (error is URLError ? .networkUnavailable : .serviceError),
 				context: SupportContext(
 					operation: .configurationRefresh,
 					region: region.supportRegion
@@ -290,19 +291,25 @@ final class LauncherRefreshController {
 		guard
 			isCurrentBrandingAssetLoad(token, region: region)
 		else { return }
-		if let logoData, let logo = NSImage(data: logoData) {
-			customization.officialLogo = logo
+		if let logoData, let logo = await CustomizationImageIO.decodeImage(logoData) {
+			guard isCurrentBrandingAssetLoad(token, region: region) else { return }
+			customization.officialLogo = NSImage(cgImage: logo, size: .zero)
 		}
 		guard
 			customization.customArtworkGeneration == customArtworkGeneration,
 			!customization.hasPersistedCustomArtwork
 		else { return }
 		if let artworkData,
-			let image = NSImage(data: artworkData),
+			let decodedArtwork = await CustomizationImageIO.decodeImage(artworkData),
 			let artworkCacheKey = artworkCache.cacheKey(for: branding)
 		{
+			guard
+				isCurrentBrandingAssetLoad(token, region: region),
+				customization.customArtworkGeneration == customArtworkGeneration,
+				!customization.hasPersistedCustomArtwork
+			else { return }
 			customization.setHeroArtwork(
-				image,
+				NSImage(cgImage: decodedArtwork, size: .zero),
 				themeCacheKey: CustomizationController.officialThemeCacheKey(
 					for: region,
 					artworkCacheKey: artworkCacheKey

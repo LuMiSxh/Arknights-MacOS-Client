@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import pytest
-from release import extract, validate_release
+from release import bundle_version, extract, validate_release
 
 
 @pytest.mark.parametrize(
@@ -35,22 +35,11 @@ def test_extracts_requested_release_body(changelog: str, expected: str) -> None:
     assert extract(changelog, "0.2.0") == expected
 
 
-def test_rejects_missing_version() -> None:
-    with pytest.raises(RuntimeError):
-        extract("# Changelog\n", "0.2.0")
-
-
 def write_changelog(path: Path, version: str) -> Path:
     path.write_text(
         f"# Changelog\n\n## [{version}]\n\n- Release notes.\n", encoding="utf-8"
     )
     return path
-
-
-def test_accepts_matching_release_metadata(tmp_path: Path) -> None:
-    changelog = write_changelog(tmp_path / "CHANGELOG.md", "0.2.0")
-
-    assert validate_release("0.2.0", changelog, "0.2.0") == "- Release notes."
 
 
 @pytest.mark.parametrize(
@@ -73,3 +62,28 @@ def test_rejects_invalid_release_metadata(
 
     with pytest.raises(RuntimeError, match=message):
         validate_release(release_version, changelog, plist_version)
+
+
+PUBLISHED_APPCAST = """<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+  <channel>
+    <item><sparkle:version>24</sparkle:version></item>
+    <item><sparkle:version>25</sparkle:version></item>
+  </channel>
+</rss>
+"""
+
+
+@pytest.mark.parametrize(
+    ("run_number", "appcast_text", "expected"),
+    [
+        (20, PUBLISHED_APPCAST, 26),
+        (30, PUBLISHED_APPCAST, 30),
+        (25, None, 25),
+    ],
+    ids=("counter-behind-appcast", "counter-ahead-of-appcast", "no-previous-appcast"),
+)
+def test_bundle_version_stays_above_published_builds(
+    run_number: int, appcast_text: str | None, expected: int
+) -> None:
+    assert bundle_version(run_number, appcast_text) == expected

@@ -2,8 +2,6 @@
 
 """Read and validate the project metadata used by packaging scripts."""
 
-from __future__ import annotations
-
 import json
 import plistlib
 import re
@@ -12,13 +10,33 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from lib.common import PROJECT_DIR, fail, output, require_file
+from lib.common import PROJECT_DIR, fail, is_safe_relative_path, output, require_file
 
 ARCHITECTURE_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 SPARKLE_DELTA_SOURCE_COUNT = 3
 # Releases up to 0.6.x shipped `.zip` update archives; newer ones ship `.tar.xz`.
 # Sparkle 2.9.6, the oldest shipped updater, extracts both.
 SPARKLE_ARCHIVE_SUFFIXES = (".tar.xz", ".zip")
+# Sparkle treats clients below build 18 (0.6.0) as informational-only, because newer
+# releases cannot migrate their data.
+MINIMUM_MIGRATABLE_BUILD = 18
+# Support-code outputs, relative to the repository root. The catalog generates them.
+SUPPORT_CODE_CATALOG = Path("scripts/config/support-codes.json")
+# Pinned runtime configuration, relative to the repository root.
+RUNTIME_CONFIG = Path("scripts/config/runtime.json")
+SUPPORT_CODE_ARTICLES = Path("docs/help/errors")
+SUPPORT_CODE_SWIFT = Path("Sources/ArknightsCore/Shared/Support/SupportCode.swift")
+ISSUE_REPORT_TEMPLATE = Path(".github/ISSUE_TEMPLATE/problem-report.yml")
+# Design-literal lint: the Swift tree it scans, the token files that define the literals it
+# enforces, and its allowlist.
+DESIGN_LINT_SOURCE_ROOT = Path("Sources")
+DESIGN_LINT_EXEMPT_FILES = (
+    Path("Sources/ArknightsCore/Shared/UI/LauncherTheme.swift"),
+    Path("Sources/ArknightsCore/Shared/UI/LauncherVisuals.swift"),
+    Path("Sources/ArknightsCore/Shared/UI/LauncherTokens.swift"),
+    Path("Sources/ArknightsCore/Shared/UI/AdaptiveGlass.swift"),
+)
+DESIGN_LINT_ALLOWLIST = Path("scripts/config/design-lint-allowlist.txt")
 
 
 def sparkle_archive_names(stem: str, version: str) -> set[str]:
@@ -43,7 +61,12 @@ def github_asset_name(filename: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", ".", filename)
 
 
-@dataclass(frozen=True)
+def release_page_url(repository: str, version: str) -> str:
+    """Return the GitHub release page URL for a version tag."""
+    return f"https://github.com/{repository}/releases/tag/v{version}"
+
+
+@dataclass(frozen=True, slots=True)
 class ProductMetadata:
     """Product properties declared by the app's Info.plist."""
 
@@ -57,8 +80,14 @@ class ProductMetadata:
     minimum_macos_version: str
     architecture_priority: tuple[str, ...]
 
+    @property
+    def icon_filename(self) -> str:
+        if Path(self.icon_file).suffix:
+            return self.icon_file
+        return f"{self.icon_file}.icns"
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, slots=True)
 class PackageMetadata:
     """Build properties resolved by SwiftPM's package manifest evaluation."""
 
@@ -68,6 +97,7 @@ class PackageMetadata:
     resource_target_path: Path
     copy_resource_paths: tuple[Path, ...]
     exact_dependency_versions: tuple[tuple[str, str], ...]
+    test_target_names: tuple[str, ...] = ()
 
     def exact_dependency_version(self, identity: str) -> str:
         versions = dict(self.exact_dependency_versions)
@@ -76,7 +106,7 @@ class PackageMetadata:
         return versions[identity]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ProjectConfiguration:
     """Validated metadata and paths derived from both project declarations."""
 
@@ -204,6 +234,11 @@ def _package_metadata(dump: Mapping[str, Any]) -> PackageMetadata:
         ),
         copy_resource_paths=_copied_resources(resource_target),
         exact_dependency_versions=_exact_dependency_versions(dump),
+        test_target_names=tuple(
+            _string(target, "name")
+            for target in targets
+            if target.get("type") == "test"
+        ),
     )
 
 
@@ -307,14 +342,9 @@ def _safe_component(value: str, name: str) -> str:
 
 
 def _safe_relative_path(value: str, name: str) -> Path:
-    path = PurePosixPath(value)
-    if (
-        path.is_absolute()
-        or not path.parts
-        or any(part in {"", ".", ".."} for part in path.parts)
-    ):
+    if not is_safe_relative_path(value):
         fail(f"{name} must be a safe relative path")
-    return Path(*path.parts)
+    return Path(*PurePosixPath(value).parts)
 
 
 def _architecture(value: str) -> str:

@@ -8,7 +8,7 @@ enum DiskCapacityError: LauncherDiagnosticError, Sendable {
 	case resourceValuesUnavailable(URL)
 	case resourceValuesReadFailed(URL, String)
 
-	var errorDescription: String? {
+	package var errorDescription: String? {
 		"Disk capacity could not be determined for the selected location."
 	}
 
@@ -27,7 +27,7 @@ enum DiskCapacityError: LauncherDiagnosticError, Sendable {
 extension GameInstaller {
 	// Walks up to the nearest existing ancestor because `url` (e.g. a not-yet-created install
 	// directory) may not exist yet.
-	static func availableCapacityBytes(
+	package static func availableCapacityBytes(
 		at url: URL, fileManager: FileManager = .default
 	) throws
 		-> Int64

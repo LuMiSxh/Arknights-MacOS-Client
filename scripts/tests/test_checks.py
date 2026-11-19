@@ -1,17 +1,13 @@
 # SPDX-License-Identifier: MPL-2.0
 
-from __future__ import annotations
-
 import build_compatibility
-from lib.common import PROJECT_DIR
 
 
 def test_compatibility_manifest_declares_native_sources_once() -> None:
     components = build_compatibility.load_components()
     artifacts = [
         (
-            PROJECT_DIR
-            / "RuntimeSupport"
+            build_compatibility.SUPPORT_ROOT
             / component["directory"]
             / artifact["source"],
             (component["directory"], artifact["output"]),
@@ -24,6 +20,6 @@ def test_compatibility_manifest_declares_native_sources_once() -> None:
     assert sorted(sources) == sorted(
         path
         for suffix in ("*.c", "*.m")
-        for path in (PROJECT_DIR / "RuntimeSupport").rglob(suffix)
+        for path in build_compatibility.SUPPORT_ROOT.rglob(suffix)
     )
     assert len(outputs) == len(set(outputs))

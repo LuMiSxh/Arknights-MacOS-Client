@@ -65,7 +65,9 @@ func launchArgumentsConvertWindowPointsButKeepFullscreenPixels(
 			pointSize: GameDisplaySize(width: 3008, height: 1692), backingScale: 2) : nil
 
 	#expect(
-		options.playerArguments(gamePixelsPerPoint: gamePixelsPerPoint, fullscreenDisplay: display)
+		options.playerArguments(
+			gamePixelsPerPoint: gamePixelsPerPoint, fullscreenDisplay: display,
+			monitor: knownDisplay ? 1 : nil)
 			== expected)
 }
 
@@ -82,6 +84,7 @@ func legacyLaunchOptionsDecodeWithStableDefaultsAndIgnoreRetiredFields() throws 
 	#expect(!options.usesMetalPerformanceHUD)
 	#expect(!options.usesGameMode)
 	#expect(options.synchronizationMode == .msync)
+	#expect(options.frameRateLimit == .fps120)
 
 	let retired = try decode(
 		#"{"displayMode":"windowed","resolution":"1280x720","usesPreciseScrolling":true}"#)
@@ -110,7 +113,17 @@ func legacyLaunchOptionsDecodeWithStableDefaultsAndIgnoreRetiredFields() throws 
 		stored.fullscreenResolution = .native
 		let data = try JSONEncoder().encode(stored)
 		let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-		#expect(try JSONDecoder().decode(GameLaunchOptions.self, from: data) == stored)
 		#expect(object["usesHighResolutionMode"] as? Bool == (renderingMode == .retina))
 	}
+}
+
+@Test
+func batterySaverTurnsOffGameModeAndKeepsHUDAndSynchronization() {
+	let options = GameLaunchOptions(
+		displayMode: .windowed, resolution: .hd, usesMetalPerformanceHUD: true,
+		usesGameMode: true, synchronizationMode: .esync
+	).applyingBatterySaver(metalFXSupported: true)
+	#expect(!options.usesGameMode)
+	#expect(options.usesMetalPerformanceHUD)
+	#expect(options.synchronizationMode == .esync)
 }

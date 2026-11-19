@@ -5,6 +5,7 @@ import ArknightsCustomization
 import SwiftUI
 
 struct OnboardingLookView: View {
+	@Environment(\.launcherTheme) private var theme
 	// Names the action cards of the artwork and Dock questions so each card has a stable identity.
 	private enum Action: Hashable {
 		case defaultArtwork, preset, ownImage, operatorIcons, standardIcons
@@ -18,13 +19,11 @@ struct OnboardingLookView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "How should the launcher look?",
-			subtitle: "Artwork, colors and Dock icon.",
-			accentColor: customization.accentColor
+			step: .look,
+			subtitle: "Artwork, theme, Home controls, branding, appearance, and Dock icons"
 		) {
 			OnboardingQuestion(
 				question: "Which artwork should fill the launcher?",
-				systemImage: "photo.on.rectangle.angled",
 				actions: [
 					OnboardingAnswer(
 						value: Action.defaultArtwork, title: "Default artwork",
@@ -37,48 +36,66 @@ struct OnboardingLookView: View {
 					OnboardingAnswer(
 						value: .ownImage, title: "Choose Image…",
 						systemImage: "photo.badge.plus", action: customization.chooseCustomArtwork),
-				],
-				accentColor: customization.accentColor
+				]
 			) {
 				artworkPreview
 			}
 
 			OnboardingQuestion(
-				question: "Which colors should the launcher use?",
-				systemImage: "paintpalette",
+				question: "Dynamic Theme",
 				answers: [true, false].map(Self.colorsAnswer),
-				selection: colorsBinding,
-				accentColor: customization.accentColor
+				selection: answerBinding(\.usesDynamicTheme)
 			)
 
-			OnboardingQuestion(
-				question: "Which operator should your Dock show?",
-				systemImage: "dock.rectangle",
-				actions: dockActions,
-				accentColor: customization.accentColor
-			) {
-				OnboardingDockIconPreview(customization: customization)
+			OnboardingMoreOptions {
+				OnboardingQuestion(
+					question: "Home controls",
+					answers: HomeTheme.allCases.map(\.answer),
+					selection: answerBinding(\.homeTheme),
+					footnote:
+						"The music, version, and status buttons, and the settings button. Automatic follows the artwork."
+				)
+
+				OnboardingQuestion(
+					question: "Branding colors",
+					answers: HomeTheme.allCases.map(\.brandingAnswer),
+					selection: answerBinding(\.brandingTheme),
+					footnote: "Logo and backdrop in the top left corner."
+				)
+
+				OnboardingQuestion(
+					question: "Appearance",
+					answers: LauncherAppearance.allCases.map(\.answer),
+					selection: answerBinding(\.launcherAppearance),
+					footnote: "Settings, setup, and dialogs. Home keeps its own controls."
+				)
+
+				OnboardingQuestion(
+					question: "What should the launcher show?",
+					answers: LauncherInfoAnswer.allCases.map(\.answer),
+					selections: $preferences.shownLauncherInfo
+				)
+
+				OnboardingQuestion(
+					question: "Which operator should your Dock show?",
+					actions: dockActions
+				) {
+					OnboardingDockIconPreview(customization: customization)
+				}
 			}
-
-			OnboardingQuestion(
-				question: "What should the launcher show?",
-				systemImage: "rectangle.bottomthird.inset.filled",
-				answers: LauncherInfoAnswer.allCases.map(\.answer),
-				selections: $preferences.shownLauncherInfo,
-				accentColor: customization.accentColor
-			)
 		}
 	}
 
 	private static func colorsAnswer(_ matchesArtwork: Bool) -> OnboardingAnswer<Bool> {
 		matchesArtwork
 			? OnboardingAnswer(
-				value: true, title: "Match the artwork",
-				detail: "Buttons and glass pick up the colors of your artwork.",
+				value: true, title: "Follow the artwork",
+				detail:
+					"The launcher accent and the generated Dock icons use the colors of the current artwork.",
 				systemImage: "paintpalette", isRecommended: true)
 			: OnboardingAnswer(
 				value: false, title: "Keep it neutral",
-				detail: "Uses the standard launcher colors whatever the artwork.",
+				detail: "The launcher keeps its standard colors whatever the artwork.",
 				systemImage: "circle.lefthalf.filled")
 	}
 
@@ -100,10 +117,13 @@ struct OnboardingLookView: View {
 		return actions
 	}
 
-	private var colorsBinding: Binding<Bool?> {
+	// Maps a single-choice preference to the optional binding that OnboardingQuestion expects.
+	private func answerBinding<Value>(
+		_ keyPath: ReferenceWritableKeyPath<LauncherPreferencesController, Value>
+	) -> Binding<Value?> {
 		Binding(
-			get: { preferences.usesDynamicTheme },
-			set: { if let matches = $0 { preferences.usesDynamicTheme = matches } }
+			get: { preferences[keyPath: keyPath] },
+			set: { if let value = $0 { preferences[keyPath: keyPath] = value } }
 		)
 	}
 
@@ -116,10 +136,10 @@ struct OnboardingLookView: View {
 					.accessibilityLabel("Current launcher artwork")
 			} else {
 				ZStack {
-					Color.black.opacity(0.35)
+					theme.controlFill
 					Image(systemName: "photo")
-						.font(.largeTitle)
-						.foregroundStyle(.tertiary)
+						.font(.title2)
+						.foregroundStyle(theme.textTertiary)
 						.accessibilityHidden(true)
 				}
 			}
@@ -127,10 +147,10 @@ struct OnboardingLookView: View {
 		.frame(maxWidth: .infinity)
 		.frame(height: 132)
 		.clipped()
-		.clipShape(.rect(cornerRadius: 14))
+		.clipShape(.rect(cornerRadius: LauncherTokens.Radius.panel))
 		.overlay {
-			RoundedRectangle(cornerRadius: 14)
-				.strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+			RoundedRectangle(cornerRadius: LauncherTokens.Radius.panel)
+				.strokeBorder(theme.hairline, lineWidth: 1)
 		}
 	}
 }

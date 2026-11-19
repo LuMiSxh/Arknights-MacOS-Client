@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 
-from __future__ import annotations
-
 import json
 import re
 import shutil
@@ -10,95 +8,121 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from lib import licenses, runtime_update
+from conftest import runtime_manifest
+from lib import generated_blocks, licenses, runtime_update
 from lib.common import PROJECT_DIR, ScriptError
-from lib.generated_blocks import apply_blocks
+from lib.project_config import RUNTIME_CONFIG
 
 NEW_TAG = "v99.0.0"
-NEW_WINE_COMMIT = "1" * 40
 NEW_SOURCE_COMMIT = "2" * 40
+NEW_WINE_COMMIT = "1" * 40
+LANES = ("x86", "arm")
+ARCHIVE_DIGESTS = {"x86": "a" * 64, "arm": "c" * 64}
+ARCHIVE_SIZES = {"x86": 123_456, "arm": 234_567}
 FIXTURE_FILES = (
-    Path("runtime.json"),
+    RUNTIME_CONFIG,
     licenses.CLIENT_INDEX,
     runtime_update.NOTICES_DOCUMENT,
 )
 
 
 def manifest_of(root: Path) -> dict[str, Any]:
-    return json.loads((root / "runtime.json").read_text(encoding="utf-8"))
+    return json.loads((root / RUNTIME_CONFIG).read_text(encoding="utf-8"))
 
 
-def current_tag(root: Path) -> str:
-    url = manifest_of(root)["runtime"]["url"]
+def current_tag(root: Path, architecture: str = "x86") -> str:
+    url = manifest_of(root)["lanes"][architecture]["runtime"]["url"]
     return re.search(r"/download/(v[^/]+)/", url).group(1)
 
 
-def release_provenance(tag: str, **overrides: str) -> dict[str, Any]:
-    """The provenance.json of a release that keeps the interface of runtime.json."""
-    archive, source = runtime_update.asset_names(tag)
+def release_interface(architecture: str) -> dict[str, Any]:
+    """Render one lane interface in the archive layout that provenance.json uses."""
+    manifest = runtime_manifest()
+    interface = manifest["lanes"][architecture]["interface"]
+    wine = interface["archive"]["wineDirectory"]
+    dxmt = interface["archive"]["dxmtDirectory"]
     return {
-        "releaseTag": tag,
-        "runtimeArchive": {"name": archive, "sha256": "a" * 64},
-        "correspondingSourceArchive": {"name": source, "sha256": "b" * 64},
-        "sourceCommit": overrides.get("source_commit", NEW_SOURCE_COMMIT),
-        "runtimeLock": {
-            "contents": {
-                "baseArtifact": {
-                    "recipe": {
-                        "commit": "3" * 40,
-                        "repository": "https://github.com/dappermint/winecx-gptk.git",
-                    },
-                    "sha256": "c" * 64,
-                    "url": "https://github.com/dappermint/Whisky/releases/download/v4.7.0/Libraries.tar.gz",
-                },
-                "baseProvenance": {
-                    "moltenvk": {
-                        "commit": overrides.get(
-                            "moltenvk_commit",
-                            "db66022459ffb663aa2b50f6b018bc2e124f5edf",
-                        ),
-                        "repository": "https://github.com/KhronosGroup/MoltenVK.git",
-                    }
-                },
-                "build": {
-                    "nixpkgs": {
-                        "commit": "4" * 40,
-                        "repository": "https://github.com/NixOS/nixpkgs.git",
-                    }
-                },
-                "interface": {
-                    "dxmtDirectory": "DXMT",
-                    "executables": [
-                        "Wine/bin/Arknights",
-                        "Wine/bin/wine64",
-                        "Wine/bin/wineserver",
-                    ],
-                    "requiredFiles": [
-                        "Wine/lib/wine/x86_64-unix/winemac.so",
-                        "Wine/lib/wine/x86_64-unix/winecoreaudio.so",
-                        "Wine/lib/wine/x86_64-windows/winemetal.dll",
-                        "DXMT/x64/d3d10core.dll",
-                        "DXMT/x64/d3d11.dll",
-                        "DXMT/x64/dxgi.dll",
-                        "DXMT/x64/winemetal.dll",
-                    ],
-                    "runtimeCapabilities": "runtime-capabilities.json",
-                    "wineDirectory": "Wine",
-                },
-                "sources": {
-                    "dxmt": {
-                        "commit": "5" * 40,
-                        "repository": "https://github.com/3Shain/dxmt.git",
-                        "version": "0.81",
-                    },
-                    "wine": {
-                        "commit": NEW_WINE_COMMIT,
-                        "repository": "https://github.com/dappermint/winecx.git",
-                        "version": "11.18",
-                    },
-                },
+        "dxmtDirectory": dxmt,
+        "executables": sorted(
+            [
+                f"{wine}/{path}"
+                for path in (*interface["executables"], interface["launcher"]["path"])
+            ]
+        ),
+        "requiredFiles": sorted(
+            [
+                f"{wine}/{path}"
+                for path in (*interface["requiredFiles"], interface["macDriver"])
+            ]
+            + [
+                f"{dxmt}/{target}/{library}"
+                for target in interface["dxmt"]["destinations"]
+                for library in interface["dxmt"]["libraries"]
+            ]
+        ),
+        "features": interface["features"],
+        "minimumMacOS": manifest["lanes"][architecture]["minimumMacOS"],
+        "wineDirectory": wine,
+    }
+
+
+def release_fragment(
+    tag: str, architecture: str, moltenvk_commit: str = "4" * 40
+) -> dict[str, Any]:
+    """One lane fragment of a schema 2 release, with the interface of runtime.json."""
+    interface = release_interface(architecture)
+    archive, source = runtime_update.asset_names(tag, architecture)
+    # Like the runtime's resolved lock view: features sit beside the interface.
+    features = interface.pop("features")
+    contents: dict[str, Any] = {"interface": interface, "features": features}
+    if architecture == "x86":
+        contents["baseArtifact"] = {
+            "url": "https://github.com/dappermint/Whisky/releases/download/v4.7.3/Libraries.tar.gz",
+            "sha256": "e" * 64,
+        }
+        contents["baseProvenance"] = {
+            "moltenvk": {
+                "commit": moltenvk_commit,
+                "repository": "https://github.com/KhronosGroup/MoltenVK.git",
             }
+        }
+    return {
+        "target": runtime_update.LANE_TARGETS[architecture],
+        "arch": runtime_update.RELEASE_ARCHITECTURES[architecture],
+        "version": tag.removeprefix("v"),
+        "buildCommit": NEW_SOURCE_COMMIT,
+        "runtimeLock": {"contents": contents},
+        "wine": {
+            "source": "built",
+            "repository": "https://github.com/dappermint/winecx.git",
+            "commit": NEW_WINE_COMMIT,
+            "version": "11.18",
         },
+        "dxmt": {
+            "repository": "https://github.com/3Shain/dxmt.git",
+            "commit": "5" * 40,
+            "version": "0.81",
+        },
+        "runtimeArchive": {
+            "name": archive,
+            "sha256": ARCHIVE_DIGESTS[architecture],
+            "sizeBytes": ARCHIVE_SIZES[architecture],
+        },
+        "correspondingSourceArchive": {"name": source, "sha256": "b" * 64},
+    }
+
+
+def release_provenance(
+    tag: str = NEW_TAG, moltenvk_commit: str = "4" * 40
+) -> dict[str, Any]:
+    """A schema 2 provenance.json that carries one fragment per lane."""
+    return {
+        "schemaVersion": 2,
+        "releaseTag": tag,
+        "runtimes": [
+            release_fragment(tag, architecture, moltenvk_commit)
+            for architecture in LANES
+        ],
     }
 
 
@@ -106,21 +130,29 @@ def release_fetch(
     tag: str = NEW_TAG,
     provenance: dict[str, Any] | None = None,
     mutate: Callable[[dict[str, str | bytes]], None] | None = None,
+    listed_sizes: dict[str, int] | None = None,
 ) -> Callable[[str], bytes]:
-    """Serve the three release assets from memory; fail on any other URL."""
+    """Serve the release assets and metadata from memory; fail on any other URL."""
     provenance = provenance or release_provenance(tag)
-    archive, source = runtime_update.asset_names(tag)
-    assets: dict[str, str | bytes] = {
-        "provenance.json": json.dumps(provenance),
-        f"{archive}.sha256": f"{provenance['runtimeArchive']['sha256']}  {archive}\n",
-        f"{source}.sha256": (
-            f"{provenance['correspondingSourceArchive']['sha256']}  {source}\n"
-        ),
-    }
+    assets: dict[str, str | bytes] = {"provenance.json": json.dumps(provenance)}
+    for fragment in provenance["runtimes"]:
+        for key in ("runtimeArchive", "correspondingSourceArchive"):
+            name = fragment[key]["name"]
+            assets[f"{name}.sha256"] = f"{fragment[key]['sha256']}  {name}\n"
     if mutate:
         mutate(assets)
+    if listed_sizes is None:
+        listed_sizes = {
+            fragment["runtimeArchive"]["name"]: fragment["runtimeArchive"]["sizeBytes"]
+            for fragment in provenance["runtimes"]
+        }
+    metadata = {
+        "assets": [{"name": name, "size": size} for name, size in listed_sizes.items()]
+    }
 
     def fetch(url: str) -> bytes:
+        if url == f"{runtime_update.RELEASE_API}{tag}":
+            return json.dumps(metadata).encode()
         prefix = f"{runtime_update.REPOSITORY_URL}/releases/download/{tag}/"
         assert url.startswith(prefix), url
         value = assets[url.removeprefix(prefix)]
@@ -134,6 +166,12 @@ def project(tmp_path: Path) -> Path:
     for relative in FIXTURE_FILES:
         (tmp_path / relative).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(PROJECT_DIR / relative, tmp_path / relative)
+    (tmp_path / RUNTIME_CONFIG).write_text(
+        json.dumps(runtime_manifest()), encoding="utf-8"
+    )
+    generated_blocks.write_documents(
+        tmp_path, runtime_update.render_documents(tmp_path)
+    )
     return tmp_path
 
 
@@ -141,114 +179,153 @@ def test_project_runtime_pin_is_current() -> None:
     runtime_update.check(PROJECT_DIR)
 
 
-def test_manifest_formatting_round_trips() -> None:
-    text = (PROJECT_DIR / "runtime.json").read_text(encoding="utf-8")
-
-    assert runtime_update.format_manifest(json.loads(text)) == text
-
-
-def test_update_rewrites_manifest_and_blocks(project: Path) -> None:
-    previous_tag = current_tag(project)
+def test_update_pins_both_lanes_from_one_release(project: Path) -> None:
     changed = runtime_update.update(project, NEW_TAG, release_fetch())
 
     manifest = manifest_of(project)
-    archive, source = runtime_update.asset_names(NEW_TAG)
-    base = f"{runtime_update.REPOSITORY_URL}/releases/download/{NEW_TAG}/"
-    assert changed == [
-        Path("runtime.json"),
-        runtime_update.NOTICES_DOCUMENT,
-    ]
-    assert manifest["runtime"] == {
-        "name": "Arknights macOS Runtime 99.0.0",
-        "url": base + archive,
-        "sha256": "a" * 64,
-    }
-    assert manifest["buildRecipe"] == {"url": base + source, "sha256": "b" * 64}
-    assert manifest["components"] == {
-        "wine": "11.18",
-        "dxmt": "0.81",
-        "moltenvk": "1.4.2",
-    }
-    assert manifest["provenance"]["buildCommit"] == NEW_SOURCE_COMMIT
-    assert manifest["provenance"]["wineCommit"] == NEW_WINE_COMMIT
-    assert manifest["provenance"]["wineRepository"] == (
-        "https://github.com/dappermint/winecx"
-    )
-    assert manifest["provenance"]["baseArchiveSha256"] == "c" * 64
+    assert changed == [RUNTIME_CONFIG, runtime_update.NOTICES_DOCUMENT]
+    for architecture in LANES:
+        archive, _ = runtime_update.asset_names(NEW_TAG, architecture)
+        assert manifest["lanes"][architecture]["runtime"] == {
+            "name": "Arknights macOS Runtime 99.0.0",
+            "version": "99.0.0",
+            "url": runtime_update.asset_url(NEW_TAG, archive),
+            "sha256": ARCHIVE_DIGESTS[architecture],
+            "sizeBytes": ARCHIVE_SIZES[architecture],
+        }
+    assert manifest["lanes"]["x86"]["components"]["wine"] == "11.18"
+    assert manifest["lanes"]["x86"]["provenance"]["buildCommit"] == NEW_SOURCE_COMMIT
+    assert manifest["lanes"]["x86"]["provenance"]["wineCommit"] == NEW_WINE_COMMIT
     notices = (project / runtime_update.NOTICES_DOCUMENT).read_text(encoding="utf-8")
-    assert NEW_TAG in notices
-    assert previous_tag not in notices
-    assert f"Wine 11.18, `{NEW_WINE_COMMIT}`" in notices
-    assert "Whisky base libraries | v4.7.0," in notices
+    assert f"releases/tag/{NEW_TAG}" in notices
     runtime_update.check(project)
 
 
-def test_update_leaves_the_interface_untouched(project: Path) -> None:
-    before = manifest_of(project)["interface"]
+@pytest.mark.parametrize("architecture", LANES)
+def test_update_pins_one_lane_and_keeps_the_other(
+    project: Path, architecture: str
+) -> None:
+    other = next(lane for lane in LANES if lane != architecture)
+    other_before = manifest_of(project)["lanes"][other]
 
-    runtime_update.update(project, NEW_TAG, release_fetch())
+    runtime_update.update(
+        project, NEW_TAG, release_fetch(), architectures=(architecture,)
+    )
 
-    assert manifest_of(project)["interface"] == before
-
-
-def test_second_update_changes_nothing(project: Path) -> None:
-    runtime_update.update(project, NEW_TAG, release_fetch())
-    snapshot = {
-        path: (project / path).read_text(encoding="utf-8") for path in FIXTURE_FILES
-    }
-
-    assert runtime_update.update(project, NEW_TAG, release_fetch()) == []
-    assert snapshot == {
-        path: (project / path).read_text(encoding="utf-8") for path in FIXTURE_FILES
-    }
-
-
-def test_repinning_the_current_release_is_a_no_op(project: Path) -> None:
     manifest = manifest_of(project)
-    tag = current_tag(project)
-    provenance = release_provenance(tag)
-    lock = provenance["runtimeLock"]["contents"]
-    provenance["runtimeArchive"]["sha256"] = manifest["runtime"]["sha256"]
-    provenance["correspondingSourceArchive"]["sha256"] = manifest["buildRecipe"][
-        "sha256"
-    ]
-    provenance["sourceCommit"] = manifest["provenance"]["buildCommit"]
-    for key, name in (("wine", "wine"), ("dxmt", "dxmt")):
-        lock["sources"][key] = {
-            "commit": manifest["provenance"][f"{name}Commit"],
-            "repository": manifest["provenance"][f"{name}Repository"] + ".git",
-            "version": manifest["components"][name],
+    assert manifest["lanes"][architecture]["runtime"]["version"] == "99.0.0"
+    assert manifest["lanes"][other] == other_before
+    runtime_update.check(project)
+
+
+def test_update_leaves_the_interfaces_untouched(project: Path) -> None:
+    def interfaces() -> dict[str, Any]:
+        return {
+            lane: manifest_of(project)["lanes"][lane]["interface"] for lane in LANES
         }
-    lock["build"]["nixpkgs"]["commit"] = manifest["provenance"]["nixpkgsCommit"]
-    lock["baseArtifact"] = {
-        "recipe": {
-            "commit": manifest["provenance"]["baseRecipeCommit"],
-            "repository": manifest["provenance"]["baseRecipeRepository"] + ".git",
+
+    before = interfaces()
+
+    runtime_update.update(project, NEW_TAG, release_fetch())
+
+    assert interfaces() == before
+
+
+def test_update_seeds_an_empty_arm_lane_from_its_fragment(project: Path) -> None:
+    manifest = manifest_of(project)
+    manifest["lanes"]["arm"]["components"] = {}
+    manifest["lanes"]["arm"]["provenance"] = {}
+    (project / RUNTIME_CONFIG).write_text(json.dumps(manifest), encoding="utf-8")
+    provenance = release_provenance()
+    provenance["runtimes"][1]["wine"] = {
+        "source": "external",
+        "repository": "https://gitlab.winehq.org/wine/wine.git",
+        "commit": "7b3fff76fa5178f6ce0141b2c776afa2a822f101",
+        "version": "11.18",
+        "externalBuild": {
+            "repository": "https://github.com/riverfog7/wine-build-new",
+            "commit": "3" * 40,
         },
-        "sha256": manifest["provenance"]["baseArchiveSha256"],
-        "url": manifest["provenance"]["baseArchiveUrl"],
     }
 
-    changed = runtime_update.update(project, tag, release_fetch(tag, provenance))
+    runtime_update.update(
+        project,
+        NEW_TAG,
+        release_fetch(provenance=provenance),
+        architectures=("arm",),
+    )
 
-    assert changed == []
-    assert manifest_of(project) == manifest
+    lane = manifest_of(project)["lanes"]["arm"]
+    assert lane["components"] == {"wine": "11.18", "dxmt": "0.81"}
+    assert lane["provenance"]["wineRepository"] == "https://gitlab.winehq.org/wine/wine"
+    assert lane["provenance"]["wineCommit"] == (
+        "7b3fff76fa5178f6ce0141b2c776afa2a822f101"
+    )
+    assert lane["provenance"]["dxmtRepository"] == "https://github.com/3Shain/dxmt"
+    assert lane["provenance"]["buildCommit"] == NEW_SOURCE_COMMIT
+    assert lane["provenance"]["externalBuildRepository"] == (
+        "https://github.com/riverfog7/wine-build-new"
+    )
+    assert lane["provenance"]["externalBuildCommit"] == "3" * 40
+    runtime_update.check(project)
+
+
+@pytest.mark.parametrize("architecture", LANES)
+def test_update_needs_a_fragment_for_each_lane(
+    project: Path, architecture: str
+) -> None:
+    before = (project / RUNTIME_CONFIG).read_text(encoding="utf-8")
+    provenance = release_provenance()
+    provenance["runtimes"] = [
+        fragment
+        for fragment in provenance["runtimes"]
+        if fragment["target"] != runtime_update.LANE_TARGETS[architecture]
+    ]
+
+    with pytest.raises(ScriptError, match=f"one {architecture} runtime"):
+        runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
+
+    assert (project / RUNTIME_CONFIG).read_text(encoding="utf-8") == before
+
+
+@pytest.mark.parametrize(("key", "value"), [("version", "98.0.0"), ("arch", "x86_64")])
+def test_fragment_must_describe_its_lane_and_release(
+    project: Path, key: str, value: str
+) -> None:
+    provenance = release_provenance()
+    provenance["runtimes"][1][key] = value
+
+    with pytest.raises(ScriptError, match="does not describe"):
+        runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
+
+
+@pytest.mark.parametrize(
+    ("key", "value"), [("releaseTag", "v0.7.0-rc2"), ("schemaVersion", 1)]
+)
+def test_provenance_of_another_release_or_schema_fails(
+    project: Path, key: str, value: object
+) -> None:
+    provenance = release_provenance()
+    provenance[key] = value
+
+    with pytest.raises(ScriptError, match="is not schema 2"):
+        runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
 
 
 def test_checksum_file_mismatch_fails_without_writing(project: Path) -> None:
-    archive, _ = runtime_update.asset_names(NEW_TAG)
-    before = (project / "runtime.json").read_text(encoding="utf-8")
+    archive, _ = runtime_update.asset_names(NEW_TAG, "x86")
+    before = (project / RUNTIME_CONFIG).read_text(encoding="utf-8")
 
     def corrupt(assets: dict[str, str | bytes]) -> None:
-        assets[f"{archive}.sha256"] = f"{'e' * 64}  {archive}\n"
+        assets[f"{archive}.sha256"] = f"{'f' * 64}  {archive}\n"
 
     with pytest.raises(ScriptError, match="differs from provenance.json"):
         runtime_update.update(project, NEW_TAG, release_fetch(mutate=corrupt))
-    assert (project / "runtime.json").read_text(encoding="utf-8") == before
+    assert (project / RUNTIME_CONFIG).read_text(encoding="utf-8") == before
 
 
 def test_checksum_file_for_another_asset_fails(project: Path) -> None:
-    _, source = runtime_update.asset_names(NEW_TAG)
+    _, source = runtime_update.asset_names(NEW_TAG, "arm")
 
     def rename(assets: dict[str, str | bytes]) -> None:
         assets[f"{source}.sha256"] = f"{'b' * 64}  other.tar.gz\n"
@@ -257,37 +334,48 @@ def test_checksum_file_for_another_asset_fails(project: Path) -> None:
         runtime_update.update(project, NEW_TAG, release_fetch(mutate=rename))
 
 
-def test_provenance_for_another_tag_fails(project: Path) -> None:
-    provenance = release_provenance(NEW_TAG)
-    provenance["releaseTag"] = "v0.7.0-rc2"
+def test_listed_size_must_match_the_fragment(project: Path) -> None:
+    listed = {runtime_update.asset_names(NEW_TAG, lane)[0]: 1 for lane in LANES}
 
-    with pytest.raises(ScriptError, match="does not describe"):
-        runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
+    with pytest.raises(ScriptError, match="lists 1 bytes"):
+        runtime_update.update(project, NEW_TAG, release_fetch(listed_sizes=listed))
 
 
-@pytest.mark.parametrize(
-    ("key", "value"),
-    [
-        ("executables", ["Wine/bin/wine64"]),
-        ("requiredFiles", ["Wine/lib/wine/x86_64-unix/winemac.so"]),
-        ("wineDirectory", "Libraries"),
-        ("runtimeCapabilities", "other.json"),
-    ],
-)
+def test_size_comes_from_the_release_when_the_fragment_has_none(project: Path) -> None:
+    provenance = release_provenance()
+    del provenance["runtimes"][0]["runtimeArchive"]["sizeBytes"]
+    archive, _ = runtime_update.asset_names(NEW_TAG, "x86")
+
+    runtime_update.update(
+        project,
+        NEW_TAG,
+        release_fetch(provenance=provenance, listed_sizes={archive: 555}),
+        architectures=("x86",),
+    )
+
+    assert manifest_of(project)["lanes"]["x86"]["runtime"]["sizeBytes"] == 555
+
+
+@pytest.mark.parametrize("architecture", ["x86", "arm"])
 def test_interface_drift_fails_without_writing(
-    project: Path, key: str, value: object
+    project: Path, architecture: str
 ) -> None:
-    provenance = release_provenance(NEW_TAG)
-    provenance["runtimeLock"]["contents"]["interface"][key] = value
-    before = (project / "runtime.json").read_text(encoding="utf-8")
+    provenance = release_provenance()
+    (fragment,) = [
+        runtime
+        for runtime in provenance["runtimes"]
+        if runtime["target"] == runtime_update.LANE_TARGETS[architecture]
+    ]
+    fragment["runtimeLock"]["contents"]["interface"]["minimumMacOS"] = "27.0"
+    before = (project / RUNTIME_CONFIG).read_text(encoding="utf-8")
 
-    with pytest.raises(ScriptError, match=f"interface differs.*{key}"):
+    with pytest.raises(ScriptError, match="interface differs.*minimumMacOS"):
         runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
-    assert (project / "runtime.json").read_text(encoding="utf-8") == before
+    assert (project / RUNTIME_CONFIG).read_text(encoding="utf-8") == before
 
 
 def test_changed_moltenvk_commit_needs_a_version(project: Path) -> None:
-    provenance = release_provenance(NEW_TAG, moltenvk_commit="6" * 40)
+    provenance = release_provenance(moltenvk_commit="6" * 40)
 
     with pytest.raises(ScriptError, match="--moltenvk-version"):
         runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
@@ -295,7 +383,7 @@ def test_changed_moltenvk_commit_needs_a_version(project: Path) -> None:
     runtime_update.update(
         project, NEW_TAG, release_fetch(provenance=provenance), "1.4.3"
     )
-    assert manifest_of(project)["components"]["moltenvk"] == "1.4.3"
+    assert manifest_of(project)["lanes"]["x86"]["components"]["moltenvk"] == "1.4.3"
 
 
 def releases_fetch(releases: list[dict[str, object]]) -> Callable[[str], bytes]:
@@ -325,6 +413,18 @@ def test_latest_skips_drafts_and_prereleases_by_default() -> None:
     assert runtime_update.latest_tag(fetch, include_prerelease=True) == "v0.7.0-rc2"
 
 
+def test_latest_selects_the_newest_release_for_both_lanes() -> None:
+    fetch = releases_fetch(
+        [
+            release_entry("v1.0.0-rc2", "2026-05-01T00:00:00Z", prerelease=True),
+            release_entry("v0.9.0", "2026-04-01T00:00:00Z"),
+        ]
+    )
+
+    assert runtime_update.latest_tag(fetch, include_prerelease=True) == "v1.0.0-rc2"
+    assert runtime_update.latest_tag(fetch, include_prerelease=False) == "v0.9.0"
+
+
 def test_latest_without_a_candidate_names_the_flag() -> None:
     fetch = releases_fetch(
         [release_entry("v0.7.0-rc1", "2026-04-01T00:00:00Z", prerelease=True)]
@@ -335,7 +435,12 @@ def test_latest_without_a_candidate_names_the_flag() -> None:
 
 
 @pytest.mark.parametrize(
-    ("value", "tag"), [("0.7.0-rc2", "v0.7.0-rc2"), ("v0.7.0", "v0.7.0")]
+    ("value", "tag"),
+    [
+        ("0.7.0-rc2", "v0.7.0-rc2"),
+        ("v0.7.0", "v0.7.0"),
+        ("1.0.0-rc1", "v1.0.0-rc1"),
+    ],
 )
 def test_normalize_tag(value: str, tag: str) -> None:
     assert runtime_update.normalize_tag(value) == tag
@@ -350,7 +455,7 @@ def test_check_detects_a_stale_block(project: Path) -> None:
     runtime_update.check(project)
     notices = project / runtime_update.NOTICES_DOCUMENT
     notices.write_text(
-        notices.read_text(encoding="utf-8").replace("Wine 11.17", "Wine 11.16"),
+        notices.read_text(encoding="utf-8").replace(current_tag(project), "v0.0.0"),
         encoding="utf-8",
     )
 
@@ -358,30 +463,20 @@ def test_check_detects_a_stale_block(project: Path) -> None:
         runtime_update.check(project)
 
 
-def test_check_detects_a_manifest_that_disagrees_with_its_tag(project: Path) -> None:
+def test_check_detects_a_lane_that_names_another_release(project: Path) -> None:
     manifest = manifest_of(project)
-    manifest["runtime"]["name"] = "Arknights macOS Runtime 0.6.1"
-    (project / "runtime.json").write_text(json.dumps(manifest), encoding="utf-8")
+    url = manifest["lanes"]["arm"]["runtime"]["url"]
+    manifest["lanes"]["arm"]["runtime"]["url"] = url.replace("/v0.8.0/", "/v0.7.0/")
+    (project / RUNTIME_CONFIG).write_text(json.dumps(manifest), encoding="utf-8")
 
-    with pytest.raises(ScriptError, match=r"runtime\.name"):
+    with pytest.raises(ScriptError, match=r"arm runtime\.version"):
         runtime_update.check(project)
 
 
-def test_license_blocks_ignore_runtime_markers_and_follow_the_pin(
-    project: Path,
-) -> None:
-    components = licenses.load_client_components(project, [])
-    libraries = next(c for c in components if c.runtime_release)
-    assert (
-        libraries.name
-        == f"Libraries of runtime {current_tag(project).removeprefix('v')}"
-    )
+def test_check_detects_a_manifest_that_disagrees_with_its_name(project: Path) -> None:
+    manifest = manifest_of(project)
+    manifest["lanes"]["x86"]["runtime"]["name"] = "Arknights macOS Runtime 0.6.1"
+    (project / RUNTIME_CONFIG).write_text(json.dumps(manifest), encoding="utf-8")
 
-    runtime_update.update(project, NEW_TAG, release_fetch())
-
-    components = licenses.load_client_components(project, [])
-    libraries = next(c for c in components if c.runtime_release)
-    assert libraries.name == "Libraries of runtime 99.0.0"
-    assert libraries.source.endswith(f"/tree/{NEW_TAG}")
-    text = "<!-- runtime:begin build -->\nold\n<!-- runtime:end build -->\n"
-    assert apply_blocks(text, {}, "licenses") == text
+    with pytest.raises(ScriptError, match=r"x86 runtime\.name"):
+        runtime_update.check(project)

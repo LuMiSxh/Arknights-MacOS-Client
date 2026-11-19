@@ -5,8 +5,6 @@ import ArknightsTestSupport
 import Foundation
 import Testing
 
-@testable import ArknightsLauncherUI
-
 @MainActor
 struct IntegrationTestEnvironment {
 	let root: URL
@@ -37,7 +35,8 @@ struct IntegrationTestEnvironment {
 		let isolated = makeIsolatedDefaults("ArknightsClientIntegrationTests")
 		defaults = isolated.defaults
 		defaultsSuiteName = isolated.suiteName
-		preferences = LauncherPreferencesStore(defaults: defaults)
+		preferences = LauncherPreferencesStore(
+			defaults: defaults, themeCacheURL: paths.themeCache)
 		session = route.session
 	}
 

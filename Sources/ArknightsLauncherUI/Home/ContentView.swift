@@ -13,14 +13,17 @@ package struct ContentView: View {
 	let registerOpenSettings: (@escaping () -> Void) -> Void
 	let registerQuitPresentationQuery: (@escaping () -> LauncherPresentationDestination?) -> Void
 	let registerQuitDismissal: (@escaping () -> Void) -> Void
+	/// Runs a queued sheet promotion after the current run loop turn. SwiftUI must finish
+	/// dismissing the previous sheet before the presentation item becomes non-nil again.
+	let scheduleSheetPromotion: @MainActor (@escaping @MainActor () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@State var presentation = LauncherPresentationArbiter()
 	@State var confirmation: LauncherConfirmation?
-	@State var repairFailureID: UUID?
 	@State var decorativeMotionVisibility = DecorativeMotionVisibility()
 	@State private var isTerminating = false
-	@State private var windowSize = CGSize.zero
+	@State var windowSize = CGSize.zero
+	@State var settingsSection = SettingsSection.initial
 
 	package init(
 		model: LauncherViewModel,
@@ -29,7 +32,11 @@ package struct ContentView: View {
 		registerOpenSettings: @escaping (@escaping () -> Void) -> Void,
 		registerQuitPresentationQuery:
 			@escaping (@escaping () -> LauncherPresentationDestination?) -> Void,
-		registerQuitDismissal: @escaping (@escaping () -> Void) -> Void
+		registerQuitDismissal: @escaping (@escaping () -> Void) -> Void,
+		scheduleSheetPromotion: @escaping @MainActor (@escaping @MainActor () -> Void) -> Void = {
+			promotion in
+			Task { @MainActor in promotion() }
+		}
 	) {
 		self.model = model
 		self.musicController = musicController
@@ -37,13 +44,13 @@ package struct ContentView: View {
 		self.registerOpenSettings = registerOpenSettings
 		self.registerQuitPresentationQuery = registerQuitPresentationQuery
 		self.registerQuitDismissal = registerQuitDismissal
+		self.scheduleSheetPromotion = scheduleSheetPromotion
 	}
 
 	// The chain is split in two: as one expression it exceeds the type checker's budget.
 	private var presentedContent: some View {
 		ZStack {
-			BackgroundMusicView(
-				lifecycle: model.lifecycle, settings: model.settings, controller: musicController)
+			BackgroundMusicView(settings: model.settings, controller: musicController)
 			LauncherArtworkView(
 				image: model.customization.heroArtwork,
 				themeCacheKey: model.customization.activeThemeCacheKey,
@@ -51,8 +58,10 @@ package struct ContentView: View {
 			)
 			.ignoresSafeArea(.container, edges: .top)
 			.environment(\.decorativeMotionEnabled, homeLayerMotionEnabled)
-			LauncherReadabilityField().ignoresSafeArea(.container, edges: .top).allowsHitTesting(
-				false)
+			LauncherReadabilityField(showsBranding: model.settings.showsBranding)
+				.environment(\.colorScheme, brandingColorScheme)
+				.ignoresSafeArea(.container, edges: .top)
+				.allowsHitTesting(false)
 			VStack(spacing: 0) {
 				topBar
 				Spacer()
@@ -61,11 +70,12 @@ package struct ContentView: View {
 					settings: model.settings,
 					installation: model.installation,
 					gameSession: model.gameSession,
+					runtimeSelection: model.runtimeSelection,
 					intelTranslation: model.intelTranslation,
 					communication: model.communication,
 					canSwitchRegion: model.refreshController.canSwitchRegion,
 					accentColor: model.customization.accentColor,
-					hudTintColor: model.customization.hudTintColor,
+					homeColorScheme: homeColorScheme,
 					musicController: musicController,
 					actions: LauncherHUDActions(
 						openLauncherUpdate: requestLauncherUpdateCheck,
@@ -73,11 +83,12 @@ package struct ContentView: View {
 						selectRegion: { model.actions.selectRegion($0) },
 						installOrUpdate: { model.actions.installOrUpdate() },
 						cancelDownload: { model.actions.cancelDownload() },
+						installRuntime: { model.installSelectedRuntime() },
 						launch: { model.actions.launch() },
 						stopGame: { model.actions.stopGame() },
 						showFailureDetails: showFailureDetails
 					),
-					developerExpandedPill: developerExpandedPillID
+					developerExpandedPill: developerExpandedPill
 				)
 			}
 			.environment(\.decorativeMotionEnabled, homeLayerMotionEnabled)
@@ -85,11 +96,15 @@ package struct ContentView: View {
 		.disabled(updateOverlayIsPresented)
 		.allowsHitTesting(!updateOverlayIsPresented)
 		.accessibilityHidden(updateOverlayIsPresented)
-		.background(Color.black)
+		.background(LauncherVisuals.opaqueDim)
+		// Home artwork stays dark. The wordmark and its scrim follow brandingColorScheme; the HUD
+		// pills and the settings button follow homeColorScheme.
+		// Sheets and overlays attach outside this container.
+		.launcherTheme(accent: model.customization.accentColor)
+		.environment(\.colorScheme, .dark)
 		.background {
 			WindowVisibilityReader(visibility: decorativeMotionVisibility)
 		}
-		.preferredColorScheme(.dark)
 		.animation(themeAnimation, value: model.customization.dynamicThemeHue)
 		.onChange(of: developerAccessibilityMusicTitle) { _, title in
 			guard title != nil else { return }
@@ -101,6 +116,7 @@ package struct ContentView: View {
 					preferences: model.settings,
 					customization: model.customization,
 					installation: model.installation,
+					runtimeSelection: model.runtimeSelection,
 					lifecycle: model.lifecycle,
 					presetCatalog: model.presetCatalog,
 					canSwitchRegion: model.refreshController.canSwitchRegion,
@@ -109,17 +125,37 @@ package struct ContentView: View {
 						selectRegion: { model.actions.selectRegion($0) },
 						resetArtwork: { model.actions.resetArtwork() },
 						installOrUpdate: { model.actions.installOrUpdate() },
+						pauseDownload: { model.actions.cancelDownload() },
+						chooseInstallDirectory: { model.actions.chooseInstallDirectory() },
+						locateExistingInstallation: { model.actions.locateExistingInstallation() },
+						installRuntime: { lane in await model.actions.installRuntime(lane) },
+						pauseRuntime: { model.actions.pauseRuntimeDownload() },
+						selectRuntimeLane: { lane in model.actions.selectRuntimeLane(lane) },
 						openLauncherUpdate: { model.actions.openLauncherUpdate() },
 						retryIntelTranslation: {
 							await model.actions.refreshIntelTranslationForUI(force: true)
 						},
 						installRosetta: { await model.actions.installRosetta() }),
-					retryUpdateCheck: retryOnboardingUpdateCheck)
+					retryUpdateCheck: retryOnboardingUpdateCheck
+				)
+				.launcherTheme(accent: model.customization.accentColor)
 			}
 		}
-		.onGeometryChange(for: CGSize.self, of: \.size) { windowSize = $0 }
-		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) { sheetContent(for: $0) }
+		// Artwork layers ignore the top safe area and inflate `size`; the sheet fits inside it.
+		.onGeometryChange(for: CGSize.self) { proxy in
+			let insets = proxy.safeAreaInsets
+			return CGSize(
+				width: proxy.size.width - insets.leading - insets.trailing,
+				height: proxy.size.height - insets.top - insets.bottom)
+		} action: {
+			windowSize = $0
+		}
+		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) {
+			sheetContent(for: $0)
+				.launcherTheme(accent: model.customization.accentColor)
+		}
 		.overlay { updateOverlay }
+		.environment(\.launcherWindowSize, windowSize)
 	}
 
 	package var body: some View {
@@ -139,8 +175,22 @@ package struct ContentView: View {
 					"Every game file for this region will be checked. Missing or damaged files will be downloaded again and may use substantial data. Launcher settings and the Wine prefix are preserved."
 				)
 			}
+			.confirmationDialog(
+				"Delete old launcher data?",
+				isPresented: deleteLegacyDataConfirmationBinding,
+				titleVisibility: .visible
+			) {
+				Button("Delete", role: .destructive, action: confirmDeleteLegacyData)
+				Button("Cancel", role: .cancel, action: cancelDeleteLegacyData)
+			} message: {
+				Text(
+					"This permanently deletes installed games and game environments from launcher versions older than 0.6. Games installed in a custom folder are not deleted."
+				)
+			}
 			.aceWarningConfirmation(model: model)
+			.installDirectoryConfirmation(model.installation)
 			.onAppear {
+				StartupTimeline.shared.mark("window appeared")
 				registerOpenSettings(requestSettings)
 				registerQuitPresentationQuery {
 					presentation.blockingDestination(
@@ -148,7 +198,11 @@ package struct ContentView: View {
 				}
 				registerQuitDismissal(dismissPresentationForQuit)
 			}
-			.onChange(of: model.lifecycle.state.presentation.failure) { _, failure in
+			.onChange(of: model.gameSession.canLaunch, initial: true) { _, canLaunch in
+				if canLaunch { StartupTimeline.shared.mark("home interactive") }
+			}
+			// `initial` presents a failure raised during launcher start, such as RT-BND.
+			.onChange(of: model.lifecycle.state.presentation.failure, initial: true) { _, failure in
 				presentFailure(failure)
 			}
 			.onChange(of: model.lifecycle.activity.isGameProcessRunning, initial: true) {
@@ -174,6 +228,10 @@ package struct ContentView: View {
 					if model.isOnboardingPreview { onboarding.simulateRequiredSetup(isRequired) }
 				}
 			#endif
+			.onChange(of: model.legacyDataDeletionCompleted) { _, completed in
+				guard completed else { return }
+				Task { await startOnboardingIfNeeded() }
+			}
 			.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) {
 				_, isPresented in
 				if isPresented {
@@ -186,6 +244,8 @@ package struct ContentView: View {
 			.overlay { initialArtworkCover }
 			// Keep this last so every sheet and overlay inherits the visibility gate.
 			.environment(\.decorativeMotionEnabled, decorativeMotionVisibility.isEnabled)
+
+			.launcherTheme(accent: model.customization.accentColor)
 	}
 
 	// Split out of `body`: the full modifier chain exceeds the type checker's budget.
@@ -194,17 +254,17 @@ package struct ContentView: View {
 		if updateOverlayIsPresented {
 			LauncherUpdateOverlay(
 				driver: model.communication.launcherUpdateUserDriver,
-				accentColor: model.customization.accentColor,
-				hudTintColor: model.customization.hudTintColor,
 				reduceTransparency: reduceTransparency,
-				checkForUpdates: { model.actions.openLauncherUpdate() })
+				checkForUpdates: { model.actions.openLauncherUpdate() }
+			)
+			.launcherTheme(accent: model.customization.accentColor)
 		}
 	}
 
 	@ViewBuilder
 	private var initialArtworkCover: some View {
 		if !model.customization.hasCompletedInitialArtworkLoad {
-			Color.black.ignoresSafeArea()
+			LauncherVisuals.opaqueDim.ignoresSafeArea()
 		}
 	}
 
@@ -230,10 +290,18 @@ package struct ContentView: View {
 	private var rosettaConfirmationBinding: Binding<Bool> {
 		Binding(get: { confirmation == .rosetta }, set: { if !$0 { confirmation = nil } })
 	}
+	private var isRepairConfirmationPending: Bool {
+		if case .repair = confirmation { true } else { false }
+	}
 	private var repairConfirmationBinding: Binding<Bool> {
 		Binding(
-			get: { if case .repair = confirmation { true } else { false } },
+			get: { isRepairConfirmationPending },
 			set: { if !$0 { confirmation = nil } })
+	}
+	private var deleteLegacyDataConfirmationBinding: Binding<Bool> {
+		Binding(
+			get: { if case .deleteLegacyData = confirmation { true } else { false } },
+			set: { if !$0 { cancelDeleteLegacyData() } })
 	}
 	var onboardingIsPresentable: Bool {
 		presentation.showsOnboarding(isOnboardingPresented: onboarding.isPresented)
@@ -244,40 +312,15 @@ package struct ContentView: View {
 			driverIsPresented: model.communication.launcherUpdateUserDriver.isPresented)
 	}
 
-	@ViewBuilder
-	private func sheetContent(for destination: LauncherPresentationDestination) -> some View {
-		switch destination {
-		case .settings:
-			LauncherSettingsView(
-				settings: model.settings, customization: model.customization,
-				communication: model.communication,
-				installation: model.installation, gameSession: model.gameSession,
-				lifecycle: model.lifecycle,
-				storage: model.storage, storageOverview: model.storageOverview,
-				playtimeStatistics: model.playtimeStatistics, presetCatalog: model.presetCatalog,
-				launcherIconManager: model.launcherIconManager,
-				branding: model.refreshController.branding,
-				actions: model.actions,
-				restartOnboarding: restartOnboarding,
-				requestLauncherUpdateCheck: requestLauncherUpdateCheck,
-				developerSimulation: developerSimulationBinding, windowSize: windowSize)
-		case .failure(let failure):
-			LauncherFailureDetailView(
-				failure: failure, accentColor: model.customization.accentColor,
-				hudTintColor: model.customization.hudTintColor, perform: performRecoveryAction
-			)
-			.onDisappear(perform: failureDetailsDidDismiss)
-		case .popup:
-			if let popup = model.communication.popup {
-				LauncherPopupView(
-					popup: popup, accentColor: model.customization.accentColor,
-					hudTintColor: model.customization.hudTintColor,
-					dismiss: model.communication.dismissPopup,
-					openAction: model.communication.openPopupAction)
-			} else {
-				EmptyView()
-			}
-		case .update: EmptyView()
+	private var homeColorScheme: ColorScheme {
+		model.customization.homeColorScheme(for: model.settings.homeTheme)
+	}
+
+	private var brandingColorScheme: ColorScheme {
+		switch model.settings.brandingTheme {
+		case .automatic: homeColorScheme
+		case .dark: .dark
+		case .light: .light
 		}
 	}
 
@@ -286,7 +329,9 @@ package struct ContentView: View {
 			if model.settings.showsBranding {
 				ArknightsWordmark(
 					logo: model.customization.officialLogo, region: model.installation.region
-				).padding(.top, 34)
+				).padding(.top, LauncherTokens.Layout.homeTopBarTopPadding)
+					.environment(\.colorScheme, brandingColorScheme)
+					.launcherAnimation(.state, value: brandingColorScheme)
 			}
 			Spacer()
 			IconActionButton(
@@ -295,24 +340,30 @@ package struct ContentView: View {
 				tone: .neutral,
 				foreground: .primary,
 				surface: .hud,
-				surfaceTint: model.customization.hudTintColor,
-				size: 40,
-				hitTargetSize: 44,
+				size: LauncherTokens.Control.homeSettingsButtonSize,
+				hitTargetSize: LauncherTokens.Control.minimumHitTarget,
 				action: requestSettings
 			)
-			.frame(minWidth: 44, minHeight: 44)
+			.frame(
+				minWidth: LauncherTokens.Control.minimumHitTarget,
+				minHeight: LauncherTokens.Control.minimumHitTarget
+			)
 			.keyboardShortcut(",", modifiers: .command)
 			.accessibilityHint(Text("Open launcher settings"))
 			.help("Open launcher settings")
+			.launcherTheme(accent: model.customization.accentColor)
+			.environment(\.colorScheme, homeColorScheme)
+			.launcherAnimation(.state, value: homeColorScheme)
 		}
-		.padding(.top, 8).padding(.horizontal, 14).ignoresSafeArea(.container, edges: .top)
+		.padding(.top, LauncherTokens.Spacing.control)
+		.padding(.horizontal, LauncherTokens.Spacing.panel)
+		.ignoresSafeArea(.container, edges: .top)
 	}
 
 	/// Closes every sheet and dialog so AppKit accepts the quit, without advancing popup queues.
 	private func dismissPresentationForQuit() {
 		isTerminating = true
 		confirmation = nil
-		repairFailureID = nil
 		model.actions.cancelACEWarning()
 		presentation.dismissCurrent()
 	}
@@ -323,7 +374,7 @@ package struct ContentView: View {
 		else { return }
 		presentation.request(.settings)
 	}
-	private func requestLauncherUpdateCheck() {
+	func requestLauncherUpdateCheck() {
 		let hadCurrentPresentation = presentation.current != nil
 		presentation.request(.update)
 		if !hadCurrentPresentation, presentation.current == .update {
@@ -331,18 +382,19 @@ package struct ContentView: View {
 		}
 	}
 	private func presentationDidDismiss() {
-		presentation.didDismiss()
-		if presentation.current == .update { model.actions.openLauncherUpdate() }
+		// Presenting from inside SwiftUI's own dismissal callback leaves the new sheet detached,
+		// so promote the queued destination only after this run loop turn.
+		scheduleSheetPromotion {
+			presentation.didDismiss()
+			if presentation.current == .update { model.actions.openLauncherUpdate() }
+		}
 	}
 	private func launcherUpdateDidDismiss() {
 		presentation.didDismiss(.update)
 		if presentation.current == .update { model.actions.openLauncherUpdate() }
 	}
 	private func presentFailure(_ failure: LauncherFailurePresentation?) {
-		if onboarding.isPresented,
-			let operation = failure?.context.operation,
-			operation == .intelTranslationPreflight || operation == .rosettaInstallation
-		{
+		if presentation.suppressesFailure(failure, isOnboardingPresented: onboarding.isPresented) {
 			return
 		}
 		guard let failure else {
@@ -354,9 +406,8 @@ package struct ContentView: View {
 		if previous == .update { model.communication.launcherUpdateUserDriver.dismissFromUser() }
 	}
 	private func startOnboardingIfNeeded() async {
-		guard await model.waitForStartup() else { return }
-		if model.isDeveloperMode, !model.isOnboardingPreview { return }
-		if !model.isDeveloperMode {
+		guard await model.waitForStartup(), model.canStartOnboarding else { return }
+		if model.onboardingShouldRefreshInstalledState {
 			await model.installation.updateInstalledState().value
 		}
 		await onboarding.startIfNeeded(
@@ -375,11 +426,11 @@ package struct ContentView: View {
 				checkIntelTranslation: { await model.actions.refreshIntelTranslationForUI() })
 		}
 	}
-	private func restartOnboarding() {
+	func restartOnboarding() {
 		guard model.lifecycle.activity != .maintaining(.migratingStorage) else { return }
 		presentation.dismissCurrent()
 		Task {
-			if !model.isDeveloperMode {
+			if model.onboardingShouldRefreshInstalledState {
 				await model.installation.updateInstalledState().value
 			}
 			await onboarding.restart(
@@ -397,24 +448,39 @@ package struct ContentView: View {
 			presentation.request(.failure(failure))
 		}
 	}
-	private func failureDetailsDidDismiss() {
-		guard repairFailureID == nil else { return }
-		if model.lifecycle.state.presentation.failure?.blocksGameLaunch == false {
+	func failureDetailsDidDismiss() {
+		guard !isRepairConfirmationPending,
+			let failure = model.lifecycle.state.presentation.failure,
+			!presentation.presents(.failure(failure))
+		else { return }
+		if !failure.blocksGameLaunch {
 			model.lifecycle.clearFailure()
 		}
 	}
 	private func cancelRepair() {
 		confirmation = nil
-		repairFailureID = nil
 		if model.lifecycle.state.presentation.failure?.blocksGameLaunch == false {
 			model.lifecycle.clearFailure()
 		}
 	}
 	private func confirmRepair() {
-		guard let id = repairFailureID else { return }
+		guard case .repair(let id) = confirmation else { return }
 		confirmation = nil
-		repairFailureID = nil
 		model.confirmRepair(failureID: id)
+	}
+
+	private func confirmDeleteLegacyData() {
+		guard case .deleteLegacyData(let id) = confirmation else { return }
+		confirmation = nil
+		model.confirmDeleteLegacyData(failureID: id)
+	}
+
+	private func cancelDeleteLegacyData() {
+		confirmation = nil
+		// The confirmation closes the notice; bring it back when deletion does not start.
+		if let failure = model.lifecycle.state.presentation.failure {
+			presentation.request(.failure(failure))
+		}
 	}
 
 	private var themeAnimation: Animation? {

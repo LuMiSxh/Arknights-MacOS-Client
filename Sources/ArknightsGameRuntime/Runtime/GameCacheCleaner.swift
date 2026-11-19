@@ -6,20 +6,14 @@ import Foundation
 // DXMT's shader cache and the embedded browser's cache both rebuild automatically, so
 // clearing them only costs a slower next launch, not lost state.
 enum GameCacheCleaner {
-	static func cacheDirectories(
-		winePrefix: URL,
-		fileManager: FileManager = .default
-	) throws -> [URL] {
-		try AppPaths.gameCacheDirectories(winePrefix: winePrefix, fileManager: fileManager)
-	}
-
 	static func clear(winePrefix: URL, fileManager: FileManager = .default) throws {
-		for directory in try cacheDirectories(winePrefix: winePrefix, fileManager: fileManager) {
+		let directories = try AppPaths.gameCacheDirectories(
+			winePrefix: winePrefix, fileManager: fileManager)
+		for directory in directories {
 			guard
 				try AppPaths.isSafeCacheDirectory(
 					directory,
-					inside: winePrefix.resolvingSymlinksInPath().standardizedFileURL,
-					fileManager: fileManager
+					inside: winePrefix.resolvingSymlinksInPath().standardizedFileURL
 				)
 			else { continue }
 			do {
@@ -29,5 +23,4 @@ enum GameCacheCleaner {
 			}
 		}
 	}
-
 }

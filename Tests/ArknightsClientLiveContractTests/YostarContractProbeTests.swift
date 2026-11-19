@@ -1,31 +1,27 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Foundation
+import ArknightsCore
 import Testing
 
-@Test
-func gryphlinePackageValidationChecksTheAbsoluteURLAndItsPathSeparately() throws {
-	try YostarContractProbe.validateGameConfigurationPath(
-		"https://ak-tw.hg-cdn.com/uiCaUeGDB2htwXSv/72.0/update/6/6/Windows/files",
-		region: .taiwan
-	)
+@Test(arguments: [
+	("manifest.json", GameRegion.global),
+	("https://ak-tw.hg-cdn.com/uiCaUeGDB2htwXSv/72.0/update/6/6/Windows/files", .taiwan),
+])
+func packageValidationAcceptsRelativeYostarPathsAndAbsoluteGryphlineURLs(
+	value: String,
+	region: GameRegion
+) throws {
+	try YostarContractProbe.validateGameConfigurationPath(value, region: region)
 }
 
-@Test
-func gryphlinePackageValidationRejectsUntrustedAbsoluteURLs() {
-	for value in [
-		"http://ak-tw.hg-cdn.com/game/files",
-		"https://evil.example/game/files",
-		"https://ak-tw.hg-cdn.com:8443/game/files",
-		"https://user@ak-tw.hg-cdn.com/game/files",
-	] {
-		#expect(throws: Error.self) {
-			try YostarContractProbe.validateGameConfigurationPath(value, region: .taiwan)
-		}
+@Test(arguments: [
+	"http://ak-tw.hg-cdn.com/game/files",
+	"https://evil.example/game/files",
+	"https://ak-tw.hg-cdn.com:8443/game/files",
+	"https://user@ak-tw.hg-cdn.com/game/files",
+])
+func gryphlinePackageValidationRejectsUntrustedAbsoluteURLs(value: String) {
+	#expect(throws: Error.self) {
+		try YostarContractProbe.validateGameConfigurationPath(value, region: .taiwan)
 	}
-}
-
-@Test
-func yostarPackageValidationKeepsRelativeManifestPaths() throws {
-	try YostarContractProbe.validateGameConfigurationPath("manifest.json", region: .global)
 }

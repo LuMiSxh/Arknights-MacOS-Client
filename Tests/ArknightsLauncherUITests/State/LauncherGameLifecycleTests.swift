@@ -5,7 +5,6 @@ import Foundation
 import Testing
 
 @testable import ArknightsGameRuntime
-@testable import ArknightsLauncherUI
 
 @MainActor
 struct LauncherGameLifecycleTests {

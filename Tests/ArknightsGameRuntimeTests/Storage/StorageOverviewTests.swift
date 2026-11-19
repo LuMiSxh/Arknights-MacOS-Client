@@ -17,21 +17,22 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library"),
-		resourceDirectory: root.appending(path: "Resources")
+		libraryDirectory: root.appending(path: "Library")
 	)
 	let (defaults, suiteName) = makeIsolatedDefaults("StorageOverviewTests")
 	defer { defaults.removePersistentDomain(forName: suiteName) }
-	let preferences = LauncherPreferencesStore(defaults: defaults)
+	let preferences = LauncherPreferencesStore(
+		defaults: defaults, themeCacheURL: paths.themeCache)
 	let customJapan = root.appending(path: "External/Arknights-Japan")
 	preferences.setInstallDirectory(customJapan, for: .japan)
-	let browserCache = paths.winePrefix.appending(
+	let browserCache = paths.winePrefix(for: .yostar).appending(
 		path: "drive_c/users/crossover/AppData/Local/cache", directoryHint: .isDirectory)
 	try FileManager.default.createDirectory(at: browserCache, withIntermediateDirectories: true)
 
-	let locations = try StorageOverviewResolver.locations(paths: paths, preferences: preferences)
+	let context = StorageOverviewResolver.context(preferences: preferences, region: .global)
+	let locations = try StorageOverviewResolver.locations(paths: paths, context: context)
 
-	#expect(locations.count == 11)
+	#expect(locations.count == 12)
 	#expect(
 		locations.first { $0.category == .game(.japan) }?.urls.first?.path == customJapan.path
 	)
@@ -41,26 +42,12 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 	)
 	#expect(
 		locations.first { $0.category == .compatibilityRuntime }?.urls.first?.path
-			== root.appending(path: "Resources/Runtime").path
+			== paths.runtimeRoot.path
 	)
 	#expect(
 		locations.first { $0.category == .browserCache }?.urls.first?.resolvingSymlinksInPath()
 			.path == browserCache.resolvingSymlinksInPath().path
 	)
-
-	for canary in [true, false] {
-		let filtered = try StorageOverviewResolver.locations(
-			paths: paths,
-			context: StorageOverviewContext(
-				region: .global,
-				regionAccess: RegionAccess(
-					canaryFeaturesEnabled: canary, taiwanClientEnabled: canary),
-				persistedInstallDirectories: [:]
-			)
-		)
-		#expect(filtered.contains { $0.category == .game(.taiwan) } == canary)
-		#expect(filtered.contains { $0.category == .game(.china) })
-	}
 }
 
 @Test
@@ -74,14 +61,13 @@ func galleryCleanupDoesNotOverlapActiveLifecycle() throws {
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library"),
-		resourceDirectory: root.appending(path: "Resources")
+		libraryDirectory: root.appending(path: "Library")
 	)
 	let catalog = PresetCatalogService(cacheDirectory: paths.presetGalleryCache, log: log)
 	let storage = StorageMaintenanceController(
 		lifecycle: lifecycle,
 		paths: paths,
-		presetCatalog: catalog,
+		clearGalleryCache: { try await catalog.clearCaches() },
 		log: log
 	)
 	let lease = lifecycle.begin(.installing(id: UUID(), stage: .downloading))

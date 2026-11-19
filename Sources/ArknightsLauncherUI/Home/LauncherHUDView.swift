@@ -7,18 +7,19 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct LauncherHUDView: View {
-	package let lifecycle: LauncherLifecycleStore
-	package let settings: LauncherPreferencesController
-	package let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let settings: LauncherPreferencesController
+	let installation: InstallationController
 	let gameSession: GameSessionController
-	package let intelTranslation: IntelTranslationController
-	package let communication: LauncherCommunicationController
+	let runtimeSelection: RuntimeSelectionController
+	let intelTranslation: IntelTranslationController
+	let communication: LauncherCommunicationController
 	let canSwitchRegion: Bool
-	package let accentColor: Color
-	let hudTintColor: Color
+	let accentColor: Color
+	let homeColorScheme: ColorScheme
 	let musicController: BackgroundMusicController
 	let actions: LauncherHUDActions
-	let developerExpandedPill: String?
+	let developerExpandedPill: ExpandedPill?
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var expandedPill: ExpandedPill?
 
@@ -28,11 +29,11 @@ struct LauncherHUDView: View {
 				.contentShape(Rectangle())
 				.onTapGesture(perform: collapseExpandedPill)
 
-			VStack(spacing: 10) {
+			VStack(spacing: LauncherTokens.Spacing.control) {
 				hudPillRow
 				controlBar
 			}
-			.padding(20)
+			.padding(LauncherTokens.Spacing.section)
 		}
 		.onChange(of: hasMusicPill) { _, _ in collapseUnavailablePill() }
 		.onChange(of: hasVersionPill) { _, _ in collapseUnavailablePill() }
@@ -45,28 +46,30 @@ struct LauncherHUDView: View {
 		HUDProgressSurface(
 			lifecycle: lifecycle,
 			installation: installation,
-			tint: hudTintColor,
-			progressTint: accentColor
+			runtimeSelection: runtimeSelection
 		) {
 			controlBarContent
 		}
 		.animation(stateAnimation, value: installation.isDownloading)
 		.animation(stateAnimation, value: communication.shouldShowLauncherUpdateButton)
 		.animation(stateAnimation, value: lifecycle.state.presentation.failure?.id)
+		.launcherTheme(accent: accentColor)
+		.environment(\.colorScheme, homeColorScheme)
+		.launcherAnimation(.state, value: homeColorScheme)
 	}
 
 	private var controlBarContent: some View {
-		HStack(spacing: 16) {
+		HStack(spacing: LauncherTokens.Spacing.panel) {
 			LauncherActivityStatusView(
 				lifecycle: lifecycle,
 				installation: installation,
-				accentColor: accentColor
+				runtimeSelection: runtimeSelection
 			)
 			.id(installation.isDownloading ? "download-progress" : "launcher-status")
 			.transition(.opacity)
 			.frame(maxWidth: .infinity, alignment: .leading)
 
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				if communication.shouldShowLauncherUpdateButton {
 					CapsuleActionButton(
 						title: "Install Update",
@@ -91,36 +94,39 @@ struct LauncherHUDView: View {
 				}
 
 				LauncherPrimaryActionView(
-					installation: installation,
-					gameSession: gameSession,
-					intelTranslation: intelTranslation,
-					accentColor: accentColor,
-					installOrUpdate: actions.installOrUpdate,
-					cancelDownload: actions.cancelDownload,
-					launch: actions.launch,
-					stopGame: actions.stopGame
+					presentation: LauncherPrimaryActionPresentation(
+						installation: installation,
+						gameSession: gameSession,
+						intelTranslation: intelTranslation,
+						runtimeSelection: runtimeSelection,
+						lifecycle: lifecycle,
+						installOrUpdate: actions.installOrUpdate,
+						cancelDownload: actions.cancelDownload,
+						installRuntime: actions.installRuntime,
+						launch: actions.launch,
+						stopGame: actions.stopGame
+					)
 				)
 				.disabled(lifecycle.state.presentation.failure?.blocksGameLaunch == true)
 			}
 		}
-		.padding(16)
+		.padding(LauncherTokens.Spacing.panel)
 	}
 
-	// Takes the 10pt VStack spacing above `controlBar` only when a pill has content, mirroring the
-	// pill visibility checks.
+	// Takes the `LauncherTokens.Spacing.control` VStack spacing above `controlBar` only when a
+	// pill has content, mirroring the pill visibility checks.
 	@ViewBuilder
 	private var hudPillRow: some View {
 		if hasMusicPill || hasVersionPill || hasStatusPill {
 			HStack {
 				Spacer(minLength: 16)
-				AdaptiveGlassGroup(spacing: 6) {
-					HStack(alignment: .bottom, spacing: 8) {
+				AdaptiveGlassGroup(spacing: LauncherTokens.Spacing.control) {
+					HStack(alignment: .bottom, spacing: LauncherTokens.Spacing.control) {
 						if hasMusicPill {
 							MusicHUDPill(
 								settings: settings,
 								musicTitle: musicController.currentMusicTitle,
 								accentColor: accentColor,
-								hudTintColor: hudTintColor,
 								openCurrentMusicURL: musicController.openCurrentMusicURL,
 								controller: musicController,
 								isExpanded: expandedBinding(for: .music)
@@ -133,8 +139,6 @@ struct LauncherHUDView: View {
 								lifecycle: lifecycle,
 								installation: installation,
 								gameSession: gameSession,
-								accentColor: accentColor,
-								hudTintColor: hudTintColor,
 								checkGameUpdates: actions.checkGameUpdates,
 								isExpanded: expandedBinding(for: .version)
 							)
@@ -147,7 +151,6 @@ struct LauncherHUDView: View {
 								installation: installation,
 								canSwitchRegion: canSwitchRegion,
 								accentColor: accentColor,
-								hudTintColor: hudTintColor,
 								selectRegion: actions.selectRegion,
 								isExpanded: expandedBinding(for: .status)
 							)
@@ -162,6 +165,9 @@ struct LauncherHUDView: View {
 			.animation(stateAnimation, value: hasMusicPill)
 			.animation(stateAnimation, value: hasVersionPill)
 			.animation(stateAnimation, value: hasStatusPill)
+			.launcherTheme(accent: accentColor)
+			.environment(\.colorScheme, homeColorScheme)
+			.launcherAnimation(.state, value: homeColorScheme)
 		}
 	}
 
@@ -170,17 +176,11 @@ struct LauncherHUDView: View {
 	}
 
 	private var hasVersionPill: Bool {
-		settings.showsGameVersion && versionText != "—"
+		settings.showsGameVersion && installation.gameVersionText != nil
 	}
 
 	private var hasStatusPill: Bool {
-		settings.showsServerResetCountdown
-	}
-
-	private var versionText: String {
-		installation.installedVersion
-			?? installation.configuration?.gameLatestVersion
-			?? "—"
+		StatusHUDPill.shows(for: settings)
 	}
 
 	private var stateAnimation: Animation? {
@@ -188,24 +188,20 @@ struct LauncherHUDView: View {
 	}
 
 	private var primaryActionTransition: AnyTransition {
-		.materialize(reduceMotion: reduceMotion, scale: 0.88, blur: 6, anchor: .trailing)
+		.materialize(reduceMotion: reduceMotion, scale: 0.96, anchor: .trailing)
 	}
 
 	// Pills rise out of the control bar one after another instead of popping in together.
 	private func hudPillTransition(index: Int) -> AnyTransition {
 		let insertion = AnyTransition.materialize(
 			reduceMotion: reduceMotion,
-			scale: 0.86,
-			blur: 6,
-			offsetY: 14,
+			scale: 0.96,
 			anchor: .bottom
 		)
 		.animation(LauncherMotion.staggered(.state, index: index, reduceMotion: reduceMotion))
 		let removal = AnyTransition.materialize(
 			reduceMotion: reduceMotion,
-			scale: 0.92,
-			blur: 4,
-			offsetY: 8,
+			scale: 0.96,
 			anchor: .bottom
 		)
 		.animation(LauncherMotion.animation(.dismiss, reduceMotion: reduceMotion))
@@ -250,18 +246,7 @@ struct LauncherHUDView: View {
 	}
 
 	private func syncDeveloperExpandedPill() {
-		switch developerExpandedPill {
-		case "music": expandedPill = .music
-		case "version": expandedPill = .version
-		case "status": expandedPill = .status
-		default: expandedPill = nil
-		}
-	}
-
-	private enum ExpandedPill {
-		case music
-		case version
-		case status
+		expandedPill = developerExpandedPill
 	}
 }
 
@@ -271,8 +256,14 @@ private struct HUDSiblingFocus: ViewModifier {
 
 	func body(content: Content) -> some View {
 		content
-			.scaleEffect(isReceded && !reduceMotion ? 0.96 : 1, anchor: .bottom)
 			.opacity(isReceded ? 0.62 : 1)
 			.animation(LauncherMotion.fade(reduceMotion: reduceMotion), value: isReceded)
 	}
+}
+
+/// The HUD pill a developer preview asks the launcher to expand.
+enum ExpandedPill: Equatable {
+	case music
+	case version
+	case status
 }

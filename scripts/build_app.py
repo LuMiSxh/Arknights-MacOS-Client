@@ -3,61 +3,37 @@
 
 """Build and ad-hoc sign the native application bundle."""
 
-from __future__ import annotations
-
 import argparse
 import base64
 import binascii
 import os
 import plistlib
 import shutil
-import stat
-import subprocess
 import tempfile
 from pathlib import Path
 
 from build_compatibility import build as build_compatibility
-from lib.bundled_resources import staged_resources
+from lib.bundled_resources import app_resources, stage_app_resources
 from lib.common import (
     BUILD_DIR,
     DIST_DIR,
     PROJECT_DIR,
+    copy_file,
     fail,
     output,
     remove_path,
     require_commands,
-    require_directory,
     require_file,
     run,
     run_main,
 )
-from lib.console import info, spinner, success, warning
+from lib.console import info, success, warning
 from lib.licenses import stage_bundle
 from lib.project_config import ProjectConfiguration, load_project_configuration
 from lib.swift_build import run_swift_build
-from runtime_config import (
-    RuntimeConfiguration,
-    load_runtime_config,
-    runtime_is_valid,
-)
 
 SPARKLE_FRAMEWORK_NAME = "Sparkle.framework"
 SPARKLE_PUBLIC_KEY_BYTES = 32
-
-
-def copy_file(source: Path, destination: Path, mode: int = 0o644) -> None:
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(source, destination)
-    destination.chmod(mode)
-
-
-def copy_resource(source: Path, destination: Path) -> None:
-    if source.is_dir():
-        shutil.copytree(source, destination)
-    elif source.is_file():
-        copy_file(source, destination)
-    else:
-        fail(f"required resource not found: {source}")
 
 
 def sparkle_framework(binary_dir: Path, configuration: ProjectConfiguration) -> Path:
@@ -156,20 +132,6 @@ def ensure_framework_rpath(binary: Path) -> None:
         run(["install_name_tool", "-add_rpath", rpath, binary])
 
 
-def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path], ...]:
-    """Return the (source, destination) copies of the table in `lib.bundled_resources`."""
-    project = configuration.project_directory
-    entries = [
-        (project / resource.source, Path(resource.path))
-        for resource in staged_resources(configuration)
-        if resource.source is not None
-    ]
-    destinations = [destination for _, destination in entries]
-    if len(destinations) != len(set(destinations)):
-        fail("application resources contain duplicate destinations")
-    return tuple(entries)
-
-
 def copy_compatibility_helpers(source: Path, destination: Path) -> tuple[Path, ...]:
     files = sorted(path for path in source.rglob("*") if path.is_file())
     if not files:
@@ -182,60 +144,7 @@ def copy_compatibility_helpers(source: Path, destination: Path) -> tuple[Path, .
     return tuple(copied)
 
 
-def copy_runtime(source: Path, destination: Path) -> None:
-    # The callback needs a stable source root to identify the top-level exclusions.
-    def ignore(directory: str, names: list[str]) -> set[str]:
-        relative = Path(directory).relative_to(source)
-        ignored = {name for name in names if name.endswith(".wine-original")}
-        if relative == Path("."):
-            # The compiled notices file replaces the runtime's loose legal files.
-            ignored.update({"include", "Licenses", "NOTICE.md"})
-        if relative == Path("share"):
-            ignored.add("man")
-        if relative == Path("share/wine"):
-            ignored.add("mono")
-        return ignored
-
-    shutil.copytree(source, destination, symlinks=True, ignore=ignore)
-
-
-# Big-endian fat headers (32 and 64 bit). Most runtime files are not fat Mach-O,
-# so this check avoids a `lipo` process for each of them.
-_FAT_MAGICS = (b"\xca\xfe\xba\xbe", b"\xca\xfe\xba\xbf")
-
-
-def _fat_architectures(path: Path) -> set[str]:
-    with path.open("rb") as handle:
-        if handle.read(4) not in _FAT_MAGICS:
-            return set()
-    # A Java class file shares the magic; `lipo` rejects it, so it counts as thin.
-    result = subprocess.run(
-        ["lipo", "-archs", path], capture_output=True, text=True, check=False
-    )
-    return set(result.stdout.split()) if result.returncode == 0 else set()
-
-
-def thin_universal_files(runtime: Path) -> int:
-    count = 0
-    for path in runtime.rglob("*"):
-        if not path.is_file() or path.is_symlink():
-            continue
-        if not {"x86_64", "arm64"} <= _fat_architectures(path):
-            continue
-        temporary = path.with_name(f"{path.name}.x86_64")
-        mode = stat.S_IMODE(path.stat().st_mode)
-        run(["lipo", path, "-thin", "x86_64", "-output", temporary])
-        temporary.chmod(mode)
-        temporary.replace(path)
-        count += 1
-    return count
-
-
-def validate_inputs(
-    runtime: Path | None,
-    configuration: ProjectConfiguration,
-    runtime_configuration: RuntimeConfiguration,
-) -> None:
+def validate_inputs(configuration: ProjectConfiguration) -> None:
     require_commands(
         (
             "codesign",
@@ -252,44 +161,16 @@ def validate_inputs(
     for source, _ in app_resources(configuration):
         if not source.exists():
             fail(f"required resource not found: {source}")
-    if runtime is not None:
-        require_directory(runtime)
-        if not runtime_is_valid(runtime, runtime_configuration.layout):
-            fail("runtime directory does not satisfy runtime.json interface")
-
-
-def embed_runtime(
-    runtime: Path,
-    resources: Path,
-    runtime_configuration: RuntimeConfiguration,
-) -> None:
-    layout = runtime_configuration.layout
-    destination = resources / "Runtime"
-    with spinner("Embedding the Wine + DXMT runtime"):
-        copy_runtime(runtime, destination)
-    with spinner("Removing unused arm64 slices from the x86-64 runtime"):
-        count = thin_universal_files(destination)
-    if count:
-        info(f"Thinned {count} universal runtime files")
-
-    launcher = destination / layout.launcher.path
-    remove_path(launcher)
-    launcher.symlink_to(layout.launcher.target)
-    if not runtime_is_valid(destination, layout):
-        fail("packaged runtime does not satisfy runtime.json interface")
 
 
 def build(
-    runtime: Path | None,
     configuration: str = "release",
     project_configuration: ProjectConfiguration | None = None,
     strict_licenses: bool = False,
 ) -> Path:
     project_configuration = project_configuration or load_project_configuration()
     project = project_configuration.project_directory
-    runtime_configuration = load_runtime_config(project / "runtime.json")
-    runtime = runtime.resolve() if runtime is not None else None
-    validate_inputs(runtime, project_configuration, runtime_configuration)
+    validate_inputs(project_configuration)
     architectures = project_configuration.product.architecture_priority
     info(f"Building the {configuration} executable for {', '.join(architectures)}")
     run_swift_build(project_configuration, configuration)
@@ -318,8 +199,7 @@ def build(
         configure_info_plist(
             project / "Resources/Info.plist", staged_app / "Contents/Info.plist"
         )
-        for source, destination in app_resources(project_configuration):
-            copy_resource(source, resources / destination)
+        stage_app_resources(project_configuration, resources)
 
         helper_root = project / BUILD_DIR.relative_to(PROJECT_DIR) / "helpers"
         remove_path(helper_root)
@@ -328,28 +208,16 @@ def build(
         compatibility = resources / "Compatibility"
         helpers = copy_compatibility_helpers(helper_root, compatibility)
         for helper in (path for path in helpers if path.suffix == ".dylib"):
-            run(
-                [
-                    "codesign",
-                    "--force",
-                    "--sign",
-                    "-",
-                    "--timestamp=none",
-                    helper,
-                ],
-                capture=True,
-            )
+            sign_code(helper)
         run(["plutil", "-lint", staged_app / "Contents/Info.plist"], capture=True)
 
-        if runtime is not None:
-            embed_runtime(runtime, resources, runtime_configuration)
         framework = copy_sparkle_framework(
             sparkle_framework(binary_dir, project_configuration),
             staged_app / "Contents/Frameworks/Sparkle.framework",
         )
         ensure_framework_rpath(macos / project_configuration.product.executable_name)
         sign_sparkle_framework(framework)
-        for message in stage_bundle(project, resources, runtime, strict_licenses):
+        for message in stage_bundle(project, resources, strict_licenses):
             warning(message)
 
         info("Ad-hoc signing the application bundle")
@@ -370,21 +238,16 @@ def build(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--runtime", type=Path)
     parser.add_argument(
         "--configuration", choices=("debug", "release"), default="release"
     )
     parser.add_argument(
         "--strict-licenses",
         action="store_true",
-        help="fail on unverified licenses or a runtime without license files",
+        help="fail on an unverified license",
     )
     arguments = parser.parse_args()
-    build(
-        arguments.runtime,
-        arguments.configuration,
-        strict_licenses=arguments.strict_licenses,
-    )
+    build(arguments.configuration, strict_licenses=arguments.strict_licenses)
 
 
 if __name__ == "__main__":

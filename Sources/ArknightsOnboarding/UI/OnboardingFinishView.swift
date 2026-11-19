@@ -8,83 +8,91 @@ import SwiftUI
 struct OnboardingFinishView: View {
 	let installation: InstallationController
 	let lifecycle: LauncherLifecycleStore
-	let accentColor: Color
 	let install: () -> Void
-
-	private var publisherName: String {
-		switch installation.region.publisher {
-		case .gryphline: "Gryphline"
-		case .hypergryph: "Hypergryph"
-		default: "Yostar"
-		}
-	}
 
 	var body: some View {
 		OnboardingPage(
-			title: "Ready for deployment",
-			subtitle: "Your choices are saved. You can change any of them in Settings.",
-			accentColor: accentColor
+			step: .finish,
+			subtitle: "Your choices are saved and stay editable in Settings"
 		) {
-			SettingsPanel(title: gameStatusTitle, systemImage: gameStatusImage) {
-				Text(gameStatusDetail)
-					.foregroundStyle(.secondary)
-					.fixedSize(horizontal: false, vertical: true)
+			SettingsPanel(title: "Server") {
+				OnboardingStatusRow(
+					title: installation.region.displayName,
+					detail: "Each server has its own game files and accounts.",
+					systemImage: "globe"
+				) {}
+			}
 
-				if installation.isDownloading, let progress = installation.progress {
-					ProgressView(value: progress.fraction)
-						.tint(accentColor)
-				}
+			SettingsPanel(title: "Game files") {
+				OnboardingFinishGameStatus(
+					installation: installation,
+					title: gameStatusTitle,
+					systemImage: gameStatusImage,
+					detail: gameStatusDetail,
+					failure: gameFailure,
+					install: install
+				)
+			}
 
-				if !installation.isInstalled && !installation.isDownloading
-					&& installation.canInstall
-				{
+			SettingsPanel(title: "Get help") {
+				OnboardingStatusRow(
+					title: "Troubleshooting guide",
+					detail:
+						"Find solutions for common problems. Choose Troubleshooting Guide in the Help menu, or open Settings → Help.",
+					systemImage: "book"
+				) {
 					CapsuleActionButton(
-						title: "Resume Download",
-						systemImage: "arrow.clockwise",
-						tone: .accent(accentColor),
-						action: install
+						title: "Open Guide", systemImage: "arrow.up.right.square",
+						tone: .neutral, action: openTroubleshooting
+					)
+				}
+				OnboardingStatusRow(
+					title: "Problems on this Mac",
+					detail:
+						"Choose Report a Problem… in the Help menu, or open Settings → Help → Report.",
+					systemImage: "ladybug"
+				) {
+					CapsuleActionButton(
+						title: "Report a Problem", systemImage: "arrow.up.right.square",
+						tone: .neutral, action: reportProblem
+					)
+				}
+				OnboardingStatusRow(
+					title: "Diagnostics",
+					detail:
+						"Save the launcher and game logs for a report. Choose Save Diagnostics… in the Help menu.",
+					systemImage: "square.and.arrow.down"
+				) {}
+				OnboardingStatusRow(
+					title: "Account and payment",
+					detail:
+						"For account, payment, or game-service issues, contact \(installation.region.publisherName) support instead.",
+					systemImage: "person.crop.circle"
+				) {
+					CapsuleActionButton(
+						title: "Contact \(installation.region.publisherName) Support",
+						systemImage: "arrow.up.right.square",
+						tone: .neutral, action: contactPublisher
 					)
 				}
 			}
 
-			SettingsPanel(
-				title: "Community project", systemImage: "person.3"
-			) {
+			SettingsPanel(title: "Community project") {
 				Text(
 					"Arknights Client is an unofficial community launcher. It is not affiliated with, endorsed by, or supported by Hypergryph or Yostar."
 				)
 				.fixedSize(horizontal: false, vertical: true)
-				Text(
-					"If the launcher, the game start, or the sign-in window misbehaves, please report it on GitHub. The report fills in the technical details for you."
-				)
-				.font(.callout)
-				.foregroundStyle(.secondary)
-				.fixedSize(horizontal: false, vertical: true)
-				CapsuleActionButton(
-					title: "Report a Launcher Problem…", systemImage: "ladybug",
-					tone: .accent(accentColor), action: reportProblem
-				)
-
-				SettingsHairline()
-
-				Text(
-					"For account, payment, or game-service issues, contact \(publisherName) support instead."
-				)
-				.font(.callout)
-				.foregroundStyle(.secondary)
-				.fixedSize(horizontal: false, vertical: true)
-				CapsuleActionButton(
-					title: "Contact \(publisherName) Support…",
-					systemImage: "arrow.up.right.square",
-					tone: .accent(accentColor),
-					action: contactPublisher
-				)
 			}
 		}
 	}
 
+	private var gameFailure: LauncherFailurePresentation? {
+		lifecycle.state.presentation.failure.flatMap { $0.isGameDownloadFailure ? $0 : nil }
+	}
+
 	private var gameStatusTitle: String {
 		if lifecycle.activity.isGameActive { return "Arknights is running" }
+		if gameFailure != nil { return "The download failed" }
 		if installation.isDownloading { return "The download continues" }
 		if installation.isInstalled { return "Arknights is ready" }
 		return "The download is paused"
@@ -92,6 +100,7 @@ struct OnboardingFinishView: View {
 
 	private var gameStatusImage: String {
 		if lifecycle.activity.isGameActive { return "gamecontroller.fill" }
+		if gameFailure != nil { return "exclamationmark.triangle" }
 		if installation.isDownloading { return "arrow.down.circle" }
 		if installation.isInstalled { return "checkmark.circle" }
 		return "pause.circle"
@@ -100,6 +109,9 @@ struct OnboardingFinishView: View {
 	private var gameStatusDetail: String {
 		if lifecycle.activity.isGameActive {
 			return "Close the game with Command-Q before finishing setup."
+		}
+		if gameFailure != nil {
+			return "Finish setup and retry from the launcher, or go back to the Install step."
 		}
 		if installation.isDownloading {
 			return
@@ -113,7 +125,12 @@ struct OnboardingFinishView: View {
 
 	private func reportProblem() {
 		NSWorkspace.shared.open(
-			IssueReportURL.build(runtimeName: lifecycle.state.readiness.runtimeName))
+			IssueReportURL.build(
+				runtimeName: lifecycle.state.readiness.runtimeName, source: .onboarding))
+	}
+
+	private func openTroubleshooting() {
+		NSWorkspace.shared.open(SupportLinks.troubleshootingGuide)
 	}
 
 	private func contactPublisher() {

@@ -1,32 +1,21 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsGameInstallation
 import SwiftUI
 
 enum LauncherUpdateOverlayPresentation {
-	enum Motion: Equatable {
-		case immediate
-		case animated(initialDialogScale: CGFloat)
-	}
-
 	static func isPresented(
 		destination: LauncherPresentationDestination?,
 		driverIsPresented: Bool
 	) -> Bool {
 		destination == .update && driverIsPresented
 	}
-
-	static func motion(reduceMotion: Bool) -> Motion {
-		guard !reduceMotion else { return .immediate }
-		return .animated(initialDialogScale: LauncherMotion.overlayEntranceScale)
-	}
 }
 
 struct LauncherUpdateOverlay: View {
+	@Environment(\.launcherTheme) private var theme
 	let driver: LauncherUpdateUserDriver
-	package let accentColor: Color
-	let hudTintColor: Color
+
 	let reduceTransparency: Bool
 	let checkForUpdates: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -45,7 +34,7 @@ struct LauncherUpdateOverlay: View {
 	}
 
 	private var backgroundDim: some View {
-		(reduceTransparency ? Color.black : Color.black.opacity(LauncherVisuals.overlayDim))
+		(reduceTransparency ? LauncherVisuals.opaqueDim : theme.modalDim)
 			.ignoresSafeArea()
 			.opacity(isVisible ? 1 : 0)
 			.animation(backgroundAnimation, value: isVisible)
@@ -55,12 +44,9 @@ struct LauncherUpdateOverlay: View {
 	private var updateDialog: some View {
 		LauncherUpdateView(
 			driver: driver,
-			accentColor: accentColor,
-			hudTintColor: hudTintColor,
+
 			checkForUpdates: checkForUpdates
 		)
-		.blur(radius: isVisible ? 0 : initialDialogBlur)
-		.offset(y: isVisible ? 0 : initialDialogOffset)
 		.scaleEffect(isVisible ? 1 : initialDialogScale)
 		.opacity(isVisible ? 1 : 0)
 		.animation(dialogAnimation, value: isVisible)
@@ -68,23 +54,8 @@ struct LauncherUpdateOverlay: View {
 		.accessibilityAddTraits(.isModal)
 	}
 
-	private var motion: LauncherUpdateOverlayPresentation.Motion {
-		LauncherUpdateOverlayPresentation.motion(reduceMotion: reduceMotion)
-	}
-
 	private var initialDialogScale: CGFloat {
-		if case .animated(let scale) = motion { return scale }
-		return 1
-	}
-
-	private var initialDialogBlur: CGFloat {
-		if case .animated = motion { return 10 }
-		return 0
-	}
-
-	private var initialDialogOffset: CGFloat {
-		if case .animated = motion { return 18 }
-		return 0
+		reduceMotion ? 1 : LauncherMotion.overlayEntranceScale
 	}
 
 	private var backgroundAnimation: Animation? {

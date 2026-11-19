@@ -5,16 +5,15 @@ import SwiftUI
 
 #if DEBUG
 	struct DeveloperSettingsPage: View {
+		@Environment(\.launcherTheme) private var theme
 		@Binding var simulation: DeveloperSimulationState
-		let accentColor: Color
 
 		var body: some View {
 			SettingsPage(
 				title: "Developer",
-				subtitle: "Preview launcher states safely",
-				accentColor: accentColor
+				subtitle: "Preview launcher states safely"
 			) {
-				SettingsPanel(title: "Simulation", systemImage: "play.circle") {
+				SettingsPanel(title: "Simulation") {
 					picker("Lifecycle", \.lifecycle)
 					picker("Installation phase", \.phase)
 					picker("Progress", \.progress)
@@ -26,8 +25,8 @@ import SwiftUI
 					picker("Launcher update", \.launcherUpdate)
 					picker("Failure", \.failure)
 					picker("Support code", \.failureCode)
-					picker("Canary features", \.canaryFeaturesEnabled)
-					picker("Taiwan server", \.taiwanClientEnabled)
+					picker("Runtime", \.runtime)
+					picker("Displays", \.displays)
 					picker("Status pill", \.showStatusPill)
 					picker("Version pill", \.showVersionPill)
 					picker("Music pill", \.showMusicPill)
@@ -40,11 +39,11 @@ import SwiftUI
 					picker("Rosetta missing", \.rosettaMissing)
 					picker("Xcode missing", \.xcodeMissing)
 				}
-				SettingsPanel(title: "Isolation", systemImage: "lock.shield") {
+				SettingsPanel(title: "Isolation") {
 					Text(
 						"Game actions only move between simulated states. The preview uses separate temporary paths and preferences."
 					)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 				}
 			}
 		}
@@ -74,7 +73,6 @@ import SwiftUI
 				GlassMenuPicker(
 					selection: $simulation[dynamicMember: keyPath],
 					options: choices.map { ($0, "\($0)") },
-					accentColor: accentColor
 				)
 			}
 		}

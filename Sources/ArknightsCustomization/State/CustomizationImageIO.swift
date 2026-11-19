@@ -22,22 +22,24 @@ struct IconPublicationSnapshotError: LauncherDiagnosticError {
 	}
 }
 
-struct IconRollbackFailure: LauncherDiagnosticError {
+struct IconRollbackFailure: LauncherDiagnosticError, SupportCodeProviding {
 	let original: any Error
 	let rollbackErrors: [any Error]
 
 	var errorDescription: String? {
-		"The icon update failed, and the previous icons could not be fully restored. Check the launcher log."
+		"The icon update failed, and the previous icons could not be fully restored."
 	}
 
-	package var diagnosticDescription: String {
+	var supportCode: SupportCode? { .appIconFailed }
+
+	var diagnosticDescription: String {
 		let details = rollbackErrors.map(\.localizedDescription).joined(separator: "; ")
 		return
 			"Icon publication failed: \(original.localizedDescription). Rollback failures: \(details)"
 	}
 }
 
-enum CustomizationImageIO {
+package enum CustomizationImageIO {
 	struct PreparedPublication: Sendable {
 		fileprivate let destinations: [URL]
 		fileprivate let identities: [IconFileIdentity?]
@@ -68,7 +70,7 @@ enum CustomizationImageIO {
 	// Decodes full-size artwork off the main actor; `NSImage(data:)` would defer the decode to
 	// the first draw. The thumbnail API is used only to honor EXIF orientation.
 	@concurrent
-	static func decodeImage(_ data: Data) async -> CGImage? {
+	package static func decodeImage(_ data: Data) async -> CGImage? {
 		guard
 			let source = CGImageSourceCreateWithData(data as CFData, nil),
 			let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)

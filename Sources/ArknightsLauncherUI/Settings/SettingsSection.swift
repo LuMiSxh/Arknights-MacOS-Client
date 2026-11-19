@@ -1,14 +1,31 @@
 // SPDX-License-Identifier: MPL-2.0
 
+/// Sidebar group. The caption labels the group in the settings rail.
+enum SettingsGroup: CaseIterable {
+	case arknights
+	case launcher
+	case general
+
+	var caption: String? {
+		switch self {
+		case .arknights: "Arknights"
+		case .launcher: "Launcher"
+		case .general: "Support"
+		}
+	}
+}
+
 // Selection is view state only and is never persisted.
 enum SettingsSection: String, CaseIterable, Identifiable {
 	case game
-	case appearance
-	case audio
-	case updates
-	case installation
+	case servers
+	case runtime
 	case storage
 	case statistics
+	case appearance
+	case integration
+	case updates
+	case help
 	case about
 	#if DEBUG
 		case developer
@@ -18,15 +35,25 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
 	var id: String { rawValue }
 
+	var group: SettingsGroup {
+		switch self {
+		case .game, .servers, .runtime, .storage, .statistics: .arknights
+		case .appearance, .integration, .updates: .launcher
+		default: .general
+		}
+	}
+
 	var title: String {
 		switch self {
 		case .game: "Game"
 		case .appearance: "Appearance"
-		case .audio: "Audio"
+		case .integration: "Integration"
 		case .updates: "Updates"
-		case .installation: "Installation"
+		case .servers: "Installation"
+		case .runtime: "Runtime"
 		case .storage: "Storage"
 		case .statistics: "Playtime"
+		case .help: "Help"
 		case .about: "About"
 		#if DEBUG
 			case .developer: "Developer"
@@ -38,11 +65,13 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		switch self {
 		case .game: "gamecontroller"
 		case .appearance: "paintbrush"
-		case .audio: "music.note"
+		case .integration: "puzzlepiece.extension"
 		case .updates: "arrow.trianglehead.2.clockwise"
-		case .installation: "externaldrive"
+		case .servers: "globe"
+		case .runtime: "cpu"
 		case .storage: "internaldrive"
 		case .statistics: "chart.bar.xaxis"
+		case .help: "lifepreserver"
 		case .about: "info.circle"
 		#if DEBUG
 			case .developer: "hammer"

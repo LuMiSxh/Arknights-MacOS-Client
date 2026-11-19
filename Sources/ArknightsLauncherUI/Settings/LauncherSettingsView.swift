@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import ArknightsAudio
 import ArknightsCore
 import ArknightsCustomization
 import ArknightsGameInstallation
@@ -14,27 +13,18 @@ import SwiftUI
 #endif
 
 struct LauncherSettingsView: View {
-	package let settings: LauncherPreferencesController
-	let customization: CustomizationController
-	package let communication: LauncherCommunicationController
-	package let installation: InstallationController
-	let gameSession: GameSessionController
-	package let lifecycle: LauncherLifecycleStore
-	let storage: StorageMaintenanceController
-	let storageOverview: StorageOverviewController
-	let playtimeStatistics: PlaytimeStatisticsController
-	let presetCatalog: PresetCatalogService
-	package let launcherIconManager: LauncherIconManager
-	let branding: LauncherBranding?
-	let actions: any LauncherActions
+	@Environment(\.launcherTheme) private var theme
+	let dependencies: LauncherSettingsDependencies
 	let restartOnboarding: () -> Void
 	let requestLauncherUpdateCheck: () -> Void
+	let openProblemReport: () -> Void
 	let developerSimulation: DeveloperSimulationBinding?
 	let windowSize: CGSize
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@State private var selectedSection = SettingsSection.initial
+	@Binding var selectedSection: SettingsSection
 	@State private var presentedDocument: BundledDocument?
+	@Namespace private var railSelection
 
 	private var sheetSize: CGSize {
 		let margin = AppConstants.Settings.windowMargin * 2
@@ -52,93 +42,108 @@ struct LauncherSettingsView: View {
 			SettingsNavigationRail(
 				selection: $selectedSection,
 				isDeveloperMode: isDeveloperMode,
-				accentColor: customization.accentColor,
-				lifecycle: lifecycle,
-				installation: installation
+				lifecycle: dependencies.lifecycle,
+				installation: dependencies.installation,
+				runtimeSelection: dependencies.runtimeSelection,
+				selectionNamespace: railSelection
 			)
 			Divider()
-				.overlay(LauncherVisuals.hairline)
+				.overlay(theme.hairline)
 
 			ZStack(alignment: .bottomTrailing) {
 				Group {
 					switch selectedSection {
 					case .game:
 						GameSettingsPage(
-							settings: settings,
-							gameSession: gameSession,
-							lifecycle: lifecycle,
-							accentColor: customization.accentColor
+							settings: dependencies.settings,
+							gameSession: dependencies.gameSession,
+							lifecycle: dependencies.lifecycle
 						)
 					case .appearance:
 						AppearanceSettingsPage(
-							settings: settings,
-							customization: customization,
-							lifecycle: lifecycle,
-							presetCatalog: presetCatalog,
-							accentColor: customization.accentColor,
-							actions: actions
+							settings: dependencies.settings,
+							customization: dependencies.customization,
+							lifecycle: dependencies.lifecycle,
+							presetCatalog: dependencies.presetCatalog,
+							actions: dependencies.actions
 						)
-					case .audio:
-						AudioSettingsPage(
-							settings: settings,
-							accentColor: customization.accentColor
+					case .integration:
+						IntegrationSettingsPage(
+							settings: dependencies.settings,
+							reminders: dependencies.reminders,
+							screenshots: dependencies.screenshots
 						)
 					case .updates:
 						UpdatesSettingsPage(
-							settings: settings,
-							communication: communication,
-							installation: installation,
-							lifecycle: lifecycle,
-							accentColor: customization.accentColor,
+							settings: dependencies.settings,
+							communication: dependencies.communication,
+							installation: dependencies.installation,
+							lifecycle: dependencies.lifecycle,
 							appVersion: IssueReportURL.appVersion,
-							actions: actions,
+							actions: dependencies.actions,
 							checkLauncherUpdates: requestLauncherUpdateCheck
 						)
-					case .installation:
+					case .servers:
 						InstallationSettingsPage(
-							settings: settings,
-							installation: installation,
-							gameSession: gameSession,
-							lifecycle: lifecycle,
-							accentColor: customization.accentColor,
-							actions: actions,
-							restartOnboarding: restartOnboarding
+							settings: dependencies.settings,
+							installation: dependencies.installation,
+							gameSession: dependencies.gameSession,
+							lifecycle: dependencies.lifecycle,
+							actions: dependencies.actions,
+							maintenance: dependencies.actions
+						)
+					case .runtime:
+						RuntimeSettingsPage(
+							settings: dependencies.settings,
+							gameSession: dependencies.gameSession,
+							runtimeSelection: dependencies.runtimeSelection,
+							intelTranslation: dependencies.intelTranslation,
+							lifecycle: dependencies.lifecycle,
+							actions: dependencies.actions,
+							runtime: dependencies.gameSession.installedRuntime
 						)
 					case .storage:
 						StorageOverviewPage(
-							controller: storageOverview,
-							copy: .english,
+							controller: dependencies.storageOverview,
 							actions: StorageOverviewActions(
-								clearGameCaches: storage.clearGameCache,
-								clearGalleryCache: storage.clearPresetGalleryCache,
-								revealLogs: storage.revealLogs
-							),
-							accentColor: customization.accentColor
+								clearGameCaches: dependencies.storage.clearGameCache,
+								clearGalleryCache: dependencies.storage.clearPresetGalleryCache,
+								revealLogs: dependencies.storage.revealLogs,
+								revealApplicationSupport: dependencies.storage
+									.revealApplicationSupport
+							)
 						)
 					case .statistics:
 						PlaytimeStatisticsPage(
-							controller: playtimeStatistics,
-							regions: settings.regionAccess.selectableRegions.filter {
-								installation.isRegionInstalled($0)
-							},
-							accentColor: customization.accentColor
+							controller: dependencies.playtimeStatistics,
+							regions: GameRegion.allCases.filter {
+								dependencies.installation.isRegionInstalled($0)
+							}
+						)
+					case .help:
+						HelpSettingsPage(
+							region: dependencies.installation.region,
+							settings: dependencies.settings,
+							actions: dependencies.actions,
+							maintenance: dependencies.actions,
+							openProblemReport: openProblemReport,
+							installation: dependencies.installation,
+							gameSession: dependencies.gameSession,
+							lifecycle: dependencies.lifecycle,
+							restartOnboarding: restartOnboarding
 						)
 					case .about:
 						AboutSettingsPage(
-							region: installation.region,
-							runtimeName: lifecycle.state.readiness.runtimeName,
-							accentColor: customization.accentColor,
-							launcherIconManager: launcherIconManager,
-							branding: branding,
-							revealApplication: storage.revealApplication,
+							launcherIconManager: dependencies.launcherIconManager,
+							branding: dependencies.branding,
+							revealApplication: dependencies.storage.revealApplication,
 							presentedDocument: $presentedDocument
 						)
 					#if DEBUG
 						case .developer:
 							if let developerSimulation {
 								DeveloperSettingsPage(
-									simulation: developerSimulation,
-									accentColor: customization.accentColor
+									simulation: developerSimulation
 								)
 							}
 					#endif
@@ -146,56 +151,48 @@ struct LauncherSettingsView: View {
 				}
 				.id(selectedSection)
 				.environment(\.simulatesMissingXcode, simulatesMissingXcode)
+				.environment(\.simulatedGameScreens, simulatedGameScreens)
 				.frame(maxWidth: .infinity, maxHeight: .infinity)
 			}
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
 			.safeAreaInset(edge: .bottom, spacing: 0) {
 				HStack {
 					Spacer(minLength: 0)
-					FloatingActionBar(tint: customization.hudTintColor) {
-						if selectedSection == .storage {
-							CapsuleActionButton(
-								title: "Refresh",
-								systemImage: "arrow.clockwise",
-								tone: .neutral,
-								action: storageOverview.refreshNow
-							)
-							.controlSize(.large)
-							.disabled(storageOverview.isMeasuring)
-						}
-						FloatingDoneButton(accentColor: customization.accentColor) {
+					FloatingActionBar {
+						FloatingDoneButton {
 							dismiss()
 						}
 					}
 				}
-				.padding(.trailing, 26)
-				.padding(.top, LauncherVisuals.Spacing.control)
-				.padding(.bottom, 18)
+				.padding(.trailing, LauncherTokens.Spacing.page)
+				.padding(.top, LauncherTokens.Spacing.control)
+				.padding(.bottom, LauncherTokens.Spacing.panel)
 				.background {
-					FloatingActionFooterFade(height: 94)
+					FloatingActionFooterFade(
+						height: LauncherTokens.Layout.settingsFooterFade)
 				}
 			}
 		}
-		.tint(customization.accentColor)
-		.background(
-			ZStack {
-				LauncherVisuals.modalBackground
-				customization.hudTintColor
-			}
-		)
-		.preferredColorScheme(.dark)
+		.tint(theme.accentFill)
+		.background(theme.sheetTint)
 		.animation(
 			LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion),
-			value: customization.dynamicThemeHue
+			value: dependencies.customization.dynamicThemeHue
 		)
 		.onExitCommand(perform: dismiss.callAsFunction)
-		.frame(width: sheetSize.width, height: sheetSize.height)
+		.frame(
+			minWidth: AppConstants.Settings.minWidth,
+			idealWidth: sheetSize.width,
+			maxWidth: AppConstants.Settings.maxWidth,
+			minHeight: AppConstants.Settings.minHeight,
+			idealHeight: sheetSize.height,
+			maxHeight: AppConstants.Settings.maxHeight
+		)
 		.presentationSizing(.fitted)
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(
 				document: document,
-				accentColor: customization.accentColor,
-				hudTintColor: customization.hudTintColor
+				accentColor: dependencies.customization.accentColor
 			)
 		}
 	}
@@ -205,6 +202,14 @@ struct LauncherSettingsView: View {
 			developerSimulation?.wrappedValue.xcodeMissing ?? false
 		#else
 			false
+		#endif
+	}
+
+	private var simulatedGameScreens: GameScreenList? {
+		#if DEBUG
+			developerSimulation?.wrappedValue.simulatedGameScreens()
+		#else
+			nil
 		#endif
 	}
 
@@ -218,43 +223,66 @@ struct LauncherSettingsView: View {
 }
 
 private struct SettingsNavigationRail: View {
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Binding var selection: SettingsSection
 	let isDeveloperMode: Bool
-	package let accentColor: Color
-	package let lifecycle: LauncherLifecycleStore
-	package let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
+	let runtimeSelection: RuntimeSelectionController
+	let selectionNamespace: Namespace.ID
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text("SETTINGS")
-				.font(.caption.monospaced().weight(.semibold))
-				.tracking(1.4)
-				.foregroundStyle(.tertiary)
-				.padding(.horizontal, 18)
-				.padding(.top, 22)
-				.padding(.bottom, 14)
-
-			VStack(spacing: LauncherVisuals.Spacing.compact) {
-				ForEach(visibleSections) { section in
-					SettingsNavigationButton(
-						section: section,
-						isSelected: selection == section,
-						accentColor: accentColor,
-					) {
-						selection = section
+			// Group captions title the rail, so it has no caption of its own.
+			VStack(spacing: LauncherTokens.Spacing.panel) {
+				ForEach(SettingsGroup.allCases, id: \.self) { group in
+					let sections = visibleSections.filter { $0.group == group }
+					if !sections.isEmpty {
+						VStack(alignment: .leading, spacing: 2) {
+							if let caption = group.caption {
+								NavigationRailCaption(text: caption)
+									.padding(.horizontal, LauncherTokens.Spacing.control)
+							}
+							ForEach(sections) { section in
+								NavigationRailRow(
+									title: section.title,
+									systemImage: section.systemImage,
+									isSelected: selection == section,
+									selectionNamespace: selectionNamespace
+								) {
+									select(section)
+								}
+							}
+						}
 					}
 				}
 			}
-			.padding(.horizontal, 10)
+			.padding(.horizontal, LauncherTokens.Spacing.content)
+			.padding(.top, LauncherTokens.Spacing.page)
 
 			Spacer()
 
-			SettingsOperationStrip(lifecycle: lifecycle, installation: installation)
-				.padding(.horizontal, 18)
-				.padding(.bottom, 18)
+			SettingsOperationStrip(
+				lifecycle: lifecycle,
+				installation: installation,
+				runtimeSelection: runtimeSelection
+			)
+			.padding(.horizontal, LauncherTokens.Spacing.panel)
+			.padding(.bottom, LauncherTokens.Spacing.panel)
 		}
-		.frame(width: 164)
-		.background(LauncherVisuals.navigationRailBackground)
+		.frame(width: LauncherTokens.Layout.railWidth)
+		.background(theme.footerFill)
+	}
+
+	/// Moves the selection. The motion grows with the number of rows the indicator crosses.
+	private func select(_ section: SettingsSection) {
+		let sections = visibleSections
+		let previous = sections.firstIndex(of: selection) ?? 0
+		let next = sections.firstIndex(of: section) ?? 0
+		withLauncherAnimation(.select, reduceMotion: reduceMotion, hops: abs(next - previous)) {
+			selection = section
+		}
 	}
 
 	private var visibleSections: [SettingsSection] {
@@ -263,53 +291,5 @@ private struct SettingsNavigationRail: View {
 		#else
 			SettingsSection.allCases
 		#endif
-	}
-}
-
-private struct SettingsNavigationButton: View {
-	let section: SettingsSection
-	let isSelected: Bool
-	package let accentColor: Color
-	let action: () -> Void
-	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@State private var isHovering = false
-
-	var body: some View {
-		Button(action: action) {
-			HStack(spacing: LauncherVisuals.Spacing.control) {
-				RoundedRectangle(cornerRadius: 1)
-					.fill(isSelected ? accentColor : .clear)
-					.frame(width: 2, height: 18)
-					.accessibilityHidden(true)
-				Image(systemName: section.systemImage)
-					.frame(width: 17)
-					.symbolRenderingMode(.monochrome)
-					.accessibilityHidden(true)
-				Text(section.title)
-					.fontWeight(isSelected ? .semibold : .regular)
-				Spacer(minLength: 0)
-			}
-			.foregroundStyle(isSelected ? accentColor : (isHovering ? .primary : .secondary))
-			.padding(.vertical, 8)
-			.padding(.trailing, 12)
-			.background(backgroundFill, in: .rect(cornerRadius: LauncherVisuals.Radius.row))
-			.contentShape(.rect)
-			.frame(minHeight: 38)
-			.animation(
-				LauncherMotion.animation(.hover, reduceMotion: reduceMotion), value: isHovering)
-		}
-		.buttonStyle(ActionPressStyle(intensity: .pressOnly))
-		.keyboardFocusIndicator(
-			in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
-		)
-		.onHover { isHovering = $0 }
-		.accessibilityLabel(section.title)
-		.accessibilityAddTraits(isSelected ? .isSelected : [])
-	}
-
-	private var backgroundFill: Color {
-		if isSelected { return LauncherVisuals.selectedNavigationFill(for: accentColor) }
-		if isHovering { return LauncherVisuals.navigationHoverFill }
-		return .clear
 	}
 }

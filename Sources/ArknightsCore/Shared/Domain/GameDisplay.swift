@@ -11,6 +11,18 @@ package enum GameRenderingMode: String, CaseIterable, Codable, Sendable {
 	case standard
 }
 
+/// Aspect-ratio groups in the order `windowPresets` lists them.
+package enum AspectGroup: Int, Comparable {
+	case sixteenByNine
+	case sixteenByTen
+	case fourByThree
+	case other
+
+	package static func < (lhs: Self, rhs: Self) -> Bool {
+		lhs.rawValue < rhs.rawValue
+	}
+}
+
 package struct GameDisplaySize: Codable, Hashable, Sendable {
 	package let width: Int
 	package let height: Int
@@ -18,11 +30,27 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 	package static let defaultWindow = GameDisplaySize(width: 1280, height: 720)
 	static let validDimensions = 320...16_384
 
+	// The aspect ratios of the official client, each group smallest first.
 	static let windowPresets: [GameDisplaySize] = [
-		(960, 540), (1024, 576), (1152, 648), (1280, 720), (1280, 800), (1440, 810),
-		(1440, 900), (1600, 900), (1680, 1050), (1920, 1080), (1920, 1200), (2048, 1152),
-		(2304, 1296), (2560, 1440), (2560, 1600), (3008, 1692), (3200, 1800), (3840, 2160),
+		// 16:9
+		(960, 540), (1024, 576), (1152, 648), (1280, 720), (1440, 810), (1600, 900),
+		(1920, 1080), (2048, 1152), (2304, 1296), (2560, 1440), (3008, 1692), (3200, 1800),
+		(3840, 2160),
+		// 16:10
+		(1280, 800), (1440, 900), (1680, 1050), (1920, 1200), (2560, 1600),
+		// 4:3
+		(1024, 768), (1280, 960), (1440, 1080), (1600, 1200),
 	].map { GameDisplaySize(width: $0.0, height: $0.1) }
+
+	/// The aspect-ratio group of a window preset.
+	package var aspectGroup: AspectGroup {
+		switch (width * 9 == height * 16, width * 10 == height * 16, width * 3 == height * 4) {
+		case (true, _, _): .sixteenByNine
+		case (_, true, _): .sixteenByTen
+		case (_, _, true): .fourByThree
+		default: .other
+		}
+	}
 
 	package init(width: Int, height: Int) {
 		self.width = width
@@ -37,7 +65,7 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 		(720, 480), (640, 480),
 	].map { GameDisplaySize(width: $0.0, height: $0.1) }
 	package static let ultraHD = GameDisplaySize(width: 3840, height: 2160)
-	package static let quadHD = GameDisplaySize(width: 2560, height: 1440)
+	static let quadHD = GameDisplaySize(width: 2560, height: 1440)
 	package static let fullHD = GameDisplaySize(width: 1920, height: 1080)
 	package static let hd = GameDisplaySize(width: 1280, height: 720)
 
@@ -68,6 +96,21 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 	}
 
 	package var displayName: String { "\(width) × \(height)" }
+	/// Whether this size is one of the fixed window presets, not a custom size.
+	package var isWindowPreset: Bool { Self.windowPresets.contains(self) }
+	/// The common marketing name for this exact resolution, or nil when it has none.
+	package var commonName: String? {
+		switch (width, height) {
+		case (1280, 720): "HD"
+		case (1920, 1080): "Full HD"
+		case (2560, 1440): "WQHD"
+		case (3840, 2160): "4K"
+		case (5120, 2880): "5K"
+		case (6016, 3384): "6K"
+		case (7680, 4320): "8K"
+		default: nil
+		}
+	}
 	var pixelCount: Int { width * height }
 
 	func fits(in other: GameDisplaySize) -> Bool {
@@ -76,6 +119,27 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 
 	package func scaled(by factor: Int) -> GameDisplaySize {
 		GameDisplaySize(width: width * factor, height: height * factor)
+	}
+
+	/// The custom window size for `width` × `height` points, or nil outside the custom limits.
+	package static func validatedCustom(width: Int, height: Int) -> GameDisplaySize? {
+		let minimum = AppConstants.Game.customWindowMinimum
+		let maximum = AppConstants.Game.customWindowMaximumDimension
+		guard
+			(minimum.width...maximum).contains(width),
+			(minimum.height...maximum).contains(height)
+		else { return nil }
+		return GameDisplaySize(width: width, height: height)
+	}
+
+	/// The largest size with the same aspect ratio that fits `bounds`. A size that fits is kept.
+	func fitted(into bounds: GameDisplaySize) -> GameDisplaySize {
+		guard !fits(in: bounds) else { return self }
+		// Cross-multiplied, so the scaled sides stay whole numbers.
+		if bounds.width * height <= bounds.height * width {
+			return GameDisplaySize(width: bounds.width, height: height * bounds.width / width)
+		}
+		return GameDisplaySize(width: width * bounds.height / height, height: bounds.height)
 	}
 
 	/// Presets that fit `visibleSize` (in points), always keeping `current` selectable.
@@ -87,33 +151,33 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 			return CGFloat(preset.width) <= visibleSize.width
 				&& CGFloat(preset.height) <= visibleSize.height
 		}
+		// A size that is not a preset joins the end of its aspect-ratio group.
 		if !options.contains(current) {
-			options.append(current)
-			options.sort { ($0.width, $0.height) < ($1.width, $1.height) }
+			let index = options.lastIndex { $0.aspectGroup <= current.aspectGroup }
+			options.insert(current, at: index.map { $0 + 1 } ?? 0)
 		}
 		return options
 	}
 }
 
-/// The display Arknights fills in fullscreen. Wine's Mac driver makes the display with the menu
-/// bar its primary display, and the game opens fullscreen on the primary display. It is read at
-/// every launch, so rearranging or swapping displays needs no setting change.
+/// The display the game fills in fullscreen, taken from the resolved game screen.
 package struct GameFullscreenDisplay: Equatable, Sendable {
 	let pointSize: GameDisplaySize
 	let backingScale: Int
-
-	@MainActor package static var primary: GameFullscreenDisplay? {
-		// The first screen is always the one with the menu bar, even when it is not focused.
-		guard let screen = NSScreen.screens.first else { return nil }
-		return GameFullscreenDisplay(
-			pointSize: GameDisplaySize(
-				width: Int(screen.frame.width.rounded()), height: Int(screen.frame.height.rounded())
-			),
-			backingScale: max(1, Int(screen.backingScaleFactor.rounded()))
-		)
-	}
+	/// Points the notch covers at the top of the display; zero without a notch.
+	var notchHeight = 0
 
 	package var pixelSize: GameDisplaySize { pointSize.scaled(by: backingScale) }
+
+	/// The content area of a native fullscreen Space, which leaves the notch area empty.
+	package var nativeSpaceContent: GameFullscreenDisplay {
+		GameFullscreenDisplay(
+			pointSize: GameDisplaySize(
+				width: pointSize.width, height: pointSize.height - notchHeight
+			),
+			backingScale: backingScale
+		)
+	}
 
 	// The pixels the game draws to show `shown`: all of them with Retina, otherwise one per
 	// point, which MetalFX or macOS then scales up.
@@ -121,6 +185,16 @@ package struct GameFullscreenDisplay: Equatable, Sendable {
 		guard !retina, backingScale > 1 else { return shown }
 		return GameDisplaySize(
 			width: shown.width / backingScale, height: shown.height / backingScale)
+	}
+}
+
+extension GameFullscreenDisplay {
+	init(screen: GameScreenInfo) {
+		pointSize = GameDisplaySize(
+			width: Int(screen.frameSize.width.rounded()),
+			height: Int(screen.frameSize.height.rounded()))
+		backingScale = max(1, Int(screen.backingScaleFactor.rounded()))
+		notchHeight = Int(screen.notchHeight.rounded())
 	}
 }
 
@@ -135,7 +209,6 @@ package struct GameDisplayPlan: Equatable, Sendable {
 	package let renderSize: GameDisplaySize?
 	/// Game pixels per macOS point; the in-game resolution is a window size times this value.
 	package let gamePixelsPerPoint: Int
-	let backingScale: Int
 	package let scaling: Scaling
 
 	package init(
@@ -143,7 +216,6 @@ package struct GameDisplayPlan: Equatable, Sendable {
 		fullscreenDisplay: GameFullscreenDisplay? = nil
 	) {
 		let backingScale = max(1, Int(backingScaleFactor.rounded()))
-		self.backingScale = backingScale
 		switch (backingScale, options.renderingMode) {
 		case (1, _), (_, .retina): scaling = .native
 		case (_, .metalFX): scaling = .metalFX

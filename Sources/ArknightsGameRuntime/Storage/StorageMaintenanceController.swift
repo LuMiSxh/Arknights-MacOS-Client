@@ -2,32 +2,34 @@
 
 import AppKit
 import ArknightsCore
-import ArknightsCustomization
 import Foundation
 
-/// Owns existing cache measurement and targeted cleanup operations.
+/// Owns targeted cache cleanup and the Finder reveal actions for the app and logs.
 @MainActor
 package final class StorageMaintenanceController {
 	package var onStorageOverviewChanged: (() -> Void)?
 
 	private let lifecycle: LauncherLifecycleStore
 	private let paths: AppPaths
-	private let presetCatalog: PresetCatalogService
+	private let clearGalleryCache: @Sendable () async throws -> Void
 	private let log: LauncherLog
 	private let regionProvider: @MainActor () -> GameRegion
+	private let laneProvider: @MainActor () -> RuntimeLane
 
 	package init(
 		lifecycle: LauncherLifecycleStore,
 		paths: AppPaths,
-		presetCatalog: PresetCatalogService,
+		clearGalleryCache: @escaping @Sendable () async throws -> Void,
 		log: LauncherLog,
-		regionProvider: @escaping @MainActor () -> GameRegion = { .global }
+		regionProvider: @escaping @MainActor () -> GameRegion = { .global },
+		laneProvider: (@MainActor () -> RuntimeLane)? = nil
 	) {
 		self.lifecycle = lifecycle
 		self.paths = paths
-		self.presetCatalog = presetCatalog
+		self.clearGalleryCache = clearGalleryCache
 		self.log = log
 		self.regionProvider = regionProvider
+		self.laneProvider = laneProvider ?? { paths.runtimeLane }
 	}
 
 	@concurrent
@@ -39,19 +41,19 @@ package final class StorageMaintenanceController {
 		guard let lease = lifecycle.begin(.maintaining(.clearingCache)) else { return }
 		let operationID = UUID()
 		let region = regionProvider()
-		let winePrefix = paths.winePrefix(for: region)
+		let winePrefixes = RuntimeLane.allCases.map {
+			paths.winePrefix(for: region, lane: $0)
+		}
 		Task { [weak self, lifecycle = self.lifecycle] in
-			guard let self else {
-				lifecycle.end(lease)
-				return
-			}
+			defer { lifecycle.end(lease) }
+			guard let self else { return }
 			do {
-				try await Self.clearCaches(winePrefix: winePrefix)
-				lifecycle.end(lease)
+				for winePrefix in winePrefixes {
+					try await Self.clearCaches(winePrefix: winePrefix)
+				}
 				onStorageOverviewChanged?()
 				log.info("Shader and browser caches cleared")
 			} catch {
-				lifecycle.end(lease)
 				presentCacheFailure(error, id: operationID, region: region)
 			}
 		}
@@ -76,17 +78,13 @@ package final class StorageMaintenanceController {
 	package func clearPresetGalleryCache() {
 		guard let lease = lifecycle.begin(.maintaining(.clearingCache)) else { return }
 		Task { [weak self, lifecycle = self.lifecycle] in
-			guard let self else {
-				lifecycle.end(lease)
-				return
-			}
+			defer { lifecycle.end(lease) }
+			guard let self else { return }
 			do {
-				try await presetCatalog.clearCaches()
-				lifecycle.end(lease)
+				try await clearGalleryCache()
 				onStorageOverviewChanged?()
 				log.info("Preset gallery caches cleared")
 			} catch {
-				lifecycle.end(lease)
 				lifecycle.show(error)
 			}
 		}
@@ -94,6 +92,15 @@ package final class StorageMaintenanceController {
 
 	package func revealApplication() {
 		NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
+	}
+
+	/// Opens the application support folder, which holds settings, runtimes, and game environments.
+	package func revealApplicationSupport() {
+		let url = paths.applicationSupportRoot
+		log.attempt("Create the application support folder") {
+			try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+		}
+		NSWorkspace.shared.open(url)
 	}
 
 	nonisolated static func logURLs(for paths: AppPaths) -> [URL] {
@@ -108,26 +115,33 @@ package final class StorageMaintenanceController {
 	}
 
 	package func revealLogs() {
+		let publisher = regionProvider().publisher
+		let lane = laneProvider()
 		Task { [log, paths] in
+			await SDKLogCollector.collect(
+				publisher: publisher, paths: paths, lane: lane, log: log)
 			await log.prepare()
 			NSWorkspace.shared.activateFileViewerSelecting(Self.logURLs(for: paths))
 		}
 	}
 
+	/// Refreshes the collected publisher SDK logs before a diagnostics archive reads them.
+	package func refreshSDKLogs() async {
+		await SDKLogCollector.collect(
+			publisher: regionProvider().publisher, paths: paths, lane: laneProvider(), log: log)
+	}
+
 	private func presentCacheFailure(_ error: any Error, id: UUID, region: GameRegion) {
-		let message = launcherUserMessage(for: error)
 		lifecycle.presentFailure(
-			LauncherFailurePresentation(
-				id: id,
-				message: message,
-				code: .basalt,
-				context: SupportContext(
-					operation: .cacheClearing,
-					region: region.supportRegion
-				),
-				actions: [.retry, .openTroubleshooting, .reportProblem]
+			error,
+			id: id,
+			code: .localFileFailed,
+			context: SupportContext(
+				operation: .cacheClearing,
+				region: region.supportRegion
 			),
-			diagnostic: launcherDiagnosticDescription(for: error)
+			canRepair: false,
+			blocksGameLaunch: false
 		)
 	}
 }

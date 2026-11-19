@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import ArknightsTestSupport
 import Darwin
 import Dispatch
 import Foundation
 import Testing
 
+@testable import ArknightsCore
 @testable import ArknightsGameInstallation
 @testable import ArknightsGameRuntime
 @testable import ArknightsLauncherUI
 
-@Test
+@Test(.timeLimit(.minutes(1)))
 func stopReturnsOnlyAfterWineserverWaitReleasesThePrefix() async throws {
 	let storage = try TemporaryDirectory("wine-shutdown")
 	defer { storage.remove() }
@@ -31,14 +33,12 @@ func stopReturnsOnlyAfterWineserverWaitReleasesThePrefix() async throws {
 	)
 	let stop = Task {
 		try await runtime.stop(
-			prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory))
+			prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory),
+			spawnGate: nil)
 	}
 
-	let reachedWait = await waitForFixtureFile(waitingMarker, timeout: .seconds(1))
-	#expect(reachedWait)
-	if reachedWait {
-		#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-w\n")
-	}
+	await waitForFile(at: waitingMarker)
+	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-w\n")
 	// Release the fake wineserver on every path so the stop task can finish.
 	try Data().write(to: releaseMarker)
 	try await stop.value
@@ -65,7 +65,8 @@ func stopIsAuthoritativeWhenKillFindsNoServer(waitStatus: Int32, succeeds: Bool)
 	do {
 		try await runtime.stop(
 			prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory),
-			timeout: .seconds(1)
+			timeout: .seconds(1),
+			spawnGate: nil
 		)
 	} catch {
 		didFail = true
@@ -74,7 +75,7 @@ func stopIsAuthoritativeWhenKillFindsNoServer(waitStatus: Int32, succeeds: Bool)
 	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-w\n")
 }
 
-@Test
+@Test(.timeLimit(.minutes(1)))
 func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 	let storage = try TemporaryDirectory("wine-helper-retirement")
 	defer { storage.remove() }
@@ -98,8 +99,10 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 	)
 	let prefixDirectory = root.appending(path: "prefix", directoryHint: .isDirectory)
 	let spawnGate = WineProcessSpawnGate()
+	let helperPID = root.appending(path: "helper.pid")
 	let script = """
 		trap '' TERM
+		echo $$ > '\(helperPID.path).tmp' && mv '\(helperPID.path).tmp' '\(helperPID.path)'
 		: > '\(started.path)'
 		read ignored < '\(fifo.path)'
 		: > '\(delayedConnection.path)'
@@ -124,12 +127,9 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 			return false
 		}
 	}
-	let helperStarted = await waitForFixtureFile(started, timeout: .seconds(1))
-	#expect(helperStarted)
-	guard helperStarted else {
-		_ = await wait.value
-		return
-	}
+	await waitForFile(at: started)
+	// A failed assertion must not leave the helper blocked on the FIFO.
+	defer { killHelperIfRunning(at: helperPID) }
 	let didTimeOut = await wait.value
 	#expect(didTimeOut)
 	#expect(startedWaiting.duration(to: clock.now) < .seconds(1))
@@ -148,16 +148,40 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n")
 	#expect(!FileManager.default.fileExists(atPath: delayedConnection.path))
 
-	let writer = try FileHandle(forWritingTo: fifo)
-	try writer.write(contentsOf: Data("connect\n".utf8))
-	try writer.close()
-	#expect(await waitForFixtureFile(delayedConnection, timeout: .seconds(1)))
+	// A nonblocking open fails instead of hanging when the helper is no longer reading.
+	let descriptor = fifo.path.withCString { Darwin.open($0, O_WRONLY | O_NONBLOCK) }
+	guard descriptor >= 0 else {
+		Issue.record("The Wine helper stopped reading the FIFO before the test released it.")
+		return
+	}
+	let release = Data("connect\n".utf8)
+	let written = release.withUnsafeBytes {
+		Darwin.write(descriptor, $0.baseAddress, $0.count)
+	}
+	Darwin.close(descriptor)
+	guard written == release.count else {
+		Issue.record("The Wine helper did not receive the FIFO release.")
+		return
+	}
+	await waitForFile(at: delayedConnection)
 	try await runtime.stop(
 		prefixDirectory: prefixDirectory,
 		timeout: .seconds(1),
 		spawnGate: spawnGate
 	)
 	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-k\n-k\n-w\n")
+}
+
+/// Kills the fake Wine helper when a failed assertion left it running.
+private func killHelperIfRunning(at pidFile: URL) {
+	guard
+		let data = FileManager.default.contents(atPath: pidFile.path),
+		let pid = Int32(
+			String(decoding: data, as: UTF8.self)
+				.trimmingCharacters(in: .whitespacesAndNewlines)),
+		Darwin.kill(pid, 0) == 0
+	else { return }
+	_ = Darwin.kill(pid, SIGKILL)
 }
 
 @Test(arguments: [false, true])
@@ -170,10 +194,10 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 	let api = BlockingBrandingAPI()
 	let model = makeModel(api: api, installer: ControllableInstaller())
 	await api.waitForBrandingRequest()
-	let reachedSpawn = DispatchSemaphore(value: 0)
+	let reachedSpawn = Signal()
 	let continueSpawn = DispatchSemaphore(value: 0)
 	let spawnGate = WineProcessSpawnGate {
-		reachedSpawn.signal()
+		reachedSpawn.fire()
 		continueSpawn.wait()
 	}
 	let sessionID = UUID()
@@ -183,19 +207,18 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 		spawnGate: spawnGate
 	)
 	#expect(model.gameSession.sessionLease != nil)
-	let launch = Task.detached {
+	let launch = Task {
 		try await fixture.runtime.launch(
 			gameExecutable: fixture.gameExecutable,
 			prefixDirectory: fixture.prefixDirectory,
 			displayConfiguration: WineDisplayConfiguration(backingScaleFactor: 1),
+			frameRateLimit: GameLaunchOptions.default.frameRateLimit,
 			logURL: fixture.logURL,
 			spawnGate: spawnGate
 		)
 	}
 
-	let arrived = await Task.detached {
-		waitForSemaphore(reachedSpawn, timeout: .now() + 2)
-	}.value
+	let arrived = await reachedSpawn.wait(timeout: .seconds(2))
 	#expect(arrived)
 	if !arrived {
 		continueSpawn.signal()
@@ -228,20 +251,6 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 		#expect(!FileManager.default.fileExists(atPath: fixture.helperSpawnMarker.path))
 	}
 	await api.resolveBranding()
-}
-
-private func waitForSemaphore(_ semaphore: DispatchSemaphore, timeout: DispatchTime) -> Bool {
-	semaphore.wait(timeout: timeout) == .success
-}
-
-private func waitForFixtureFile(_ url: URL, timeout: Duration) async -> Bool {
-	let clock = ContinuousClock()
-	let deadline = clock.now.advanced(by: timeout)
-	while clock.now < deadline {
-		if FileManager.default.fileExists(atPath: url.path) { return true }
-		try? await Task.sleep(for: .milliseconds(10))
-	}
-	return FileManager.default.fileExists(atPath: url.path)
 }
 
 /// Writes an executable fake `wineserver` into `root/Runtime/bin` and returns a runtime that uses it.

@@ -23,35 +23,38 @@ extension EnvironmentValues {
 package struct SectionPageHeader: View {
 	let title: String
 	let subtitle: String
-	package let accentColor: Color
 	var fixesSubtitleHeight = false
+	@Environment(\.launcherTheme) private var theme
 
 	package init(
 		title: String,
 		subtitle: String,
-		accentColor: Color,
 		fixesSubtitleHeight: Bool = false
 	) {
 		self.title = title
 		self.subtitle = subtitle
-		self.accentColor = accentColor
 		self.fixesSubtitleHeight = fixesSubtitleHeight
 	}
 
 	package var body: some View {
-		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			Text(title)
-				.font(.largeTitle.bold())
+				.font(LauncherTokens.Typography.pageTitle)
+				.foregroundStyle(theme.textPrimary)
 			Text(subtitle)
-				.foregroundStyle(.secondary)
+				.font(.body)
+				.foregroundStyle(theme.textSecondary)
 				.fixedSize(horizontal: false, vertical: fixesSubtitleHeight)
-			HStack(spacing: LauncherVisuals.Spacing.control) {
-				Rectangle().fill(accentColor).frame(width: 72, height: 3)
-				Rectangle().fill(.secondary.opacity(0.28))
+			HStack(spacing: LauncherTokens.Spacing.control) {
+				Rectangle().fill(theme.accentFill)
+					.frame(
+						width: LauncherTokens.Layout.sectionAccentRuleWidth,
+						height: LauncherTokens.Layout.sectionAccentRuleHeight)
+				Rectangle().fill(theme.hairline)
 					.frame(height: 1)
 					.frame(maxWidth: .infinity)
 			}
-			.padding(.top, LauncherVisuals.Spacing.tight)
+			.padding(.top, LauncherTokens.Spacing.control)
 		}
 	}
 }
@@ -59,18 +62,15 @@ package struct SectionPageHeader: View {
 package struct SettingsPage<Content: View>: View {
 	let title: String
 	let subtitle: String
-	package let accentColor: Color
 	@ViewBuilder package let content: Content
 
 	package init(
 		title: String,
 		subtitle: String,
-		accentColor: Color,
 		@ViewBuilder content: () -> Content
 	) {
 		self.title = title
 		self.subtitle = subtitle
-		self.accentColor = accentColor
 		self.content = content()
 	}
 
@@ -80,17 +80,17 @@ package struct SettingsPage<Content: View>: View {
 	package var body: some View {
 		ScrollViewReader { proxy in
 			ScrollView {
-				VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.section) {
-					SectionPageHeader(title: title, subtitle: subtitle, accentColor: accentColor)
+				VStack(alignment: .leading, spacing: LauncherTokens.Spacing.section) {
+					SectionPageHeader(title: title, subtitle: subtitle)
 					content
 				}
-				.padding(.horizontal, LauncherVisuals.Spacing.page)
-				.padding(.top, LauncherVisuals.Spacing.page)
+				.padding(.horizontal, LauncherTokens.Spacing.page)
+				.padding(.top, LauncherTokens.Spacing.page)
 				.environment(\.settingsFocusCoordinator, focusCoordinator)
 			}
-			.contentMargins(.top, LauncherVisuals.Spacing.page, for: .scrollIndicators)
-			.contentMargins(.bottom, 22, for: .scrollIndicators)
-			.scrollIndicators(.automatic)
+			// The single scroll margin for settings: the indicator stops short of the rounded edge.
+			.contentMargins(.vertical, 16, for: .scrollIndicators)
+			.scrollIndicators(.visible)
 			.onChange(of: focusCoordinator.focusedID) { _, focusedID in
 				guard let focusedID else { return }
 				if reduceMotion {
@@ -105,82 +105,102 @@ package struct SettingsPage<Content: View>: View {
 	}
 }
 
+/// Marks a `SettingsHairline` so its `SettingsPanel` can drop it from the row list.
+private struct SettingsRuleKey: ContainerValueKey {
+	static let defaultValue = false
+}
+
+/// True inside a `SettingsPanel`, which already insets each child by 12 pt horizontally and 10 pt vertically.
+private struct SettingsPanelRowsKey: EnvironmentKey {
+	static let defaultValue = false
+}
+
+extension ContainerValues {
+	fileprivate var settingsRule: Bool {
+		get { self[SettingsRuleKey.self] }
+		set { self[SettingsRuleKey.self] = newValue }
+	}
+}
+
+extension EnvironmentValues {
+	fileprivate var settingsPanelRows: Bool {
+		get { self[SettingsPanelRowsKey.self] }
+		set { self[SettingsPanelRowsKey.self] = newValue }
+	}
+}
+
 /// A subtle row separator matching the nav rail's hairline, used instead of the stock
 /// `Divider()` inside glass panels so rows read as one soft surface, not a bordered form.
+/// Inside a `SettingsPanel` the panel drops this view and draws the divider itself.
 package struct SettingsHairline: View {
+	@Environment(\.launcherTheme) private var theme
 	package init() {}
 	package var body: some View {
 		Rectangle()
-			.fill(LauncherVisuals.hairline)
-			.frame(height: LauncherVisuals.Spacing.hairline)
+			.fill(theme.rowDivider)
+			.frame(height: LauncherTokens.Spacing.hairline)
+			.containerValue(\.settingsRule, true)
 	}
 }
 
 package struct SettingsPanel<Content: View>: View {
 	let title: String
-	let systemImage: String
+
 	var tone: SettingsPanelTone = .neutral
 	var isExpanded: Binding<Bool>?
 	@ViewBuilder package let content: Content
 
 	package init(
 		title: String,
-		systemImage: String,
 		tone: SettingsPanelTone = .neutral,
 		isExpanded: Binding<Bool>? = nil,
 		@ViewBuilder content: () -> Content
 	) {
 		self.title = title
-		self.systemImage = systemImage
+
 		self.tone = tone
 		self.isExpanded = isExpanded
 		self.content = content()
 	}
 
-	@Environment(\.colorSchemeContrast) private var contrast
-	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-	@Environment(\.accessibilityShowBorders) private var showBorders
+	@Environment(\.launcherTheme) private var theme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	package var body: some View {
-		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.content) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			header
 			if isExpanded?.wrappedValue ?? true {
-				content
+				VStack(spacing: 0) {
+					Group(subviews: content) { subviews in
+						// Explicit hairlines are dropped here: the panel draws the one divider between rows.
+						let rows = subviews.filter { !$0.containerValues.settingsRule }
+						ForEach(rows.indices, id: \.self) { index in
+							if index > 0 {
+								Rectangle().fill(theme.rowDivider)
+									.frame(height: 1)
+									.padding(.horizontal, LauncherTokens.Spacing.content)
+							}
+							rows[index]
+								.frame(maxWidth: .infinity, alignment: .leading)
+								.padding(.horizontal, LauncherTokens.Spacing.content)
+								.padding(
+									.vertical, LauncherTokens.ControlPadding.settingsRowVertical)
+						}
+					}
+				}
+				.environment(\.settingsPanelRows, true)
+				.launcherSurface(.group)
 			}
 		}
-		.padding(LauncherVisuals.Spacing.panel)
 		.frame(maxWidth: .infinity, alignment: .leading)
-		.adaptiveGlassEffect(
-			tint: nil,
-			borderTint: tone.color(for: contrast),
-			in: .rect(cornerRadius: LauncherVisuals.Radius.panel),
-			showsBorder: false
-		)
-		.overlay {
-			if ownsPanelEdge {
-				RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
-					.strokeBorder(
-						tone.border(for: contrast), lineWidth: LauncherVisuals.Control.borderWidth
-					)
-					.allowsHitTesting(false)
-			}
-		}
-	}
-
-	private var ownsPanelEdge: Bool {
-		AdaptiveGlassSurfaceTreatment.ownsExternalBorder(
-			reduceTransparency: reduceTransparency,
-			showBorders: showBorders
-		)
 	}
 
 	@ViewBuilder
 	private var header: some View {
-		let label = Label(title, systemImage: systemImage)
-			.font(.headline)
-			.foregroundStyle(tone.color(for: contrast))
-			.symbolRenderingMode(.hierarchical)
+		let label = Text(title)
+			.font(LauncherTokens.Typography.sectionLabel)
+			.foregroundStyle(tone == .neutral ? theme.textSecondary : tone.color(in: theme))
+			.padding(.leading, LauncherTokens.Spacing.content)
 		if let isExpanded {
 			Button {
 				withAnimation(LauncherMotion.animation(.state, reduceMotion: reduceMotion)) {
@@ -191,18 +211,22 @@ package struct SettingsPanel<Content: View>: View {
 					label
 					Spacer(minLength: 0)
 					Image(systemName: "chevron.right")
-						.font(.caption.weight(.semibold))
-						.foregroundStyle(.secondary)
+						.font(.caption.weight(.medium))
+						.foregroundStyle(theme.textSecondary)
 						.rotationEffect(.degrees(isExpanded.wrappedValue ? 90 : 0))
 						.accessibilityHidden(true)
 				}
+				.padding(.trailing, LauncherTokens.Spacing.content)
+				.padding(.top, LauncherTokens.Spacing.section)
 				.contentShape(.rect)
 			}
 			.buttonStyle(.plain)
-			.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row))
+			.keyboardFocusIndicator(
+				in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.control)
+			)
 			.accessibilityValue(isExpanded.wrappedValue ? "Expanded" : "Collapsed")
 		} else {
-			label
+			label.padding(.top, LauncherTokens.Spacing.section)
 		}
 	}
 }
@@ -213,32 +237,12 @@ package enum SettingsPanelTone {
 	case warning
 	case danger
 
-	var color: Color {
+	func color(in theme: LauncherTheme) -> Color {
 		return switch self {
 		case .neutral: .primary
-		case .success: LauncherVisuals.success
-		case .warning: LauncherVisuals.warning
-		case .danger: LauncherVisuals.dangerForeground
-		}
-	}
-
-	func color(for contrast: ColorSchemeContrast) -> Color {
-		if case .danger = self, contrast == .increased {
-			return LauncherVisuals.dangerForegroundHighContrast
-		}
-		return color
-	}
-
-	func border(for contrast: ColorSchemeContrast) -> Color {
-		let opacity =
-			contrast == .increased
-			? LauncherVisuals.Control.semanticBorderHighContrastOpacity
-			: LauncherVisuals.Control.semanticBorderOpacity
-		return switch self {
-		case .neutral: LauncherVisuals.panelBorder
-		case .success: LauncherVisuals.success.opacity(opacity)
-		case .warning: LauncherVisuals.warning.opacity(opacity)
-		case .danger: LauncherVisuals.dangerForeground.opacity(opacity)
+		case .success: theme.successInk
+		case .warning: theme.warningInk
+		case .danger: theme.dangerText
 		}
 	}
 }
@@ -247,13 +251,13 @@ package struct DangerZonePanel<Content: View>: View {
 	let title: String
 	@ViewBuilder package let content: Content
 
-	package init(title: String = "Danger Zone", @ViewBuilder content: () -> Content) {
+	package init(title: String = "Danger zone", @ViewBuilder content: () -> Content) {
 		self.title = title
 		self.content = content()
 	}
 
 	package var body: some View {
-		SettingsPanel(title: title, systemImage: "exclamationmark.triangle.fill", tone: .danger) {
+		SettingsPanel(title: title, tone: .danger) {
 			content
 		}
 	}
@@ -261,44 +265,54 @@ package struct DangerZonePanel<Content: View>: View {
 
 package struct UpdateSettingsRow: View {
 	let title: String
+	let explanation: String
 	package let status: String
 	@Binding package var isEnabled: Bool
 	let isChecking: Bool
 	var isDisabled = false
-	package let accentColor: Color
 	package let check: () -> Void
 
 	package init(
 		title: String,
+		explanation: String,
 		status: String,
 		isEnabled: Binding<Bool>,
 		isChecking: Bool,
 		isDisabled: Bool = false,
-		accentColor: Color,
 		check: @escaping () -> Void
 	) {
 		self.title = title
+		self.explanation = explanation
 		self.status = status
 		self._isEnabled = isEnabled
 		self.isChecking = isChecking
 		self.isDisabled = isDisabled
-		self.accentColor = accentColor
 		self.check = check
 	}
 
 	package var body: some View {
-		SettingsActionRow(title: title, detail: status) {
-			HStack(spacing: LauncherVisuals.Spacing.control) {
-				SettingsToggle(title, isOn: $isEnabled, accentColor: accentColor)
+		SettingsActionRow(title: title, detail: "\(explanation)\n\(status)") {
+			HStack(spacing: LauncherTokens.Spacing.control) {
+				SettingsToggle(title, isOn: $isEnabled)
 					.disabled(isDisabled)
-				CapsuleActionButton(
-					title: "Check Now",
-					tone: .accent(accentColor),
-					presentation: .compact,
-					action: check
-				)
-				.disabled(isChecking || isDisabled)
+				checkButton
 			}
+		}
+	}
+
+	/// A hidden "Checking…" sets the width of both labels, so the button keeps its size while busy.
+	private var checkButton: some View {
+		ZStack {
+			CapsuleActionButton(title: "Checking…", tone: .neutral, presentation: .compact) {}
+				.hidden()
+				.accessibilityHidden(true)
+			CapsuleActionButton(
+				title: isChecking ? "Checking…" : "Check Now",
+				tone: .neutral,
+				presentation: .compact,
+				action: check
+			)
+			.disabled(isChecking || isDisabled)
 		}
 	}
 }
@@ -307,29 +321,38 @@ package struct SettingsActionRow<Actions: View>: View {
 	let title: String
 	let detail: String?
 	var help: String?
+	var badge: String?
+	var secondaryDetail: String?
 	@ViewBuilder package let actions: Actions
+	@Environment(\.settingsPanelRows) private var isInSettingsPanel
+	@Environment(\.launcherTheme) private var theme
 
 	package init(
 		title: String,
 		detail: String? = nil,
 		help: String? = nil,
+		badge: String? = nil,
+		secondaryDetail: String? = nil,
 		@ViewBuilder actions: () -> Actions
 	) {
 		self.title = title
 		self.detail = detail
 		self.help = help
+		self.badge = badge
+		self.secondaryDetail = secondaryDetail
 		self.actions = actions()
 	}
 
 	package var body: some View {
 		ViewThatFits(in: .horizontal) {
-			HStack(spacing: LauncherVisuals.Spacing.section) {
+			HStack(spacing: LauncherTokens.Spacing.section) {
+				// A small ideal width lets a long detail wrap beside the action instead of dropping below.
 				label
-					.frame(maxWidth: .infinity, alignment: .leading)
+					.frame(minWidth: 0, idealWidth: 240, maxWidth: .infinity, alignment: .leading)
 					.layoutPriority(1)
 				actionGroup
 			}
-			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 				label
 				HStack {
 					Spacer(minLength: 0)
@@ -337,23 +360,43 @@ package struct SettingsActionRow<Actions: View>: View {
 				}
 			}
 		}
+		.padding(.horizontal, isInSettingsPanel ? 0 : 12)
+		.padding(.vertical, isInSettingsPanel ? 0 : 10)
+		.frame(minHeight: 40)
 	}
 
 	@ViewBuilder
 	private var actionGroup: some View {
-		HStack(spacing: LauncherVisuals.Spacing.control) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			actions.fixedSize(horizontal: true, vertical: false)
 		}
 	}
 
 	@ViewBuilder
 	private var label: some View {
-		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
-			Text(title)
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
+				Text(title)
+					.foregroundStyle(theme.textPrimary)
+				if let badge {
+					Text(badge)
+						.font(.caption2.weight(.medium))
+						.foregroundStyle(theme.textSecondary)
+						.padding(.horizontal, LauncherTokens.Spacing.control)
+						.padding(.vertical, LauncherTokens.Spacing.compact)
+						.background(Capsule().fill(theme.controlFill))
+				}
+			}
 			if let detail {
 				Text(detail)
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
+					.fixedSize(horizontal: false, vertical: true)
+			}
+			if let secondaryDetail {
+				Text(secondaryDetail)
+					.font(.caption2)
+					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}
 		}

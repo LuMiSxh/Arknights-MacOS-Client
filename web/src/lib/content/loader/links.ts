@@ -37,17 +37,25 @@ function isUnsupportedScheme(href: string): boolean {
 	return href.startsWith('//') || /^[a-z][a-z\d+.-]*:/i.test(href);
 }
 
+/** Attach the fragment only when present, so `exactOptionalPropertyTypes` holds. */
+function withFragment(
+	target: LinkTarget,
+	fragment: string | undefined
+): LinkTarget {
+	return fragment === undefined ? target : { ...target, fragment };
+}
+
 function linkTarget(source: string, href: string): LinkTarget {
 	const { path, fragment } = splitHref(href);
 	if (isExternal(href)) return { external: href };
 	if (isUnsupportedScheme(href)) return { unsafe: href };
-	if (!path) return { key: source, fragment };
+	if (!path) return withFragment({ key: source }, fragment);
 	if (path.startsWith('/')) {
 		const route = path.replace(/\/{2,}/g, '/');
-		return {
-			route: siteRoute(route.endsWith('/') ? route : `${route}/`),
+		return withFragment(
+			{ route: siteRoute(route.endsWith('/') ? route : `${route}/`) },
 			fragment
-		};
+		);
 	}
 
 	const sourceRepositoryPath =
@@ -55,16 +63,20 @@ function linkTarget(source: string, href: string): LinkTarget {
 	const targetRepositoryPath = posix.normalize(
 		posix.join(posix.dirname(sourceRepositoryPath), decodePath(path))
 	);
-	if (targetRepositoryPath === 'README.md') return { route: '/', fragment };
+	if (targetRepositoryPath === 'README.md')
+		return withFragment({ route: '/' }, fragment);
 	if (targetRepositoryPath === 'CHANGELOG.md')
-		return { route: '/changelog/', fragment };
+		return withFragment({ route: '/changelog/' }, fragment);
 	if (targetRepositoryPath.startsWith('docs/')) {
 		if (!targetRepositoryPath.toLowerCase().endsWith('.md')) {
 			return {
 				external: `${repositoryUrl}/blob/main/${targetRepositoryPath}${fragment ? `#${fragment}` : ''}`
 			};
 		}
-		return { key: targetRepositoryPath.slice('docs/'.length), fragment };
+		return withFragment(
+			{ key: targetRepositoryPath.slice('docs/'.length) },
+			fragment
+		);
 	}
 	if (
 		!targetRepositoryPath.startsWith('../') &&
@@ -74,7 +86,7 @@ function linkTarget(source: string, href: string): LinkTarget {
 			external: `${repositoryUrl}/blob/main/${targetRepositoryPath}${fragment ? `#${fragment}` : ''}`
 		};
 	}
-	return { fragment };
+	return withFragment({}, fragment);
 }
 
 function resolvedHref(
@@ -102,9 +114,12 @@ export function renderSourceDocuments(
 		const titleHeading = /^\s*#\s+([^\r\n]+)(?:\r?\n|$)/.exec(
 			document.body
 		);
+		const headingTitle = titleHeading?.[1]?.trim();
+		const headingLine = titleHeading?.[0];
 		const websiteBody =
-			titleHeading?.[1].trim() === document.metadata.title
-				? document.body.slice(titleHeading[0].length)
+			headingLine !== undefined &&
+			headingTitle === document.metadata.title
+				? document.body.slice(headingLine.length)
 				: document.body;
 		document.rendered = renderMarkdown(document.source, websiteBody, {
 			source: document.relative,
@@ -132,6 +147,7 @@ export function validateLinks(
 	sourceRoutes: Map<string, SiteRoute>,
 	renderedBySource: Map<string, ContentDocument>
 ): void {
+	const knownRoutes = new Set(sourceRoutes.values());
 	for (const href of collectMarkdownLinks(document.body)) {
 		if (isExternal(href)) continue;
 		if (href.startsWith('//')) {
@@ -158,7 +174,7 @@ export function validateLinks(
 				target.route !== '/changelog/' &&
 				target.route !== '/privacy/' &&
 				target.route !== '/' &&
-				![...sourceRoutes.values()].includes(target.route)
+				!knownRoutes.has(target.route)
 			) {
 				throw new ContentError(
 					document.source,

@@ -6,123 +6,183 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct LauncherPrimaryActionView: View {
-	package let installation: InstallationController
-	let gameSession: GameSessionController
-	package let intelTranslation: IntelTranslationController
-	package let accentColor: Color
-	package let installOrUpdate: () -> Void
-	package let cancelDownload: () -> Void
-	package let launch: () -> Void
-	package let stopGame: () -> Void
+	let presentation: LauncherPrimaryActionPresentation
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
 		CapsuleActionButton(
-			title: actionTitle,
-			systemImage: actionImage,
-			tone: actionTone,
+			title: presentation.title,
+			systemImage: presentation.systemImage,
+			tone: presentation.tone,
 			labelMotion: .primary,
-			action: action
+			action: presentation.action
 		)
 		.controlSize(.large)
 		.accentHalo(
-			tint: accentColor,
 			// The halo is the only ambient effect and shows only for an enabled Play.
-			isActive: actionKind == .play && !actionIsDisabled,
+			isActive: presentation.kind == .play && !presentation.isDisabled,
 			in: Capsule()
 		)
-		.disabled(actionIsDisabled)
+		.disabled(presentation.isDisabled)
 		.animation(
 			LauncherMotion.animation(.morph, reduceMotion: reduceMotion),
-			value: actionKind
+			value: presentation.kind
 		)
-		.help(actionHelp)
-		.accessibilityHint(actionHelp)
+		.help(presentation.help)
+		.accessibilityHint(presentation.help)
+	}
+}
+
+/// The Home primary action's state machine: the kind and every display value it drives.
+struct LauncherPrimaryActionPresentation {
+	enum Kind: CaseIterable {
+		case stop
+		case pause
+		case install
+		case update
+		case runtime
+		case play
 	}
 
-	private var action: () -> Void {
-		switch actionKind {
+	let kind: Kind
+	let installOrUpdate: () -> Void
+	let cancelDownload: () -> Void
+	let installRuntime: () -> Void
+	let launch: () -> Void
+	let stopGame: () -> Void
+
+	private let hasPartialDownload: Bool
+	private let regionDisplayName: String
+	private let intelTranslationDetail: String?
+	private let canStopGame: Bool
+	private let canInstall: Bool
+	private let runtimeIsInstalling: Bool
+	private let runtimeState: RuntimeLaneState
+	private let isIdle: Bool
+	private let canLaunch: Bool
+
+	init(
+		installation: InstallationController,
+		gameSession: GameSessionController,
+		intelTranslation: IntelTranslationController,
+		runtimeSelection: RuntimeSelectionController,
+		lifecycle: LauncherLifecycleStore,
+		installOrUpdate: @escaping () -> Void,
+		cancelDownload: @escaping () -> Void,
+		installRuntime: @escaping () -> Void,
+		launch: @escaping () -> Void,
+		stopGame: @escaping () -> Void
+	) {
+		self.kind = Self.kind(
+			gameSession: gameSession,
+			installation: installation,
+			runtimeSelection: runtimeSelection
+		)
+		self.installOrUpdate = installOrUpdate
+		self.cancelDownload = cancelDownload
+		self.installRuntime = installRuntime
+		self.launch = launch
+		self.stopGame = stopGame
+		self.hasPartialDownload = installation.hasPartialDownload
+		self.regionDisplayName = installation.region.displayName
+		self.intelTranslationDetail = intelTranslation.statusDetail
+		self.canStopGame = gameSession.canStopGame
+		self.canInstall = installation.canInstall
+		self.runtimeIsInstalling = runtimeSelection.isInstalling
+		self.runtimeState = runtimeSelection.selectedLaneState
+		self.isIdle = lifecycle.activity == .idle
+		self.canLaunch = gameSession.canLaunch
+	}
+
+	var action: () -> Void {
+		switch kind {
 		case .stop: stopGame
 		case .pause: cancelDownload
 		case .install, .update: installOrUpdate
+		case .runtime: installRuntime
 		case .play: launch
 		}
 	}
 
-	private var actionTitle: String {
-		switch actionKind {
+	var title: String {
+		switch kind {
 		case .stop: "Stop"
 		case .pause: "Pause"
-		case .install:
-
-			installation.hasPartialDownload
-				? "Resume" : "Install"
-
+		case .install: hasPartialDownload ? "Resume" : "Install"
 		case .update: "Update"
+		case .runtime:
+			switch runtimeState {
+			case .outdated: "Update Runtime"
+			case .notInstalled, .current: "Set Up Runtime"
+			}
 		case .play: "Play"
 		}
 	}
 
-	private var actionImage: String {
-		switch actionKind {
+	var systemImage: String {
+		switch kind {
 		case .stop: "stop.fill"
 		case .pause: "pause.fill"
-		case .install: installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
+		case .install: hasPartialDownload ? "arrow.clockwise" : "arrow.down"
 		case .update: "arrow.down"
+		case .runtime:
+			switch runtimeState {
+			case .outdated: "arrow.down"
+			case .notInstalled, .current: "shippingbox"
+			}
 		case .play: "play.fill"
 		}
 	}
 
-	private var actionTone: CapsuleActionTone {
-		switch actionKind {
+	var tone: CapsuleActionTone {
+		switch kind {
 		case .stop, .pause: .neutral
-		case .install, .update, .play: .accent(accentColor)
+		case .install, .update, .runtime, .play: .accent
 		}
 	}
 
-	private var actionIsDisabled: Bool {
-		switch actionKind {
-		case .stop: !gameSession.canStopGame
+	var isDisabled: Bool {
+		switch kind {
+		case .stop: !canStopGame
 		case .pause: false
-		case .install, .update: !installation.canInstall
-		case .play: !gameSession.canLaunch
+		case .install, .update: !canInstall
+		case .runtime: runtimeIsInstalling || !isIdle
+		case .play: !canLaunch
 		}
 	}
 
-	private var actionHelp: String {
-		switch actionKind {
-		case .stop: return "Stop Arknights and its Windows runtime"
-		case .pause: return "Pause the download; it resumes from partial files later"
+	var help: String {
+		switch kind {
+		case .stop: return "Stop Arknights"
+		case .pause: return "Pause the download. You can resume it later."
 		case .install:
-			if installation.hasPartialDownload {
-				return "Continue downloading from the partial files"
+			if hasPartialDownload {
+				return "Resume the download"
 			}
-			return
-				"Download and verify the official \(installation.region.displayName) PC files"
-
+			return "Download and verify the official \(regionDisplayName) PC files"
 		case .update: return "Download the changed game files"
-		case .play: return intelTranslation.statusDetail ?? "Start Arknights"
+		case .runtime:
+			switch runtimeState {
+			case .outdated:
+				return "Download the runtime update this launcher release requires."
+			case .notInstalled, .current:
+				return "Download the runtime for this Mac. Arknights needs it to start."
+			}
+		case .play: return intelTranslationDetail ?? "Start Arknights"
 		}
 	}
 
-	private var actionKind: ActionKind {
+	private static func kind(
+		gameSession: GameSessionController,
+		installation: InstallationController,
+		runtimeSelection: RuntimeSelectionController
+	) -> Kind {
 		if gameSession.isGameActive { return .stop }
 		if installation.isDownloading { return .pause }
 		if installation.hasPartialDownload { return .install }
 		if !installation.isInstalled { return .install }
 		if installation.isGameUpdateAvailable { return .update }
+		if !runtimeSelection.isSelectedLaneInstalled { return .runtime }
 		return .play
-	}
-
-	private typealias ActionKind = LauncherPrimaryActionPresentation.Kind
-}
-
-nonisolated enum LauncherPrimaryActionPresentation {
-	nonisolated enum Kind: CaseIterable {
-		case stop
-		case pause
-		case install
-		case update
-		case play
 	}
 }

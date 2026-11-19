@@ -9,6 +9,7 @@ package struct PresetGalleryView: View {
 	let destination: PresetGalleryDestination
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
 	@State private var searchText = ""
 	@State private var committedTags: [String] = []
 	@State private var selectedCategory: WallpaperCategory?
@@ -45,11 +46,10 @@ package struct PresetGalleryView: View {
 					avatars: avatars,
 					showsIconStylePreview: $showsIconStylePreview
 				)
-				Divider().overlay(Color.white.opacity(0.08))
-				HStack(spacing: 10) {
+				Divider().overlay(theme.hairline)
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					PresetGallerySearchBar(
 						destination: destination,
-						accentColor: customization.accentColor,
 						searchText: $searchText,
 						committedTags: $committedTags
 					)
@@ -57,7 +57,6 @@ package struct PresetGalleryView: View {
 					if destination == .artwork {
 						WallpaperCategoryFilter(
 							selection: $selectedCategory,
-							accentColor: customization.accentColor,
 							counts: searchResults.wallpaperCategoryCounts,
 							operatorCounts: searchResults.operatorCounts,
 							onSelectOperator: { tag in
@@ -66,11 +65,10 @@ package struct PresetGalleryView: View {
 						)
 					}
 				}
-				.padding(.horizontal, 24)
-				.padding(.vertical, 14)
+				.padding(.horizontal, LauncherTokens.Spacing.page)
+				.padding(.vertical, LauncherTokens.Spacing.panel)
 				PresetGallerySuggestions(
 					destination: destination,
-					accentColor: customization.accentColor,
 					avatars: hasSearchQuery ? searchResults.filteredAvatars : [],
 					wallpaperTerms: hasSearchQuery ? searchResults.wallpaperTerms : []
 				) { selection in
@@ -79,7 +77,7 @@ package struct PresetGalleryView: View {
 						? PresetSearch.applyingSuggestion(selection, to: searchText)
 						: selection
 				}
-				.padding(.horizontal, 24)
+				.padding(.horizontal, LauncherTokens.Spacing.page)
 				ScrollView {
 					Group {
 						if isLoading {
@@ -91,7 +89,6 @@ package struct PresetGalleryView: View {
 							} else {
 								PresetWallpaperGrid(
 									catalog: catalog,
-									accentColor: customization.accentColor,
 									wallpapers: searchResults.filteredWallpapers,
 									applyingItemID: applyingItemID,
 									onSelect: applyWallpaper
@@ -105,7 +102,6 @@ package struct PresetGalleryView: View {
 							} else {
 								PresetAvatarGrid(
 									catalog: catalog,
-									accentColor: customization.accentColor,
 									avatars: searchResults.filteredAvatars,
 									applyingItemID: applyingItemID,
 									onSelect: applyAvatar
@@ -113,29 +109,34 @@ package struct PresetGalleryView: View {
 							}
 						}
 					}
-					.padding(.horizontal, 24)
-					.padding(.bottom, 64)
+					.padding(.horizontal, LauncherTokens.Spacing.page)
+					.padding(.bottom, LauncherTokens.Spacing.galleryFooterInset)
 				}
-				.contentMargins(.top, 8, for: .scrollIndicators)
-				.contentMargins(.bottom, 24, for: .scrollIndicators)
+				.contentMargins(.top, LauncherTokens.Spacing.control, for: .scrollIndicators)
+				.contentMargins(.bottom, LauncherTokens.Spacing.page, for: .scrollIndicators)
 			}
-			FloatingActionFooterFade(height: 56)
-			FloatingActionBar(tint: customization.hudTintColor) {
-				FloatingDoneButton(accentColor: customization.accentColor) {
+			FloatingActionFooterFade(height: LauncherTokens.Layout.footerFadeHeight)
+			FloatingActionBar {
+				FloatingDoneButton {
 					dismiss()
 				}
 			}
-			.padding(.trailing, 24)
-			.padding(.bottom, 18)
+			.padding(.trailing, LauncherTokens.Spacing.page)
+			.padding(.bottom, LauncherTokens.Spacing.panel)
 		}
-		.frame(width: 760, height: 570)
+		.frame(
+			width: LauncherTokens.Layout.modalWidth,
+			height: LauncherTokens.Layout.presetGalleryModalHeight
+		)
+		// The sheet is key while it is open, so the presenting window's theme reads as inactive.
+		// Resolving the theme here, in the sheet's own window, keeps the accent.
+		.launcherTheme(accent: customization.accentColor)
 		.background(
 			ZStack {
-				LauncherVisuals.modalBackground
-				customization.hudTintColor
+				theme.modalTint
+				theme.modalDim
 			}
 		)
-		.preferredColorScheme(.dark)
 		.animation(
 			LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion),
 			value: customization.dynamicThemeHue
@@ -307,7 +308,8 @@ package struct PresetGalleryView: View {
 		let taskDestination = destination
 		Task {
 			do {
-				let data = try await catalog.imageData(for: url, cacheKey: id)
+				let data = try await catalog.imageData(
+					for: url, cacheKey: id, priority: .interactive)
 				guard isCurrentApplication(id: id, destination: taskDestination) else { return }
 				await apply(data)
 				guard isCurrentApplication(id: id, destination: taskDestination) else { return }

@@ -30,7 +30,7 @@ package struct BundledResource: Hashable, Sendable {
 		case deflate
 	}
 
-	/// The path below the resource root, for example `SupportArticles/sepia.md`.
+	/// The path below the resource root, for example `SupportArticles/rt-set.md`.
 	package let path: String
 	let kind: Kind
 	let origin: Origin
@@ -65,7 +65,6 @@ extension BundledResource {
 	package static let runtimeConfiguration = BundledResource(file: "RUNTIME.json", origin: .app)
 	static let supportArticles = BundledResource(directory: "SupportArticles", origin: .app)
 	package static let compatibility = BundledResource(directory: "Compatibility", origin: .app)
-	package static let runtime = BundledResource(directory: "Runtime", origin: .app)
 
 	package static let wallpaperTags = BundledResource(file: "WallpaperTags.json", origin: .package)
 	package static let appIconTintSource = BundledResource(
@@ -74,10 +73,4 @@ extension BundledResource {
 		file: "GameIconBackground.png", origin: .package)
 	package static let operatorIconFrame = BundledResource(
 		file: "OperatorIconFrame.svg", origin: .package)
-
-	static let all: [BundledResource] = [
-		.projectLicense, .changelog, .thirdPartyNotices, .runtimeConfiguration,
-		.supportArticles, .compatibility, .runtime,
-		.wallpaperTags, .appIconTintSource, .gameIconBackground, .operatorIconFrame,
-	]
 }

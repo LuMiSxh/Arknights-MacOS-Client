@@ -50,7 +50,7 @@ A repository administrator completes these steps once.
 1. Add the repository secret `GEMINI_API_KEY`.
 2. Open **Settings > Actions > General**. Under **Workflow permissions**, select **Allow GitHub Actions to create and approve pull requests**.
 
-Pull requests that the default `GITHUB_TOKEN` opens do not start other workflows. Checks do not run on the tagging pull request until a person closes and reopens it.
+Pull requests that the default `GITHUB_TOKEN` opens do not start other workflows. The scan therefore dispatches the CI workflow on the tagging branch after it opens the pull request. That run supplies the required check.
 
 Keep the file at this path. Released launchers fetch it from `main` by this location.
 

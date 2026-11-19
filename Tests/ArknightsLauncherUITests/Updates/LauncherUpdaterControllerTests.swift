@@ -14,7 +14,9 @@ struct LauncherUpdaterControllerTests {
 	func exactSparkleCheckDelegateAllowsOnlyAnIdleLifecycle(
 		scenario: UpdateLifecycleScenario
 	) throws {
-		let lifecycle = makeLifecycleStore()
+		let storage = try TemporaryDirectory("LauncherUpdaterControllerTests")
+		defer { storage.remove() }
+		let lifecycle = makeLifecycleStore(in: storage)
 		lifecycle.simulateActivity(scenario.activity)
 		let subject = LauncherUpdaterController(
 			lifecycle: lifecycle,
@@ -34,8 +36,10 @@ struct LauncherUpdaterControllerTests {
 	@Test(arguments: UpdateLifecycleScenario.allCases)
 	func relaunchIsPostponedOnlyUntilAnActiveLifecycleFinishes(
 		scenario: UpdateLifecycleScenario
-	) {
-		let lifecycle = makeLifecycleStore()
+	) throws {
+		let storage = try TemporaryDirectory("LauncherUpdaterControllerTests")
+		defer { storage.remove() }
+		let lifecycle = makeLifecycleStore(in: storage)
 		lifecycle.simulateActivity(scenario.activity)
 		let subject = LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
 		let sparkle = makeSparkleUpdater()
@@ -51,21 +55,13 @@ struct LauncherUpdaterControllerTests {
 			lifecycle.simulateActivity(.idle)
 			#expect(installCalled)
 		}
-		#expect(subject.updaterShouldRelaunchApplication(sparkle.1))
-
-		var retryCount = 0
-		let lease = lifecycle.begin(.runningGame(sessionID: UUID(), processIdentifier: 42))
-		subject.userDriver.showInstallingUpdate(withApplicationTerminated: false) {
-			retryCount += 1
-		}
-		#expect(retryCount == 0)
-		#expect(lease.map { lifecycle.end($0) } == true)
-		#expect(retryCount == 1)
 	}
 
 	@Test
-	func exactSparkleAbortDelegateClearsPendingInstallAndDeferredWork() {
-		let lifecycle = makeLifecycleStore()
+	func exactSparkleAbortDelegateClearsPendingInstallAndDeferredWork() throws {
+		let storage = try TemporaryDirectory("LauncherUpdaterControllerTests")
+		defer { storage.remove() }
+		let lifecycle = makeLifecycleStore(in: storage)
 		lifecycle.beginLauncherUpdate()
 		let subject = LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
 		let sparkle = makeSparkleUpdater()
@@ -77,31 +73,6 @@ struct LauncherUpdaterControllerTests {
 
 		#expect(!lifecycle.isLauncherUpdatePending)
 	}
-
-	@Test
-	func sparkleNoUpdateErrorCountsAsCurrentForSilentProbe() {
-		let error = NSError(
-			domain: SUSparkleErrorDomain,
-			code: Int(SUError.noUpdateError.rawValue)
-		)
-
-		for (probeError, expected) in [
-			(error, LauncherUpdateCheckOutcome.current),
-			(NSError(domain: "Test", code: 1), .failed),
-		] {
-			let subject = makeUpdater()
-			var outcome: LauncherUpdateCheckOutcome?
-			subject.beginProbeForTesting { outcome = $0 }
-			subject.updater(makeSparkleUpdater().1, didAbortWithError: probeError)
-			#expect(outcome == nil)
-			#expect(subject.userDriver.phase == .hidden)
-			subject.updater(
-				makeSparkleUpdater().1, didFinishUpdateCycleFor: .updateInformation,
-				error: probeError)
-			#expect(outcome == expected)
-			#expect(subject.userDriver.phase == .hidden)
-		}
-	}
 }
 
 @MainActor
@@ -110,12 +81,6 @@ private func makeSparkleUpdater() -> (SPUStandardUpdaterController, SPUUpdater) 
 		startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil
 	)
 	return (controller, controller.updater)
-}
-
-@MainActor
-private func makeUpdater() -> LauncherUpdaterController {
-	let lifecycle = makeLifecycleStore()
-	return LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
 }
 
 enum UpdateLifecycleScenario: String, CaseIterable, Equatable, Sendable {

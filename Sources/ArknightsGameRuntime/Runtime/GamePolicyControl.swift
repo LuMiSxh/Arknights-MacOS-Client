@@ -13,25 +13,15 @@ package enum GamePolicyControl {
 		fileManager.isExecutableFile(atPath: executablePath)
 	}
 
-	// Requests the policy change without blocking launch and records start or exit failures.
-	static func setGameMode(on: Bool, log: LauncherLog) {
-		guard isAvailable() else {
-			log.debug("Game Mode request skipped because gamepolicyctl is unavailable")
-			return
-		}
-		let process = Process()
-		process.executableURL = URL(filePath: executablePath)
-		process.arguments = ["game-mode", "set", on ? "on" : "auto"]
-		process.standardOutput = FileHandle.nullDevice
-		process.standardError = FileHandle.nullDevice
-		process.terminationHandler = { process in
-			guard process.terminationStatus != 0 else { return }
-			log.error(
-				"gamepolicyctl exited with status \(process.terminationStatus) while setting Game Mode \(on ? "on" : "auto")"
-			)
-		}
-		log.attempt("Failed to start gamepolicyctl for Game Mode \(on ? "on" : "auto")") {
-			try process.run()
-		}
+	private static let requests = GameModeRequests(executable: URL(filePath: executablePath))
+
+	// Returns after the process exits so a caller can order the next request behind it.
+	static func setGameMode(on: Bool, log: LauncherLog) async {
+		await requests.setGameMode(on: on, log: log)
+	}
+
+	// For app termination only, where nothing can run after the caller returns.
+	static func setGameModeBlocking(on: Bool, log: LauncherLog) {
+		requests.setGameModeBlocking(on: on, log: log)
 	}
 }

@@ -4,7 +4,6 @@ import { dirname } from 'node:path';
 import { ContentError, parseFrontmatter } from '../frontmatter.js';
 import type {
 	BlogPost,
-	ContentDirectory,
 	ContentIndex,
 	ContentNeighbors,
 	ContentNode,
@@ -14,6 +13,7 @@ import { readBlogSources } from './blog.js';
 import { renderSourceDocuments, validateLinks } from './links.js';
 import type { SourceDocument } from './model.js';
 import { changelogPath } from './paths.js';
+import { readLatestRelease } from './release.js';
 import { siteRoute, slugify } from './routes.js';
 import { readSources } from './sources.js';
 import { buildDirectory, createDirectory, directoryFor } from './tree.js';
@@ -33,6 +33,7 @@ function loadIndex(): ContentIndex {
 			'draft content cannot be published'
 		);
 	}
+	const release = readLatestRelease(changelogParsed.body);
 	const changelogSource: SourceDocument = {
 		...changelogParsed,
 		relative: 'CHANGELOG.md',
@@ -70,9 +71,10 @@ function loadIndex(): ContentIndex {
 			parent.documents.push(document);
 		}
 	}
-	root.readme = documents.find(
+	const rootReadme = documents.find(
 		(document) => document.relative.toLowerCase() === 'readme.md'
 	);
+	if (rootReadme !== undefined) root.readme = rootReadme;
 
 	const byRoute = new Map<string, ContentNode>();
 	sourceRoutes.set('CHANGELOG.md', '/changelog/');
@@ -124,7 +126,7 @@ function loadIndex(): ContentIndex {
 		validateLinks(document, sourceRoutes, renderedBySource);
 	const rootDirectory = buildDirectory(root, renderedBySource, byRoute);
 	const directories = [...byRoute.values()].filter(
-		(node): node is ContentDirectory => node.kind === 'directory'
+		(node) => node.kind === 'directory'
 	);
 
 	return {
@@ -132,13 +134,13 @@ function loadIndex(): ContentIndex {
 		directories,
 		byRoute,
 		changelog,
-		blog
+		blog,
+		release
 	};
 }
 
 export function getContent(): ContentIndex {
-	if (typeof process === 'undefined' || process.env.NODE_ENV !== 'production')
-		return loadIndex();
+	if (import.meta.env.DEV) return loadIndex();
 	return (cached ??= loadIndex());
 }
 

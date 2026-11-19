@@ -1,85 +1,156 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import ArknightsCore
 import SwiftUI
 
 struct LauncherFailureDetailView: View {
-	package let failure: LauncherFailurePresentation
-	package let accentColor: Color
-	let hudTintColor: Color
-	let perform: (RecoveryAction, UUID) -> Void
-	private let troubleshootingMarkdown: String?
+	let failure: LauncherFailurePresentation
+
+	let perform: (RecoveryAction, LauncherFailurePresentation) -> Void
+	let isSavingDiagnostics: Bool
+	let saveDiagnostics: () -> Void
+	let onDismiss: () -> Void
+	@State private var troubleshootingMarkdown: String?
 	@Environment(\.dismiss) private var dismiss
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@State private var didCopySupportCode = false
+	private static let troubleshootingMaxWidth: CGFloat = 640
 
 	init(
 		failure: LauncherFailurePresentation,
-		accentColor: Color,
-		hudTintColor: Color,
-		perform: @escaping (RecoveryAction, UUID) -> Void
+		perform: @escaping (RecoveryAction, LauncherFailurePresentation) -> Void,
+		isSavingDiagnostics: Bool,
+		saveDiagnostics: @escaping () -> Void,
+		onDismiss: @escaping () -> Void
 	) {
 		self.failure = failure
-		self.accentColor = accentColor
-		self.hudTintColor = hudTintColor
 		self.perform = perform
-		troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
+		self.isSavingDiagnostics = isSavingDiagnostics
+		self.saveDiagnostics = saveDiagnostics
+		self.onDismiss = onDismiss
+	}
+
+	private static let reportSectionMarker = "\n## Report the problem"
+
+	/// The footer owns Report a Problem and Save Diagnostics now, so keep only the recovery
+	/// section from the bundled article.
+	private static func recoveryMarkdown(_ markdown: String) -> String {
+		guard let range = markdown.range(of: Self.reportSectionMarker) else {
+			return markdown
+		}
+		return String(markdown[..<range.lowerBound])
+	}
+
+	private func copySupportCode(_ code: SupportCode) {
+		let pasteboard = NSPasteboard.general
+		pasteboard.clearContents()
+		pasteboard.setString(code.rawValue, forType: .string)
+		withAnimation(LauncherMotion.animation(.state, reduceMotion: reduceMotion)) {
+			didCopySupportCode = true
+		}
 	}
 
 	var body: some View {
 		ThemedModalView(
-			title: "Needs attention",
-			hudTintColor: hudTintColor,
-			width: failure.code == nil ? 620 : 820,
-			height: failure.code == nil ? 430 : 600,
-			minimumHeight: 430
+			title: failure.title ?? "Needs attention",
+			subtitle: failure.message,
+			width: failure.code == nil
+				? LauncherTokens.Layout.failureSheetWidth
+				: LauncherTokens.Layout.failureSheetWidthWithCode,
+			height: failure.code == nil
+				? LauncherTokens.Layout.failureSheetHeight
+				: LauncherTokens.Layout.failureSheetHeightWithCode,
+			minimumHeight: LauncherTokens.Layout.failureSheetHeight
 		) {
-			VStack(alignment: .leading, spacing: 20) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.section) {
 				if let code = failure.code {
-					LauncherSupportCodeLabel(code: code)
+					SettingsPanel(title: "Support code") {
+						HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
+							LauncherSupportCodeLabel(code: code)
+							Spacer(minLength: 0)
+							CapsuleActionButton(
+								title: didCopySupportCode ? "Copied" : "Copy",
+								systemImage: didCopySupportCode ? "checkmark" : "doc.on.doc",
+								tone: .neutral,
+								presentation: .compact
+							) {
+								copySupportCode(code)
+							}
+						}
+						.task(id: didCopySupportCode) {
+							guard didCopySupportCode else { return }
+							do {
+								try await Task.sleep(
+									for: AppConstants.Support.copyConfirmationDuration)
+							} catch {
+								return
+							}
+							didCopySupportCode = false
+						}
+					}
 				}
 
-				Text(failure.message)
-					.foregroundStyle(.secondary)
-					.fixedSize(horizontal: false, vertical: true)
+				if failure.isBusy {
+					SettingsHairline()
+					HStack(spacing: LauncherTokens.Spacing.content) {
+						ProgressView()
+							.controlSize(.small)
+						Text("Deleting old launcher data…")
+					}
+				}
 
 				if let troubleshootingMarkdown {
-					Divider()
-					MarkdownDocument(
-						source: troubleshootingMarkdown,
-						accentColor: accentColor
-					)
+					SettingsHairline()
+					MarkdownDocument(source: troubleshootingMarkdown, style: .compact)
+						.frame(maxWidth: Self.troubleshootingMaxWidth, alignment: .leading)
 				}
 			}
 			.textSelection(.enabled)
 		} actions: {
 			footerActions
+				.disabled(failure.isBusy)
 		}
-		.onExitCommand(perform: dismiss.callAsFunction)
+		.task {
+			troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
+				.map(Self.recoveryMarkdown)
+		}
+		.onExitCommand {
+			guard failure.showsDismissAction else { return }
+			dismissFailure()
+		}
+	}
+
+	private func dismissFailure() {
+		// The environment dismissal targets the live sheet. The explicit closure still clears
+		// presentation state when SwiftUI already replaced that sheet.
+		dismiss()
+		onDismiss()
 	}
 
 	@ViewBuilder
 	private var footerActions: some View {
 		ViewThatFits(in: .horizontal) {
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				recoveryActions
 				if hasSupportActions {
-					supportActions
-					Divider()
-						.frame(height: 24)
-						.padding(.horizontal, 2)
+					helpMenu
 				}
 				dismissButton
 			}
-			VStack(alignment: .trailing, spacing: LauncherVisuals.Spacing.control) {
-				HStack(spacing: 8) {
+			.fixedSize(horizontal: true, vertical: false)
+			VStack(alignment: .trailing, spacing: LauncherTokens.Spacing.control) {
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					recoveryActions
 				}
-				HStack(spacing: 8) {
+				HStack(spacing: LauncherTokens.Spacing.control) {
 					if hasSupportActions {
-						supportActions
+						helpMenu
 					}
 					dismissButton
 				}
 			}
+			.fixedSize(horizontal: true, vertical: false)
 		}
 		.controlSize(.large)
 	}
@@ -89,9 +160,9 @@ struct LauncherFailureDetailView: View {
 		if failure.actions.contains(.installRosetta) {
 			recoveryButton(
 				action: .installRosetta,
-				title: "Install Rosetta 2",
+				title: "Install Rosetta 2…",
 				systemImage: "arrow.down.circle",
-				tone: .accent(accentColor)
+				tone: .accent
 			)
 		}
 		if failure.actions.contains(.retry) {
@@ -99,7 +170,7 @@ struct LauncherFailureDetailView: View {
 				action: .retry,
 				title: "Retry",
 				systemImage: "arrow.clockwise",
-				tone: .accent(accentColor)
+				tone: .accent
 			)
 		}
 		if failure.actions.contains(.repair) {
@@ -107,7 +178,31 @@ struct LauncherFailureDetailView: View {
 				action: .repair,
 				title: "Repair",
 				systemImage: "wrench.and.screwdriver",
-				tone: failure.actions.contains(.retry) ? .neutral : .accent(accentColor)
+				tone: failure.actions.contains(.retry) ? .neutral : .accent
+			)
+		}
+		if failure.actions.contains(.deleteDataFolder) {
+			recoveryButton(
+				action: .deleteDataFolder,
+				title: "Delete Data Folder",
+				systemImage: "trash",
+				tone: .danger
+			)
+		}
+		if failure.actions.contains(.tryAgain) {
+			recoveryButton(
+				action: .tryAgain,
+				title: "Try Again",
+				systemImage: "arrow.clockwise",
+				tone: .accent
+			)
+		}
+		if failure.actions.contains(.quit) {
+			recoveryButton(
+				action: .quit,
+				title: "Quit",
+				systemImage: "power",
+				tone: .neutral
 			)
 		}
 	}
@@ -124,7 +219,7 @@ struct LauncherFailureDetailView: View {
 			systemImage: systemImage,
 			tone: tone
 		) {
-			perform(recoveryAction, failure.id)
+			perform(recoveryAction, failure)
 		}
 		if recoveryAction == defaultRecoveryAction {
 			button.keyboardShortcut(.defaultAction)
@@ -133,45 +228,40 @@ struct LauncherFailureDetailView: View {
 		}
 	}
 
+	@ViewBuilder
 	private var dismissButton: some View {
-		CapsuleActionButton(
-			title: "Done",
-			tone: .neutral,
-			action: { dismiss() }
-		)
-		.keyboardShortcut(.cancelAction)
-	}
-
-	private var supportActions: some View {
-		HStack(spacing: 8) {
-			if failure.actions.contains(.openTroubleshooting) {
-				supportAction(
-					.openTroubleshooting,
-					title: "Open on Website",
-					systemImage: "arrow.up.right.square"
-				)
-			}
-			if failure.actions.contains(.reportProblem) {
-				supportAction(
-					.reportProblem,
-					title: "Report Problem",
-					systemImage: "ladybug"
-				)
-			}
+		if failure.showsDismissAction {
+			CapsuleActionButton(
+				title: "Done",
+				tone: .neutral,
+				action: dismissFailure
+			)
+			.keyboardShortcut(.cancelAction)
 		}
 	}
 
-	private func supportAction(
-		_ action: RecoveryAction,
-		title: String,
-		systemImage: String
-	) -> some View {
-		CapsuleActionButton(
-			title: title,
-			systemImage: systemImage,
-			tone: .neutral
-		) {
-			perform(action, failure.id)
+	private var helpMenu: some View {
+		GlassActionMenu(title: "Get Help") {
+			if failure.actions.contains(.openTroubleshooting) {
+				Button {
+					perform(.openTroubleshooting, failure)
+				} label: {
+					Label("Open on Website", systemImage: "arrow.up.right.square")
+				}
+			}
+			if failure.actions.contains(.reportProblem) {
+				Button {
+					perform(.reportProblem, failure)
+				} label: {
+					Label("Report a Problem", systemImage: "ladybug")
+				}
+				Button {
+					saveDiagnostics()
+				} label: {
+					Label("Save Diagnostics", systemImage: "square.and.arrow.down")
+				}
+				.disabled(isSavingDiagnostics)
+			}
 		}
 	}
 
@@ -184,6 +274,7 @@ struct LauncherFailureDetailView: View {
 		if failure.actions.contains(.installRosetta) { return .installRosetta }
 		if failure.actions.contains(.retry) { return .retry }
 		if failure.actions.contains(.repair) { return .repair }
+		if failure.actions.contains(.tryAgain) { return .tryAgain }
 		return nil
 	}
 }

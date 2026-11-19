@@ -8,7 +8,8 @@ extension WineRuntime {
 		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle,
-		spawnGate: WineProcessSpawnGate? = nil
+		spawnGate: WineProcessSpawnGate? = nil,
+		log: LauncherLog? = nil
 	) async throws {
 		try await applyRegistryEntries(
 			Self.bilibiliFontRegistryEntries(),
@@ -16,7 +17,8 @@ extension WineRuntime {
 			prefixDirectory: prefixDirectory,
 			environment: environment,
 			logHandle: logHandle,
-			spawnGate: spawnGate
+			spawnGate: spawnGate,
+			log: log
 		)
 		try logHandle.write(
 			contentsOf: Data(
@@ -51,10 +53,10 @@ extension WineRuntime {
 		log: LauncherLog? = nil,
 		spawnGate: WineProcessSpawnGate? = nil
 	) async throws {
-		let current = configuration.registryState(in: prefixDirectory)
+		let current = configuration.registryState(in: prefixDirectory, log: log)
 		let preciseScrollingValue = Self.normalizedScrollingRegistryData
 		var entries: [WineRegistryEntry] = []
-		if current?.retinaMode != configuration.registryValue {
+		if current?.retinaMode != configuration.retinaEnabled {
 			entries.append(
 				WineRegistryEntry(
 					key: Self.macDriverRegistryKey,
@@ -72,7 +74,7 @@ extension WineRuntime {
 				)
 			)
 		}
-		if current?.usePreciseScrolling != preciseScrollingValue {
+		if current?.usePreciseScrolling != false {
 			entries.append(
 				WineRegistryEntry(
 					key: Self.macDriverRegistryKey,
@@ -88,7 +90,8 @@ extension WineRuntime {
 			prefixDirectory: prefixDirectory,
 			environment: environment,
 			logHandle: logHandle,
-			spawnGate: spawnGate
+			spawnGate: spawnGate,
+			log: log
 		)
 		logHandle.appendLaunchLogLine(
 			"Arknights Client: RetinaMode=\(configuration.registryValue); LogPixels=\(configuration.logPixels); UsePreciseScrolling=\(preciseScrollingValue).\n",
@@ -109,6 +112,31 @@ extension WineRuntime {
 		let dxmtCurrent: Bool
 	}
 
+	// Reads the runtime's `wine.inf` mtime and the prefix's stamp file. Returns false when the
+	// runtime has no `wine.inf`, so a runtime without one never replays the prefix update.
+	private static func winePrefixUpdateIsStale(
+		prefixDirectory: URL,
+		runtimeRoot: URL,
+		fileManager: FileManager
+	) throws -> Bool {
+		let wineInf = runtimeRoot.appending(path: WinePrefixUpdateStamp.wineInfRelativePath)
+		guard fileManager.fileExists(atPath: wineInf.path),
+			let modified = try wineInf.resourceValues(forKeys: [.contentModificationDateKey])
+				.contentModificationDate
+		else { return false }
+		let stampURL = prefixDirectory.appending(path: WinePrefixUpdateStamp.fileName)
+		let contents: String?
+		if fileManager.fileExists(atPath: stampURL.path) {
+			contents = String(decoding: try Data(contentsOf: stampURL), as: UTF8.self)
+		} else {
+			contents = nil
+		}
+		return WinePrefixUpdateStamp.isStale(
+			contents: contents,
+			wineInfModificationTime: Int(modified.timeIntervalSince1970)
+		)
+	}
+
 	private func migrationPlanContext(prefixDirectory: URL) throws -> MigrationPlanContext {
 		let fileManager = FileManager.default
 		let systemRegistry = prefixDirectory.appending(path: "system.reg")
@@ -126,14 +154,24 @@ extension WineRuntime {
 			)
 		}
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
-		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
-		let dxmtCurrent = Self.dxmtIsCurrent(
+		let dxmtPayload = runtimeRoot.appending(
+			path: dxmtPayloadDirectory, directoryHint: .isDirectory)
+		let dxmtCurrent = try Self.dxmtIsCurrent(
 			from: dxmtPayload,
 			in: prefixDirectory,
-			fileManager: fileManager
+			fileManager: fileManager,
+			destinations: dxmtPayloadDestinations,
+			libraries: dxmtPayloadLibraries
 		)
-		let invalidatedMigrations: Set<RuntimeMigration> =
+		var invalidatedMigrations: Set<RuntimeMigration> =
 			dxmtCurrent ? [] : [.installDXMT]
+		if try Self.winePrefixUpdateIsStale(
+			prefixDirectory: prefixDirectory,
+			runtimeRoot: runtimeRoot,
+			fileManager: fileManager
+		) {
+			invalidatedMigrations.insert(.initializeWinePrefix)
+		}
 		let plan = RuntimeMigrationPlan(
 			expectedRevision: revision,
 			installedState: installedState,
@@ -171,11 +209,14 @@ extension WineRuntime {
 			)
 		}
 		for migration in plan.pending {
+			// A yielding caller stops between steps; the persisted state then resumes the rest.
+			try Task.checkCancellation()
 			let stepStarted = Date()
 			log?.debug("Running prefix migration: \(migration)")
 			switch migration {
 			case .initializeWinePrefix:
 				try await initializePrefix(
+					prefixDirectory: prefixDirectory,
 					environment: environment,
 					logHandle: logHandle,
 					spawnGate: spawnGate
@@ -184,12 +225,15 @@ extension WineRuntime {
 				try Self.installDXMT(
 					from: dxmtPayload,
 					in: prefixDirectory,
-					fileManager: fileManager
+					fileManager: fileManager,
+					destinations: dxmtPayloadDestinations,
+					libraries: dxmtPayloadLibraries
 				)
 			case .configureRegistry:
 				try await configureCompatibilityOverrides(
 					prefixDirectory: prefixDirectory,
 					environment: environment,
+					log: log,
 					logHandle: logHandle,
 					spawnGate: spawnGate
 				)
@@ -224,19 +268,23 @@ extension WineRuntime {
 	@concurrent
 	private static func deduplicateRuntimeLibraries(
 		prefixDirectory: URL,
-		runtimeRoot: URL
+		runtimeRoot: URL,
+		libraries: [String],
+		lane: RuntimeLane
 	) async -> WinePrefixLibraryDeduplicator.Report {
-		WinePrefixLibraryDeduplicator(excludingNames: Set(Self.dxmtLibraryNames))
-			.deduplicate(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
+		WinePrefixLibraryDeduplicator(excludingNames: Set(libraries))
+			.deduplicate(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot, lane: lane)
 	}
 
 	@concurrent
 	private static func cleanLegacyLibraries(
 		prefixDirectory: URL,
-		runtimeRoot: URL
+		runtimeRoot: URL,
+		libraries: [String],
+		lane: RuntimeLane
 	) async -> WinePrefixLegacyLibraryCleaner.Report {
-		WinePrefixLegacyLibraryCleaner(launcherInstalledNames: Set(Self.dxmtLibraryNames))
-			.clean(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
+		WinePrefixLegacyLibraryCleaner(launcherInstalledNames: Set(libraries))
+			.clean(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot, lane: lane)
 	}
 
 	// Clones are APFS-only and best effort: any failure keeps Wine's copies and never blocks launch.
@@ -244,7 +292,9 @@ extension WineRuntime {
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
 		let report = await Self.deduplicateRuntimeLibraries(
 			prefixDirectory: prefixDirectory,
-			runtimeRoot: runtimeRoot
+			runtimeRoot: runtimeRoot,
+			libraries: dxmtPayloadLibraries,
+			lane: lane ?? .x86
 		)
 		try Task.checkCancellation()
 		if let code = report.cloneUnsupportedCode {
@@ -265,7 +315,9 @@ extension WineRuntime {
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
 		let report = await Self.cleanLegacyLibraries(
 			prefixDirectory: prefixDirectory,
-			runtimeRoot: runtimeRoot
+			runtimeRoot: runtimeRoot,
+			libraries: dxmtPayloadLibraries,
+			lane: lane ?? .x86
 		)
 		try Task.checkCancellation()
 		if report.skipped {
@@ -281,14 +333,20 @@ extension WineRuntime {
 	}
 
 	private func initializePrefix(
+		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle,
 		spawnGate: WineProcessSpawnGate?
 	) async throws {
+		var winebootEnvironment = environment
+		// wineboot always opens a wait dialog; without the mac driver it has no window to show.
+		winebootEnvironment["WINEDLLOVERRIDES"] = [
+			winebootEnvironment["WINEDLLOVERRIDES"], Self.winebootDLLOverride,
+		].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ";")
 		let exitStatus = try await runAndWait(
 			executable: executableURL,
 			arguments: ["wineboot.exe", "-u"],
-			environment: environment,
+			environment: winebootEnvironment,
 			output: logHandle,
 			spawnGate: spawnGate
 		)
@@ -297,11 +355,17 @@ extension WineRuntime {
 				"Wine could not initialize its prefix (status \(exitStatus))."
 			)
 		}
+		// End wineboot's headless desktop before the game runs under the mac driver.
+		// The shared spawn gate stays open for the steps that follow.
+		try await Task {
+			try await stop(prefixDirectory: prefixDirectory, spawnGate: nil)
+		}.value
 	}
 
 	private func configureCompatibilityOverrides(
 		prefixDirectory: URL,
 		environment: [String: String],
+		log: LauncherLog?,
 		logHandle: FileHandle,
 		spawnGate: WineProcessSpawnGate?
 	) async throws {
@@ -328,39 +392,44 @@ extension WineRuntime {
 			prefixDirectory: prefixDirectory,
 			environment: environment,
 			logHandle: logHandle,
-			spawnGate: spawnGate
+			spawnGate: spawnGate,
+			log: log
 		)
 	}
 
 	static func installDXMT(
 		from payloadDirectory: URL,
 		in prefixDirectory: URL,
-		fileManager: FileManager = .default
+		fileManager: FileManager = .default,
+		destinations: [DXMTDestination] = dxmtDestinations,
+		libraries: [String] = dxmtLibraryNames
 	) throws {
-		let destinations = dxmtDestinations
-		let sources = destinations.flatMap { architecture, _ in
-			dxmtLibraryNames.map {
-				payloadDirectory.appending(path: architecture).appending(path: $0)
+		let sources = destinations.flatMap { destination in
+			libraries.map {
+				payloadDirectory.appending(path: destination.architecture).appending(path: $0)
 			}
 		}
 		guard sources.allSatisfy({ fileManager.fileExists(atPath: $0.path) }) else {
 			throw GameRuntimeError.runtimeConfiguration("The bundled DXMT payload is incomplete.")
 		}
 
-		for (architecture, windowsDirectory) in destinations {
+		for destination in destinations {
 			let destinationDirectory =
 				prefixDirectory
 				.appending(path: "drive_c/windows", directoryHint: .isDirectory)
-				.appending(path: windowsDirectory, directoryHint: .isDirectory)
+				.appending(path: destination.windowsDirectory, directoryHint: .isDirectory)
 			try fileManager.createDirectory(
 				at: destinationDirectory,
 				withIntermediateDirectories: true
 			)
-			for library in dxmtLibraryNames {
-				let source = payloadDirectory.appending(path: architecture).appending(path: library)
+			for library in libraries {
+				let source =
+					payloadDirectory
+					.appending(path: destination.architecture)
+					.appending(path: library)
 				let destination = destinationDirectory.appending(path: library)
-				if filesMatch(source, destination, fileManager: fileManager) { continue }
 				if fileManager.fileExists(atPath: destination.path) {
+					if try filesMatch(source, destination) { continue }
 					try fileManager.removeItem(at: destination)
 				}
 				try fileManager.copyItem(at: source, to: destination)
@@ -371,17 +440,24 @@ extension WineRuntime {
 	static func dxmtIsCurrent(
 		from payloadDirectory: URL,
 		in prefixDirectory: URL,
-		fileManager: FileManager = .default
-	) -> Bool {
-		for (architecture, windowsDirectory) in dxmtDestinations {
-			for library in dxmtLibraryNames {
-				let source = payloadDirectory.appending(path: architecture).appending(path: library)
+		fileManager: FileManager = .default,
+		destinations: [DXMTDestination] = dxmtDestinations,
+		libraries: [String] = dxmtLibraryNames
+	) throws -> Bool {
+		for destination in destinations {
+			for library in libraries {
+				let source =
+					payloadDirectory
+					.appending(path: destination.architecture)
+					.appending(path: library)
 				let destination =
 					prefixDirectory
 					.appending(path: "drive_c/windows", directoryHint: .isDirectory)
-					.appending(path: windowsDirectory, directoryHint: .isDirectory)
+					.appending(path: destination.windowsDirectory, directoryHint: .isDirectory)
 					.appending(path: library)
-				guard filesMatch(source, destination, fileManager: fileManager) else {
+				guard fileManager.fileExists(atPath: destination.path),
+					try filesMatch(source, destination)
+				else {
 					return false
 				}
 			}
@@ -389,17 +465,13 @@ extension WineRuntime {
 		return true
 	}
 
-	private static func filesMatch(_ lhs: URL, _ rhs: URL, fileManager: FileManager) -> Bool {
-		guard
-			let lhsValues = try? lhs.resourceValues(forKeys: [
-				.fileSizeKey, .contentModificationDateKey,
-			]),
-			let rhsValues = try? rhs.resourceValues(forKeys: [
-				.fileSizeKey, .contentModificationDateKey,
-			])
-		else {
-			return false
-		}
+	private static func filesMatch(_ lhs: URL, _ rhs: URL) throws -> Bool {
+		let lhsValues = try lhs.resourceValues(forKeys: [
+			.fileSizeKey, .contentModificationDateKey,
+		])
+		let rhsValues = try rhs.resourceValues(forKeys: [
+			.fileSizeKey, .contentModificationDateKey,
+		])
 		return lhsValues.fileSize == rhsValues.fileSize
 			&& lhsValues.contentModificationDate == rhsValues.contentModificationDate
 	}

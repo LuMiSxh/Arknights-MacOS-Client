@@ -13,8 +13,6 @@ import ArknightsGameRuntime
 			let simulation = simulation.normalized()
 			developerSimulation = simulation
 
-			settings.canaryFeaturesEnabled = simulation.canaryFeaturesEnabled
-			settings.taiwanClientEnabled = simulation.taiwanClientEnabled
 			if installation.region != simulation.selectedRegion {
 				lifecycle.simulateActivity(.idle)
 				_ = installation.selectRegion(simulation.selectedRegion)
@@ -28,10 +26,15 @@ import ArknightsGameRuntime
 			installation.cancelInstalledStateRefresh()
 			installation.configuration = Self.developerConfiguration
 			installation.progress = simulation.downloadProgress
-			installation.isInstalled = simulation.isInstalled
-			installation.hasPartialDownload = simulation.hasPartialDownload
-			installation.installedVersion = simulation.installedVersion
+			if let version = simulation.installedVersion {
+				installation.installPresence = .installed(version: version)
+			} else if simulation.hasPartialDownload {
+				installation.installPresence = .partialDownload
+			} else {
+				installation.installPresence = .absent
+			}
 			installation.isGameUpdateAvailable = simulation.updateAvailable
+			runtimeSelection.simulate(simulatedRuntime(for: simulation.runtime))
 			gameSession.runtimeName = "Wine 11.16 + DXMT 0.80-199"
 			communication.launcherUpdateVersion = simulation.launcherUpdateVersion
 			communication.launcherUpdateStatus = simulation.launcherUpdateStatus
@@ -69,7 +72,6 @@ import ArknightsGameRuntime
 
 		func loadDeveloperArtwork() async {
 			let region = installation.region
-			guard !region.requiresCanaryPermission else { return }
 			if await customization.loadCustomArtwork() { return }
 			let artworkCache = customization.artworkCache
 			do {
@@ -78,8 +80,10 @@ import ArknightsGameRuntime
 				refreshController.branding = currentBranding
 				do {
 					let logoData = try await artworkCache.officialLogoData(for: region)
+					var logo: CGImage?
+					if let logoData { logo = await CustomizationImageIO.decodeImage(logoData) }
 					guard installation.region == region else { return }
-					customization.officialLogo = logoData.flatMap(NSImage.init(data:))
+					customization.officialLogo = logo.map { NSImage(cgImage: $0, size: .zero) }
 				} catch {
 					log.error(
 						"Failed to load developer logo: \(error.localizedDescription)"
@@ -89,12 +93,12 @@ import ArknightsGameRuntime
 					if let imageData = try await artworkCache.imageData(
 						for: currentBranding,
 						region: region
-					), let image = NSImage(data: imageData),
+					), let decoded = await CustomizationImageIO.decodeImage(imageData),
 						let artworkCacheKey = artworkCache.cacheKey(for: currentBranding)
 					{
 						guard installation.region == region else { return }
 						customization.setHeroArtwork(
-							image,
+							NSImage(cgImage: decoded, size: .zero),
 							themeCacheKey: CustomizationController.officialThemeCacheKey(
 								for: region,
 								artworkCacheKey: artworkCacheKey
@@ -144,7 +148,6 @@ import ArknightsGameRuntime
 					? [.retry, .openTroubleshooting, .reportProblem]
 					: LauncherLifecycleStore.recoveryActions(
 						for: code,
-						repairableCodes: GameSessionController.repairableCodes,
 						canRepair: simulation.isInstalled && operation != .runtimeStop),
 				blocksGameLaunch: isConfiguration && !simulation.isInstalled
 			)
@@ -179,13 +182,23 @@ import ArknightsGameRuntime
 			}
 		}
 
+		private func simulatedRuntime(
+			for runtime: DeveloperSimulationState.Runtime
+		) -> RuntimeSelectionController.SimulatedState? {
+			switch runtime {
+			case .real: nil
+			case .notInstalled: .notInstalled
+			case .installed: .installed
+			case .installing: .installing
+			case .failed: .failed
+			}
+		}
+
 		private static let developerConfiguration = GameConfiguration(
-			gameLowestVersion: "041.0.0",
 			gameLatestVersion: "042.0.0",
 			gameLatestFilePath: "client.zip",
 			gameStartExeName: "Arknights",
 			gameStartParams: [],
-			gameUninstallScript: "uninstall.exe",
 			decompressionSize: "38 GB"
 		)
 	}

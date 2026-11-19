@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsGameInstallation
 import SwiftUI
 
 struct LauncherArtworkView: View {
+	@Environment(\.launcherTheme) private var theme
 	let image: NSImage?
 	let themeCacheKey: String?
-	package let accentColor: Color
+	let accentColor: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	// The very first artwork this view ever shows is revealed instantly (it was loaded while
 	// the window was still covered) — only later live updates get the crossfade.
@@ -48,18 +48,22 @@ struct LauncherArtworkView: View {
 	}
 
 	private var artworkTransition: AnyTransition {
-		.materialize(reduceMotion: reduceMotion, scale: 1.03, blur: 12)
+		.materialize(reduceMotion: reduceMotion, scale: 1.03)
 	}
+
+	private static let fallbackStripeWidth: CGFloat = 620
+	private static let fallbackStripeHeight: CGFloat = 8
 
 	private var fallbackArtwork: some View {
 		ZStack {
-			LauncherVisuals.artworkFallback
+			theme.sheetSolid
 			Text("A")
-				.font(LauncherVisuals.Typography.fallbackWordmark)
-				.foregroundStyle(.white.opacity(0.07))
+				.font(LauncherTokens.Typography.fallbackWordmark)
+				.foregroundStyle(
+					.white.opacity(LauncherVisuals.Shade.fallbackWordmarkOpacity))
 			Rectangle()
 				.fill(accentColor.opacity(0.4))
-				.frame(width: 620, height: 10)
+				.frame(width: Self.fallbackStripeWidth, height: Self.fallbackStripeHeight)
 				.rotationEffect(.degrees(-42))
 		}
 	}

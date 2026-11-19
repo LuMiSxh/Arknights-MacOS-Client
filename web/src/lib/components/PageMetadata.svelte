@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import { absoluteSiteUrl, normalizeBasePath } from '$lib/site.js';
+	import { absoluteSiteUrl, resolveBasePath } from '$lib/site.js';
 
 	interface Props {
 		title: string;
@@ -10,16 +10,14 @@
 	}
 
 	let { title, description, path, robots }: Props = $props();
-	const configuredBasePath = normalizeBasePath(
-		typeof process !== 'undefined' && process.env.BASE_PATH
-			? process.env.BASE_PATH
-			: base
-	);
+	const configuredBasePath = resolveBasePath(base);
 
 	const canonicalUrl = $derived(absoluteSiteUrl(path, configuredBasePath));
 	const socialImageUrl = $derived(
-		absoluteSiteUrl('/AppIcon-128.png', configuredBasePath)
+		absoluteSiteUrl('/share-card.jpg', configuredBasePath)
 	);
+	const socialImageAlt =
+		'Arknights Client share image, Dissociative Recombination artwork';
 	// The owner opted out of search thumbnails; og:image still serves social links.
 	const robotsContent = $derived(
 		[robots, 'max-image-preview:none'].filter(Boolean).join(', ')
@@ -32,17 +30,18 @@
 	<meta name="robots" content={robotsContent} />
 	<link rel="canonical" href={canonicalUrl} />
 	<meta property="og:type" content="website" />
-	<meta property="og:site_name" content="Arknights macOS Client" />
+	<meta property="og:site_name" content="Arknights Client" />
 	<meta property="og:locale" content="en_US" />
 	<meta property="og:title" content={title} />
 	<meta property="og:description" content={description} />
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:image" content={socialImageUrl} />
-	<meta property="og:image:width" content="128" />
-	<meta property="og:image:height" content="128" />
-	<meta property="og:image:alt" content="Arknights macOS Client app icon" />
-	<meta name="twitter:card" content="summary" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content={socialImageAlt} />
+	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={title} />
 	<meta name="twitter:description" content={description} />
 	<meta name="twitter:image" content={socialImageUrl} />
+	<meta name="twitter:image:alt" content={socialImageAlt} />
 </svelte:head>

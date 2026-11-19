@@ -19,11 +19,12 @@ guide lists the paths. Update it in the same change as `AppPaths`.
 
 | Data                        | Owner                                      | Lifetime                                                                    |
 | --------------------------- | ------------------------------------------ | --------------------------------------------------------------------------- |
-| Regional game files         | `InstallationController` / `GameInstaller` | Manifest-updated. **Uninstall Game** trashes only the selected directory    |
+| Regional game files         | `InstallationController` / `GameInstaller` | Manifest-updated. **Uninstall Game** trashes the default folder, or only the installed files elsewhere |
 | Installed manifest state    | `GameInstaller`                            | Written atomically after all files pass validation and checksums            |
-| Wine prefixes               | `GameSessionController` / `WineRuntime`    | One per publisher family. Deleting a prefix reruns its migration plan       |
+| Wine prefixes               | `GameSessionController` / `WineRuntime`    | One per publisher family and lane under `Environments/`. Deleting a prefix reruns its migration plan |
 | Runtime migration state     | `RuntimeMigrationStore`                    | Runtime revision and completed setup steps. It is not game-save data        |
-| Bundled runtime             | Packaging and `WineRuntime`                | Read-only. A launcher update replaces it                                    |
+| Downloaded runtime          | `RuntimeSelectionController`               | One version directory per lane under `Runtimes/<lane>-<version>/` and archives under `Downloads/<lane>/`. `runtime-selection.json` records the selected lane and each installed version. **Remove Runtime…** deletes only that lane's version directories under a per-lane lease. The game environment and selection stay |
+| Application Support folder  | `StorageMaintenanceController`             | **Show in Finder** under Settings → Storage → Logs and data opens `applicationSupportRoot` |
 | Downloaded official artwork | `CustomizationController` / `ArtworkCache` | Recreated when missing                                                      |
 | Preset gallery cache        | `PresetCatalogService`                     | Targeted cleanup in Settings. Recreated on demand                           |
 | Playtime statistics         | `PlaytimeStatisticsController`             | Versioned totals plus 31 daily buckets. Only a confirmed reset removes them |
@@ -33,18 +34,21 @@ guide lists the paths. Update it in the same change as `AppPaths`.
 
 ## Application Support layout migration
 
-The publisher-based layout is a persisted path contract. On the first start after the launcher version
-that introduces it, a startup migration runs before normal readiness. It blocks installation,
-maintenance, and game launch until it finishes. It considers only these exact old defaults:
+`layout.json` records the Application Support layout with `schemaVersion`. When the file is missing,
+`LayoutMigrator` runs once before normal readiness. It blocks installation, maintenance, and game
+launch until it finishes. It moves the released 0.6/0.7 layout to the flat by-type layout:
 
 ```text
-Games/Arknights-Global          → Yostar/Global
-Games/Arknights-Japan           → Yostar/Japan
-Games/Arknights-Korea           → Yostar/Korea
-Games/Arknights-China           → Hypergryph/China
-Games/Arknights-China-Bilibili  → Hypergryph/China-Bilibili
-Wine/Prefixes/Arknights-Global  → Yostar/Prefix
-Wine/Prefixes/Arknights-China   → Hypergryph/Prefix
+Yostar/Global          → Games/global
+Yostar/Japan           → Games/japan
+Yostar/Korea           → Games/korea
+Gryphline/Taiwan       → Games/taiwan
+Hypergryph/China       → Games/china
+Hypergryph/China-Bilibili → Games/china-bilibili
+Yostar/Prefix          → Environments/yostar-x86
+Yostar/Prefix-ARM64    → Environments/yostar-arm
+Artwork/Custom/<file>  → Artwork/<file>
+playtime-v1.json       → playtime.json
 ```
 
 Rules:
@@ -52,16 +56,30 @@ Rules:
 - The migrator rewrites a persisted regional install path only when it exactly equals an old default
   game path. Custom paths stay untouched.
 - It merges no contents and overwrites no destination.
-- It moves a source only when the source is the expected directory. It accepts a destination only when
-  the destination is absent or already shows the completed move.
+- It moves a source only when the source exists and the destination does not. A destination that
+  already exists while its source exists is a blocking error.
 - A collision, symbolic link, or other unexpected node is a blocking error.
 - Each move is a same-volume rename, not a copy.
+- Inside each moved prefix, it rewrites an absolute `dosdevices` link whose target points into a moved
+  game directory. The log drive and relative links stay unchanged.
 - The migration is idempotent. It skips completed entries and resumes partial progress on the next
-  start.
-- A failed move does not undo earlier moves. The migrator returns `AppStorageMigrationResult` with the
+  start. It writes `layout.json` last.
+- A failed step does not undo earlier moves. The migrator returns `LayoutMigrationResult` with the
   completed moves and the first failure. The model saves the preferences of the completed moves only
-  and skips the moves that follow the failure.
-- A failure releases the startup activity. The launcher shows a `BASALT` failure with **Retry**,
+  and skips the steps that follow the failure.
+- It also deletes pre-release 0.8 leftovers that never shipped: `storage-overview-cache.json`,
+  old-shape `Runtimes/<lane>/` directories, `Runtimes/.downloads`,
+  `Runtimes/.staging`, `Caches/<bundle>/Artwork/Downloaded`, and `Caches/<bundle>/PresetGallery`. It
+  clears recorded runtime versions, so a runtime downloads again.
+- The pre-0.5 layout (`Games/Arknights-*` or `Wine/Prefixes/*` directories) is not migrated. Startup
+  shows a blocking **Data from an old launcher version** notice with **Delete Data Folder** and
+  **Quit**, and nothing else starts. **Delete Data Folder** asks for confirmation, then
+  `LegacyDataEraser` removes the contents of the Application Support and Caches roots without
+  following symlinks. Startup writes `layout.json` and continues as a fresh install; a failure shows
+  **Try Again** and **Quit**.
+- Leftover legacy `Games/` and `Wine/` trees that hold only `.DS_Store` files and empty directories
+  are metadata, not old data. The migration removes them before it creates the new `Games/`.
+- A failure releases the startup activity. The launcher shows an `FS-MIG` failure with **Retry**,
   **Troubleshooting**, and **Report a problem**, and blocks game launch. **Retry** runs the migration
   again for the current failure ID only, then continues the normal startup work.
 
@@ -71,7 +89,7 @@ Rules:
 serialized key names and defaults. Controllers expose typed values. The store holds the selected region,
 one install path per region, update and announcement switches, seen announcement IDs, launch options,
 display settings, and personalization values. A region switch moves no files. Update checks never
-download game data. A chosen image is copied into `Artwork/Custom`.
+download game data. A chosen image is copied into `Artwork/`.
 
 To add a preference, add it to the store, test it in its owning feature, and reset it in
 `resetToDefaults` when appropriate. Never use a preference as a file marker or as filesystem migration state.
@@ -80,7 +98,7 @@ To add a preference, add it to the store, test it in its owning feature, and res
 
 `PreferencesMigrator` runs once at launch, before the launcher reads any preference. It stores the last
 applied version in one `UserDefaults` key and runs each newer step in order. Use it for a cache wipe, a
-key rename, or a key removal. Filesystem moves stay in `AppStorageMigrator`. Wine prefix changes stay
+key rename, or a key removal. Filesystem moves stay in `LayoutMigrator`. Wine prefix changes stay
 in `RuntimeMigration`.
 
 1. Open `PreferencesMigrator.swift`.
@@ -92,7 +110,7 @@ Step(version: 2) { $0.remove("lastAppliedDynamicIconHue") },
 ```
 
 Keep the step idempotent. A fresh install runs every step on empty defaults. Every key name stays in
-`LauncherPreferencesStore.Key`. Name a retired key as a literal in its step.
+`LauncherPreferencesStore.Key.Name`. Name a retired key as a literal in its step.
 
 ## Runtime state and atomicity
 

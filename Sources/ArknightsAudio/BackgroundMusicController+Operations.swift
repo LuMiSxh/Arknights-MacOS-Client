@@ -7,14 +7,21 @@ import YouTubePlayerKit
 extension BackgroundMusicController {
 	func invalidatePlayerTasks() {
 		playerGeneration = playerSlot.begin()
+		eventSlot.invalidate()
 		loadingSlot.invalidate()
+		titleSlot.invalidate()
+		cancelOperation()
+		cancelFade()
+		volumeSlot.invalidate()
+		discardPlaybackExpectation()
+	}
+
+	/// Drops the running track or playback change so it issues no further player command.
+	func cancelOperation() {
 		operationTask?.cancel()
 		operationTask = nil
 		operationSlot.invalidate()
-		cancelFade()
-		volumeSlot.invalidate()
 		operation = .idle
-		discardPlaybackExpectation()
 	}
 
 	// The caller stores its task in `operationTask` so the next operation can cancel it.

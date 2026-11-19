@@ -11,9 +11,7 @@ package struct InstallationStateRequest: Sendable {
 }
 
 package struct InstallationStateSnapshot: Sendable {
-	package let isInstalled: Bool
-	package let hasPartialDownload: Bool
-	let installedVersion: String?
+	package let installPresence: InstallPresence
 	package let installedRegions: [GameRegion]
 	let diagnostic: String?
 }
@@ -53,19 +51,20 @@ enum InstallationStateReader {
 				"Installed state is unreadable at \(stateURL.path): \(error.localizedDescription)"
 		}
 
-		let isInstalled = hasExecutable && installedState != nil
-		let hasPartialDownload: Bool
-		if isInstalled {
-			hasPartialDownload = false
+		let installPresence: InstallPresence
+		if hasExecutable, let installedState {
+			installPresence = .installed(version: installedState.version)
+		} else if try containsPartialDownload(
+			in: request.selectedDirectory,
+			fileManager: fileManager
+		) {
+			installPresence = .partialDownload
 		} else {
-			hasPartialDownload = try containsPartialDownload(
-				in: request.selectedDirectory,
-				fileManager: fileManager
-			)
+			installPresence = .absent
 		}
 		let installedRegions = try GameRegion.allCases.filter { region in
 			try Task.checkCancellation()
-			if region == request.selectedRegion { return isInstalled }
+			if region == request.selectedRegion { return installPresence.isInstalled }
 			guard let directory = request.regionDirectories[region] else { return false }
 			return fileManager.fileExists(
 				atPath: directory.appending(path: "Arknights.exe").path
@@ -78,9 +77,7 @@ enum InstallationStateReader {
 		}
 
 		return InstallationStateSnapshot(
-			isInstalled: isInstalled,
-			hasPartialDownload: hasPartialDownload,
-			installedVersion: installedState?.version,
+			installPresence: installPresence,
 			installedRegions: installedRegions,
 			diagnostic: diagnostic
 		)

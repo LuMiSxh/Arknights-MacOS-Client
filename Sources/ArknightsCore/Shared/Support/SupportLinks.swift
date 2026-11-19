@@ -4,15 +4,23 @@ import Foundation
 
 /// Official destinations for problems outside the community launcher's responsibility.
 package enum SupportLinks {
-	static let documentationRoot = URL(
-		string: "https://lumisxh.github.io/Arknights-MacOS-Client/"
-	)!
-	static let yostarContact = URL(string: "https://account.yo-star.com/contact")!
-	static let hypergryphContact = URL(string: "https://user.hypergryph.com/support")!
-	static let gryphlineContact = URL(string: "https://www.gryphline.com/en-us/contacts")!
-	package static let donate = URL(string: "https://ko-fi.com/lumisxh")!
+	package static let documentationRoot = StaticURL.url(
+		"https://lumisxh.github.io/Arknights-MacOS-Client/")
+	package static let applicationIcon = documentationRoot.appending(path: "AppIcon-128.png")
+	static let yostarContact = StaticURL.url("https://account.yo-star.com/contact")
+	static let hypergryphContact = StaticURL.url("https://user.hypergryph.com/support")
+	static let gryphlineContact = StaticURL.url("https://www.gryphline.com/en-us/contacts")
+	package static let donate = StaticURL.url("https://ko-fi.com/lumisxh")
+	package static let developerContact = StaticURL.url("https://tally.so/r/gbbPYd")
 	package static let thirdPartyNotices = documentationPage("legal/third-party-notices")
 	package static let privacyNotice = documentationPage("privacy")
+	package static let troubleshootingGuide = documentationPage("help")
+	package static let runtimeGuide = documentationPage("help/runtime")
+	package static let aiAssistance = documentationPage("ai-assistance")
+	private static let githubRoot = URL(string: "https://github.com") ?? documentationRoot
+	package static let maintainerProfile = githubRoot.appending(path: "LuMiSxh")
+	package static let sourceRepository = githubRoot.appending(
+		path: "LuMiSxh/Arknights-MacOS-Client")
 
 	private static func documentationPage(_ path: String) -> URL {
 		documentationRoot.appending(path: path, directoryHint: .isDirectory)

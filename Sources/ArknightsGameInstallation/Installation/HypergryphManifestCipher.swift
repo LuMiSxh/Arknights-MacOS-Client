@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import CCommonCrypto
+import CommonCrypto
 import Foundation
 
 enum HypergryphManifestCipher {

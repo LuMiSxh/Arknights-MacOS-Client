@@ -1,0 +1,150 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import ArknightsCore
+import SwiftUI
+
+struct ThemedModalView<Content: View, Actions: View>: View {
+	let title: String
+	let subtitle: String?
+
+	let width: CGFloat
+	let height: CGFloat
+	let minimumWidth: CGFloat
+	let minimumHeight: CGFloat
+	@ViewBuilder let content: Content
+	@ViewBuilder let actions: Actions
+	@Environment(\.launcherWindowSize) private var launcherWindowSize
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@State private var hasEntered = false
+
+	init(
+		title: String,
+		subtitle: String? = nil,
+
+		width: CGFloat,
+		height: CGFloat,
+		minimumWidth: CGFloat = LauncherTokens.Layout.modalMinimumWidth,
+		minimumHeight: CGFloat = LauncherTokens.Layout.modalMinimumHeight,
+		@ViewBuilder content: () -> Content,
+		@ViewBuilder actions: () -> Actions
+	) {
+		self.title = title
+		self.subtitle = subtitle
+
+		self.width = width
+		self.height = height
+		self.minimumWidth = minimumWidth
+		self.minimumHeight = minimumHeight
+		self.content = content()
+		self.actions = actions()
+	}
+
+	@Environment(\.launcherTheme) private var theme
+
+	var body: some View {
+		VStack(spacing: 0) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
+				Text(title)
+					.font(LauncherTokens.Typography.pageTitle)
+				if let subtitle {
+					Text(subtitle)
+						.font(.body)
+						.foregroundStyle(theme.textSecondary)
+						.fixedSize(horizontal: false, vertical: true)
+				}
+				HStack(spacing: LauncherTokens.Spacing.control) {
+					Rectangle()
+						.fill(theme.accentFill)
+						.frame(width: hasEntered || reduceMotion ? 48 : 0, height: 2)
+					Rectangle().fill(theme.hairline)
+						.frame(height: 1)
+						.frame(maxWidth: .infinity)
+						.scaleEffect(x: hasEntered || reduceMotion ? 1 : 0, anchor: .leading)
+				}
+			}
+			.frame(maxWidth: .infinity, alignment: .leading)
+			.padding(.horizontal, LauncherTokens.Spacing.page)
+			.padding(.top, LauncherTokens.Spacing.page)
+			.padding(.bottom, LauncherTokens.Spacing.panel)
+
+			ScrollView {
+				content
+					.frame(maxWidth: .infinity, alignment: .leading)
+					.padding(.horizontal, LauncherTokens.Spacing.page)
+					.padding(.top, LauncherTokens.Spacing.compact)
+					.padding(.bottom, LauncherTokens.Spacing.section)
+			}
+			.scrollIndicators(.automatic)
+		}
+		.safeAreaInset(edge: .bottom, spacing: 0) {
+			FloatingActionBar {
+				actions
+			}
+			.textSelection(.disabled)
+			.padding(.top, LauncherTokens.Spacing.panel)
+			.padding(.trailing, LauncherTokens.Spacing.page)
+			.padding(.bottom, LauncherTokens.Spacing.panel)
+			.frame(maxWidth: .infinity, alignment: .trailing)
+			.background {
+				FloatingActionFooterFade()
+			}
+		}
+		.frame(width: modalSize.width, height: modalSize.height)
+		.launcherSurface(.modal)
+		.modifier(ModalEntrance(hasEntered: hasEntered, reduceMotion: reduceMotion))
+		.transition(
+			reduceMotion
+				? .opacity
+				: .asymmetric(
+					insertion: .identity,
+					removal: .opacity.combined(with: .scale(scale: 0.98))
+						.animation(LauncherMotion.Role.dismiss.animation()))
+		)
+		.onAppear {
+			let entrance = LauncherMotion.animation(.present, reduceMotion: reduceMotion)
+			withAnimation(entrance?.delay(LauncherMotion.modalEntranceDelay)) {
+				hasEntered = true
+			}
+		}
+	}
+
+	private var modalSize: CGSize {
+		guard let launcherWindowSize else {
+			return CGSize(width: width, height: height)
+		}
+		let margin: CGFloat = 28
+		return CGSize(
+			width: clamped(
+				width,
+				minimum: minimumWidth,
+				available: launcherWindowSize.width - (margin * 2)
+			),
+			height: clamped(
+				height,
+				minimum: minimumHeight,
+				available: launcherWindowSize.height - (margin * 2)
+			)
+		)
+	}
+
+	private func clamped(
+		_ preferred: CGFloat,
+		minimum: CGFloat,
+		available: CGFloat
+	) -> CGFloat {
+		min(max(preferred, minimum), max(0, available))
+	}
+}
+
+// Lets modal content settle in after the native sheet lifecycle has placed the window.
+private struct ModalEntrance: ViewModifier {
+	let hasEntered: Bool
+	let reduceMotion: Bool
+
+	func body(content: Content) -> some View {
+		let entered = hasEntered || reduceMotion
+		content
+			.opacity(entered ? 1 : 0)
+			.scaleEffect(entered ? 1 : 0.97)
+	}
+}

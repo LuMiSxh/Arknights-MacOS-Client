@@ -35,10 +35,15 @@ package func makeIsolatedDefaults(
 	return (UserDefaults(suiteName: suiteName)!, suiteName)
 }
 
-/// A lifecycle store that logs into a throwaway file.
+/// A lifecycle store that logs into `storage`. The caller removes the directory in a `defer`.
 @MainActor
-package func makeLifecycleStore() -> LauncherLifecycleStore {
-	let fileURL = FileManager.default.temporaryDirectory.appending(
-		path: "Lifecycle.\(UUID().uuidString).log")
+package func makeLifecycleStore(in storage: TemporaryDirectory) -> LauncherLifecycleStore {
+	let fileURL = storage.url.appending(path: "Lifecycle.\(UUID().uuidString).log")
 	return LauncherLifecycleStore(log: LauncherLog(fileURL: fileURL))
+}
+
+/// A theme cache path for a store whose test never reads or writes the cache.
+package func makeUnusedThemeCacheURL() -> URL {
+	FileManager.default.temporaryDirectory.appending(
+		path: "UnusedThemeCache.\(UUID().uuidString)")
 }

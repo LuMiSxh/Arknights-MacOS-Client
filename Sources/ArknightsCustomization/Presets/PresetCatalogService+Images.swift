@@ -18,7 +18,12 @@ extension PresetCatalogService {
 		}
 	}
 
-	package func imageData(for url: URL, cacheKey: String) async throws -> Data {
+	/// `priority` is `.interactive` only for downloads a user action waits on.
+	func imageData(
+		for url: URL,
+		cacheKey: String,
+		priority: PresetImageFetchLimiter.Priority = .background
+	) async throws -> Data {
 		await enforceImageCacheLimitIfNeeded()
 		let epoch = cacheEpoch
 		guard Self.isAllowedRemoteAssetURL(url) else {
@@ -42,7 +47,7 @@ extension PresetCatalogService {
 		var lastError: (any Error)?
 		for candidate in candidates {
 			do {
-				let data = try await fetchImageData(from: candidate)
+				let data = try await fetchImageData(from: candidate, priority: priority)
 				guard cacheEpoch == epoch else { throw CancellationError() }
 				await cacheImageData(data, at: cachedFile, epoch: epoch)
 				guard cacheEpoch == epoch else { throw CancellationError() }
@@ -75,7 +80,24 @@ extension PresetCatalogService {
 		return String(characters) + ".cache"
 	}
 
-	private func fetchImageData(from url: URL) async throws -> Data {
+	/// Maps preset download failures to typed errors so each resolves to a support code.
+	static func presetFetchError(_ error: any Error) -> any Error {
+		switch error {
+		case HTTPFetchError.unexpectedStatus(let status, _):
+			CustomizationError.presetServiceFailed(status: status)
+		case HTTPFetchError.noCandidates:
+			CustomizationError.presetNetworkFailed(detail: "No candidate address answered.")
+		case let urlError as URLError where urlError.code != .cancelled:
+			CustomizationError.presetNetworkFailed(detail: urlError.localizedDescription)
+		default:
+			error
+		}
+	}
+
+	private func fetchImageData(
+		from url: URL,
+		priority: PresetImageFetchLimiter.Priority
+	) async throws -> Data {
 		guard Self.isAllowedRemoteAssetURL(url) else {
 			throw CustomizationError.invalidRemoteAsset(url)
 		}
@@ -87,15 +109,19 @@ extension PresetCatalogService {
 		request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
 		let result: HTTPFetchResult
 		do {
-			result = try await fetcher.fetch(
-				[request],
-				policy: HTTPFetchPolicy(
-					maximumBytes: AppConstants.Presets.imageMaximumBytes,
-					attemptsPerCandidate: AppConstants.Presets.imageDownloadAttempts
+			let fetcher = fetcher
+			let request = request
+			result = try await imageFetchLimiter.run(priority: priority) {
+				try await fetcher.fetch(
+					[request],
+					policy: HTTPFetchPolicy(
+						maximumBytes: AppConstants.Presets.imageMaximumBytes,
+						attemptsPerCandidate: AppConstants.Presets.imageDownloadAttempts
+					)
 				)
-			)
-		} catch HTTPFetchError.unexpectedStatus {
-			throw URLError(.badServerResponse)
+			}
+		} catch {
+			throw Self.presetFetchError(error)
 		}
 		guard !result.data.isEmpty else {
 			throw URLError(.badServerResponse)
@@ -107,13 +133,15 @@ extension PresetCatalogService {
 	private func cachedImageData(from url: URL, epoch: UInt64) async -> Data? {
 		guard FileManager.default.fileExists(atPath: url.path) else { return nil }
 		do {
-			let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-			guard attributes[.type] as? FileAttributeType == .typeRegular else {
+			let values = try url.resourceValues(forKeys: [
+				.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey,
+			])
+			guard values.isRegularFile == true, values.isSymbolicLink != true else {
 				try FileManager.default.removeItem(at: url)
 				log.error("Removed non-regular preset cache entry at \(url.path)")
 				return nil
 			}
-			let size = (attributes[.size] as? NSNumber)?.intValue ?? 0
+			let size = values.fileSize ?? 0
 			guard size > 0, size <= AppConstants.Presets.imageMaximumBytes else {
 				try FileManager.default.removeItem(at: url)
 				log.error(
@@ -167,31 +195,17 @@ extension PresetCatalogService {
 	}
 
 	private func pruneImageCache(incomingBytes: Int64, preserving target: URL) throws {
-		let keys: Set<URLResourceKey> = [
-			.fileSizeKey, .contentModificationDateKey, .isRegularFileKey, .isSymbolicLinkKey,
-		]
-		let urls = try FileManager.default.contentsOfDirectory(
+		let failures = try CacheDirectoryPruner.enforceLimit(
 			at: cacheDirectory,
-			includingPropertiesForKeys: Array(keys),
-			options: [.skipsHiddenFiles]
+			maximumBytes: AppConstants.Presets.imageCacheMaximumBytes,
+			incomingBytes: incomingBytes,
+			preserving: target,
+			pathExtensions: ["cache"]
 		)
-		var entries: [(url: URL, size: Int64, date: Date)] = []
-		var total: Int64 = 0
-		for url in urls where url.pathExtension == "cache" && url != target {
-			let values = try url.resourceValues(forKeys: keys)
-			guard values.isRegularFile == true, values.isSymbolicLink != true else {
-				try FileManager.default.removeItem(at: url)
-				continue
-			}
-			let size = Int64(values.fileSize ?? 0)
-			total += size
-			entries.append((url, size, values.contentModificationDate ?? .distantPast))
-		}
-
-		let targetTotal = AppConstants.Presets.imageCacheMaximumBytes - incomingBytes
-		for entry in entries.sorted(by: { $0.date < $1.date }) where total > targetTotal {
-			try FileManager.default.removeItem(at: entry.url)
-			total -= entry.size
+		for failure in failures {
+			log.error(
+				"Failed to delete the preset cache file at \(failure.url.path): "
+					+ failure.error.localizedDescription)
 		}
 	}
 

@@ -8,8 +8,6 @@ own `sign_update --verify` then checks the archive, every delta, and the appcast
 feed, so this script never parses signatures itself.
 """
 
-from __future__ import annotations
-
 import argparse
 import base64
 import binascii
@@ -21,8 +19,10 @@ import subprocess
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from lib import sparkle_appcast
 from lib.common import fail, run_main
 from lib.console import success
+from lib.project_config import MINIMUM_MIGRATABLE_BUILD
 
 KEY_BYTES = 32
 PKCS8_ED25519_PREFIX = bytes.fromhex("302e020100300506032b657004220420")
@@ -140,6 +140,9 @@ def main() -> None:
             and arguments.delta_directory
         ):
             fail("--appcast needs --sign-update, --update-file, and --delta-directory")
+        sparkle_appcast.validate_appcast_gate(
+            arguments.appcast, MINIMUM_MIGRATABLE_BUILD
+        )
         verify_release(
             arguments.sign_update,
             private_key,

@@ -18,6 +18,7 @@ extension GameInstaller {
 		installDirectory: InstallerDirectory,
 		previousFiles: [String: ManifestFile]?,
 		verifyAllExistingFiles: Bool,
+		checksumBufferSize: Int = AppConstants.IO.checksumBufferSize,
 		progress: @escaping ProgressHandler,
 		willHash: @escaping @Sendable (String) -> Void = { _ in },
 		didRead: @escaping @Sendable (Int) -> Void = { _ in }
@@ -52,8 +53,7 @@ extension GameInstaller {
 				&& (verifyAllExistingFiles || previousFiles?[$0.item.path] == nil)
 		}
 		let tally = VerificationTally(
-			totalBytes: try Self.totalByteCount(of: hashedFiles.map(\.item)),
-			totalFiles: hashedFiles.count
+			totalBytes: try Self.totalByteCount(of: hashedFiles.map(\.item))
 		)
 		let candidateList = candidates
 		func decideDownloads() async throws -> [Bool] {
@@ -69,6 +69,7 @@ extension GameInstaller {
 						verifyAllExistingFiles: verifyAllExistingFiles,
 						installDirectory: installDirectory,
 						tally: tally,
+						checksumBufferSize: checksumBufferSize,
 						willHash: willHash,
 						didRead: didRead
 					)
@@ -105,11 +106,11 @@ extension GameInstaller {
 		verifyAllExistingFiles: Bool,
 		installDirectory: InstallerDirectory,
 		tally: VerificationTally,
+		checksumBufferSize: Int,
 		willHash: @escaping @Sendable (String) -> Void,
 		didRead: @escaping @Sendable (Int) -> Void
 	) async throws -> Bool {
 		let item = candidate.item
-		tally.begin(file: item.path)
 		return try Self.needsDownload(
 			item,
 			destinationSize: candidate.size,
@@ -129,6 +130,7 @@ extension GameInstaller {
 				return try ManifestChecksum.checksum(
 					ofFileDescriptor: descriptor,
 					expected: item.hash,
+					bufferSize: checksumBufferSize,
 					onRead: { count in
 						tally.add(bytes: count)
 						didRead(count)
@@ -151,21 +153,14 @@ final class VerificationTally: Sendable {
 	private struct State {
 		var verifiedBytes: Int64 = 0
 		var verifiedFiles = 0
-		var currentFile = ""
 		var sequence: UInt64 = 0
 	}
 
 	private let totalBytes: Int64
-	private let totalFiles: Int
 	private let state = Mutex(State())
 
-	init(totalBytes: Int64, totalFiles: Int) {
+	init(totalBytes: Int64) {
 		self.totalBytes = totalBytes
-		self.totalFiles = totalFiles
-	}
-
-	func begin(file: String) {
-		state.withLock { $0.currentFile = file }
 	}
 
 	func add(bytes: Int) {
@@ -182,8 +177,6 @@ final class VerificationTally: Sendable {
 			downloadedBytes: min(current.verifiedBytes, totalBytes),
 			totalBytes: totalBytes,
 			completedFiles: current.verifiedFiles,
-			totalFiles: totalFiles,
-			currentFile: current.currentFile,
 			isVerifying: true,
 			sequence: sequence
 		)

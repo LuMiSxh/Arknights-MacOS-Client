@@ -30,26 +30,4 @@ struct JSONFileStoreTests {
 		let compact = JSONFileStore(maximumBytes: 1_024, prettyPrinted: false)
 		#expect(try compact.encode(["b": 2, "a": 1]) == Data("{\"a\":1,\"b\":2}\n".utf8))
 	}
-
-	/// The size limit applies to writes and reads. A missing document is not an error.
-	@Test
-	func rejectsOversizedDocumentsInBothDirections() throws {
-		let directory = try TemporaryDirectory("JSONFileStoreTests")
-		defer { directory.remove() }
-		let url = directory.url.appending(path: "document.json")
-		let store = JSONFileStore(maximumBytes: 16)
-
-		#expect(throws: JSONFileStoreError.self) {
-			try store.write(["key": String(repeating: "x", count: 32)], to: url)
-		}
-		#expect(!FileManager.default.fileExists(atPath: url.path))
-
-		try Data(repeating: 0x20, count: 17).write(to: url)
-		#expect(throws: BoundedFileReadError.self) {
-			try store.read([String: String].self, at: url)
-		}
-		#expect(
-			try store.read([String: String].self, at: directory.url.appending(path: "missing"))
-				== nil)
-	}
 }

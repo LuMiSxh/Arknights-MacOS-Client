@@ -3,6 +3,7 @@
 import ArknightsTestSupport
 import Darwin
 import Foundation
+import Synchronization
 import Testing
 
 @testable import ArknightsGameRuntime
@@ -114,11 +115,10 @@ func deduplicatorLeavesDifferingMissingSymlinkAndExcludedFilesUntouched() throws
 	#expect(continued.clonedCount == 1)
 }
 
-private final class LockedCounter: @unchecked Sendable {
-	private let lock = NSLock()
-	private var count = 0
+private final class LockedCounter: Sendable {
+	private let state = Mutex(0)
 
-	var value: Int { lock.withLock { count } }
+	var value: Int { state.withLock { $0 } }
 
-	func increment() { lock.withLock { count += 1 } }
+	func increment() { state.withLock { $0 += 1 } }
 }

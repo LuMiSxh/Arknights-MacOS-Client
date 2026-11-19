@@ -3,12 +3,12 @@ import { ContentError } from './frontmatter.js';
 import { escapeHtml } from './html.js';
 import { mapping, rejectUnknownKeys } from './fenced-yaml.js';
 
-export interface ShareChartItem {
+interface ShareChartItem {
 	label: string;
 	share: number;
 }
 
-export type ShareChartType = 'bar' | 'pie';
+type ShareChartType = 'bar' | 'pie';
 
 export interface ShareChartSpec {
 	title: string;
@@ -21,7 +21,7 @@ const SERIES_SLOTS = 7;
 const ITEM_KEYS = new Set(['label', 'share']);
 
 /** The only place that turns a share into the coarse wording read by screen readers. */
-export function verbalShare(share: number): string {
+function verbalShare(share: number): string {
 	if (share === 0) return 'none';
 	if (share >= 0.6) return 'most';
 	if (share >= 0.4) return 'about half';

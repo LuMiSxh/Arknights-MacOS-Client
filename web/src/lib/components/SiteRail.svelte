@@ -2,35 +2,24 @@
 	import { resolve } from '$app/paths';
 	import { slide } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
-	import { tick, type Snippet } from 'svelte';
+	import { tick } from 'svelte';
 	import type { SiteRoute } from '$lib/content/types.js';
 	import { SlideIndicator, structureDuration } from '$lib/motion.svelte.js';
 	import NavIcon from './NavIcon.svelte';
-	import ProductMark from './ProductMark.svelte';
 
 	type Entry = {
 		title: string;
 		route: SiteRoute;
 		children: readonly { title: string; route: SiteRoute }[];
 	};
-	type Group = { label: string; entries: readonly Entry[] };
 	type Props = {
-		groups: readonly Group[];
-		iconUrl: string;
+		entries: readonly Entry[];
 		currentPath: string;
 		isCurrent: (route: string) => boolean;
 		currentValue: (route: string) => 'page' | 'location' | undefined;
-		search: Snippet;
 	};
 
-	let {
-		groups,
-		iconUrl,
-		currentPath,
-		isCurrent,
-		currentValue,
-		search
-	}: Props = $props();
+	let { entries, currentPath, isCurrent, currentValue }: Props = $props();
 
 	const indicator = new SlideIndicator();
 
@@ -50,14 +39,13 @@
 		)}
 />
 
-<aside class="site-rail" aria-label="Site navigation">
-	<div class="rail-mark">
-		<ProductMark href={resolve('/')} {iconUrl} />
-	</div>
-	{@render search()}
-
+<aside class="site-rail" aria-label="Documentation">
 	<div class="rail-navigation">
-		<nav class="site-nav" aria-label="Primary" {@attach trackSelection}>
+		<nav
+			class="site-nav"
+			aria-label="Documentation sections"
+			{@attach trackSelection}
+		>
 			<span
 				class="nav-indicator"
 				class:visible={indicator.visible}
@@ -65,43 +53,38 @@
 				style:height={`${indicator.height}px`}
 				aria-hidden="true"
 			></span>
-			{#each groups as group (group.label)}
-				{#if group.entries.length}
-					<p class="rail-label">{group.label}</p>
-				{/if}
-				{#each group.entries as entry (entry.route)}
-					{@const active = isCurrent(entry.route)}
-					<a
-						class="nav-item"
-						href={resolve(entry.route)}
-						data-active={active ? 'true' : undefined}
-						aria-current={currentValue(entry.route)}
+			{#each entries as entry (entry.route)}
+				{@const active = isCurrent(entry.route)}
+				<a
+					class="nav-item"
+					href={resolve(entry.route)}
+					data-active={active ? 'true' : undefined}
+					aria-current={currentValue(entry.route)}
+				>
+					<NavIcon route={entry.route} />
+					<span>{entry.title}</span>
+				</a>
+				{#if active && entry.children.length}
+					<div
+						class="nav-children"
+						in:slide={{
+							duration: prefersReducedMotion.current
+								? 0
+								: structureDuration
+						}}
 					>
-						<NavIcon route={entry.route} />
-						<span>{entry.title}</span>
-					</a>
-					{#if active && entry.children.length}
-						<div
-							class="nav-children"
-							in:slide={{
-								duration: prefersReducedMotion.current
-									? 0
-									: structureDuration
-							}}
-						>
-							{#each entry.children as child (child.route)}
-								<a
-									href={resolve(child.route)}
-									data-current={isCurrent(child.route)
-										? 'true'
-										: undefined}
-									aria-current={currentValue(child.route)}
-									>{child.title}</a
-								>
-							{/each}
-						</div>
-					{/if}
-				{/each}
+						{#each entry.children as child (child.route)}
+							<a
+								href={resolve(child.route)}
+								data-current={isCurrent(child.route)
+									? 'true'
+									: undefined}
+								aria-current={currentValue(child.route)}
+								>{child.title}</a
+							>
+						{/each}
+					</div>
+				{/if}
 			{/each}
 		</nav>
 	</div>
@@ -111,20 +94,15 @@
 	.site-rail {
 		position: sticky;
 		view-transition-name: site-rail;
-		top: 0;
+		top: var(--top-bar-height);
 		display: flex;
-		height: 100vh;
-		height: 100dvh;
+		height: calc(100dvh - var(--top-bar-height));
 		flex-direction: column;
 		gap: var(--site-space-5);
-		border-right: 1px solid var(--site-border);
+		border-right: 1px solid var(--site-hairline);
 		/* Glass over the blurred artwork, like the launcher's Settings sidebar. */
 		background: rgb(0 0 0 / 0.35);
 		padding: var(--site-space-6) var(--site-space-3);
-	}
-
-	.rail-mark {
-		padding-inline: var(--site-space-2);
 	}
 
 	.rail-navigation {
@@ -132,20 +110,6 @@
 		min-height: 0;
 		overflow-y: auto;
 		overscroll-behavior: contain;
-	}
-
-	.rail-label {
-		margin: var(--site-space-5) 0 var(--site-space-2);
-		padding-inline: var(--site-space-3);
-		color: var(--site-faint);
-		font-family: var(--site-font-mono);
-		font-size: 0.7rem;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-	}
-
-	.rail-label:first-of-type {
-		margin-top: 0;
 	}
 
 	.site-nav {
@@ -159,8 +123,8 @@
 		top: 0;
 		right: 0;
 		left: 0;
-		border-radius: var(--site-radius-control);
-		background: var(--site-signal-fill);
+		border-radius: var(--site-radius-rail-row);
+		background: var(--site-accent-glass-tint);
 		opacity: 0;
 		pointer-events: none;
 	}
@@ -176,7 +140,7 @@
 		left: 0;
 		width: 3px;
 		border-radius: var(--site-radius-capsule);
-		background: var(--site-signal);
+		background: var(--site-accent-fill);
 		content: '';
 	}
 
@@ -186,32 +150,31 @@
 		min-height: var(--site-touch-target);
 		align-items: center;
 		gap: var(--site-space-3);
-		border-radius: var(--site-radius-control);
+		border-radius: var(--site-radius-rail-row);
 		padding: 0 var(--site-space-3);
-		color: var(--site-muted);
+		color: var(--site-text-secondary);
 		font-size: 0.95rem;
 		font-weight: 500;
 		text-decoration: none;
 		transition:
-			background-color var(--site-motion-fast) ease,
-			color var(--site-motion-fast) ease;
+			background-color var(--site-dur-state) var(--site-ease-state),
+			color var(--site-dur-state) var(--site-ease-state);
 	}
 
 	.nav-item:hover:not([data-active]) {
-		background: var(--site-hover);
-		color: var(--site-text);
+		background: var(--site-group-fill);
+		color: var(--site-text-primary);
 	}
 
 	.nav-item[data-active] {
-		color: var(--site-signal-text);
-		font-weight: 600;
+		color: var(--site-accent-ink);
 	}
 
 	.nav-children {
 		display: grid;
 		gap: 0.1rem;
 		margin: 0.1rem 0 var(--site-space-2) 1.3rem;
-		border-left: 1px solid var(--site-line);
+		border-left: 1px solid var(--site-hairline);
 		padding-left: var(--site-space-2);
 	}
 
@@ -220,21 +183,20 @@
 		display: flex;
 		min-height: var(--site-touch-target);
 		align-items: center;
-		border-radius: 8px;
+		border-radius: var(--site-radius-rail-row);
 		padding: 0.3rem var(--site-space-3);
-		color: var(--site-muted);
+		color: var(--site-text-secondary);
 		font-size: 0.86rem;
 		text-decoration: none;
-		transition: color var(--site-motion-fast) ease;
+		transition: color var(--site-dur-state) var(--site-ease-state);
 	}
 
 	.nav-children a:hover {
-		color: var(--site-text);
+		color: var(--site-text-primary);
 	}
 
 	.nav-children a[aria-current='page'] {
-		color: var(--site-text);
-		font-weight: 600;
+		color: var(--site-text-primary);
 	}
 
 	.nav-children a[aria-current='page']::before {
@@ -244,7 +206,7 @@
 		left: calc(-1 * var(--site-space-2) - 1px);
 		width: 2px;
 		border-radius: var(--site-radius-capsule);
-		background: var(--site-signal);
+		background: var(--site-accent-fill);
 		content: '';
 	}
 

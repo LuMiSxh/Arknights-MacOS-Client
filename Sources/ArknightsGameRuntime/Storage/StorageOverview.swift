@@ -40,36 +40,22 @@ struct StorageUsage: Equatable, Identifiable, Sendable {
 	var id: String { location.category.id }
 }
 
-package struct StorageOverviewContext: Equatable, Sendable {
+struct StorageOverviewContext: Equatable, Sendable {
 	package let region: GameRegion
-	package let regionAccess: RegionAccess
+
 	let persistedInstallDirectories: [GameRegion: URL]
 }
 
 enum StorageOverviewResolver {
 	@MainActor
-	package static func context(
+	static func context(
 		preferences: LauncherPreferencesStore,
 		region: GameRegion
 	) -> StorageOverviewContext {
 		StorageOverviewContext(
 			region: region,
-			regionAccess: preferences.regionAccess(),
-			persistedInstallDirectories: preferences.persistedInstallDirectories()
-		)
-	}
 
-	@MainActor
-	static func locations(
-		paths: AppPaths,
-		preferences: LauncherPreferencesStore,
-		region: GameRegion = .global,
-		fileManager: FileManager = .default
-	) throws -> [StorageLocation] {
-		try locations(
-			paths: paths,
-			context: context(preferences: preferences, region: region),
-			fileManager: fileManager
+			persistedInstallDirectories: preferences.persistedInstallDirectories()
 		)
 	}
 
@@ -78,7 +64,7 @@ enum StorageOverviewResolver {
 		context: StorageOverviewContext,
 		fileManager: FileManager = .default
 	) throws -> [StorageLocation] {
-		let games = context.regionAccess.selectableRegions.map { region in
+		let games = GameRegion.allCases.map { region in
 			StorageLocation(
 				category: .game(region),
 				urls: [
@@ -86,20 +72,27 @@ enum StorageOverviewResolver {
 				]
 			)
 		}
-		let browserCaches = try paths.browserCacheDirectories(
-			for: context.region,
-			fileManager: fileManager
-		)
+		let browserCaches = try RuntimeLane.allCases.flatMap { lane in
+			try paths.browserCacheDirectories(
+				for: context.region, lane: lane, fileManager: fileManager)
+		}
 
 		return games + [
-			StorageLocation(category: .winePrefix, urls: [paths.winePrefix(for: context.region)]),
+			StorageLocation(
+				category: .winePrefix,
+				urls: RuntimeLane.allCases.map {
+					paths.winePrefix(for: context.region, lane: $0)
+				}
+			),
 			StorageLocation(
 				category: .compatibilityRuntime,
-				urls: paths.bundledRuntimeDirectory.map { [$0] } ?? []
+				urls: [paths.runtimeRoot, paths.runtimeDownloadsDirectory]
 			),
 			StorageLocation(
 				category: .dxmtCache,
-				urls: [paths.dxmtCache(for: context.region)]
+				urls: RuntimeLane.allCases.map {
+					paths.dxmtCache(for: context.region, lane: $0)
+				}
 			),
 			StorageLocation(category: .browserCache, urls: browserCaches),
 			StorageLocation(category: .galleryCache, urls: [paths.presetGalleryCache]),
@@ -107,8 +100,8 @@ enum StorageOverviewResolver {
 		]
 	}
 
-	static func placeholderLocations(context: StorageOverviewContext) -> [StorageLocation] {
-		let games = context.regionAccess.selectableRegions.map {
+	static func placeholderLocations() -> [StorageLocation] {
+		let games = GameRegion.allCases.map {
 			StorageLocation(category: .game($0), urls: [])
 		}
 		return games + [
@@ -153,7 +146,7 @@ enum StorageSizeCalculator {
 		at url: URL,
 		fileManager: FileManager
 	) throws -> Int64 {
-		guard !isSymbolicLink(url, fileManager: fileManager) else { return 0 }
+		guard !(try isSymbolicLink(url, fileManager: fileManager)) else { return 0 }
 		guard
 			let enumerator = fileManager.enumerator(
 				at: url,
@@ -175,8 +168,8 @@ enum StorageSizeCalculator {
 		return total
 	}
 
-	private static func isSymbolicLink(_ url: URL, fileManager: FileManager) -> Bool {
+	private static func isSymbolicLink(_ url: URL, fileManager: FileManager) throws -> Bool {
 		guard fileManager.fileExists(atPath: url.path) else { return false }
-		return (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == true
+		return try url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink == true
 	}
 }

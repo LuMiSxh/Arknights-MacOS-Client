@@ -7,11 +7,17 @@ internal import Sparkle
 /// Owns Sparkle's update engine and prevents replacement during launcher activity.
 @MainActor
 package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
-	let userDriver: LauncherUpdateUserDriver
+	private(set) lazy var userDriver = LauncherUpdateUserDriver(
+		activateApplication: activateApplication,
+		canRetryTermination: { [weak self] in self?.lifecycle.hasActiveActivity == false },
+		isGameRunning: { [weak self] in self?.lifecycle.activity.isGameActive == true },
+		reportFailure: { [weak self] error in self?.reportUpdateFailure(error) ?? false }
+	)
 	package private(set) var installationID: UUID?
 
 	private let lifecycle: LauncherLifecycleStore
 	private let log: LauncherLog
+	private let activateApplication: () -> Void
 	private lazy var updater = SPUUpdater(
 		hostBundle: .main,
 		applicationBundle: .main,
@@ -27,6 +33,8 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		case probe(LauncherUpdateCheckOutcome, completion: (LauncherUpdateCheckOutcome) -> Void)
 	}
 	private var check: Check?
+	private var updateFailureID: UUID?
+	private var idleCheckObserverID: UUID?
 
 	init(
 		lifecycle: LauncherLifecycleStore,
@@ -36,17 +44,9 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	) {
 		self.lifecycle = lifecycle
 		self.log = log
-		let driver = LauncherUpdateUserDriver(
-			activateApplication: activateApplication,
-			canRetryTermination: { [weak lifecycle] in
-				lifecycle?.hasActiveActivity == false
-			},
-			isGameRunning: { [weak lifecycle] in
-				lifecycle?.activity.isGameActive == true
-			}
-		)
-		userDriver = driver
+		self.activateApplication = activateApplication
 		super.init()
+		let driver = userDriver
 		let activityObserverID = lifecycle.observeActivityChanges { [weak driver] in
 			driver?.retryTerminationIfSafe()
 		}
@@ -56,6 +56,10 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	}
 
 	deinit {
+		if let idleCheckObserverID {
+			let lifecycle = self.lifecycle
+			Task { @MainActor in lifecycle.removeActivityObserver(idleCheckObserverID) }
+		}
 		cancelActivityObservation?()
 	}
 
@@ -71,6 +75,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	}
 
 	func checkForUpdates() {
+		cancelIdleCheck()
 		if userDriver.phase != .hidden && !userDriver.isPresented {
 			userDriver.showUpdateInFocus()
 			return
@@ -85,6 +90,23 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		}
 		check = .userInitiated
 		updater.checkForUpdates()
+	}
+
+	/// Starts the check now, or once no operation holds the launcher.
+	func checkForUpdatesWhenIdle() {
+		guard !lifecycle.canBeginExclusiveActivity else {
+			checkForUpdates()
+			return
+		}
+		guard idleCheckObserverID == nil else { return }
+		var observerID: UUID?
+		observerID = lifecycle.observeActivityChanges { [weak self] in
+			guard let self, self.lifecycle.canBeginExclusiveActivity else { return }
+			if let observerID { self.lifecycle.removeActivityObserver(observerID) }
+			self.idleCheckObserverID = nil
+			self.checkForUpdates()
+		}
+		idleCheckObserverID = observerID
 	}
 
 	func checkForUpdateInformation(
@@ -103,14 +125,6 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		}
 		updater.checkForUpdateInformation()
 	}
-
-	#if DEBUG
-		func beginProbeForTesting(
-			completion: @escaping (LauncherUpdateCheckOutcome) -> Void
-		) {
-			check = .probe(.current, completion: completion)
-		}
-	#endif
 
 	private func startIfNeeded(showError: Bool) -> Bool {
 		guard !hasStarted else { return true }
@@ -145,13 +159,18 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 
 	func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
 		userDriver.recordAvailableUpdate(item)
-		recordProbeOutcome(
-			.found(version: item.displayVersionString, running: Bundle.main.shortVersionString))
+		let offered = item.displayVersionString
+		let running = Bundle.main.shortVersionString
+		// An unparsable version keeps the old rule: any different version counts as newer.
+		let isNewer =
+			running.flatMap { LauncherAnnouncement.compare(offered, $0) }
+			.map { $0 == .orderedDescending } ?? (offered != running)
+		recordProbeOutcome(.found(version: offered, isNewerThanRunning: isNewer))
 	}
 
 	func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
 		if recordProbeOutcome(.current) { return }
-		userDriver.recordNoUpdate(error)
+		userDriver.recordNoUpdate()
 	}
 
 	func updater(
@@ -243,8 +262,59 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
 		// Sparkle calls didAbort before didFinish for a probe that ends in an
 		// error. Keep the completion pending until the update cycle finishes.
+		if !Self.isNoUpdateError(error) {
+			log.error("Launcher update aborted: \(error)")
+		}
 		if recordProbeOutcome(Self.probeOutcome(for: error)) { return }
 		finishLauncherUpdate()
+	}
+
+	/// Logs every update failure. A user-started check or install hands the failure to the
+	/// failure sheet and returns true, so the overlay stays idle. Background and probe failures
+	/// return false and keep their inline message.
+	private func reportUpdateFailure(_ error: any Error) -> Bool {
+		if Self.isBusyError(error) {
+			log.info("Launcher update deferred; another operation holds the launcher")
+			checkForUpdatesWhenIdle()
+			return true
+		}
+		log.error("Launcher update failed: \(error)")
+		guard installationID != nil || isUserInitiatedCheck else { return false }
+		// Keep the failure the user already sees. A second one would replace it.
+		guard lifecycle.state.presentation.failure == nil else { return true }
+		let failureID = UUID()
+		updateFailureID = failureID
+		lifecycle.presentFailure(
+			ContextualLauncherError(
+				userMessage: LauncherUpdateUserDriver.errorDetail,
+				diagnosticDescription: String(describing: error),
+				supportCode: .updateFailed
+			),
+			id: failureID,
+			code: .updateFailed,
+			context: SupportContext(operation: .launcher, region: nil),
+			canRepair: false,
+			allowsRetry: true,
+			blocksGameLaunch: false
+		)
+		return true
+	}
+
+	/// Starts a new user-initiated check for the update failure `id`. Returns false when `id`
+	/// is not the failure the sheet shows.
+	package func retryFailure(id: UUID) -> Bool {
+		guard updateFailureID == id, lifecycle.canBeginExclusiveActivity,
+			lifecycle.consumeFailure(id: id) != nil
+		else { return false }
+		updateFailureID = nil
+		log.info("Recovery selected; action=retry operation=launcher-update")
+		checkForUpdates()
+		return true
+	}
+
+	private var isUserInitiatedCheck: Bool {
+		if case .userInitiated = check { return true }
+		return false
 	}
 
 	private func finishLauncherUpdate() {
@@ -255,6 +325,17 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		}
 		check = nil
 		lifecycle.finishLauncherUpdate()
+	}
+
+	private func cancelIdleCheck() {
+		guard let idleCheckObserverID else { return }
+		lifecycle.removeActivityObserver(idleCheckObserverID)
+		self.idleCheckObserverID = nil
+	}
+
+	private static func isBusyError(_ error: any Error) -> Bool {
+		let error = error as NSError
+		return error.domain == busyError.domain && error.code == busyError.code
 	}
 
 	@discardableResult

@@ -14,28 +14,33 @@ import YouTubePlayerKit
 package final class BackgroundMusicController {
 	var player: YouTubePlayer?
 	var playbackState: YouTubePlayer.PlaybackState?
-	var isMuted = false
-	package var operation: BackgroundMusicOperation = .idle
+	var operation: BackgroundMusicOperation = .idle
 	var playbackExpectation: BackgroundMusicPlaybackExpectation?
 
 	let lifecycle: LauncherLifecycleStore
 	let settings: LauncherPreferencesController
 	let nowPlaying: NowPlayingCoordinator
 	let playerCommands: BackgroundMusicPlayerCommands
+	let clock: any Clock<Duration>
 	let openURL: (URL) -> Void
 	package var currentMusicTitle: String?
 	var currentMusicVideoID: String?
 	var currentSource: YouTubePlayer.Source?
-	var isManuallyPaused = false
-	@ObservationIgnored var cancellables: Set<AnyCancellable> = []
-	@ObservationIgnored var didShuffleCurrentPlaylist = false
-	@ObservationIgnored var sourceChangeTask: Task<Void, Never>?
+	/// Changes only through `transition(_:)`, apart from tests that stage a phase.
+	var phase: MusicPhase = .off
+	/// Picks the first playlist track; the argument is the playlist length.
+	let randomIndex: (Int) -> Int
+	@ObservationIgnored var didStartCurrentPlaylist = false
+	@ObservationIgnored var consecutiveFailures = 0
+	@ObservationIgnored let eventSlot = TaskSlot()
+	@ObservationIgnored let sourceChangeSlot = TaskSlot()
 	@ObservationIgnored let playerSlot = TaskSlot()
 	@ObservationIgnored let loadingSlot = TaskSlot()
 	@ObservationIgnored let operationSlot = TaskSlot()
 	@ObservationIgnored let expectationSlot = TaskSlot()
 	@ObservationIgnored let fadeSlot = TaskSlot()
 	@ObservationIgnored let volumeSlot = TaskSlot()
+	@ObservationIgnored let titleSlot = TaskSlot()
 	/// The running fade; `fadeSlot` owns it. Non-nil only while a fade runs.
 	@ObservationIgnored var fadeTask: Task<Void, Never>?
 	/// The running track or playback change; `operationSlot` decides whether its result is current.
@@ -43,10 +48,11 @@ package final class BackgroundMusicController {
 	@ObservationIgnored var playerGeneration: TaskSlot.Token
 	@ObservationIgnored var lastObservedTitle: String?
 	@ObservationIgnored var lastObservedVideoID: String?
-
-	deinit {
-		sourceChangeTask?.cancel()
-	}
+	@ObservationIgnored var activityObserverID: UUID?
+	@ObservationIgnored var lifecycleObservationTask: Task<Void, Never>?
+	@ObservationIgnored var isFollowingChanges = false
+	@ObservationIgnored var observedMusicPreferences: MusicPreferencesSnapshot?
+	@ObservationIgnored var observedIsChecking: Bool?
 
 	package convenience init(
 		lifecycle: LauncherLifecycleStore,
@@ -71,11 +77,15 @@ package final class BackgroundMusicController {
 		launcherIconManager: LauncherIconManager,
 		initialMusicTitle: String? = nil,
 		playerCommands: BackgroundMusicPlayerCommands = .live,
+		clock: any Clock<Duration> = ContinuousClock(),
+		randomIndex: @escaping (Int) -> Int = { Int.random(in: 0..<$0) },
 		openURL: @escaping (URL) -> Void
 	) {
+		self.randomIndex = randomIndex
 		self.lifecycle = lifecycle
 		self.settings = settings
 		self.playerCommands = playerCommands
+		self.clock = clock
 		self.openURL = openURL
 		playerGeneration = playerSlot.begin()
 		currentMusicTitle = initialMusicTitle
@@ -85,12 +95,24 @@ package final class BackgroundMusicController {
 		}
 	}
 
+	/// Sleeps on the injected clock with 10% leeway.
+	func sleep(for duration: Duration) async throws {
+		try await clock.sleep(for: duration, tolerance: duration / 10)
+	}
+
 	var isPlaying: Bool {
 		if let playbackIntent { return playbackIntent == .playing }
 		return playbackState == .playing || playbackState == .buffering
 	}
 
-	var isGameProcessRunning: Bool { lifecycle.activity.hasGameProcess }
+	/// True from the single game fade-out until the game process ends.
+	var isSilencedForGame: Bool { phase.isSilencedForGame }
+
+	var isUnavailable: Bool { phase.isUnavailable }
+
+	func transition(_ event: MusicPhaseEvent) {
+		phase = phase.applying(event)
+	}
 
 	var isChangingTrack: Bool { operation.isChangingTrack }
 
@@ -106,10 +128,11 @@ package final class BackgroundMusicController {
 		return true
 	}
 
-	var controlsAreDisabled: Bool {
-		return player == nil || lifecycle.activity.hasGameProcess || isChangingTrack
-			|| isChangingPlayback
+	var controlsAreUnavailable: Bool {
+		phase == .off || lifecycle.activity.hasGameProcess
 	}
+
+	var isMuted: Bool { settings.launcherMusicMuted }
 
 	var effectiveVolume: Double {
 		isMuted ? 0 : settings.launcherMusicVolume
@@ -128,17 +151,85 @@ package final class BackgroundMusicController {
 		startIfNeeded()
 	}
 
+	/// Starts following launcher activity and music preferences while the view is mounted.
+	func start() {
+		guard !isFollowingChanges else { return }
+		isFollowingChanges = true
+		activityObserverID = lifecycle.observeActivityChanges { [weak self] in
+			guard let self else { return }
+			self.gameActivityDidChange(to: self.lifecycle.activity)
+		}
+		observedMusicPreferences = musicPreferences
+		observedIsChecking = lifecycle.state.refresh.isChecking
+		observeFollowedState()
+		startIfNeeded()
+	}
+
+	private var musicPreferences: MusicPreferencesSnapshot {
+		MusicPreferencesSnapshot(
+			url: settings.launcherMusicURL,
+			isEnabled: settings.playsLauncherMusic,
+			volume: settings.launcherMusicVolume,
+			isMuted: settings.launcherMusicMuted
+		)
+	}
+
+	/// One cancellable task follows settings and the refresh flag. Observation tracking fires
+	/// once, so the loop re-arms it after every change.
+	private func observeFollowedState() {
+		lifecycleObservationTask?.cancel()
+		lifecycleObservationTask = Task { [weak self] in
+			while !Task.isCancelled {
+				guard let self else { return }
+				let (changes, continuation) = AsyncStream<Void>.makeStream(
+					bufferingPolicy: .bufferingNewest(1))
+				withObservationTracking {
+					_ = self.musicPreferences
+					_ = self.lifecycle.state.refresh.isChecking
+				} onChange: {
+					continuation.yield(())
+				}
+				var iterator = changes.makeAsyncIterator()
+				guard await iterator.next() != nil, !Task.isCancelled else { return }
+				self.followedStateDidChange()
+			}
+		}
+	}
+
+	/// Applies every followed value that changed since the previous observation.
+	private func followedStateDidChange() {
+		guard isFollowingChanges else { return }
+		let previousPreferences = observedMusicPreferences
+		let currentPreferences = musicPreferences
+		observedMusicPreferences = currentPreferences
+		if let previousPreferences, previousPreferences != currentPreferences {
+			if previousPreferences.url != currentPreferences.url { sourceDidChange() }
+			if previousPreferences.isEnabled != currentPreferences.isEnabled {
+				enabledDidChange(to: currentPreferences.isEnabled)
+			}
+			if previousPreferences.volume != currentPreferences.volume
+				|| previousPreferences.isMuted != currentPreferences.isMuted
+			{
+				volumeDidChange(to: currentPreferences.volume)
+			}
+		}
+		let isChecking = lifecycle.state.refresh.isChecking
+		guard observedIsChecking != isChecking else { return }
+		observedIsChecking = isChecking
+		refreshDidChange(isChecking: isChecking)
+	}
+
 	func sourceDidChange() {
 		guard settings.playsLauncherMusic, !lifecycle.activity.hasGameProcess else { return }
-		sourceChangeTask?.cancel()
-		sourceChangeTask = Task { [weak self] in
+		sourceChangeSlot.replace { [weak self, clock] token in
 			do {
-				try await Task.sleep(for: AppConstants.Music.sourceChangeDebounce)
+				let debounce = AppConstants.Music.sourceChangeDebounce
+				try await clock.sleep(for: debounce, tolerance: debounce / 10)
 			} catch {
 				return
 			}
-			guard let self, !Task.isCancelled else { return }
-			sourceChangeTask = nil
+			guard let self, sourceChangeSlot.owns(token) else { return }
+			sourceChangeSlot.invalidate()
 			guard settings.playsLauncherMusic, !lifecycle.activity.hasGameProcess else {
 				return
 			}
@@ -149,8 +240,8 @@ package final class BackgroundMusicController {
 
 	func enabledDidChange(to isEnabled: Bool) {
 		if isEnabled {
-			isManuallyPaused = false
-			setupPlayer()
+			// During a game the normal path starts playback after the game ends.
+			if !lifecycle.activity.hasGameProcess { setupPlayer() }
 		} else {
 			stopAndClearPlayer()
 		}
@@ -162,29 +253,37 @@ package final class BackgroundMusicController {
 	}
 
 	func toggleMute() {
-		isMuted.toggle()
-		cancelFade()
+		settings.launcherMusicMuted.toggle()
+		// A running fade reads the volume at every step; it must still finish and pause.
+		guard fadeTask == nil else { return }
 		scheduleVolumeUpdate(to: effectiveVolume)
 	}
 
-	func gameRunningDidChange(to isRunning: Bool) {
-		if isRunning {
-			performFadeOut()
-		} else if settings.playsLauncherMusic, !isManuallyPaused {
-			if player == nil {
-				setupPlayer()
-			} else {
+	/// The launcher music keeps playing while the game loads and fades out once, when its window appears.
+	func gameActivityDidChange(to activity: LauncherActivity) {
+		if case .runningGame = activity {
+			guard !isSilencedForGame else { return }
+			transition(.gameWindowAppeared)
+			if isSilencedForGame { performFadeOut() }
+		} else if !activity.hasGameProcess {
+			// A launch that stops before the window appears never silenced the music.
+			let wasSilenced = isSilencedForGame
+			transition(.gameProcessEnded)
+			guard settings.playsLauncherMusic, !phase.isUserPaused else { return }
+			if phase == .off {
+				startIfNeeded()
+			} else if wasSilenced {
 				performFadeIn()
 			}
 		}
 	}
 
 	func togglePlayback() {
-		guard !controlsAreDisabled else { return }
+		guard !controlsAreUnavailable, !isChangingTrack, !isChangingPlayback else { return }
 		if isPlaying {
 			pauseFromUserAction()
 		} else {
-			isManuallyPaused = false
+			transition(.userResumed)
 			guard let player else { return }
 			let operation = beginOperation(.playbackChange(.playing))
 			performFadeIn(on: player, userPlaybackOperation: operation)
@@ -200,6 +299,15 @@ package final class BackgroundMusicController {
 	}
 
 	func stop() {
+		isFollowingChanges = false
+		lifecycleObservationTask?.cancel()
+		lifecycleObservationTask = nil
+		if let activityObserverID {
+			lifecycle.removeActivityObserver(activityObserverID)
+			self.activityObserverID = nil
+		}
+		observedMusicPreferences = nil
+		observedIsChecking = nil
 		stopAndClearPlayer()
 	}
 
@@ -212,22 +320,25 @@ package final class BackgroundMusicController {
 		let sourceType = sourceTypeName(source)
 
 		invalidatePlayerTasks()
-		didShuffleCurrentPlaylist = false
-		cancellables.removeAll()
+		// Only a new player or source picks a random start; reusing the playlist resumes it.
+		if player == nil || currentSource != source { didStartCurrentPlaylist = false }
+		consecutiveFailures = 0
 		currentSource = source
-		isManuallyPaused = false
+		transition(.sourceLoaded)
 
 		if let player {
-			setupObservation(for: player, source: source)
+			observeEvents(of: player)
 			loadingSlot.replace { [weak self] token in
 				guard let self else { return }
 				do {
-					if player.source == nil || player.source != source {
-						try await player.load(source: source)
+					let isNewSource = player.source == nil || player.source != source
+					if isNewSource {
+						try await playerCommands.load(player, source)
 					}
 					guard loadingSlot.owns(token) else { return }
 					lifecycle.log.info("Background music loaded source type: \(sourceType)")
-					performFadeIn(on: player)
+					// A freshly cued playlist starts from its `.cued` event, once YouTube knows its tracks.
+					if !(isNewSource && source.isPlaylist) { performFadeIn(on: player) }
 				} catch {
 					guard loadingSlot.owns(token) else { return }
 					lifecycle.log.error(
@@ -243,14 +354,15 @@ package final class BackgroundMusicController {
 		let newPlayer = YouTubePlayer(
 			source: source,
 			parameters: .init(
-				autoPlay: true,
+				// A playlist starts on a random track, so it must not play track 0 first.
+				autoPlay: !source.isPlaylist,
 				showControls: false,
 				restrictRelatedVideosToSameChannel: false
 			)
 		)
 		lifecycle.log.info("Background music initializing player with source type: \(sourceType)")
 		player = newPlayer
-		setupObservation(for: newPlayer, source: source)
+		observeEvents(of: newPlayer)
 	}
 
 	var parsedYouTubeSource: YouTubePlayer.Source? {
@@ -295,50 +407,12 @@ package final class BackgroundMusicController {
 		if let url = URL(string: trimmed) { openURL(url) }
 	}
 
-	private func setupObservation(for targetPlayer: YouTubePlayer, source: YouTubePlayer.Source) {
-		let generation = playerGeneration
-		lastObservedTitle = nil
-		lastObservedVideoID = nil
-		playbackState = nil
+}
 
-		targetPlayer.playbackStatePublisher
-			.receive(on: DispatchQueue.main)
-			.removeDuplicates()
-			.sink { [weak self, weak targetPlayer] state in
-				guard let self, let targetPlayer, isCurrent(targetPlayer, generation: generation)
-				else {
-					return
-				}
-				playbackState = state
-				reconcilePlaybackIntent(with: state)
-				nowPlaying.updatePlayback(isPlaying: isPlaying)
-				lifecycle.log.debug("Background music state: \(state)")
-
-				if state == .cued || state == .unstarted {
-					if settings.playsLauncherMusic
-						&& !lifecycle.activity.hasGameProcess
-						&& !isManuallyPaused
-					{
-						performFadeIn(on: targetPlayer)
-					}
-				}
-
-				if state == .playing, case .playlist = source {
-					shuffleInitialPlaylistIfNeeded(on: targetPlayer)
-				}
-			}
-			.store(in: &cancellables)
-
-		targetPlayer.playbackMetadataPublisher
-			.receive(on: DispatchQueue.main)
-			.sink { [weak self, weak targetPlayer] metadata in
-				guard let self, let targetPlayer, isCurrent(targetPlayer, generation: generation)
-				else {
-					return
-				}
-				applyTrackTitle(from: metadata)
-			}
-			.store(in: &cancellables)
-	}
-
+/// The launcher music preferences the controller follows while the view is mounted.
+struct MusicPreferencesSnapshot: Equatable {
+	let url: String
+	let isEnabled: Bool
+	let volume: Double
+	let isMuted: Bool
 }

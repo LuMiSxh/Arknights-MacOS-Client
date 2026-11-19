@@ -13,27 +13,28 @@ package final class InstallationController {
 
 	package var region: GameRegion
 	package var installDirectory: URL
+	/// A folder the user picked that the launcher refuses or asks about before using.
+	package private(set) var pendingInstallDirectory: PendingInstallDirectory?
 	package var progress: DownloadProgress?
-	package private(set) var completionFeedback: InstallationCompletionFeedback?
-	package private(set) var installedRegions: [GameRegion] = []
+	package private(set) var installedRegions: [GameRegion] = [] {
+		didSet {
+			if installedRegions != oldValue { onInstalledRegionsChanged?() }
+		}
+	}
+	@ObservationIgnored package var onInstalledRegionsChanged: (() -> Void)?
 	@ObservationIgnored var progressSequence: UInt64 = 0
 
 	package var configuration: GameConfiguration? {
 		get { lifecycle.state.readiness.configuration }
 		set { lifecycle.state.readiness.configuration = newValue }
 	}
-	package var isInstalled: Bool {
-		get { lifecycle.state.readiness.isInstalled }
-		set { lifecycle.state.readiness.isInstalled = newValue }
+	package var installPresence: InstallPresence {
+		get { lifecycle.state.readiness.installPresence }
+		set { lifecycle.state.readiness.installPresence = newValue }
 	}
-	package var hasPartialDownload: Bool {
-		get { lifecycle.state.readiness.hasPartialDownload }
-		set { lifecycle.state.readiness.hasPartialDownload = newValue }
-	}
-	package var installedVersion: String? {
-		get { lifecycle.state.readiness.installedVersion }
-		set { lifecycle.state.readiness.installedVersion = newValue }
-	}
+	package var isInstalled: Bool { installPresence.isInstalled }
+	package var hasPartialDownload: Bool { installPresence == .partialDownload }
+	package var installedVersion: String? { installPresence.installedVersion }
 	package var isGameUpdateAvailable: Bool {
 		get { lifecycle.state.readiness.isGameUpdateAvailable }
 		set { lifecycle.state.readiness.isGameUpdateAvailable = newValue }
@@ -56,8 +57,7 @@ package final class InstallationController {
 	@ObservationIgnored package var onMetadataRefreshCancellationRequested: (() -> Void)?
 	@ObservationIgnored var installationTask: Task<Void, Never>?
 	@ObservationIgnored var activityLease: ActivityLease?
-	@ObservationIgnored private var stateRefreshTask: Task<Void, Never>?
-	@ObservationIgnored private var stateRefreshID: UUID?
+	@ObservationIgnored private let stateRefreshSlot = TaskSlot()
 
 	package init(
 		lifecycle: LauncherLifecycleStore,
@@ -85,23 +85,22 @@ package final class InstallationController {
 		)
 	}
 
-	deinit {
+	// `TaskSlot` does not cancel on deinit, so cancel the in-flight refresh here.
+	isolated deinit {
 		installationTask?.cancel()
-		stateRefreshTask?.cancel()
+		stateRefreshSlot.invalidate()
 	}
 
 	package func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard newRegion != region, lifecycle.activity == .idle else { return false }
-		guard preferences.regionAccess().allows(newRegion) else { return false }
+
 		cancelInstalledStateRefresh()
-		completionFeedback = nil
+		pendingInstallDirectory = nil
 		lifecycle.clearFailure()
 		region = newRegion
 		preferences.setSelectedRegion(newRegion)
 		configuration = nil
-		isInstalled = false
-		hasPartialDownload = false
-		installedVersion = nil
+		installPresence = .absent
 		isGameUpdateAvailable = false
 		progress = nil
 		progressSequence = 0
@@ -127,64 +126,58 @@ package final class InstallationController {
 		isGameUpdateAvailable = installedVersion.map { $0 != latest } ?? true
 	}
 
+	/// The install location of every server, including the default for unset servers.
+	func configuredInstallDirectories() -> [GameRegion: URL] {
+		Dictionary(
+			uniqueKeysWithValues: GameRegion.allCases.map {
+				candidate in
+				(
+					candidate,
+					preferences.installDirectory(
+						for: candidate,
+						default: paths.gameInstall(for: candidate)
+					)
+				)
+			}
+		)
+	}
+
 	@discardableResult
 	package func updateInstalledState() -> Task<Void, Never> {
-		cancelInstalledStateRefresh()
 		let request = InstallationStateRequest(
 			selectedRegion: region,
 			selectedDirectory: installDirectory,
-			regionDirectories: Dictionary(
-				uniqueKeysWithValues: preferences.regionAccess().selectableRegions.map {
-					candidate in
-					(
-						candidate,
-						preferences.installDirectory(
-							for: candidate,
-							default: paths.gameInstall(for: candidate)
-						)
-					)
-				}
-			)
+			regionDirectories: configuredInstallDirectories()
 		)
-		let refreshID = UUID()
-		stateRefreshID = refreshID
 		let stateLoader = self.stateLoader
-		let task = Task { [weak self, log] in
+		return stateRefreshSlot.replace { [weak self, log] token in
 			do {
 				let snapshot = try await stateLoader(request)
-				guard let self, self.ownsStateRefresh(refreshID, request: request) else {
+				guard let self, self.ownsStateRefresh(token, request: request) else {
 					return
 				}
-				self.isInstalled = snapshot.isInstalled
-				self.hasPartialDownload = snapshot.hasPartialDownload
-				self.installedVersion = snapshot.installedVersion
+				self.installPresence = snapshot.installPresence
 				self.installedRegions = snapshot.installedRegions.filter {
 					self.currentSelectableRegions.contains($0)
 				}
-				self.finishStateRefresh(refreshID)
 				if let diagnostic = snapshot.diagnostic {
 					log.error(diagnostic)
 				}
 			} catch is CancellationError {
-				self?.finishStateRefresh(refreshID)
+				return
 			} catch {
-				guard let self, self.ownsStateRefresh(refreshID, request: request) else {
+				guard let self, self.ownsStateRefresh(token, request: request) else {
 					return
 				}
-				self.finishStateRefresh(refreshID)
 				log.error(
 					"Failed to inspect installation state for \(request.selectedRegion.displayName): \(error.localizedDescription)"
 				)
 			}
 		}
-		stateRefreshTask = task
-		return task
 	}
 
 	package func cancelInstalledStateRefresh() {
-		stateRefreshTask?.cancel()
-		stateRefreshTask = nil
-		stateRefreshID = nil
+		stateRefreshSlot.invalidate()
 	}
 
 	package func setRegionInstalled(_ candidate: GameRegion, _ installed: Bool) {
@@ -210,43 +203,57 @@ package final class InstallationController {
 		await installationTask?.value
 	}
 
-	package func consumeCompletionFeedback(
-		for region: GameRegion
-	)
-		-> InstallationCompletionFeedback?
-	{
-		guard let completionFeedback, completionFeedback.region == region else { return nil }
-		self.completionFeedback = nil
-		return completionFeedback
+	/// Uses a refused or unconfirmed folder only after the user confirms it.
+	package func confirmPendingInstallDirectory() {
+		guard let pending = pendingInstallDirectory, !pending.issue.isRefusal else { return }
+		pendingInstallDirectory = nil
+		guard lifecycle.activity == .idle else { return }
+		applyInstallDirectory(pending.url)
 	}
 
-	func clearCompletionFeedback() {
-		completionFeedback = nil
+	package func dismissPendingInstallDirectory() {
+		pendingInstallDirectory = nil
 	}
 
-	func publishCompletionFeedback(for operationID: UUID, region: GameRegion) {
-		guard self.region == region else { return }
-		completionFeedback = InstallationCompletionFeedback(id: operationID, region: region)
+	func assessInstallDirectory(_ selected: URL) {
+		do {
+			let contents = try InstallDirectoryPolicy.inspect(selected)
+			let issue = InstallDirectoryPolicy.assess(
+				candidate: selected,
+				region: region,
+				configuredDirectories: configuredInstallDirectories(),
+				launcherDataRoot: paths.applicationSupportRoot,
+				homeDirectory: FileManager.default.homeDirectoryForCurrentUser,
+				contents: contents
+			)
+			if let issue {
+				pendingInstallDirectory = PendingInstallDirectory(url: selected, issue: issue)
+			} else {
+				applyInstallDirectory(selected)
+			}
+		} catch {
+			log.error("Could not read the chosen install folder: \(error.localizedDescription)")
+		}
+	}
+
+	private func applyInstallDirectory(_ url: URL) {
+		installDirectory = url
+		preferences.setInstallDirectory(url, for: region)
+		updateInstalledState()
 	}
 
 	private func ownsStateRefresh(
-		_ id: UUID,
+		_ token: TaskSlot.Token,
 		request: InstallationStateRequest
 	) -> Bool {
-		stateRefreshID == id && !Task.isCancelled
+		stateRefreshSlot.owns(token) && !Task.isCancelled
 			&& region == request.selectedRegion
 			&& installDirectory == request.selectedDirectory
 	}
 
 	private var currentSelectableRegions: Set<GameRegion> {
 		Set(
-			preferences.regionAccess().selectableRegions
+			GameRegion.allCases
 		)
-	}
-
-	private func finishStateRefresh(_ id: UUID) {
-		guard stateRefreshID == id else { return }
-		stateRefreshID = nil
-		stateRefreshTask = nil
 	}
 }

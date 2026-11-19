@@ -4,38 +4,34 @@ import ArknightsCore
 import Foundation
 
 extension GameSessionController {
-	static func runtimeEnvironmentOverrides(
-		for region: GameRegion,
-		usesHardwareCursor: Bool,
-		capabilities: RuntimeCapabilities = .conservative
-	) -> [String: String] {
-		var environment = [
-			"ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT": "1"
-		]
-		environment.merge(region.runtimeEnvironmentOverrides) { _, profileValue in profileValue }
-		environment.merge(
-			capabilities.environmentOverrides(
-				usesHardwareCursor: usesHardwareCursor
-			)
-		) { _, value in value }
-		return environment
-	}
-
 	package func launch() {
-		guard lifecycle.activity == .idle, !applicationTerminationRequested,
+		guard lifecycle.activity == .idle || isYieldingMaintenance,
+			!applicationTerminationRequested,
 			pendingLaunchID == nil
 		else { return }
 		let region = installation.region
+		let lane = currentRuntimeLane()
+		let usesBatterySaver = settings.batterySaverEnabled
+		let launchOptions = settings.launchOptions.yieldingToGameSettings()
 		let request = LaunchRequest(
 			id: UUID(),
 			region: region,
+			lane: lane,
 			executable: installation.installDirectory.appending(
 				path: installation.configuration?.executableName ?? "Arknights.exe"
 			),
-			prefixDirectory: paths.winePrefix(for: region),
-			options: settings.launchOptions,
+			prefixDirectory: paths.winePrefix(for: region, lane: lane),
+			options: usesBatterySaver
+				? launchOptions.applyingBatterySaver(
+					metalFXSupported: metalFXSpatialUpscalingSupported ?? false)
+				: launchOptions,
+			frameRateCap: settings.launchOptions.frameRateCap(
+				batterySaverLimit: usesBatterySaver ? settings.batterySaverFrameRateLimit : nil),
+			usesBatterySaver: usesBatterySaver,
+			disabledRuntimePatches: settings.disabledRuntimePatches,
+			usesDebugLogging: settings.debugLoggingEnabled,
 			usesHardwareCursor: settings.usesHardwareCursor,
-			forceDisableRetina: preferences.forceDisableRetina(),
+
 			requestedAt: .now
 		)
 		// The session does not exist until the preflight finishes. This marker keeps a second

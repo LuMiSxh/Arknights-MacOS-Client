@@ -1,80 +1,73 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
+import ArknightsGameRuntime
 import SwiftUI
 
 struct OnboardingProgressRail: View {
+	@Environment(\.launcherTheme) private var theme
 	let currentStep: OnboardingStep
-	let accentColor: Color
 	let appVersion: String
+	let installation: InstallationController
+	let runtimeSelection: RuntimeSelectionController
+	let lifecycle: LauncherLifecycleStore
+	let pauseDownload: () -> Void
+	let pauseRuntime: () -> Void
+	let resumeRuntime: () -> Void
+	let resumeDownload: () -> Void
+	let retryDownload: () -> Void
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text("SETUP ASSISTANT")
-				.font(.caption.monospaced().weight(.semibold))
-				.tracking(1.4)
-				.foregroundStyle(.tertiary)
-				.padding(.horizontal, 18)
-				.padding(.top, 22)
-				.padding(.bottom, 14)
+			NavigationRailCaption(text: "Setup assistant")
+				.padding(.horizontal, LauncherTokens.Spacing.panel)
+				.padding(.top, LauncherTokens.Spacing.page)
+				.padding(.bottom, LauncherTokens.Spacing.content)
 
-			VStack(spacing: LauncherVisuals.Spacing.compact) {
+			VStack(spacing: LauncherTokens.Spacing.compact) {
 				ForEach(OnboardingStep.allCases) { step in
-					HStack(spacing: LauncherVisuals.Spacing.control) {
-						RoundedRectangle(cornerRadius: 1)
-							.fill(currentStep == step ? accentColor : .clear)
-							.frame(width: 2, height: 18)
-							.accessibilityHidden(true)
-						Image(systemName: markerImage(for: step))
-							.frame(width: 17)
-							.symbolRenderingMode(.monochrome)
-							.accessibilityHidden(true)
-						Text(step.title)
-							.fontWeight(currentStep == step ? .semibold : .regular)
-						Spacer(minLength: 0)
-					}
-					.foregroundStyle(foregroundStyle(for: step))
-					.padding(.vertical, 8)
-					.padding(.trailing, 12)
-					.background(
-						backgroundFill(for: step),
-						in: .rect(cornerRadius: LauncherVisuals.Radius.row)
+					NavigationRailRow(
+						title: step.title,
+						systemImage: markerImage(for: step),
+						isSelected: currentStep == step
 					)
-					.frame(minHeight: 38)
-					.accessibilityElement(children: .combine)
-					.accessibilityLabel(step.title)
-					.accessibilityAddTraits(currentStep == step ? .isSelected : [])
 				}
 			}
-			.padding(.horizontal, 10)
+			.padding(.horizontal, LauncherTokens.Spacing.control)
 
 			Spacer()
 
-			HStack(spacing: LauncherVisuals.Spacing.control) {
+			OnboardingRailDownload(
+				installation: installation,
+				runtimeSelection: runtimeSelection,
+				lifecycle: lifecycle,
+				pause: pauseDownload,
+				pauseRuntime: pauseRuntime,
+				resumeRuntime: resumeRuntime,
+				resume: resumeDownload,
+				retry: retryDownload
+			)
+			.padding(.horizontal, LauncherTokens.Spacing.panel)
+
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				Rectangle()
-					.fill(accentColor)
+					.fill(theme.accentFill)
 					.frame(width: 28, height: 2)
-				Text("Launcher v\(appVersion)")
-					.font(.caption.monospaced())
-					.foregroundStyle(.tertiary)
+				Text("Version \(appVersion)")
+					.font(.caption)
+					.foregroundStyle(theme.textTertiary)
 			}
-			.padding(18)
+			.padding(LauncherTokens.Spacing.panel)
 		}
-		.frame(width: 205)
-		.background(LauncherVisuals.navigationRailBackground)
-	}
-
-	private func foregroundStyle(for step: OnboardingStep) -> Color {
-		if step == currentStep { return accentColor }
-		if step.rawValue < currentStep.rawValue { return .primary }
-		return .secondary
-	}
-
-	private func backgroundFill(for step: OnboardingStep) -> Color {
-		step == currentStep ? LauncherVisuals.selectedNavigationFill(for: accentColor) : .clear
+		.frame(width: LauncherTokens.Layout.railWidth)
+		.background(theme.footerFill)
 	}
 
 	private func markerImage(for step: OnboardingStep) -> String {
-		step.rawValue < currentStep.rawValue ? "checkmark" : step.systemImage
+		guard let current = OnboardingStep.allCases.firstIndex(of: currentStep),
+			let index = OnboardingStep.allCases.firstIndex(of: step)
+		else { return step.systemImage }
+		return index < current ? "checkmark" : step.systemImage
 	}
 }

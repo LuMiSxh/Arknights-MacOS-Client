@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsCustomization
 import ArknightsInfrastructure
 import Foundation
 
@@ -16,11 +15,11 @@ extension InstallationController {
 		lifecycle.presentFailure(
 			presentedError,
 			id: id,
-			code: operation == .uninstall ? .basalt : Self.supportCode(for: presentedError),
+			code: operation == .uninstall
+				? .localFileFailed : Self.supportCode(for: presentedError),
 			context: SupportContext(operation: operation, region: region.supportRegion),
-			repairableCodes: [.pebble, .anemone],
-			canRepair: isInstalled && operation != .repair,
-			allowsRetry: !Self.isMissingConfiguration(error),
+			canRepair: isInstalled && operation != .repair && !Self.leavesFolderInPlace(error),
+			allowsRetry: !Self.isMissingConfiguration(error) && !Self.leavesFolderInPlace(error),
 			blocksGameLaunch: operation == .install || operation == .update
 				|| operation == .repair
 		)
@@ -35,39 +34,46 @@ extension InstallationController {
 		switch error {
 		case let diagnosed as DiagnosedLauncherError:
 			supportCode(for: diagnosed.underlying)
+		case let contextual as ContextualLauncherError:
+			contextual.supportCode ?? .serviceError
 		case InstallerError.invalidManifestPath,
 			InstallerError.duplicateManifestPath,
 			InstallerError.conflictingManifestPaths:
-			.gabbro
+			.manifestUnsafe
 		case InstallerError.symbolicLinkInInstallPath,
 			InstallerError.cannotCreateFile,
 			InstallerError.unsafeInstallerTemporaryFile,
-			InstallerError.installDirectoryInUse:
-			.basalt
+			is DiskCapacityError:
+			.installFolderUnusable
+		case InstallerError.installDirectoryInUse:
+			.installationBusy
 		case InstallerError.insufficientDiskSpace:
-			.scree
-		case is DiskCapacityError:
-			.basalt
+			.insufficientDiskSpace
 		case LauncherError.invalidResponse,
-			CustomizationError.invalidRemoteAsset,
-			LauncherError.remoteContentTooLarge,
-			InstallerError.invalidDownloadResponse,
+			InstallerError.invalidRemoteAsset,
+			LauncherError.remoteContentTooLarge:
+			.remoteContentInvalid
+		case InstallerError.invalidDownloadResponse,
 			InstallerError.downloadedSizeMismatch,
-			InstallerError.checksumMismatch,
-			is HTTPTransportError,
-			is URLError:
-			.pebble
-		case LauncherError.server,
-			InstallerError.missingConfiguration,
-			is ContextualLauncherError:
-			.virga
+			InstallerError.checksumMismatch:
+			.downloadDamaged
+		case is HTTPTransportError, is URLError:
+			.networkUnavailable
+		case LauncherError.server, InstallerError.missingConfiguration:
+			.serviceError
 		case is GameCompatibilityError, is GameShimRollbackError:
-			.anemone
+			.compatibilitySetupFailed
 		case is CocoaError, is POSIXError:
-			.basalt
+			.localFileFailed
 		default:
 			nil
 		}
+	}
+
+	/// Repeating the uninstall or repairing cannot help; the user must delete the files.
+	private static func leavesFolderInPlace(_ error: any Error) -> Bool {
+		if case InstallerError.installedFilesUnknown = error { return true }
+		return false
 	}
 
 	private static func isMissingConfiguration(_ error: any Error) -> Bool {

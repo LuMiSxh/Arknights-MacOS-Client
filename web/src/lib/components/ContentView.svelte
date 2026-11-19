@@ -5,16 +5,16 @@
 	import ChartEnhancer from './ChartEnhancer.svelte';
 	import MermaidEnhancer from './MermaidEnhancer.svelte';
 	import PageMetadata from './PageMetadata.svelte';
-	import type {
-		ContentNeighbors,
-		ContentNode,
-		SiteRoute
-	} from '$lib/content/types.js';
+	import {
+		breadcrumbTrail as buildBreadcrumbs,
+		type Breadcrumb
+	} from '$lib/content/breadcrumbs.js';
+	import type { ContentNeighbors, ContentNode } from '$lib/content/types.js';
 
 	interface Props {
 		content: ContentNode;
 		neighbors?: ContentNeighbors;
-		breadcrumbs?: Array<{ title: string; route: SiteRoute }>;
+		breadcrumbs?: Breadcrumb[];
 	}
 
 	let { content, neighbors = {}, breadcrumbs = [] }: Props = $props();
@@ -46,22 +46,10 @@
 	);
 	const hasMermaid = $derived(content.html.includes('data-mermaid'));
 	const hasCharts = $derived(content.html.includes('data-chart'));
-	const breadcrumbTrail = $derived.by(
-		(): Array<{ title: string; route: SiteRoute }> => {
-			if (breadcrumbs.length) return breadcrumbs;
-			const segments = content.route.split('/').filter(Boolean);
-			return segments.map((segment, index) => ({
-				title:
-					index === segments.length - 1
-						? content.title
-						: segment
-								.replaceAll('-', ' ')
-								.replace(/\b\w/g, (character) =>
-									character.toUpperCase()
-								),
-				route: `/${segments.slice(0, index + 1).join('/')}/`
-			}));
-		}
+	const breadcrumbTrail = $derived.by((): Breadcrumb[] =>
+		breadcrumbs.length
+			? breadcrumbs
+			: buildBreadcrumbs(content.route, content.title)
 	);
 
 	function syncActiveHeading() {
@@ -285,7 +273,7 @@
 	.content-copy :global(.heading-link) {
 		position: relative;
 		margin-left: 0.3em;
-		color: var(--site-faint);
+		color: var(--site-text-tertiary);
 		font-family: var(--site-font-mono);
 		font-size: 0.8em;
 		font-weight: 500;
@@ -320,7 +308,7 @@
 
 	.content-copy :global(.heading-link:hover),
 	.content-copy :global(.heading-link:focus-visible) {
-		color: var(--site-signal-text);
+		color: var(--site-accent-ink);
 	}
 
 	.content-copy :global(.heading-link[data-copied='true']) {
@@ -328,27 +316,27 @@
 	}
 
 	.empty-directory-note {
-		color: var(--site-muted);
+		color: var(--site-text-secondary);
 	}
 
 	.content-toc {
 		grid-area: toc;
 		position: sticky;
-		top: var(--site-space-6);
+		top: calc(var(--top-bar-height) + var(--site-space-6));
 		align-self: start;
 		display: flex;
-		max-height: calc(100dvh - 3rem);
+		max-height: calc(
+			100dvh - var(--top-bar-height) - 2 * var(--site-space-6)
+		);
 		flex-direction: column;
 		overflow: hidden;
 	}
 
 	.toc-label {
 		margin: 0 0 var(--site-space-3);
-		color: var(--site-faint);
+		color: var(--site-text-tertiary);
 		font-family: var(--site-font-mono);
 		font-size: 0.7rem;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
 	}
 
 	/* A hairline track with a gliding accent segment, the launcher's page-heading motif. */
@@ -356,7 +344,7 @@
 		position: relative;
 		display: grid;
 		min-height: 0;
-		border-left: 1px solid var(--site-line);
+		border-left: 1px solid var(--site-control-stroke);
 		overflow-y: auto;
 		overscroll-behavior: contain;
 	}
@@ -367,7 +355,7 @@
 		left: -1px;
 		width: 2px;
 		border-radius: var(--site-radius-capsule);
-		background: var(--site-signal);
+		background: var(--site-accent-fill);
 		opacity: 0;
 		pointer-events: none;
 	}
@@ -378,7 +366,7 @@
 
 	.content-toc a {
 		padding: 0.4rem 0 0.4rem var(--site-space-4);
-		color: var(--site-faint);
+		color: var(--site-text-tertiary);
 		font-size: 0.84rem;
 		line-height: 1.4;
 		text-decoration: none;
@@ -386,12 +374,11 @@
 	}
 
 	.content-toc a:hover {
-		color: var(--site-text);
+		color: var(--site-text-primary);
 	}
 
 	.content-toc a[aria-current='location'] {
-		color: var(--site-signal-text);
-		font-weight: 600;
+		color: var(--site-accent-ink);
 	}
 
 	.content-toc a.toc-nested {
@@ -413,26 +400,26 @@
 	.page-neighbors a {
 		display: grid;
 		gap: 0.2rem;
-		border: 1px solid var(--site-border);
+		border: 1px solid var(--site-hairline);
 		border-radius: var(--site-radius-panel);
-		background: var(--site-panel);
+		background: var(--site-group-fill);
 		padding: var(--site-space-4) var(--site-space-5);
-		color: var(--site-text);
+		color: var(--site-text-primary);
 		text-decoration: none;
 		transition: border-color var(--site-motion-fast) ease;
 	}
 
 	.page-neighbors a:hover {
-		border-color: var(--site-signal-border);
+		border-color: var(--site-accent-glass-stroke);
 	}
 
 	.page-neighbors small {
-		color: var(--site-faint);
+		color: var(--site-text-tertiary);
 		font-size: 0.75rem;
 	}
 
 	.page-neighbors strong {
-		font-weight: 600;
+		font-weight: 500;
 	}
 
 	.next-page {
@@ -450,9 +437,9 @@
 			position: static;
 			display: block;
 			max-height: none;
-			border: 1px solid var(--site-border);
+			border: 1px solid var(--site-hairline);
 			border-radius: var(--site-radius-panel);
-			background: var(--site-panel);
+			background: var(--site-group-fill);
 			margin-bottom: var(--site-space-8);
 			padding: var(--site-space-4);
 			overflow: visible;

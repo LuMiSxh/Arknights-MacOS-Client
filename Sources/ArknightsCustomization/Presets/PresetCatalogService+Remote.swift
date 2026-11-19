@@ -71,8 +71,8 @@ extension PresetCatalogService {
 				)
 			)
 			return result.data
-		} catch HTTPFetchError.unexpectedStatus {
-			throw URLError(.badServerResponse)
+		} catch {
+			throw Self.presetFetchError(error)
 		}
 	}
 
@@ -164,13 +164,7 @@ extension PresetCatalogService {
 		)
 	}
 
-	// The CDN doesn't process this resize parameter on demand for a URL it hasn't already
-	// cached a response for — appending it to a wallpaper nobody has requested this way
-	// before returns the untouched original, no smaller than not appending it at all. But
-	// the live Fankit gallery page requests every wallpaper it displays with this exact
-	// parameter, which keeps a materially smaller cached response warm for anything
-	// currently shown there; matching that convention lets this app's own requests land on
-	// those same cached responses instead of the multi-megabyte originals.
+	// The CDN serves a width-bounded JPEG for this query, far smaller than the original.
 	static func syntheticThumbnailURL(for url: URL) -> URL? {
 		guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
 			return nil
@@ -178,7 +172,7 @@ extension PresetCatalogService {
 		components.queryItems = [
 			URLQueryItem(
 				name: "x-oss-process",
-				value: "image/resize,p_\(AppConstants.Presets.thumbnailResizePercent)"
+				value: "image/resize,w_\(AppConstants.Presets.thumbnailWidth)"
 			)
 		]
 		return components.url

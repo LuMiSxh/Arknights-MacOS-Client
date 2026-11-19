@@ -44,12 +44,19 @@ extension LauncherViewModel: LauncherActions {
 		region.requiresACEWarning && !acknowledged
 	}
 
-	package var canRequestDockLaunch: Bool {
-		lifecycle.activity == .idle && !lifecycle.state.refresh.isChecking
+	/// True when onboarding may auto-start. A developer simulation that is not an onboarding
+	/// preview stays out of the way.
+	var canStartOnboarding: Bool {
+		#if DEBUG
+			if isDeveloperMode { return isOnboardingPreview }
+		#endif
+		return true
 	}
 
-	private var isMigratingStorage: Bool {
-		lifecycle.activity == .maintaining(.migratingStorage)
+	/// True when onboarding must re-read the installed state from disk first. A developer
+	/// simulation already holds the simulated state, so a refresh would overwrite it.
+	var onboardingShouldRefreshInstalledState: Bool {
+		!isDeveloperMode
 	}
 
 	// MARK: - Region
@@ -136,6 +143,7 @@ extension LauncherViewModel: LauncherActions {
 	}
 
 	package func stopGameForApplicationTermination() {
+		environmentRefresh.cancelForApplicationTermination()
 		gameSession.stopGameForApplicationTermination()
 	}
 
@@ -187,6 +195,90 @@ extension LauncherViewModel: LauncherActions {
 				refreshController?.startRefresh()
 			}
 		)
+	}
+
+	// MARK: - Runtime
+
+	/// Selects `lane`, downloads its pinned runtime, and refreshes discovery and the Intel
+	/// translation preflight. The selection applies when the download starts, so Home shows runtime
+	/// setup instead of Play until the lane is installed.
+	@discardableResult
+	package func installRuntime(_ lane: RuntimeLane) async -> Bool {
+		let previous = runtimeSelection.selectedLane
+		do {
+			try runtimeSelection.selectForDownload(lane: lane)
+		} catch {
+			log.error(
+				"Runtime lane switch failed: \(launcherDiagnosticDescription(for: error))")
+			return false
+		}
+		if runtimeSelection.selectedLane != previous {
+			gameSession.refreshRuntime()
+			intelTranslation.runtimeLaneDidChange()
+		}
+		let installed = await runtimeSelection.install(lane: lane)
+		if installed, runtimeSelection.selectedLane == lane {
+			gameSession.refreshRuntime()
+			intelTranslation.runtimeLaneDidChange()
+			_ = await intelTranslation.refreshAvailability(force: true)
+		}
+		return installed
+	}
+
+	package func pauseRuntimeDownload() {
+		runtimeSelection.pauseInstall()
+	}
+
+	@discardableResult
+	package func selectRuntimeLane(_ lane: RuntimeLane) -> Bool {
+		do {
+			try runtimeSelection.select(lane: lane)
+			gameSession.refreshRuntime()
+			intelTranslation.runtimeLaneDidChange()
+			Task { [weak self] in
+				_ = await self?.intelTranslation.refreshAvailability(force: true)
+			}
+			return true
+		} catch {
+			log.error(
+				"Runtime lane switch failed: \(launcherDiagnosticDescription(for: error))")
+			return false
+		}
+	}
+
+	@discardableResult
+	package func removeOtherRuntime() async -> Bool {
+		do {
+			try await runtimeSelection.removeOtherLane()
+			return true
+		} catch {
+			log.error(
+				"Other runtime removal failed: \(launcherDiagnosticDescription(for: error))")
+			return false
+		}
+	}
+
+	@discardableResult
+	package func removeSelectedRuntime() async -> Bool {
+		do {
+			try await runtimeSelection.removeSelectedLane()
+			gameSession.refreshRuntime()
+			return true
+		} catch {
+			log.error(
+				"Runtime removal failed: \(launcherDiagnosticDescription(for: error))")
+			return false
+		}
+	}
+
+	/// Starts the Home runtime action. It goes through `actions`, so a developer preview does
+	/// not write the runtime selection to disk.
+	package func installSelectedRuntime() {
+		let lane = runtimeSelection.selectedLane
+		runtimeInstallSlot.replace { [weak self] _ in
+			guard let self else { return }
+			_ = await actions.installRuntime(lane)
+		}
 	}
 
 	// MARK: - Rosetta

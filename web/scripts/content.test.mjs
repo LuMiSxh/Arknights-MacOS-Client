@@ -12,6 +12,7 @@ import {
 } from '../.svelte-kit/content-tests/site.js';
 import { renderMarkdown } from '../.svelte-kit/content-tests/content/markdown.js';
 import { validateLinks } from '../.svelte-kit/content-tests/content/loader/links.js';
+import { readLatestRelease } from '../.svelte-kit/content-tests/content/loader/release.js';
 import { siteRoute } from '../.svelte-kit/content-tests/content/loader/routes.js';
 import {
 	buildDirectory,
@@ -368,4 +369,60 @@ test('search result scrolling follows only the local list edges', () => {
 	assert.equal(scrollDeltaFor(list, { top: 130, bottom: 260 }), 0);
 	assert.equal(scrollDeltaFor(list, { top: 230, bottom: 340 }), 40);
 	assert.equal(scrollDeltaFor(list, { top: 60, bottom: 170 }), -40);
+});
+
+test('latest release reads the newest released section and its categories', () => {
+	const cases = [
+		{
+			name: 'skips Unreleased',
+			markdown:
+				'## [Unreleased]\n\n### Added\n- Pending item\n\n## [0.7.1] - 2026-10-20\n\n### Fixed\n- Shipped fix\n',
+			version: '0.7.1',
+			date: '2026-10-20',
+			categories: ['Fixed'],
+			categorized: false
+		},
+		{
+			name: 'accepts a prerelease version',
+			markdown:
+				'## [1.0.0-rc1] - 2026-11-01\n\n### Added\n- Release candidate item\n',
+			version: '1.0.0-rc1',
+			date: '2026-11-01',
+			categories: ['Added'],
+			categorized: false
+		},
+		{
+			name: 'skips a missing Changed section',
+			markdown:
+				'## [0.8.0] - 2026-10-25\n\n### Added\n- New item\n\n### Fixed\n- One fix\n',
+			version: '0.8.0',
+			date: '2026-10-25',
+			categories: ['Added', 'Fixed'],
+			categorized: true
+		},
+		{
+			name: 'has no items without categories',
+			markdown: '## [0.6.0] - 2026-10-01\n\nNo categories here.\n',
+			version: '0.6.0',
+			date: '2026-10-01',
+			categories: [],
+			categorized: false
+		}
+	];
+	for (const testCase of cases) {
+		const release = readLatestRelease(testCase.markdown);
+		assert.equal(release.version, testCase.version, testCase.name);
+		assert.equal(release.date, testCase.date, testCase.name);
+		assert.deepEqual(
+			release.items.map((item) => item.category),
+			testCase.categories,
+			testCase.name
+		);
+		assert.equal(release.categorized, testCase.categorized, testCase.name);
+	}
+
+	assert.equal(
+		readLatestRelease('## [Unreleased]\n\n### Added\n- Pending item\n'),
+		null
+	);
 });

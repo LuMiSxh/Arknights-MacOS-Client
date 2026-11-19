@@ -6,21 +6,18 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct VersionHUDPill: View {
-	package let lifecycle: LauncherLifecycleStore
-	package let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
 	let gameSession: GameSessionController
-	package let accentColor: Color
-	let hudTintColor: Color
-	package let checkGameUpdates: () -> Void
+	let checkGameUpdates: () -> Void
 	@Binding var isExpanded: Bool
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		ExpandableHUDPill(
 			systemImage: "number",
 			toggleNoun: "version details",
 			accessibilityValue: versionText,
-			accentColor: accentColor,
-			hudTintColor: hudTintColor,
 			sizing: HUDPillSizing(
 				collapsedHeight: AppConstants.Music.collapsedPlayerHeight,
 				collapsedMaxWidth: AppConstants.HUD.collapsedVersionMaxWidth,
@@ -31,8 +28,8 @@ struct VersionHUDPill: View {
 			isExpanded: $isExpanded
 		) {
 			Text(versionText)
-				.font(.caption.monospaced().weight(.medium))
-				.foregroundStyle(.secondary)
+				.font(LauncherTokens.Typography.hudPillCaption)
+				.foregroundStyle(theme.textSecondary)
 				.lineLimit(1)
 				.truncationMode(.tail)
 				.frame(
@@ -42,23 +39,23 @@ struct VersionHUDPill: View {
 					alignment: .leading
 				)
 		} detail: {
-			HStack(spacing: 10) {
+			HStack(spacing: LauncherTokens.Spacing.content) {
 				Label(updateStatus, systemImage: updateStatusIcon)
 					.font(.caption)
 					.foregroundStyle(
-						installation.isGameUpdateAvailable ? accentColor : .secondary
+						installation.isGameUpdateAvailable ? theme.accentInk : theme.textSecondary
 					)
 					.fixedSize(horizontal: false, vertical: true)
 				Spacer()
 				CapsuleActionButton(
 					title: "Check Now",
 					systemImage: "arrow.clockwise",
-					tone: .accent(accentColor), presentation: .hud,
+					tone: .accent, presentation: .hud,
 					action: checkGameUpdates
 				)
 				.disabled(cannotCheck)
 			}
-			.padding(.horizontal, 14)
+			.padding(.horizontal, LauncherTokens.Spacing.panel)
 		}
 	}
 
@@ -70,7 +67,7 @@ struct VersionHUDPill: View {
 	}
 
 	private var versionText: String {
-		installation.installedVersion ?? installation.configuration?.gameLatestVersion ?? "—"
+		installation.gameVersionText ?? "—"
 	}
 
 	private var updateStatus: String {
@@ -86,5 +83,12 @@ struct VersionHUDPill: View {
 	private var updateStatusIcon: String {
 		if lifecycle.state.refresh.isChecking { return "arrow.trianglehead.2.clockwise" }
 		return installation.isGameUpdateAvailable ? "arrow.down.circle" : "checkmark.circle"
+	}
+}
+
+extension InstallationController {
+	/// Installed game version, or the latest version the launcher knows, when either exists.
+	var gameVersionText: String? {
+		installedVersion ?? configuration?.gameLatestVersion
 	}
 }

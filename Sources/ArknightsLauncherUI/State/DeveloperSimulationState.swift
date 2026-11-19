@@ -2,9 +2,10 @@
 
 import ArknightsCore
 import ArknightsGameInstallation
+import CoreGraphics
 
 #if DEBUG
-	package struct DeveloperSimulationState: Equatable, Sendable {
+	struct DeveloperSimulationState: Equatable, Sendable {
 		// String raw values keep these CaseIterable choices usable by the generic developer picker.
 		enum Lifecycle: String, CaseIterable { case ready, installing, paused, launching, running }
 		enum Phase: String, CaseIterable { case preparing, verifying, downloading, pausing }
@@ -33,10 +34,24 @@ import ArknightsGameInstallation
 				}
 			}
 		}
+		enum Runtime: String, CaseIterable {
+			case real, notInstalled, installed, installing, failed
+		}
 		// The raw value is the pill identifier `LauncherHUDView` expands.
 		enum Pill: String, CaseIterable { case none, music, version, status }
+		// Adds a simulated display to the Game display row only. Launches never read it.
+		enum Displays: String, CaseIterable { case system, twoDisplays }
 
 		static let launcherUpdateVersion = "0.6.1"
+		// Only the Game display row reads this. A saved choice of it is not connected at launch.
+		static let simulatedDisplay = GameScreenInfo(
+			displayID: 0x7FFF_0001,
+			identity: GameDisplayIdentity(
+				uuid: "6F1A2B3C-4D5E-4F60-8A7B-9C0D1E2F3A4B", name: "Simulated Display"),
+			frameSize: CGSize(width: 1920, height: 1080),
+			visibleSize: CGSize(width: 1920, height: 1080),
+			backingScaleFactor: 2,
+			notchHeight: 0)
 
 		var lifecycle = Lifecycle.ready
 		var phase = Phase.downloading
@@ -46,11 +61,10 @@ import ArknightsGameInstallation
 		var updateAvailable = false
 		var launcherUpdate = LauncherUpdate.current
 		var failure = Failure.none
-		var failureCode = SupportCode.crux
+		var failureCode = SupportCode.gameClosedUnexpectedly
+		var runtime = Runtime.real
 		var selectedRegion = GameRegion.global
 		var installedRegions: Set<GameRegion> = [.global]
-		var canaryFeaturesEnabled = false
-		var taiwanClientEnabled = false
 		var showStatusPill = false
 		var showVersionPill = true
 		var showMusicPill = false
@@ -62,8 +76,10 @@ import ArknightsGameInstallation
 		var xcodeMissing = false
 		var longAccessibilityText = false
 		var usesDynamicTheme = true
+		// The preview starts with a second display so the Game display row is visible.
+		var displays = Displays.twoDisplays
 
-		package static func isPreviewArgument(_ arguments: [String]) -> Bool {
+		static func isPreviewArgument(_ arguments: [String]) -> Bool {
 			arguments.contains("--developer-preview")
 		}
 
@@ -78,19 +94,9 @@ import ArknightsGameInstallation
 			}
 		}
 
-		var selectableRegions: [GameRegion] {
-			RegionAccess(
-				canaryFeaturesEnabled: canaryFeaturesEnabled,
-				taiwanClientEnabled: taiwanClientEnabled
-			).selectableRegions
-		}
-
 		/// Removes combinations the launcher cannot reach, so controllers never see them.
 		func normalized() -> Self {
 			var normalized = self
-			let selectable = Set(selectableRegions)
-			if !selectable.contains(selectedRegion) { normalized.selectedRegion = .global }
-			normalized.installedRegions.formIntersection(selectable)
 			if lifecycle == .paused { normalized.hasPartialDownload = true }
 			if lifecycle == .launching || lifecycle == .running {
 				normalized.isInstalled = true
@@ -115,8 +121,6 @@ import ArknightsGameInstallation
 				downloadedBytes: Int64((Double(totalBytes) * progress.fraction).rounded()),
 				totalBytes: totalBytes,
 				completedFiles: Int(Double(totalFiles) * progress.fraction),
-				totalFiles: totalFiles,
-				currentFile: "Arknights_Data/data.unity3d",
 				transferRateBytesPerSecond: !isVerifying && transfer == .known ? 3_500_000 : nil,
 				isTransferStalled: !isVerifying && transfer == .stalled,
 				isVerifying: isVerifying
@@ -160,6 +164,12 @@ import ArknightsGameInstallation
 			case .available: "Version \(Self.launcherUpdateVersion) available"
 			case .failed: "Couldn’t check for updates"
 			}
+		}
+
+		/// The Game display list with the simulated display added, or nil when none is simulated.
+		func simulatedGameScreens() -> GameScreenList? {
+			guard displays == .twoDisplays else { return nil }
+			return GameScreenList.system().adding(Self.simulatedDisplay)
 		}
 
 		var installationStage: InstallationStage {

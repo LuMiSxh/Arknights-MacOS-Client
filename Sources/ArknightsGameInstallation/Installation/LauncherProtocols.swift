@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsCustomization
 import Foundation
 
 /// The Yostar network surface used by refresh and installation flows; lets tests substitute a
@@ -26,6 +25,11 @@ package protocol GameInstalling: Sendable {
 		verifyAllExistingFiles: Bool,
 		progress: @escaping @Sendable (DownloadProgress) async -> Void
 	) async throws -> InstallResult
+
+	func uninstall(
+		from installDirectory: URL, scope: UninstallScope
+	) async throws
+		-> UninstallOutcome
 }
 
 extension LauncherAPI: LauncherAPIProviding {}

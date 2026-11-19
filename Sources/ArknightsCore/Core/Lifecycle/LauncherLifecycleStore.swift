@@ -89,6 +89,11 @@ package final class LauncherLifecycleStore {
 		state.presentation.failure = nil
 	}
 
+	/// Re-adopts a failure the UI still presents after lifecycle state was cleared during a swap.
+	package func restoreFailure(_ failure: LauncherFailurePresentation) {
+		state.presentation.failure = failure
+	}
+
 	package func beginLauncherUpdate() {
 		isLauncherUpdatePending = true
 	}
@@ -126,57 +131,80 @@ package final class LauncherLifecycleStore {
 		presentFailure(failure, diagnostic: logMessage)
 	}
 
-	private static func supportCode(for error: any Error) -> SupportCode? {
+	package static func supportCode(for error: any Error) -> SupportCode? {
 		switch error {
 		case let provider as any SupportCodeProviding:
 			provider.supportCode
 		case is CocoaError, is POSIXError:
-			.basalt
+			.localFileFailed
 		default:
 			nil
 		}
 	}
 
-	/// Builds the recovery actions and presents `error`. `repairableCodes` is the owning
-	/// feature's set of codes that a full repair can fix; `canRepair` adds the caller's state.
+	/// Builds the recovery actions and presents `error`. Retry and Repair follow the catalog
+	/// flags of `code`; `allowsRetry` and `canRepair` add the caller's state.
 	package func presentFailure(
 		_ error: any Error,
 		id: UUID,
 		code: SupportCode?,
 		context: SupportContext,
-		repairableCodes: Set<SupportCode>,
 		canRepair: Bool,
 		allowsRetry: Bool = true,
 		blocksGameLaunch: Bool
 	) {
 		presentFailure(
+			message: launcherUserMessage(for: error),
+			id: id,
+			code: code,
+			context: context,
+			canRepair: canRepair,
+			allowsRetry: allowsRetry,
+			blocksGameLaunch: blocksGameLaunch,
+			diagnostic: launcherDiagnosticDescription(for: error)
+		)
+	}
+
+	/// Presents an explicit message. Actions still come from `recoveryActions`; `leadingActions`
+	/// adds site-only actions in front of them.
+	package func presentFailure(
+		message: String,
+		id: UUID,
+		code: SupportCode?,
+		context: SupportContext,
+		canRepair: Bool,
+		allowsRetry: Bool = true,
+		leadingActions: [RecoveryAction] = [],
+		blocksGameLaunch: Bool,
+		diagnostic: String
+	) {
+		presentFailure(
 			LauncherFailurePresentation(
 				id: id,
-				message: launcherUserMessage(for: error),
+				message: message,
 				code: code,
 				context: context,
-				actions: Self.recoveryActions(
-					for: code,
-					repairableCodes: repairableCodes,
-					canRepair: canRepair,
-					allowsRetry: allowsRetry
-				),
+				actions: leadingActions
+					+ Self.recoveryActions(
+						for: code,
+						canRepair: canRepair,
+						allowsRetry: allowsRetry
+					),
 				blocksGameLaunch: blocksGameLaunch
 			),
-			diagnostic: launcherDiagnosticDescription(for: error)
+			diagnostic: diagnostic
 		)
 	}
 
 	package static func recoveryActions(
 		for code: SupportCode?,
-		repairableCodes: Set<SupportCode>,
 		canRepair: Bool,
 		allowsRetry: Bool = true
 	) -> [RecoveryAction] {
 		var actions: [RecoveryAction] = []
-		if allowsRetry { actions.append(.retry) }
+		if allowsRetry, code?.allowsRetry ?? true { actions.append(.retry) }
 		if code != nil { actions.append(.openTroubleshooting) }
-		if canRepair, let code, repairableCodes.contains(code) { actions.append(.repair) }
+		if canRepair, code?.allowsRepair == true { actions.append(.repair) }
 		actions.append(.reportProblem)
 		return actions
 	}
@@ -196,6 +224,9 @@ package final class LauncherLifecycleStore {
 		log.error(
 			"Failure presented; code=\(failure.code?.rawValue ?? "none") operation=\(failure.context.operation.rawValue) diagnostic=\(diagnostic)"
 		)
+		if let code = failure.code {
+			log.info("Support code shown: \(code.rawValue) (\(failure.context.operation.rawValue))")
+		}
 		return true
 	}
 
@@ -208,7 +239,7 @@ package final class LauncherLifecycleStore {
 }
 
 // An error that knows which support code describes it, so lifecycle code need not name feature errors.
-protocol SupportCodeProviding: Error {
+package protocol SupportCodeProviding: Error {
 	var supportCode: SupportCode? { get }
 }
 

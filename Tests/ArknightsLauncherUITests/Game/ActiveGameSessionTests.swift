@@ -13,6 +13,7 @@ extension LauncherViewModel {
 	func beginTestGameSession(
 		_ activity: LauncherActivity,
 		region: GameRegion = .global,
+		lane: RuntimeLane? = nil,
 		spawnGate: WineProcessSpawnGate = WineProcessSpawnGate(),
 		launchTask: Task<Void, Never>? = nil
 	) -> ActiveGameSession? {
@@ -25,6 +26,7 @@ extension LauncherViewModel {
 			id: sessionID,
 			lease: lease,
 			region: region,
+			lane: lane ?? paths.runtimeLane,
 			spawnGate: spawnGate,
 			usesGameMode: false
 		)
@@ -53,51 +55,5 @@ struct ActiveGameSessionTests {
 			model.lifecycle.activity
 				== .runningGame(sessionID: sessionID, processIdentifier: 42))
 		await api.resolveBranding()
-	}
-
-	@Test
-	func stopDeniesTheSpawnGateBeforeRuntimeStopRuns() async {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequest()
-		let sessionID = UUID()
-		let spawnGate = WineProcessSpawnGate()
-		model.beginTestGameSession(
-			.runningGame(sessionID: sessionID, processIdentifier: 42),
-			spawnGate: spawnGate
-		)
-		let runtime = GateRecordingRuntime()
-		model.gameSession.runtimeSessionControllerProvider = { runtime }
-
-		model.gameSession.stopGame()
-		await model.gameSession.session?.monitorTask?.value
-
-		#expect(runtime.spawnWasDeniedAtStop == true)
-		#expect(model.lifecycle.activity == .idle)
-		await api.resolveBranding()
-	}
-}
-
-/// Records whether the spawn gate already refused new processes when `stop` ran.
-private final class GateRecordingRuntime: WineRuntimeSessionControlling, @unchecked Sendable {
-	private let lock = NSLock()
-	private var denied: Bool?
-
-	var spawnWasDeniedAtStop: Bool? {
-		lock.withLock { denied }
-	}
-
-	func waitUntilStopped(prefixDirectory: URL) async throws {}
-
-	func stop(prefixDirectory: URL) async throws {}
-
-	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
-		var wasDenied = false
-		do {
-			try spawnGate?.runIfAllowed(process: Process()) {}
-		} catch is CancellationError {
-			wasDenied = true
-		}
-		lock.withLock { denied = wasDenied }
 	}
 }

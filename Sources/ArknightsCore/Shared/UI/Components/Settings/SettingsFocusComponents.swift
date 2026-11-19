@@ -5,12 +5,15 @@ import SwiftUI
 package struct SettingsToggle: View {
 	let title: String
 	@Binding var isOn: Bool
-	package let accentColor: Color
+	/// Semantic override, such as `warning` for experimental switches.
+	let tint: Color?
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.isEnabled) private var isEnabled
 
-	package init(_ title: String, isOn: Binding<Bool>, accentColor: Color) {
+	package init(_ title: String, isOn: Binding<Bool>, tint: Color? = nil) {
 		self.title = title
 		_isOn = isOn
-		self.accentColor = accentColor
+		self.tint = tint
 	}
 
 	package var body: some View {
@@ -18,7 +21,9 @@ package struct SettingsToggle: View {
 			.labelsHidden()
 			.toggleStyle(.switch)
 			.controlSize(.regular)
-			.tint(accentColor)
+			.tint(
+				(tint ?? theme.accentFill).opacity(
+					isEnabled ? 1 : LauncherVisuals.Control.disabledForegroundOpacity))
 	}
 }
 
@@ -26,26 +31,28 @@ package struct SettingsSlider: View {
 	@Binding var value: Double
 	let range: ClosedRange<Double>
 	let step: Double
-	package let accentColor: Color
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.isEnabled) private var isEnabled
 	package let width: CGFloat
 
 	package init(
 		value: Binding<Double>,
 		range: ClosedRange<Double>,
 		step: Double,
-		accentColor: Color,
 		width: CGFloat
 	) {
 		self._value = value
 		self.range = range
 		self.step = step
-		self.accentColor = accentColor
 		self.width = width
 	}
 
 	package var body: some View {
 		Slider(value: $value, in: range, step: step)
-			.tint(accentColor)
+			.tint(
+				theme.accentFill.opacity(
+					isEnabled ? 1 : LauncherVisuals.Control.disabledForegroundOpacity)
+			)
 			.frame(width: width)
 			.keyboardFocusIndicator(in: Capsule())
 	}

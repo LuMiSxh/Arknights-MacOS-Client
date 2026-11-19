@@ -32,11 +32,13 @@ package enum LauncherPresentationDestination: Equatable, Identifiable {
 enum LauncherConfirmation: Equatable, Identifiable {
 	case rosetta
 	case repair(UUID)
+	case deleteLegacyData(UUID)
 
 	var id: String {
 		switch self {
 		case .rosetta: "rosetta"
 		case .repair(let id): "repair-\(id.uuidString)"
+		case .deleteLegacyData(let id): "delete-legacy-data-\(id.uuidString)"
 		}
 	}
 }
@@ -47,12 +49,22 @@ struct LauncherPresentationArbiter {
 
 	mutating func request(_ destination: LauncherPresentationDestination) {
 		if let current {
+			// A new value for the same failure (progress, a retryable error) updates the sheet
+			// instead of being dropped as an equal-priority request.
+			if destination.id == current.id {
+				self.current = destination
+				return
+			}
 			guard destination.priority > current.priority else { return }
 			queued = destination
 			self.current = nil
 			return
 		}
 		if let queued {
+			if destination.id == queued.id {
+				self.queued = destination
+				return
+			}
 			if destination.priority > queued.priority { self.queued = destination }
 			return
 		}
@@ -61,6 +73,11 @@ struct LauncherPresentationArbiter {
 
 	mutating func dismissCurrent() {
 		current = nil
+	}
+
+	/// Whether `destination` is the presented or the next destination.
+	func presents(_ destination: LauncherPresentationDestination) -> Bool {
+		current == destination || queued == destination
 	}
 
 	mutating func didDismiss() {
@@ -78,6 +95,14 @@ struct LauncherPresentationArbiter {
 	mutating func removeFailures() {
 		if case .failure = current { current = nil }
 		if case .failure = queued { queued = nil }
+	}
+
+	/// True when a failure must not present its own sheet. Onboarding owns the Rosetta
+	/// failure presentation while it runs, so a second sheet would fight it.
+	func suppressesFailure(
+		_ failure: LauncherFailurePresentation?, isOnboardingPresented: Bool
+	) -> Bool {
+		isOnboardingPresented && failure?.isShownInSetup == true
 	}
 
 	mutating func removeRosettaPreflightFailures() {

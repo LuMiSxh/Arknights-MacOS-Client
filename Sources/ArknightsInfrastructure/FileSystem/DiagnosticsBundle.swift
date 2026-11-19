@@ -1,0 +1,224 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import Foundation
+
+enum DiagnosticsBundleError: LocalizedError {
+	case unsafeArchivePath(String)
+	case missingSource(URL)
+	case cannotCreateFile(URL)
+	case archiveFailed(Int32)
+
+	var errorDescription: String? {
+		switch self {
+		case .unsafeArchivePath(let path):
+			"Diagnostics path must stay inside the archive: \(path)"
+		case .missingSource(let url):
+			"A diagnostics source is missing: \(url.path)"
+		case .cannotCreateFile(let url):
+			"Could not create a diagnostics file: \(url.path)"
+		case .archiveFailed(let status):
+			"ditto exited with status \(status)"
+		}
+	}
+}
+
+/// Lays collected support files out in one folder and compresses that folder with `ditto`.
+///
+/// The caller decides what to collect, so this type knows nothing about logs or preferences.
+/// It writes into a private staging folder first, so a failure never leaves a partial archive
+/// under the name the user sees.
+package enum DiagnosticsBundle {
+	package struct Item: Sendable {
+		package enum Content: Sendable {
+			/// An existing file to copy into the archive unchanged.
+			case file(URL)
+			/// An existing text log to copy with `DiagnosticsRedaction` applied.
+			case redactedLog(URL)
+			/// Text to write at `archivePath`.
+			case text(String)
+		}
+
+		package let archivePath: String
+		package let content: Content
+
+		package init(archivePath: String, content: Content) {
+			self.archivePath = archivePath
+			self.content = content
+		}
+	}
+
+	private static let copyChunkBytes = 64 * 1_024
+	private static let maximumLineBytes = 256 * 1_024
+	private static let maximumLogBytes = 32 * 1_024 * 1_024
+	private static let truncationNotice = "\n[diagnostics: log truncated]\n"
+
+	/// Writes the archive as `baseName.zip`, or `baseName-2.zip` and so on when that name is taken.
+	///
+	/// `reportCleanupFailure` receives errors from best-effort cleanup that the caller cannot
+	/// otherwise see.
+	@concurrent
+	package static func write(
+		_ items: [Item],
+		readme: String,
+		named baseName: String,
+		to directory: URL,
+		redaction: DiagnosticsRedaction,
+		reportCleanupFailure: @Sendable (any Error) -> Void,
+		fileManager: FileManager = .default
+	) async throws -> URL {
+		for item in items {
+			try validate(archivePath: item.archivePath)
+		}
+
+		let staging = fileManager.temporaryDirectory.appending(
+			path: ".\(baseName)-\(UUID().uuidString)",
+			directoryHint: .isDirectory
+		)
+		try fileManager.createDirectory(at: staging, withIntermediateDirectories: true)
+		// Best-effort cleanup of the private staging folder; the archive is already written.
+		defer { remove(staging, using: fileManager, report: reportCleanupFailure) }
+
+		for item in items {
+			let destination = staging.appending(path: item.archivePath)
+			try fileManager.createDirectory(
+				at: destination.deletingLastPathComponent(),
+				withIntermediateDirectories: true
+			)
+			switch item.content {
+			case .file(let source):
+				guard fileManager.fileExists(atPath: source.path) else {
+					throw DiagnosticsBundleError.missingSource(source)
+				}
+				try fileManager.copyItem(at: source, to: destination)
+			case .redactedLog(let source):
+				guard fileManager.fileExists(atPath: source.path) else {
+					throw DiagnosticsBundleError.missingSource(source)
+				}
+				try copyRedacted(
+					from: source, to: destination, redaction: redaction, fileManager,
+					report: reportCleanupFailure)
+			case .text(let text):
+				try text.write(to: destination, atomically: true, encoding: .utf8)
+			}
+		}
+		try readme.write(
+			to: staging.appending(path: "README.md"), atomically: true, encoding: .utf8)
+
+		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+		let archive = availableArchive(named: baseName, in: directory, fileManager)
+		do {
+			let result = try await ChildProcess(
+				executable: URL(fileURLWithPath: "/usr/bin/ditto"),
+				arguments: ["-c", "-k", "--sequesterRsrc", staging.path, archive.path],
+				output: .discarded
+			).run()
+			try Task.checkCancellation()
+			guard result.status == 0 else {
+				throw DiagnosticsBundleError.archiveFailed(result.status)
+			}
+		} catch {
+			remove(archive, using: fileManager, report: reportCleanupFailure)
+			throw error
+		}
+		return archive
+	}
+
+	/// Rejects absolute paths and `..` so an item cannot write outside the staging folder.
+	private static func validate(archivePath: String) throws {
+		guard !archivePath.isEmpty, !archivePath.hasPrefix("/") else {
+			throw DiagnosticsBundleError.unsafeArchivePath(archivePath)
+		}
+		let components = archivePath.split(separator: "/", omittingEmptySubsequences: false)
+		guard !components.contains(where: { $0.isEmpty || $0 == "." || $0 == ".." }) else {
+			throw DiagnosticsBundleError.unsafeArchivePath(archivePath)
+		}
+	}
+
+	private static func availableArchive(
+		named baseName: String, in directory: URL, _ fileManager: FileManager
+	) -> URL {
+		var candidate = directory.appending(path: "\(baseName).zip")
+		var suffix = 2
+		while fileManager.fileExists(atPath: candidate.path) {
+			candidate = directory.appending(path: "\(baseName)-\(suffix).zip")
+			suffix += 1
+		}
+		return candidate
+	}
+
+	private static func remove(
+		_ url: URL, using fileManager: FileManager, report: @Sendable (any Error) -> Void
+	) {
+		guard fileManager.fileExists(atPath: url.path) else { return }
+		do {
+			try fileManager.removeItem(at: url)
+		} catch {
+			report(error)
+		}
+	}
+
+	/// Returns the index after the last complete UTF-8 scalar in `bytes`.
+	private static func completeScalarEnd(of bytes: Data) -> Data.Index {
+		var lead = bytes.endIndex
+		// A scalar has at most three continuation bytes after its lead byte.
+		while lead > bytes.startIndex, bytes.endIndex - lead < 4 {
+			lead -= 1
+			let byte = bytes[lead]
+			if byte & 0xC0 == 0x80 { continue }
+			let length =
+				switch byte {
+				case 0xF0...: 4
+				case 0xE0...: 3
+				case 0xC0...: 2
+				default: 1
+				}
+			return bytes.endIndex - lead >= length ? bytes.endIndex : lead
+		}
+		return bytes.endIndex
+	}
+
+	/// Copies in bounded chunks that end at line breaks, so a large log never sits in memory.
+	private static func copyRedacted(
+		from source: URL, to destination: URL, redaction: DiagnosticsRedaction,
+		_ fileManager: FileManager, report: @Sendable (any Error) -> Void
+	) throws {
+		guard fileManager.createFile(atPath: destination.path, contents: nil) else {
+			throw DiagnosticsBundleError.cannotCreateFile(destination)
+		}
+		let input = try FileHandle(forReadingFrom: source)
+		defer {
+			do { try input.close() } catch { report(error) }
+		}
+		let output = try FileHandle(forWritingTo: destination)
+		defer {
+			do { try output.close() } catch { report(error) }
+		}
+
+		func emit(_ bytes: Data) throws {
+			let text = String(decoding: bytes, as: UTF8.self)
+			try output.write(contentsOf: Data(redaction.redact(text).utf8))
+		}
+
+		var pending = Data()
+		var consumed = 0
+		while let chunk = try input.read(upToCount: copyChunkBytes), !chunk.isEmpty {
+			consumed += chunk.count
+			pending.append(chunk)
+			if let lastNewline = pending.lastIndex(of: 0x0A) {
+				try emit(pending[pending.startIndex...lastNewline])
+				pending = Data(pending[(lastNewline + 1)...])
+			} else if pending.count >= maximumLineBytes {
+				// Hold back an incomplete trailing scalar so redaction never sees half a character.
+				let cut = completeScalarEnd(of: pending)
+				try emit(pending[pending.startIndex..<cut])
+				pending = Data(pending[cut...])
+			}
+			if consumed >= maximumLogBytes {
+				try emit(pending[pending.startIndex..<completeScalarEnd(of: pending)])
+				try output.write(contentsOf: Data(truncationNotice.utf8))
+				return
+			}
+		}
+		try emit(pending)
+	}
+}

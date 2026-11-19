@@ -6,9 +6,9 @@ order: 10
 
 # Architecture
 
-Arknights Client is a native SwiftUI launcher around a bundled Windows compatibility runtime. The
+Arknights Client is a native SwiftUI launcher around a downloaded Windows compatibility runtime. The
 launcher owns downloads, updates, settings, diagnostics, and process state. It does not ship game
-files. It does not run Wine until the user selects **Play**.
+files or a runtime. It does not run Wine until the user selects **Play**.
 
 [`LauncherViewModel`](../../../Sources/ArknightsLauncherUI/State/LauncherViewModel.swift) is the
 composition root. Read the system map first. Then read the page that matches your change.
@@ -28,7 +28,9 @@ flowchart TB
 	Root --> Communication[LauncherCommunicationController]
 	Root --> Settings[LauncherPreferencesController]
 	Root --> Customization[CustomizationController]
-	Root --> Storage[Storage controllers]
+	Root --> Presence[DiscordPresenceController]
+	Root --> Storage[StorageMaintenanceController]
+	Root --> StorageOverview[StorageOverviewController]
 	Install -->|exclusive activity| Lifecycle
 	Game -->|exclusive activity| Lifecycle
 	Refresh -->|readiness and presentation| Lifecycle
@@ -62,29 +64,10 @@ Each long-lived state and each asynchronous task has one feature owner:
 | `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, presets                                                                                       |
 | `BackgroundMusicController`       | Playlist parsing, playback, Now Playing metadata, fades, music-link presentation. Created in `ArknightsClientApp`, not in `LauncherViewModel`. |
 | `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, popup order                                                                                  |
+| `DiscordPresenceController`       | Discord Rich Presence intent, local IPC connection, bounded reconnects                                                                         |
 | `LauncherPreferencesController`   | Persisted settings and the region-aware server-reset timer                                                                                     |
 | `StorageMaintenanceController`    | Targeted DXMT, browser, and gallery cache cleanup                                                                                              |
 | `StorageOverviewController`       | Async usage measurement for installations, runtime data, caches, logs                                                                          |
-
-The composition root owns these controllers:
-
-```mermaid
-flowchart TD
-	Root[LauncherViewModel composition root] --> Lifecycle[LauncherLifecycleStore]
-	Root --> Installation[InstallationController]
-	Root --> Session[GameSessionController]
-	Root --> Refresh[LauncherRefreshController]
-	Root --> Communication[LauncherCommunicationController]
-	Root --> Customization[CustomizationController]
-	Root --> Preferences[LauncherPreferencesController]
-	Root --> Storage[StorageMaintenanceController]
-	Root --> StorageOverview[StorageOverviewController]
-	Installation --> Lifecycle
-	Session --> Lifecycle
-	Refresh --> Lifecycle
-	Communication --> Popup[Popup presentation]
-	Customization --> Artwork[Artwork and icons]
-```
 
 The state tree has three separate concerns:
 
@@ -108,7 +91,7 @@ calls the same region, installer, display, artwork, icon, update, and audio acti
 interface.
 
 A mandatory launcher-update preflight runs before setup. Interrupted setup resumes at its saved step.
-If the game is absent, setup returns to Region & Install.
+If the game is absent, setup returns to the Server step.
 
 ## Targets
 
@@ -116,21 +99,23 @@ Each folder under `Sources` is one SwiftPM target. `Package.swift` is the source
 dependencies, linked products, and isolation settings. A target depends only on targets with a lower
 number. The compiler rejects a cycle.
 
-| No. | Target                      | Contains                                                                                                                                       | Depends on          | Linked products    |
-| --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------------------ |
-| 1   | `ArknightsInfrastructure`   | Feature-independent network and file I/O primitives (`FileSystem`, `Network`)                                                                  | none                | none               |
-| 2   | `ArknightsCore`             | Cross-feature lifecycle state (`Core`), shared domain, configuration, persistence, diagnostics, UI contracts (`Shared`), and SwiftPM resources | 1                   | none               |
-| 3   | `ArknightsCustomization`    | Artwork, icons, preset gallery                                                                                                                 | 1, 2                | none               |
-| 4   | `ArknightsGameInstallation` | Installation, manifests, game-file compatibility components                                                                                    | 1, 2, 3             | `CCommonCrypto`    |
-| 5   | `ArknightsGameRuntime`      | Wine runtime, Intel translation, playtime, storage                                                                                             | 1, 2, 3, 4          | none               |
-| 6   | `ArknightsAudio`            | Background playback, Now Playing, settings, HUD controls                                                                                       | 2, 3                | `YouTubePlayerKit` |
-| 7   | `ArknightsOnboarding`       | Resumable flow, progress persistence, step views                                                                                               | 2, 3, 4, 5          | none               |
-| 8   | `ArknightsLauncherUI`       | Composition (`LauncherViewModel`), home, Settings, documents, popups, launcher updates                                                         | 1, 2, 3, 4, 5, 6, 7 | `Sparkle`          |
-| 9   | `ArknightsClient`           | The executable. It holds only `Application`: the app entry point and the macOS lifecycle                                                       | 2, 6, 7, 8          | none               |
+| No. | Target                      | Contains                                                                                                                                       | Depends on             | Linked products    |
+| --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------ |
+| 1   | `ArknightsInfrastructure`   | Feature-independent I/O, transfer building blocks, and Discord IPC (`FileSystem`, `Network`, `Progress`, `Presence`)                            | none                   | none               |
+| 2   | `ArknightsCore`             | Cross-feature lifecycle state (`Core`), shared domain, configuration, persistence, diagnostics, UI contracts (`Shared`), and SwiftPM resources | 1                      | none               |
+| 3   | `ArknightsCustomization`    | Artwork, icons, preset gallery                                                                                                                 | 1, 2                   | none               |
+| 4   | `ArknightsGameInstallation` | Installation, manifests, game-file compatibility components                                                                                    | 1, 2                   | none               |
+| 5   | `ArknightsGameRuntime`      | Wine runtime, Intel translation, playtime, storage                                                                                             | 1, 2, 4                | `Czlib`            |
+| 6   | `ArknightsPresence`         | Discord Rich Presence state, local IPC transport adapter                                                                                       | 1, 2                   | none               |
+| 7   | `ArknightsAudio`            | Background playback, Now Playing, settings, HUD controls                                                                                       | 2, 3                   | `YouTubePlayerKit` |
+| 8   | `ArknightsOnboarding`       | Resumable flow, progress persistence, step views                                                                                               | 2, 3, 4, 5             | none               |
+| 9   | `ArknightsLauncherUI`       | Composition (`LauncherViewModel`), home, Settings, documents, popups, launcher updates                                                         | 1, 2, 3, 4, 5, 6, 7, 8 | `Sparkle`          |
+| 10  | `ArknightsClient`           | The executable. It holds only the app entry point, AppDelegate, menus, and scenes                                                              | 2, 7, 8, 9             | none               |
 
 Each library target has an `Arknights<Name>Tests` target. `ArknightsClientTests` holds only
-`Application` tests. `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests` cover the
-other levels. `ArknightsTestSupport` is a library target for shared test helpers. See
+app-entry tests. `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests` cover the
+other levels. `ArknightsTestSupport` is a library target for shared test helpers.
+`ArknightsRuntimeTestSupport` adds runtime fixtures and depends on `ArknightsGameRuntime`. See
 [Testing architecture](../testing.md).
 
 Direction rules:
@@ -156,8 +141,7 @@ and resource layout), and `runtime.json` (runtime layout) through `scripts/lib/p
 
 ## Bundled resources
 
-`Sources/ArknightsCore/Shared/Resources/BundledResource.swift` is the only place that names a file or directory in the app bundle.
-bundle. Each entry states its path, kind, origin, and encoding.
+`Sources/ArknightsCore/Shared/Resources/BundledResource.swift` is the only place that names a file or directory in the app bundle. Each entry states its path, kind, origin, and encoding.
 
 | Origin    | Staged by                       | Read from                                                    |
 | --------- | ------------------------------- | ------------------------------------------------------------ |
@@ -176,12 +160,14 @@ bundle. Each entry states its path, kind, origin, and encoding.
 
 ## Platform boundary
 
-The native side runs on Apple Silicon and macOS 15 or newer. The packaged Wine runtime is x86-64.
-Before launch, the launcher verifies that macOS can run an Intel process through Rosetta 2.
+The native side runs on Apple Silicon and macOS 15 or newer. The runtime ships as two downloadable
+lanes: x86_64, which runs through Rosetta 2, and native ARM64, which needs macOS 26 or newer.
+Before launch on the x86_64 lane, the launcher verifies that macOS can run an Intel process through
+Rosetta 2.
 
 The Wine prefix is not a macOS security sandbox. See
 [Directory and drive contract](wine-prefix.md#directory-and-drive-contract) and
-[Runtime compatibility](../../help/runtime-compatibility.md).
+[Game runtime](../../help/runtime.md).
 
 ## Change guide
 
@@ -190,7 +176,7 @@ Before you change behavior, find its owner and external contract:
 | Change                                   | Start here                                                     | Also update or verify                                                                                                         |
 | ---------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Game files, manifests, paths             | `ArknightsGameInstallation/Installation`                       | [Installation architecture](installation.md), installer tests                                                                 |
-| Wine startup, prefix, process, display   | `ArknightsGameRuntime/Runtime`                                 | [Launch and process lifecycle](launch-and-process-lifecycle.md), [Runtime compatibility](../../help/runtime-compatibility.md) |
+| Wine startup, prefix, process, display   | `ArknightsGameRuntime/Runtime`                                 | [Launch and process lifecycle](launch-and-process-lifecycle.md), [Game runtime](../../help/runtime.md) |
 | Compatibility component or native bridge | `ArknightsGameInstallation/Compatibility` and `RuntimeSupport` | restore/update behavior, runtime notices, release validation                                                                  |
 | Publisher endpoint, refresh              | `LauncherAPI` and `LauncherRefreshController`                  | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
 | Persisted setting, app-owned path        | `LauncherPreferencesStore` or `AppPaths`                       | [Data and persistence](data-and-persistence.md), storage tests                                                                |

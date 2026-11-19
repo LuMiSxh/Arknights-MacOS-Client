@@ -24,27 +24,45 @@ package struct AppPaths: Sendable {
 	package let applicationSupportRoot: URL
 	let cacheRoot: URL
 	let logRoot: URL
-	package let winePrefix: URL
-	let chinaWinePrefix: URL
-	let gryphlineWinePrefix: URL
-	package let bundledRuntimeDirectory: URL?
+	/// Where saved diagnostics archives go: Downloads, or the support root when macOS has none.
+	package let diagnosticsDirectory: URL
+	/// Where screenshots go unless the user picks a folder: `Pictures/Arknights`. Visible to the
+	/// user, unlike the support root.
+	package let screenshotsDirectory: URL
+	/// The selected runtime lane. Every publisher prefix and derived cache uses it.
+	package let runtimeLane: RuntimeLane
+	/// A problem reading `runtimeSelectionFile`, when the file exists but is unusable.
+	package let runtimeLaneDiagnostic: String?
+	/// The root of the downloaded, managed runtimes. Never inside the app bundle.
+	package let runtimeRoot: URL
+	/// Where runtime archives download before verification.
+	package let runtimeDownloadsDirectory: URL
+	/// Where a runtime archive extracts before it is installed.
+	package let runtimeStagingRoot: URL
+	/// The persisted runtime document: the selected lane and installed versions, written atomically.
+	package let runtimeSelectionFile: URL
+	/// Records the Application Support layout version. A missing file means the 0.6/0.7 layout.
+	package let layoutFile: URL
 
 	package init(
 		fileManager: FileManager = .default,
 		applicationSupportDirectory: URL? = nil,
 		cachesDirectory: URL? = nil,
 		libraryDirectory: URL? = nil,
-		resourceDirectory: URL? = Bundle.main.resourceURL
+		downloadsDirectory: URL? = nil,
+		picturesDirectory: URL? = nil,
+		runtimeSelection: RuntimeSelection? = nil,
+		runtimeAccess: RuntimeAccess = RuntimeAccess()
 	) {
 		let supportDirectory =
 			applicationSupportDirectory
-			?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+			?? Self.userDomainDirectory(.applicationSupportDirectory, fileManager)
 		let cachesDirectory =
 			cachesDirectory
-			?? fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+			?? Self.userDomainDirectory(.cachesDirectory, fileManager)
 		let libraryDirectory =
 			libraryDirectory
-			?? fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first!
+			?? Self.userDomainDirectory(.libraryDirectory, fileManager)
 
 		applicationSupportRoot = supportDirectory.appending(
 			path: Self.bundleIdentifier,
@@ -54,37 +72,150 @@ package struct AppPaths: Sendable {
 			path: Self.bundleIdentifier,
 			directoryHint: .isDirectory
 		)
+		diagnosticsDirectory =
+			downloadsDirectory
+			?? fileManager.urls(for: .downloadsDirectory, in: .userDomainMask).first
+			?? applicationSupportRoot
+		screenshotsDirectory =
+			(picturesDirectory
+			?? fileManager.urls(for: .picturesDirectory, in: .userDomainMask).first
+			?? fileManager.homeDirectoryForCurrentUser.appending(
+				path: "Pictures", directoryHint: .isDirectory))
+			.appending(
+				path: AppConstants.Screenshots.defaultFolderName, directoryHint: .isDirectory)
 		logRoot =
 			libraryDirectory
 			.appending(path: "Logs", directoryHint: .isDirectory)
 			.appending(path: Self.bundleIdentifier, directoryHint: .isDirectory)
-		winePrefix = applicationSupportRoot.appending(
-			path: "Yostar/Prefix",
+		runtimeRoot = applicationSupportRoot.appending(
+			path: "Runtimes",
 			directoryHint: .isDirectory
 		)
-		chinaWinePrefix = applicationSupportRoot.appending(
-			path: "Hypergryph/Prefix",
+		runtimeDownloadsDirectory = applicationSupportRoot.appending(
+			path: "Downloads",
 			directoryHint: .isDirectory
 		)
-		gryphlineWinePrefix = applicationSupportRoot.appending(
-			path: "Gryphline/Prefix",
+		runtimeStagingRoot = runtimeDownloadsDirectory.appending(
+			path: ".staging",
 			directoryHint: .isDirectory
 		)
-		bundledRuntimeDirectory = resourceDirectory.map(BundledResource.runtime.location)
+		let selectionFile = applicationSupportRoot.appending(
+			path: AppConstants.Runtime.runtimeSelectionFilename
+		)
+		runtimeSelectionFile = selectionFile
+		layoutFile = applicationSupportRoot.appending(
+			path: AppConstants.Storage.layoutFilename
+		)
+
+		let selection: RuntimeSelection
+		var diagnostic: String?
+		if let runtimeSelection {
+			selection = runtimeSelection
+		} else {
+			do {
+				// A lock-free read is safe here: `JSONFileStore.write` replaces the file
+				// atomically, so a concurrent writer never exposes a partial document.
+				selection = try RuntimeSelectionStore(fileURL: selectionFile).load(
+					access: runtimeAccess)
+			} catch {
+				selection = RuntimeSelection(selected: runtimeAccess.defaultLane)
+				diagnostic =
+					"Could not read the runtime selection at \(selectionFile.path): "
+					+ "\(error.localizedDescription); using the \(runtimeAccess.defaultLane.rawValue) lane"
+			}
+		}
+		runtimeLaneDiagnostic = diagnostic
+		runtimeLane = selection.selected
+	}
+
+	private static func environmentDirectoryName(
+		for publisher: GamePublisher,
+		lane: RuntimeLane
+	) -> String {
+		"\(publisher.rawValue)-\(lane.rawValue)"
+	}
+
+	private static func userDomainDirectory(
+		_ directory: FileManager.SearchPathDirectory,
+		_ fileManager: FileManager
+	) -> URL {
+		guard let url = fileManager.urls(for: directory, in: .userDomainMask).first else {
+			fatalError("macOS reports no \(directory) in the user domain")
+		}
+		return url
+	}
+
+	package func runtimeDownloadsDirectory(for lane: RuntimeLane) -> URL {
+		runtimeDownloadsDirectory.appending(path: lane.rawValue, directoryHint: .isDirectory)
+	}
+
+	package func runtimeVersionDirectory(for lane: RuntimeLane, version: String) -> URL {
+		Self.runtimeVersionDirectory(in: runtimeRoot, lane: lane, version: version)
+	}
+
+	private static func runtimeVersionDirectory(
+		in runtimeRoot: URL,
+		lane: RuntimeLane,
+		version: String
+	) -> URL {
+		runtimeRoot.appending(
+			path: "\(lane.rawValue)-\(version)", directoryHint: .isDirectory)
+	}
+
+	/// The per-lane lease directory. It exists only to hold the install lock.
+	package func runtimeLeaseDirectory(for lane: RuntimeLane) -> URL {
+		runtimeRoot.appending(path: ".leases", directoryHint: .isDirectory)
+			.appending(path: lane.rawValue, directoryHint: .isDirectory)
+	}
+
+	/// The installed version for `lane`, taken from the runtime document.
+	package func installedRuntimeVersion(for lane: RuntimeLane) -> String? {
+		Self.installedRuntimeVersion(for: lane, selectionFile: runtimeSelectionFile)
+	}
+
+	private static func installedRuntimeVersion(
+		for lane: RuntimeLane,
+		selectionFile: URL
+	) -> String? {
+		do {
+			return try RuntimeSelectionStore(fileURL: selectionFile).load()
+				.installedVersion(for: lane)
+		} catch {
+			return nil
+		}
+	}
+
+	/// The selected lane's installed `RUNTIME.json`, or `nil` when no runtime is installed.
+	package func activeRuntimeConfigurationURL(for lane: RuntimeLane? = nil) -> URL? {
+		installedRuntimeConfigurationURL(for: lane ?? runtimeLane)
+	}
+
+	package func installedRuntimeConfigurationURL(for lane: RuntimeLane) -> URL? {
+		guard let version = installedRuntimeVersion(for: lane) else { return nil }
+		return runtimeVersionDirectory(for: lane, version: version)
+			.appending(path: "RUNTIME.json")
+	}
+
+	/// Both lanes' installed manifests, used by diagnostics.
+	package static func installedRuntimeConfigurationURLs(
+		applicationSupportRoot: URL
+	) -> [(lane: RuntimeLane, url: URL)] {
+		let runtimeRoot = applicationSupportRoot.appending(
+			path: "Runtimes", directoryHint: .isDirectory)
+		let selectionFile = applicationSupportRoot.appending(
+			path: AppConstants.Runtime.runtimeSelectionFilename)
+		return RuntimeLane.allCases.compactMap { lane in
+			guard let version = installedRuntimeVersion(for: lane, selectionFile: selectionFile)
+			else { return nil }
+			let url = runtimeVersionDirectory(in: runtimeRoot, lane: lane, version: version)
+				.appending(path: "RUNTIME.json")
+			return (lane, url)
+		}
 	}
 
 	package func gameInstall(for region: GameRegion) -> URL {
-		let regionName =
-			switch region {
-			case .global: "Global"
-			case .japan: "Japan"
-			case .korea: "Korea"
-			case .taiwan: "Taiwan"
-			case .china: "China"
-			case .chinaBilibili: "China-Bilibili"
-			}
-		return applicationSupportRoot.appending(
-			path: "\(region.publisher.storageDirectoryName)/\(regionName)",
+		applicationSupportRoot.appending(
+			path: "Games/\(region.serverIdentifier)",
 			directoryHint: .isDirectory
 		)
 	}
@@ -94,17 +225,34 @@ package struct AppPaths: Sendable {
 	}
 
 	package func winePrefix(for publisher: GamePublisher) -> URL {
-		switch publisher {
-		case .yostar: winePrefix
-		case .hypergryph: chinaWinePrefix
-		case .gryphline: gryphlineWinePrefix
-		}
+		winePrefix(for: publisher, lane: runtimeLane)
+	}
+
+	package func winePrefix(for region: GameRegion, lane: RuntimeLane) -> URL {
+		winePrefix(for: region.publisher, lane: lane)
+	}
+
+	/// The publisher prefix of either lane. Storage and cleanup see both lanes.
+	package func winePrefix(for publisher: GamePublisher, lane: RuntimeLane) -> URL {
+		applicationSupportRoot.appending(
+			path: "Environments/\(Self.environmentDirectoryName(for: publisher, lane: lane))",
+			directoryHint: .isDirectory
+		)
 	}
 
 	package var logsDirectory: URL { logRoot }
 
-	var yostarLogFile: URL {
-		publisherLogFile(for: .yostar)
+	/// Where the publisher SDK writes its logs inside the publisher's Wine prefix.
+	package func sdkLogDirectory(for publisher: GamePublisher, lane: RuntimeLane) -> URL {
+		winePrefix(for: publisher, lane: lane).appending(
+			path: "drive_c/users/crossover/AppData/LocalLow/HyperGryph/Arknights/sdklogs",
+			directoryHint: .isDirectory
+		)
+	}
+
+	/// Where the launcher keeps copies of the publisher SDK logs.
+	package func collectedSDKLogDirectory(for publisher: GamePublisher) -> URL {
+		logsDirectory.appending(path: "sdklogs/\(publisher.rawValue)", directoryHint: .isDirectory)
 	}
 
 	package var launcherLogFile: URL {
@@ -130,31 +278,31 @@ package struct AppPaths: Sendable {
 	package static let windowsUnityLogPath = "L:\\unity.log"
 
 	package var artworkCache: URL {
-		cacheRoot.appending(path: "Artwork/Downloaded", directoryHint: .isDirectory)
+		cacheRoot.appending(path: "Artwork", directoryHint: .isDirectory)
 	}
 
 	package var presetGalleryCache: URL {
-		cacheRoot.appending(path: "PresetGallery", directoryHint: .isDirectory)
+		cacheRoot.appending(path: "Presets", directoryHint: .isDirectory)
 	}
 
-	var dxmtCache: URL {
-		dxmtCache(for: .global)
+	/// Derived theme values (artwork accents, home luminance); rebuilt when missing.
+	package var themeCache: URL {
+		cacheRoot.appending(path: "Theme/theme.json")
 	}
 
-	package func dxmtCache(for region: GameRegion) -> URL {
-		winePrefix(for: region).appending(path: "home/.cache/dxmt", directoryHint: .isDirectory)
-	}
-
-	package func browserCacheDirectories(fileManager: FileManager = .default) throws -> [URL] {
-		try browserCacheDirectories(for: .global, fileManager: fileManager)
+	package func dxmtCache(for region: GameRegion, lane: RuntimeLane) -> URL {
+		winePrefix(for: region, lane: lane)
+			.appending(path: "home/.cache/dxmt", directoryHint: .isDirectory)
 	}
 
 	package func browserCacheDirectories(
 		for region: GameRegion,
+		lane: RuntimeLane,
 		fileManager: FileManager = .default
 	) throws -> [URL] {
-		try Self.gameCacheDirectories(winePrefix: winePrefix(for: region), fileManager: fileManager)
-			.filter { $0 != dxmtCache(for: region) }
+		let prefix = winePrefix(for: region, lane: lane)
+		return try Self.gameCacheDirectories(winePrefix: prefix, fileManager: fileManager)
+			.filter { $0 != dxmtCache(for: region, lane: lane) }
 	}
 
 	package static func gameCacheDirectories(
@@ -165,7 +313,7 @@ package struct AppPaths: Sendable {
 		let dxmt = winePrefix.appending(
 			path: "home/.cache/dxmt", directoryHint: .isDirectory)
 		var directories: [URL] = []
-		if try isSafeCacheDirectory(dxmt, inside: prefix, fileManager: fileManager) {
+		if try isSafeCacheDirectory(dxmt, inside: prefix) {
 			directories.append(dxmt)
 		}
 		let usersDirectory = winePrefix.appending(
@@ -202,7 +350,7 @@ package struct AppPaths: Sendable {
 			guard values.isDirectory == true, values.isSymbolicLink != true else { continue }
 			let cache = entry.appending(
 				path: "AppData/Local/cache", directoryHint: .isDirectory)
-			if try isSafeCacheDirectory(cache, inside: prefix, fileManager: fileManager) {
+			if try isSafeCacheDirectory(cache, inside: prefix) {
 				directories.append(cache)
 			}
 		}
@@ -211,10 +359,8 @@ package struct AppPaths: Sendable {
 
 	package static func isSafeCacheDirectory(
 		_ url: URL,
-		inside prefix: URL,
-		fileManager: FileManager = .default
+		inside prefix: URL
 	) throws -> Bool {
-		_ = fileManager
 		let values: URLResourceValues
 		do {
 			values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
@@ -247,20 +393,44 @@ package struct AppPaths: Sendable {
 				|| error.code == CocoaError.fileReadNoSuchFile.rawValue)
 	}
 
+	/// Holds the user's chosen artwork, app icon, and logo source.
+	var artworkDirectory: URL {
+		applicationSupportRoot.appending(path: "Artwork", directoryHint: .isDirectory)
+	}
+
 	package var customArtwork: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom/artwork")
+		artworkDirectory.appending(path: "artwork")
 	}
 
 	package var customAppIcon: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom/app-icon")
+		artworkDirectory.appending(path: "app-icon")
 	}
 
 	package var customGameIcon: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom/game-icon")
+		artworkDirectory.appending(path: "game-icon")
 	}
 
 	package var operatorPresetAvatar: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom/operator-avatar-source")
+		artworkDirectory.appending(path: "operator-avatar-source")
+	}
+
+	/// The pre-0.8 custom artwork folder, flat in the new layout.
+	var legacyCustomArtworkDirectory: URL {
+		artworkDirectory.appending(path: "Custom", directoryHint: .isDirectory)
+	}
+
+	/// A cache folder that pre-0.8 builds wrote; the migration deletes it.
+	var legacyArtworkDownloadCache: URL {
+		cacheRoot.appending(path: "Artwork/Downloaded", directoryHint: .isDirectory)
+	}
+
+	/// A cache folder that pre-0.8 builds wrote; the migration deletes it.
+	var legacyPresetGalleryCache: URL {
+		cacheRoot.appending(path: "PresetGallery", directoryHint: .isDirectory)
+	}
+
+	package var storageOverviewCache: URL {
+		cacheRoot.appending(path: "Storage/overview.json")
 	}
 
 	package var playtimeStatistics: URL {

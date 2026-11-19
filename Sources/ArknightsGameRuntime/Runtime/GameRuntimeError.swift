@@ -16,6 +16,7 @@ package enum GameRuntimeError: LocalizedError, LauncherDiagnosticError, Sendable
 	case runtimeConfiguration(String)
 	case gameCompatibility(String)
 	case runtimeExited(status: Int32, log: URL)
+	case bilibiliControllerFailed(String)
 
 	package var errorDescription: String? {
 		switch self {
@@ -24,13 +25,13 @@ package enum GameRuntimeError: LocalizedError, LauncherDiagnosticError, Sendable
 		case .wineRuntimeMissing:
 			"No compatible Windows runtime found. Use a build that bundles Wine + DXMT."
 		case .rosettaMissing:
-			"Rosetta 2 is required to run the bundled Wine runtime. Install it by running \"softwareupdate --install-rosetta --agree-to-license\" in Terminal, then check again."
+			"Rosetta 2 is required to run the x86_64 runtime. Choose Install Rosetta 2…, then check again."
 		case .rosettaDisabledByGameTestMode:
 			"On macOS 27 beta, Legacy Game Test Mode disables the Rosetta translation required by Wine. Run \"sudo game-test-tool disable\" in Terminal, restart your Mac, then check again."
 		case .intelTranslationUnavailable:
 			"macOS could not start the Intel-based Wine runtime. Check that Rosetta 2 is installed and restart your Mac before trying again."
 		case .intelTranslationUnsupported:
-			"The launcher currently blocks this macOS version. Apple retains Rosetta only for certain legacy games, and whether this Wine and game setup qualifies is unconfirmed."
+			"Rosetta 2 is not available on macOS 28 and later. Switch to ARM64 (Apple Silicon) in Settings → Runtime."
 		case .runtimeWindowTimeout:
 			"Arknights did not open a window within \(Self.windowTimeoutText). Check the Wine log in Settings and try again."
 		case .runtimeConfiguration:
@@ -39,6 +40,8 @@ package enum GameRuntimeError: LocalizedError, LauncherDiagnosticError, Sendable
 			"Game-file compatibility setup could not be completed. Repair the game files and try again."
 		case .runtimeExited:
 			"Arknights closed unexpectedly. Check the Wine log in Settings and try again."
+		case .bilibiliControllerFailed:
+			"The Bilibili sign-in helper could not start. Check the Wine log in Settings and try again."
 		}
 	}
 
@@ -49,6 +52,8 @@ package enum GameRuntimeError: LocalizedError, LauncherDiagnosticError, Sendable
 			"The Windows runtime could not be configured: \(message)"
 		case .gameCompatibility(let message):
 			"Game compatibility setup could not be completed: \(message)"
+		case .bilibiliControllerFailed(let message):
+			"The Bilibili window controller could not start: \(message)"
 		case .runtimeExited(let status, let log):
 			"The Windows runtime exited with status \(status). See \(log.path)."
 		case .wineRuntimeMissing, .rosettaMissing, .rosettaDisabledByGameTestMode,

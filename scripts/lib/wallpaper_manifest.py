@@ -7,11 +7,10 @@ file ends with one newline. Rewriting the whole file keeps the diff limited to t
 new entries.
 """
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 from lib.common import fail
 
@@ -29,7 +28,12 @@ def read_manifest(manifest_path: Path) -> dict[str, list[str]]:
     tags = manifest.get("tags")
     if not isinstance(tags, dict):
         fail(f"{manifest_path} must contain a top-level 'tags' object")
-    return tags
+    for values in tags.values():
+        if not isinstance(values, list) or not all(
+            isinstance(tag, str) for tag in values
+        ):
+            fail(f"{manifest_path} 'tags' values must be lists of strings")
+    return cast("dict[str, list[str]]", tags)
 
 
 def entry_order(entry_id: str) -> tuple[str, int]:

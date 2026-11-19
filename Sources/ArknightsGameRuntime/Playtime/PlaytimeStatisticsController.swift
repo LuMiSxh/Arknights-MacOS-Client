@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsInfrastructure
 import Foundation
 import Observation
 
@@ -17,6 +16,7 @@ package final class PlaytimeStatisticsController {
 	@ObservationIgnored private var monotonicStart: TimeInterval?
 	@ObservationIgnored private let snapshotContinuation:
 		AsyncStream<PlaytimeStatistics>.Continuation
+	@ObservationIgnored private var snapshotConsumer: Task<Void, Never>?
 	@ObservationIgnored private let store: PlaytimeStatisticsStore
 	@ObservationIgnored private var loadTask: Task<Void, Never>?
 	@ObservationIgnored private var isLoaded = false
@@ -50,16 +50,19 @@ package final class PlaytimeStatisticsController {
 			self?.applyLoaded(loaded)
 		}
 		loadTask = loading
-		Task {
+		let consumer = Task { [store] in
 			await loading.value
 			for await snapshot in snapshots {
 				await store.save(snapshot)
 			}
 		}
+		snapshotConsumer = consumer
 	}
 
-	deinit {
+	isolated deinit {
 		snapshotContinuation.finish()
+		snapshotConsumer?.cancel()
+		loadTask?.cancel()
 	}
 
 	/// Returns once the persisted statistics are merged into memory.

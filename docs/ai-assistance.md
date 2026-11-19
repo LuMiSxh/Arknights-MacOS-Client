@@ -10,7 +10,7 @@ This project uses AI coding assistants. They help with source code, tests, scrip
 
 ## Responsibility
 
-The maintainer is responsible for the project. The maintainer is also responsible for every published release.
+The maintainer is responsible for the project and for every published release.
 
 ## License
 

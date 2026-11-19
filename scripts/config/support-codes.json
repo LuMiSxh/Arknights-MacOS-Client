@@ -1,0 +1,564 @@
+{
+  "codes": [
+    {
+      "code": "SV-ERR",
+      "swiftName": "serviceError",
+      "domain": "service",
+      "title": "Game service error",
+      "status": "active",
+      "summary": "The game service reported an error.",
+      "action": "Check the network. If the service is in maintenance, wait.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The game service is in maintenance.",
+        "A VPN, proxy, DNS filter, or network security tool blocks the request.",
+        "The launcher could not get valid configuration or service data for the selected server."
+      ],
+      "steps": [
+        "Check that the Mac can open ordinary websites.",
+        "If the game service is in maintenance, wait until it is available.",
+        "Turn off any VPN, proxy, DNS filter, or network security tool.",
+        "Try another network."
+      ],
+      "report": "In the report, say whether another network behaved differently. Do not add account details, response bodies, or private URLs. If the official service also fails, see [publisher support routing](../README.md#publisher-support-routing).",
+      "legacy": ["VIRGA"]
+    },
+    {
+      "code": "SV-CNT",
+      "swiftName": "remoteContentInvalid",
+      "domain": "service",
+      "title": "Remote content not usable",
+      "status": "active",
+      "summary": "The launcher received remote content that it cannot use.",
+      "action": "Update the launcher, or wait and check again later.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The content uses an unsupported download address.",
+        "The content is larger than the launcher allows.",
+        "The service sent a response that the launcher does not accept."
+      ],
+      "steps": [
+        "Check for a launcher update. Install it if one is available.",
+        "If no update is available, wait, then check again later."
+      ],
+      "report": "In the report, say whether an update was available.",
+      "legacy": ["PEBBLE"]
+    },
+    {
+      "code": "NW-OFF",
+      "swiftName": "networkUnavailable",
+      "domain": "network",
+      "title": "No network connection",
+      "status": "active",
+      "summary": "The launcher cannot connect to the server.",
+      "action": "Check that the Mac can open ordinary websites.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The Mac has no network connection.",
+        "A firewall, VPN, proxy, or DNS filter blocks the server.",
+        "The server is down or cannot be reached."
+      ],
+      "steps": [
+        "Check that the Mac can open ordinary websites.",
+        "Turn off any VPN, proxy, or DNS filter, then try again.",
+        "Try another network."
+      ],
+      "report": "In the report, say whether another network connects.",
+      "legacy": []
+    },
+    {
+      "code": "IN-DLD",
+      "swiftName": "downloadDamaged",
+      "domain": "installation",
+      "title": "Download incomplete or damaged",
+      "status": "active",
+      "summary": "A game file did not download completely or did not pass verification.",
+      "action": "Check the connection and any proxy. Then select **Retry** or **Repair**.",
+      "allowsRetry": true,
+      "allowsRepair": true,
+      "causes": [
+        "The transfer stopped before the file was complete.",
+        "The file did not match the expected size or checksum.",
+        "A proxy or network filter changed the download."
+      ],
+      "steps": ["Check that the connection is stable.", "Check that no proxy rewrites downloads."],
+      "report": "In the report, say whether Retry and Repair both failed. If the official client also cannot download the file, see [publisher support routing](../README.md#publisher-support-routing).",
+      "legacy": ["PEBBLE"]
+    },
+    {
+      "code": "IN-MAN",
+      "swiftName": "manifestUnsafe",
+      "domain": "installation",
+      "title": "Unsafe game file list",
+      "status": "active",
+      "summary": "The publisher file list contains an unsafe or conflicting path.",
+      "action": "Update the launcher, or wait for a corrected file list.",
+      "allowsRetry": false,
+      "allowsRepair": false,
+      "causes": [
+        "A file path leaves the install folder.",
+        "A file path appears more than once.",
+        "Two file paths conflict."
+      ],
+      "steps": [
+        "Check whether the official client is updating or in maintenance.",
+        "Check for a launcher update. Install it if one is available.",
+        "Wait for the publisher to publish a corrected file list. Then check again later.",
+        "Do not bypass this check or create the rejected path by hand."
+      ],
+      "report": "In the report, say whether the official client also rejects the release. If it does, see [publisher support routing](../README.md#publisher-support-routing).",
+      "legacy": ["GABBRO"]
+    },
+    {
+      "code": "IN-DSK",
+      "swiftName": "insufficientDiskSpace",
+      "domain": "installation",
+      "title": "Not enough free disk space",
+      "status": "active",
+      "summary": "The selected volume has too little free space.",
+      "action": "Free disk space, then empty the Trash.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The volume does not have the free space that the operation needs.",
+        "A previous installation remains in the Trash."
+      ],
+      "steps": [
+        "Free the space that the launcher shows, plus extra space for updates.",
+        "Empty the Trash if it holds a previous installation.",
+        "If needed, choose another local volume with the **Change…** menu in **Settings → Installation → Location**."
+      ],
+      "report": "In the report, give the volume format and the free space that Finder and the launcher each show. Report only if Finder shows enough free space and the code remains.",
+      "legacy": ["SCREE"]
+    },
+    {
+      "code": "IN-DIR",
+      "swiftName": "installFolderUnusable",
+      "domain": "installation",
+      "title": "Install folder cannot be used",
+      "status": "active",
+      "summary": "The install folder cannot be used safely.",
+      "action": "Choose a local folder that your account owns.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The folder or one of its parts is a symbolic link.",
+        "The launcher cannot create a file in the folder.",
+        "A temporary file in the folder is not safe to use.",
+        "Your account has no permission for the folder."
+      ],
+      "steps": [
+        "Quit Arknights and any app that uses the folder.",
+        "Choose a local folder that your account owns and that is not a symbolic link. Set it with the **Change…** menu in **Settings → Installation → Location**.",
+        "Do not change ownership or permissions across your home folder."
+      ],
+      "report": "In the report, say whether a new local folder works. Give the volume type.",
+      "legacy": ["BASALT"]
+    },
+    {
+      "code": "IN-BSY",
+      "swiftName": "installationBusy",
+      "domain": "installation",
+      "title": "Installation in use",
+      "status": "active",
+      "summary": "Another launcher process is using the installation.",
+      "action": "Wait for the other launcher to finish, or restart the Mac.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "Another copy of the launcher is installing or updating the game.",
+        "An earlier launcher process has not finished."
+      ],
+      "steps": [
+        "Wait for the other launcher process to finish.",
+        "If no other copy is open, restart the Mac. Then open the launcher again."
+      ],
+      "report": "In the report, say whether another launcher copy was open.",
+      "legacy": ["BASALT"]
+    },
+    {
+      "code": "IN-MIS",
+      "swiftName": "gameFilesMissing",
+      "domain": "installation",
+      "title": "Game files missing",
+      "status": "active",
+      "summary": "Game files are missing when the game starts.",
+      "action": "Quit apps that change the game folder. Then restart the Mac.",
+      "allowsRetry": true,
+      "allowsRepair": true,
+      "causes": ["A game file was deleted, moved, or not finished installing.", "Another app changed the game folder."],
+      "steps": [
+        "Quit any app that changes the game folder, such as an official updater.",
+        "Restart the Mac, then start the game again."
+      ],
+      "report": "In the report, say whether Repair completed.",
+      "legacy": ["PEBBLE"]
+    },
+    {
+      "code": "FS-MIG",
+      "swiftName": "dataMigrationFailed",
+      "domain": "files",
+      "title": "Launcher data migration failed",
+      "status": "active",
+      "summary": "The launcher could not move its saved data to the current format.",
+      "action": "Quit apps that use the data folder. Then choose **Retry**.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The launcher data folder cannot be read or written.",
+        "A file in the data folder is locked or damaged."
+      ],
+      "steps": [
+        "Quit Arknights and any app that uses the launcher data folder.",
+        "Confirm that your account can write to the folder.",
+        "Choose **Retry**. If the error stays, open the launcher again."
+      ],
+      "report": "In the report, say whether another app used the launcher data folder.",
+      "legacy": ["BASALT"]
+    },
+    {
+      "code": "FS-WRT",
+      "swiftName": "localFileFailed",
+      "domain": "files",
+      "title": "Local file action failed",
+      "status": "active",
+      "summary": "The launcher could not finish a local file action.",
+      "action": "Quit apps that use the affected files. Check folder permissions.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "An app has the affected files open.",
+        "Your account has no permission for the folder.",
+        "The volume is read-only or full."
+      ],
+      "steps": [
+        "Quit Arknights and any app that uses the affected folder.",
+        "Confirm that your account owns the folder and that the volume is writable.",
+        "Choose another location when the launcher offers one."
+      ],
+      "report": "In the report, give the volume type and say whether another location works.",
+      "legacy": ["BASALT"]
+    },
+    {
+      "code": "RT-ROS",
+      "swiftName": "rosettaMissing",
+      "domain": "runtime",
+      "title": "Rosetta unavailable",
+      "status": "active",
+      "summary": "Rosetta is missing or disabled.",
+      "action": "Install Rosetta if the launcher offers it.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": ["Rosetta is not installed on this Mac.", "The Rosetta installation failed or was canceled."],
+      "steps": [
+        "If the launcher offers **Install Rosetta 2…**, choose it. Confirm the macOS prompt, then wait.",
+        "Install pending macOS updates, restart the Mac, then open the launcher again."
+      ],
+      "report": "In the report, say whether the launcher offered Install Rosetta 2 and whether other Intel apps run.",
+      "legacy": ["LIMPET"]
+    },
+    {
+      "code": "RT-BLK",
+      "swiftName": "intelTranslationBlocked",
+      "domain": "runtime",
+      "title": "Intel translation blocked",
+      "status": "active",
+      "summary": "Rosetta 2 is not available on macOS 28 and later, or translation is disabled on a macOS 27 beta.",
+      "action": "Use the ARM64 runtime on macOS 28 or later. On a macOS 27 beta, turn off Legacy Game Test Mode.",
+      "allowsRetry": false,
+      "allowsRepair": false,
+      "causes": [
+        "Rosetta 2 is not available on macOS 28 and later.",
+        "Legacy Game Test Mode turned off translation on a macOS 27 beta."
+      ],
+      "steps": [
+        "On macOS 28 or later, choose **ARM64 (Apple Silicon)** in **Settings → Runtime**. See [Game runtime](../runtime.md#macos-support).",
+        "On a macOS 27 beta, turn off Legacy Game Test Mode. Then restart the Mac. See [Game runtime](../runtime.md#legacy-game-test-mode-on-macos-27-beta).",
+        "Install pending macOS updates and launcher updates."
+      ],
+      "report": "In the report, say which runtime you use, whether you run a macOS 27 beta, and whether Legacy Game Test Mode was on.",
+      "legacy": ["LIMPET"]
+    },
+    {
+      "code": "RT-BND",
+      "swiftName": "bundledRuntimeDamaged",
+      "domain": "runtime",
+      "title": "Runtime information missing or damaged",
+      "status": "active",
+      "summary": "The launcher cannot read its runtime information.",
+      "action": "Replace the launcher with a complete copy from the release DMG.",
+      "allowsRetry": false,
+      "allowsRepair": false,
+      "causes": [
+        "The launcher app was copied without its runtime information.",
+        "The runtime information in the app was changed.",
+        "A source build has no runtime information."
+      ],
+      "steps": [
+        "Quit Arknights Client.",
+        "Download the latest complete DMG from the project release page.",
+        "Replace the launcher in Applications with that copy, then open it.",
+        "Do not add Wine or DXMT files from an unverified package to the app bundle."
+      ],
+      "report": "In the report, say whether the app came from a release DMG or a local build. Do not attach runtime binaries.",
+      "legacy": ["WHELK"]
+    },
+    {
+      "code": "RT-MIS",
+      "swiftName": "runtimeNotInstalled",
+      "domain": "runtime",
+      "title": "Runtime not installed",
+      "status": "active",
+      "summary": "The selected runtime is not installed.",
+      "action": "Choose **Set Up Runtime** on Home, then start the game.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The runtime download has not started or has not finished.",
+        "The runtime you selected is not available in this launcher release.",
+        "The runtime was removed while it was selected."
+      ],
+      "steps": [
+        "On Home, choose **Set Up Runtime**. In setup, choose **Download and Continue**.",
+        "Wait for the download to finish. Then start the game.",
+        "If setup cannot download the runtime, install pending launcher updates and try again."
+      ],
+      "report": "In the report, say which runtime you selected and whether the download started.",
+      "legacy": []
+    },
+    {
+      "code": "RT-VER",
+      "swiftName": "runtimeVerificationFailed",
+      "domain": "runtime",
+      "title": "Runtime failed verification",
+      "status": "active",
+      "summary": "The downloaded runtime did not pass verification.",
+      "action": "Download the runtime again. If it fails again, report the problem.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The runtime archive did not match its expected size or checksum.",
+        "A required runtime file was missing after extraction.",
+        "A runtime file did not have the expected signature."
+      ],
+      "steps": [
+        "Choose **Set Up Runtime** on Home, or **Switch to x86_64** in **Settings → Runtime**.",
+        "Wait for the download to finish again.",
+        "If verification fails again, install pending launcher updates and report the problem."
+      ],
+      "report": "In the report, say which runtime failed verification and whether the download completed.",
+      "legacy": []
+    },
+    {
+      "code": "RT-SET",
+      "swiftName": "runtimeSetupFailed",
+      "domain": "runtime",
+      "title": "Runtime setup failed",
+      "status": "active",
+      "summary": "The launcher could not set up the game runtime.",
+      "action": "Choose **Settings → Help → Troubleshooting → Rebuild…**, then start the game.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "A game environment (Wine prefix) migration, registry setup, or DXMT installation failed.",
+        "Another Wine process was running.",
+        "The message mentions Vuplex, PlatformProcess, the Bilibili login window, or a game helper. If so, see [RT-CMP](rt-cmp.md)."
+      ],
+      "steps": [
+        "Quit other Wine apps.",
+        "Choose **Settings → Help → Troubleshooting → Rebuild…**, then start the game. This sets up the game environment again and deletes no files.",
+        "As a last resort, choose **Delete Environment…**, which keeps your game files but signs you out. See [What cleanup removes](../storage.md#what-cleanup-removes)."
+      ],
+      "report": "In the report, say whether another Wine process was open and which recovery step failed.",
+      "legacy": ["SEPIA"]
+    },
+    {
+      "code": "RT-CMP",
+      "swiftName": "compatibilitySetupFailed",
+      "domain": "runtime",
+      "title": "Game compatibility setup failed",
+      "status": "active",
+      "summary": "The launcher could not apply or restore a compatibility file in the game folder.",
+      "action": "Quit the official updater. Then choose **Repair**.",
+      "allowsRetry": true,
+      "allowsRepair": true,
+      "causes": [
+        "Compatibility files in the game folder enable the sign-in and Notices windows under Wine.",
+        "An official updater or another tool changed a compatibility file.",
+        "The launcher does not overwrite unknown files."
+      ],
+      "steps": [
+        "Quit Arknights and any official updater.",
+        "Do not delete or rename these items: the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, and the launcher's temporary files.",
+        "If the code returns after Repair, restart the Mac. Then choose **Repair** in **Settings → Installation** again."
+      ],
+      "report": "In the report, say whether the second Repair failed. Attach no helper binaries.",
+      "legacy": ["ANEMONE"]
+    },
+    {
+      "code": "RT-BIL",
+      "swiftName": "bilibiliLoginUnavailable",
+      "domain": "runtime",
+      "title": "Bilibili login unavailable",
+      "status": "active",
+      "summary": "The Bilibili login window could not start.",
+      "action": "Quit other Wine apps, then restart the Mac.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": ["The login controller for China (Bilibili) did not start.", "Another Wine process was running."],
+      "steps": ["Quit other Wine apps.", "Restart the Mac. Then open the launcher again."],
+      "report": "In the report, say whether other Wine apps were open.",
+      "legacy": []
+    },
+    {
+      "code": "GM-WIN",
+      "swiftName": "gameWindowTimeout",
+      "domain": "game",
+      "title": "No game window",
+      "status": "active",
+      "summary": "The game did not show a window within 90 seconds.",
+      "action": "Wait for other downloads to finish. Then start the game again.",
+      "allowsRetry": true,
+      "allowsRepair": true,
+      "causes": [
+        "Other large downloads or first-run macOS work were still running.",
+        "The game files are missing or damaged."
+      ],
+      "steps": [
+        "Wait until other large downloads and first-run macOS work finish.",
+        "If the game window is visible and only the sign-in or Notices window is blank, see [Sign-in or Notices stay blank](../troubleshooting.md#sign-in-or-notices-stay-blank)."
+      ],
+      "report": "In the report, say whether this was the first launch after an update and whether a second attempt differed.",
+      "legacy": ["NARWHAL"]
+    },
+    {
+      "code": "GM-CRS",
+      "swiftName": "gameClosedUnexpectedly",
+      "domain": "game",
+      "title": "Game closed unexpectedly",
+      "status": "active",
+      "summary": "The game or Wine process ended unexpectedly.",
+      "action": "Close overlays and tools that change game processes.",
+      "allowsRetry": true,
+      "allowsRepair": true,
+      "causes": [
+        "The process ended before the launch finished.",
+        "The process exited with an error while the game ran.",
+        "An overlay or tool that changes game processes interfered."
+      ],
+      "steps": [
+        "Close overlays and tools that change game processes.",
+        "If the code returns, see [The game will not start](../troubleshooting.md#the-game-will-not-start)."
+      ],
+      "report": "In the report, say whether a window appeared and what happened before the exit.",
+      "legacy": ["CRUX"]
+    },
+    {
+      "code": "GM-SCP",
+      "swiftName": "screenCapturePermissionDenied",
+      "domain": "game",
+      "title": "Screen Recording is off",
+      "status": "active",
+      "summary": "The launcher cannot take a screenshot because Screen Recording is off.",
+      "action": "Allow Screen Recording for Arknights Client in System Settings.",
+      "allowsRetry": false,
+      "allowsRepair": false,
+      "causes": [
+        "Screen Recording is off for Arknights Client in System Settings.",
+        "macOS asked you to confirm Screen Recording again, and no answer was given.",
+        "A new permission needs a launcher restart before it takes effect."
+      ],
+      "steps": [
+        "Open **System Settings → Privacy & Security → Screen & System Audio Recording**.",
+        "Turn on Arknights Client.",
+        "Quit the launcher and open it again."
+      ],
+      "report": "In the report, say whether Arknights Client is listed and turned on under Screen Recording.",
+      "legacy": []
+    },
+    {
+      "code": "GM-SCW",
+      "swiftName": "screenCaptureWindowMissing",
+      "domain": "game",
+      "title": "No game window to capture",
+      "status": "active",
+      "summary": "The launcher found no visible game window to capture.",
+      "action": "Show the game window, then try again.",
+      "allowsRetry": false,
+      "allowsRepair": false,
+      "causes": [
+        "The game window was still opening or already closed.",
+        "The game window was minimized or on another Space."
+      ],
+      "steps": ["Show the game window on the current Space.", "Take the screenshot again."],
+      "report": "In the report, say whether the game window was visible and which server was running.",
+      "legacy": []
+    },
+    {
+      "code": "UP-ERR",
+      "swiftName": "updateFailed",
+      "domain": "update",
+      "title": "Launcher update failed",
+      "status": "active",
+      "summary": "The launcher could not check for or install an update.",
+      "action": "Check the connection, then check for an update again.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The update server cannot be reached.",
+        "The downloaded update did not pass verification.",
+        "The update could not be written to the app folder."
+      ],
+      "steps": [
+        "Check your connection. Then check for an update again later.",
+        "If the update keeps failing, download the latest DMG from the project release page. Replace the launcher in Applications with that copy."
+      ],
+      "report": "In the report, say which stage failed: check, download, or install. Say whether the release page shows a newer version.",
+      "legacy": []
+    },
+    {
+      "code": "UI-ICN",
+      "swiftName": "appIconFailed",
+      "domain": "customization",
+      "title": "App icon not updated",
+      "status": "active",
+      "summary": "The app icon could not be set or restored.",
+      "action": "Choose another image, then try again.",
+      "allowsRetry": true,
+      "allowsRepair": false,
+      "causes": [
+        "The selected image could not be converted into an app icon.",
+        "macOS refused to update the app icon."
+      ],
+      "steps": ["Choose another image, then try again.", "If macOS keeps the old icon, restart the Mac."],
+      "report": "In the report, say whether macOS kept the old icon. Do not attach the image unless a maintainer asks for it.",
+      "legacy": []
+    },
+    {
+      "code": "UI-IMG",
+      "swiftName": "artworkImageInvalid",
+      "domain": "customization",
+      "title": "Artwork image not usable",
+      "status": "active",
+      "summary": "The image cannot be used as launcher artwork.",
+      "action": "Choose an image that meets the size limits, then select it again.",
+      "allowsRetry": false,
+      "allowsRepair": false,
+      "causes": [
+        "The file is not a single still image, such as a PNG or JPEG.",
+        "The image is larger than 25 MB, 16,384 pixels on one side, or 120 million pixels in total.",
+        "A gallery image is larger than the launcher allows."
+      ],
+      "steps": [
+        "Choose another image. Use a single still image, such as a PNG or JPEG.",
+        "Use an image of 25 MB or less. It may have at most 16,384 pixels on each side and 120 million pixels in total.",
+        "If a gallery image still fails, check for a launcher update, then try again."
+      ],
+      "report": "In the report, say whether the image came from the gallery or from a file you chose. Do not attach the image unless a maintainer asks for it.",
+      "legacy": []
+    }
+  ]
+}

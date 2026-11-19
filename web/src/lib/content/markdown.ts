@@ -4,7 +4,7 @@ import {
 	getHeadingList,
 	resetHeadings
 } from 'marked-gfm-heading-id';
-import { normalizeBasePath } from '../site.js';
+import { resolveBasePath } from '../site.js';
 import type { Heading } from './types.js';
 import { escapeHtml } from './html.js';
 import { parseShareChart, renderShareChart } from './share-chart.js';
@@ -37,9 +37,7 @@ const ALERT_LABELS = {
 	WARNING: 'Warning',
 	CAUTION: 'Caution'
 } as const;
-const buildBasePath = normalizeBasePath(
-	typeof process === 'undefined' ? '' : (process.env.BASE_PATH ?? '')
-);
+const buildBasePath = resolveBasePath('');
 
 function safeExternalHref(href: string, pattern: RegExp): string | undefined {
 	if (pattern.test(href)) return href;
@@ -178,7 +176,7 @@ export function renderMarkdown(
 	});
 	parser.use(gfmHeadingId());
 	resetHeadings();
-	const html = addHeadingLinks(parser.parse(input) as string);
+	const html = addHeadingLinks(parser.parse(input, { async: false }));
 	const headings = getHeadingList().map(({ level, raw, id }) => ({
 		level,
 		text: raw,

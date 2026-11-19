@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsRuntimeTestSupport
 import ArknightsTestSupport
 import Darwin
 import Foundation
@@ -12,11 +13,14 @@ import Testing
 struct IntelTranslationControllerTests {
 	@Test
 	func failedInstallationKeepsLaunchBlockedAndExposesRecovery() async throws {
+		let storage = try TemporaryDirectory("IntelTranslationControllerTests")
+		defer { storage.remove() }
 		let installer = RosettaInstallationRecorder(status: 7)
-		let lifecycle = makeLifecycleStore()
+		let lifecycle = makeLifecycleStore(in: storage)
 		lifecycle.state.readiness.intelTranslation = .rosettaMissing
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
+			runtimeLane: { .x86 },
 			checkIntelTranslation: {
 				IntelTranslationCheck(state: .rosettaMissing, diagnostics: "test")
 			},
@@ -62,14 +66,12 @@ struct IntelTranslationControllerTests {
 			try await IntelTranslationProcess.run(
 				executable: URL(filePath: "/bin/sh"),
 				arguments: [
-					"-c", "trap '' TERM; echo $$ > '\(pidFile.path)'; while :; do :; done",
+					"-c",
+					"trap '' TERM; echo $$ > '\(pidFile.path).tmp' && mv '\(pidFile.path).tmp' '\(pidFile.path)'; while :; do :; done",
 				])
 		}
-		// The shell creates the file before it writes the PID, so wait for the complete line.
-		let processStarted = await waitForCondition(timeout: .seconds(5)) {
-			(try? String(contentsOf: pidFile, encoding: .utf8))?.hasSuffix("\n") == true
-		}
-		try #require(processStarted)
+		// The shell renames the PID file into place, so its arrival means the PID is complete.
+		await waitForFile(at: pidFile)
 		let cancellationStarted = clock.now
 		task.cancel()
 		await #expect(throws: CancellationError.self) { _ = try await task.value }

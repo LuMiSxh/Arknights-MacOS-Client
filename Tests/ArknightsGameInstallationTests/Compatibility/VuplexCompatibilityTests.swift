@@ -19,12 +19,9 @@ func vuplexShimIsInstalledAndRestoredWithoutChangingTheOriginal(helperBytes: Int
 	let shimData = Data("launcher-shim".utf8)
 	try shimData.write(to: shim)
 
-	let compatibility = try testCompatibility(shimURL: shim, root: root)
+	let compatibility = VuplexCompatibility(shimURL: shim)
 	#expect(try compatibility.installIfSupported(in: root))
 	#expect(try Data(contentsOf: helper) == shimData)
-	let installedUserenv = helper.deletingLastPathComponent().appending(
-		path: VuplexCompatibility.userenvName)
-	#expect(FileManager.default.fileExists(atPath: installedUserenv.path))
 
 	let original = helper.deletingLastPathComponent().appending(
 		path: VuplexCompatibility.originalHelperName)
@@ -32,7 +29,6 @@ func vuplexShimIsInstalledAndRestoredWithoutChangingTheOriginal(helperBytes: Int
 	#expect(try compatibility.restoreIfInstalled(in: root))
 	#expect(try Data(contentsOf: helper) == officialData)
 	#expect(!FileManager.default.fileExists(atPath: original.path))
-	#expect(!FileManager.default.fileExists(atPath: installedUserenv.path))
 
 	// An older shim upgrades in place and keeps the official helper; restore needs no bundled assets.
 	try installedShimData().write(to: helper)
@@ -40,77 +36,16 @@ func vuplexShimIsInstalledAndRestoredWithoutChangingTheOriginal(helperBytes: Int
 	let newShim = root.appending(path: "new-shim.exe")
 	let newShimData = Data("new-launcher-shim".utf8)
 	try newShimData.write(to: newShim)
-	let upgrade = try testCompatibility(shimURL: newShim, root: root)
+	let upgrade = VuplexCompatibility(shimURL: newShim)
 	#expect(try upgrade.installIfSupported(in: root))
 	#expect(try Data(contentsOf: helper) == newShimData)
 	#expect(try Data(contentsOf: original) == officialData)
 
 	try VuplexCompatibility.launcherShimMarker.write(to: helper)
-	let withoutAssets = VuplexCompatibility(shimURL: nil, userenvURL: nil)
+	let withoutAssets = VuplexCompatibility(shimURL: nil)
 	#expect(try withoutAssets.restoreIfInstalled(in: root))
 	#expect(try Data(contentsOf: helper) == officialData)
 	#expect(!FileManager.default.fileExists(atPath: original.path))
-	#expect(!FileManager.default.fileExists(atPath: installedUserenv.path))
-}
-
-@Test
-func vuplexShimLeavesUnknownHelpersUntouched() throws {
-	let shimData = Data("launcher-shim".utf8)
-	let marker = Data(VuplexCompatibility.compatibilityArgument.utf8)
-	var oversized = Data(repeating: 0, count: 5 * 1_024 * 1_024 + 1)
-	oversized.replaceSubrange(0..<marker.count, with: marker)
-	let official = Data("official-vx-accelerated-paint-disabled".utf8)
-
-	// Unknown or oversized helpers are left alone and install reports no change.
-	for helperData in [Data("unknown-helper".utf8), oversized] {
-		let fixture = try VuplexFixture()
-		defer { fixture.remove() }
-		let compatibility = try fixture.compatibility(shimData: shimData)
-		try helperData.write(to: fixture.helper)
-		#expect(try !compatibility.installIfSupported(in: fixture.root))
-		#expect(try Data(contentsOf: fixture.helper) == helperData)
-	}
-
-	// An unrelated userenv.dll blocks the install and stays in place.
-	do {
-		let fixture = try VuplexFixture()
-		defer { fixture.remove() }
-		let compatibility = try fixture.compatibility(shimData: shimData)
-		try official.write(to: fixture.helper)
-		let userenv = fixture.directory.appending(path: VuplexCompatibility.userenvName)
-		let unknown = Data("unrelated-userenv".utf8)
-		try unknown.write(to: userenv)
-		#expect(throws: GameCompatibilityError.self) {
-			try compatibility.installIfSupported(in: fixture.root)
-		}
-		#expect(try Data(contentsOf: fixture.helper) == official)
-		#expect(try Data(contentsOf: userenv) == unknown)
-	}
-
-	// An older shim without its saved official helper cannot upgrade.
-	do {
-		let fixture = try VuplexFixture()
-		defer { fixture.remove() }
-		let compatibility = try fixture.compatibility(shimData: shimData)
-		try installedShimData().write(to: fixture.helper)
-		#expect(throws: GameCompatibilityError.self) {
-			try compatibility.installIfSupported(in: fixture.root)
-		}
-	}
-
-	// A helper replaced by the game updater is kept and the stale original is dropped.
-	do {
-		let fixture = try VuplexFixture()
-		defer { fixture.remove() }
-		let compatibility = try fixture.compatibility(shimData: shimData)
-		let updated = Data("updated-vx-accelerated-paint-disabled".utf8)
-		try updated.write(to: fixture.helper)
-		let original = fixture.directory.appending(path: VuplexCompatibility.originalHelperName)
-		try Data("old-helper".utf8).write(to: original)
-		#expect(try !compatibility.restoreIfInstalled(in: fixture.root))
-		#expect(try Data(contentsOf: fixture.helper) == updated)
-		#expect(!FileManager.default.fileExists(atPath: original.path))
-	}
 }
 
 private func installedShimData() -> Data {
@@ -142,21 +77,7 @@ private struct VuplexFixture {
 		)
 	}
 
-	var directory: URL { helper.deletingLastPathComponent() }
-
-	func compatibility(shimData: Data) throws -> VuplexCompatibility {
-		let shim = root.appending(path: "shim.exe")
-		try shimData.write(to: shim)
-		return try testCompatibility(shimURL: shim, root: root)
-	}
-
 	func remove() {
 		temporary.remove()
 	}
-}
-
-private func testCompatibility(shimURL: URL, root: URL) throws -> VuplexCompatibility {
-	let userenvURL = root.appending(path: "bundled-userenv.dll")
-	try Data("Arknights Client AppContainer compatibility".utf8).write(to: userenvURL)
-	return VuplexCompatibility(shimURL: shimURL, userenvURL: userenvURL)
 }

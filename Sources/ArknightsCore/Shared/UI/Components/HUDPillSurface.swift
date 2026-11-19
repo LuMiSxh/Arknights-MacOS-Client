@@ -9,27 +9,26 @@ import SwiftUI
 struct HUDPillSurface<Content: View>: View {
 	let isExpanded: Bool
 	let showsBorder: Bool
-	let tint: Color
-	@ViewBuilder package let content: Content
+	@ViewBuilder let content: Content
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.colorScheme) private var colorScheme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-	package init(
+	init(
 		isExpanded: Bool = false,
 		showsBorder: Bool = true,
-		tint: Color = LauncherVisuals.hudGlassTint,
 		@ViewBuilder content: () -> Content
 	) {
 		self.isExpanded = isExpanded
 		self.showsBorder = showsBorder
-		self.tint = tint
 		self.content = content()
 	}
 
-	package var body: some View {
+	var body: some View {
 		content
 			.contentShape(surfaceShape)
 			.adaptiveControlSurface(
-				tint: tint,
+				tint: colorScheme == .dark ? theme.controlFill : theme.groupFill,
 				presentation: .hud,
 				isInteractive: false,
 				borderOpacity: showsBorder ? LauncherVisuals.Control.hudBorderOpacity : 0,
@@ -45,7 +44,7 @@ struct HUDPillSurface<Content: View>: View {
 	private var surfaceShape: HUDPillShape {
 		HUDPillShape(
 			expansion: isExpanded ? 1 : 0,
-			expandedCornerRadius: LauncherVisuals.Radius.hudPill
+			expandedCornerRadius: LauncherTokens.Radius.hudPill
 		)
 	}
 
@@ -77,7 +76,7 @@ package enum HUDPillMotion {
 	}
 
 	package static func expansionAnimation(reduceMotion: Bool) -> Animation? {
-		LauncherMotion.animation(.present, reduceMotion: reduceMotion)
+		LauncherMotion.animation(.morph, reduceMotion: reduceMotion)
 	}
 
 	package static func expandedContentTransition(reduceMotion: Bool) -> AnyTransition {
@@ -86,14 +85,13 @@ package enum HUDPillMotion {
 			insertion: .materialize(
 				reduceMotion: false,
 				scale: 0.92,
-				blur: 8,
 				offsetY: 6,
 				anchor: .topTrailing
 			)
 			.animation(
 				LauncherMotion.Curve.state.animation.delay(LauncherMotion.expandedContentDelay)
 			),
-			removal: .materialize(reduceMotion: false, scale: 0.96, blur: 4, anchor: .topTrailing)
+			removal: .materialize(reduceMotion: false, scale: 0.96, anchor: .topTrailing)
 				.animation(LauncherMotion.Curve.dismiss.animation)
 		)
 	}
@@ -108,27 +106,25 @@ package enum HUDPillMotion {
 package struct HUDPillProgressOutline: View {
 	let progress: Double?
 	let isActive: Bool
-	let tint: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
 
-	package init(progress: Double?, isActive: Bool, tint: Color) {
+	package init(progress: Double?, isActive: Bool) {
 		self.progress = progress
 		self.isActive = isActive
-		self.tint = tint
 	}
 
 	package var body: some View {
 		Capsule()
 			.stroke(
-				LauncherVisuals.hairline.opacity(
+				theme.controlStroke.opacity(
 					progress == nil ? LauncherVisuals.Control.hudBorderOpacity : 0.5
 				),
-				lineWidth: LauncherVisuals.Control.borderWidth
+				lineWidth: LauncherTokens.Control.borderWidth
 			)
 			.overlay {
 				CapsuleProgressOutline(
 					progress: progress ?? 0,
-					tint: tint,
 					isGlintActive: isActive,
 					track: .clear
 				)
@@ -145,10 +141,9 @@ package struct HUDPillProgressOutline: View {
 extension View {
 	package func hudPillSurface(
 		isExpanded: Bool = false,
-		showsBorder: Bool = true,
-		tint: Color = LauncherVisuals.hudGlassTint
+		showsBorder: Bool = true
 	) -> some View {
-		HUDPillSurface(isExpanded: isExpanded, showsBorder: showsBorder, tint: tint) {
+		HUDPillSurface(isExpanded: isExpanded, showsBorder: showsBorder) {
 			self
 		}
 	}

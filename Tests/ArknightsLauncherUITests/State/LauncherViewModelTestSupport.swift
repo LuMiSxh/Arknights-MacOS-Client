@@ -12,7 +12,7 @@ import Testing
 
 @MainActor
 func waitForDownloadToStop(_ model: LauncherViewModel) async {
-	#expect(await waitForCondition { !model.installation.isDownloading })
+	await waitForCondition { !model.installation.isDownloading }
 }
 
 @MainActor
@@ -43,7 +43,8 @@ func makeModel(
 	)
 	prepareStorage?(paths)
 	let defaults = UserDefaults(suiteName: "LauncherViewModelTests.\(UUID().uuidString)")!
-	let preferences = LauncherPreferencesStore(defaults: defaults)
+	let preferences = LauncherPreferencesStore(
+		defaults: defaults, themeCacheURL: paths.themeCache)
 	preferences.set(false, for: LauncherPreferencesStore.Key.automaticGameUpdates)
 	preferences.set(false, for: LauncherPreferencesStore.Key.automaticLauncherUpdates)
 	preferences.set(false, for: LauncherPreferencesStore.Key.announcementsEnabled)
@@ -88,8 +89,17 @@ actor ControllableInstaller: GameInstalling {
 	private var cancellationRequested = false
 	private var installationStartWaiters: [CheckedContinuation<Void, Never>] = []
 	private var cancellationRequestWaiters: [CheckedContinuation<Void, Never>] = []
+	private var installCountWaiters:
+		[(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
 	private var installationResponse: CheckedContinuation<InstallResult, Error>?
 	private var progress: (@Sendable (DownloadProgress) async -> Void)?
+	func uninstall(
+		from installDirectory: URL, scope: UninstallScope
+	) async throws
+		-> UninstallOutcome
+	{
+		.removed
+	}
 	func install(
 		configuration: GameConfiguration,
 		region: GameRegion,
@@ -100,6 +110,7 @@ actor ControllableInstaller: GameInstalling {
 		count += 1
 		regions.append(region)
 		verificationModes.append(verifyAllExistingFiles)
+		resumeInstallCountWaiters()
 		self.progress = progress
 		return try await withTaskCancellationHandler {
 			try await withCheckedThrowingContinuation { continuation in
@@ -121,6 +132,15 @@ actor ControllableInstaller: GameInstalling {
 	func installationCount() -> Int { count }
 	func requestedRegions() -> [GameRegion] { regions }
 	func requestedVerificationModes() -> [Bool] { verificationModes }
+	func waitForInstallationCount(_ target: Int) async {
+		guard count < target else { return }
+		await withCheckedContinuation { installCountWaiters.append((target, $0)) }
+	}
+	private func resumeInstallCountWaiters() {
+		let ready = installCountWaiters.filter { count >= $0.count }
+		installCountWaiters.removeAll { count >= $0.count }
+		for waiter in ready { waiter.continuation.resume() }
+	}
 	func waitForInstallationStart() async {
 		guard !installationStarted else { return }
 		await withCheckedContinuation { installationStartWaiters.append($0) }
@@ -134,9 +154,7 @@ actor ControllableInstaller: GameInstalling {
 			DownloadProgress(
 				downloadedBytes: 50,
 				totalBytes: 100,
-				completedFiles: 1,
-				totalFiles: 2,
-				currentFile: "game.zip"
+				completedFiles: 1
 			))
 	}
 	func acknowledgeCancellation() {
@@ -147,8 +165,7 @@ actor ControllableInstaller: GameInstalling {
 		installationResponse?.resume(
 			returning: InstallResult(
 				downloadedFiles: 1,
-				downloadedBytes: 100,
-				installDirectory: URL(filePath: "/tmp/Arknights-Global")
+				downloadedBytes: 100
 			)
 		)
 		installationResponse = nil
@@ -174,12 +191,10 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
 		GameConfiguration(
-			gameLowestVersion: "1.0.0",
 			gameLatestVersion: "2.0.0",
 			gameLatestFilePath: "game.zip",
 			gameStartExeName: "Arknights",
 			gameStartParams: [],
-			gameUninstallScript: "uninstall.exe",
 			decompressionSize: "1 GB"
 		)
 	}
@@ -223,7 +238,7 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 			branding
 			?? LauncherBranding(
 				launcherBackgroundImage: nil, launcherBackgroundImageCRC64: nil,
-				copyrightInformation: nil, privacyPolicy: nil, userAgreement: nil,
+				privacyPolicy: nil, userAgreement: nil,
 				noticePopOpen: nil, noticeContent: nil)
 		let pending = brandingContinuations
 		brandingContinuations.removeAll()

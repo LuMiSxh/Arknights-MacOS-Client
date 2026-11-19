@@ -3,7 +3,7 @@
 import Foundation
 
 struct APIEnvelope<Value: Decodable>: Decodable {
-	package let code: Int
+	let code: Int
 	let data: Value
 	let msg: String?
 }
@@ -45,7 +45,7 @@ struct ManifestFile: Codable, Hashable, Sendable {
 		case path, hash, size
 	}
 
-	package init(from decoder: any Decoder) throws {
+	init(from decoder: any Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
 		path = try container.decode(String.self, forKey: .path)
 		let hash = try container.decode(String.self, forKey: .hash)
@@ -59,7 +59,7 @@ struct ManifestFile: Codable, Hashable, Sendable {
 		self.byteCount = byteCount
 	}
 
-	package func encode(to encoder: any Encoder) throws {
+	func encode(to encoder: any Encoder) throws {
 		var container = encoder.container(keyedBy: CodingKeys.self)
 		try container.encode(path, forKey: .path)
 		try container.encode(hash, forKey: .hash)

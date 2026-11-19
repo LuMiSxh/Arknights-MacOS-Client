@@ -13,7 +13,9 @@ struct ActivityLeaseTests {
 
 	@Test
 	func beginClaimsTheActivityOnlyWhenIdle() throws {
-		let lifecycle = makeLifecycleStore()
+		let storage = try TemporaryDirectory("ActivityLeaseTests")
+		defer { storage.remove() }
+		let lifecycle = makeLifecycleStore(in: storage)
 
 		let lease = try #require(lifecycle.begin(first))
 
@@ -24,7 +26,7 @@ struct ActivityLeaseTests {
 		#expect(!lifecycle.end(lease))
 		#expect(lifecycle.begin(first) != nil)
 
-		let pending = makeLifecycleStore()
+		let pending = makeLifecycleStore(in: storage)
 		pending.beginLauncherUpdate()
 		#expect(pending.begin(first) == nil)
 		pending.finishLauncherUpdate()
@@ -33,7 +35,9 @@ struct ActivityLeaseTests {
 
 	@Test
 	func staleLeaseCannotSetIdleOrUpdate() throws {
-		let lifecycle = makeLifecycleStore()
+		let storage = try TemporaryDirectory("ActivityLeaseTests")
+		defer { storage.remove() }
+		let lifecycle = makeLifecycleStore(in: storage)
 		let stale = try #require(lifecycle.begin(first))
 		#expect(lifecycle.end(stale))
 		let current = try #require(lifecycle.begin(second))

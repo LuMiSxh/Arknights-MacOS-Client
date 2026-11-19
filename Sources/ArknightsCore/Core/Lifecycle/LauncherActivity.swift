@@ -45,6 +45,7 @@ package enum LauncherActivity: Equatable, Sendable {
 	}
 
 	/// True from the moment the game process spawns, before its window is ready.
+	/// Use `isGameProcessRunning` for what the player sees; this only says a process exists.
 	package var hasGameProcess: Bool { gameProcessIdentifier != nil }
 
 	package var isInstalling: Bool {
@@ -64,6 +65,9 @@ package enum MaintenanceActivity: Equatable, Sendable {
 	case clearingCache
 	case deletingWinePrefix
 	case uninstalling
+	case removingRuntime
 	case updatingLauncher
 	case migratingStorage
+	/// Background prefix migration for installed servers. A game launch cancels it.
+	case updatingGameEnvironments
 }

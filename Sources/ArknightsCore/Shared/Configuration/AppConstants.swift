@@ -5,19 +5,26 @@ import Foundation
 package enum AppConstants {
 	package enum Game {
 		package static let installedStateFileName = ".arknights-client-state.json"
+		package static let installedStateSchemaVersion = 1
 		package static let installedStateMaximumBytes = 8 * 1_024 * 1_024
 		package static let installerStagingDirectoryName = ".arknights-client-install-staging"
 		package static let installerResumeMetadataMaximumBytes = 16 * 1_024
 		package static let runtimeMigrationStateMaximumBytes = 64 * 1_024
+		package static let runtimeManifestMaximumBytes = 64 * 1_024
 		package static let userDirectoryConfigurationMaximumBytes = 64 * 1_024
 		package static let vuplexOfficialHelperMaximumBytes = 5 * 1_024 * 1_024
 		package static let vuplexShimMaximumBytes = 1 * 1_024 * 1_024
 		package static let platformProcessAssetMaximumBytes = 4 * 1_024 * 1_024
 		package static let bilibiliPlatformAssetMaximumBytes = 16 * 1_024 * 1_024
+		package static let gameModeQuitWaitSeconds: Double = 3
 		/// Title bar height assumed when the real one cannot be measured.
 		static let standardWindowTitleBarHeight: CGFloat = 28
 		/// Share of the usable screen the "leave room" game window may cover.
 		static let compactWindowScreenShare = 0.65
+		/// Smallest custom window size, in points.
+		package static let customWindowMinimum = GameDisplaySize(width: 640, height: 360)
+		/// Largest custom window side, in points.
+		package static let customWindowMaximumDimension = 8192
 		static let generatedResolutionHeightStep = 360
 		/// Smallest on-screen window treated as the game window; smaller helper windows are ignored.
 		package static let minimumGameWindowWidth: Double = 320
@@ -25,13 +32,39 @@ package enum AppConstants {
 	}
 
 	package enum Runtime {
-		static let aceCompactEnvironmentKey = "ARKNIGHTS_RUNTIME_ACE_COMPACT"
-		static let cefCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CEF_COMPAT"
-		static let cnCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CN_COMPAT"
-		package static let hardwareCursorEnvironmentKey = "ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"
+		/// The Dock and menu-bar name of the game process.
+		package static let applicationName = "Arknights"
+		/// Set to `arm` only when the native ARM64 runtime launches the game.
+		package static let runtimeLaneEnvironmentKey = "ARKNIGHTS_CLIENT_RUNTIME_LANE"
+		// One key per compatibility patch gate. Every launch sends each key as "1" or "0",
+		// so the runtime's own defaults never decide behavior for our launches.
+		package static let aceImportsEnvironmentKey = "LMISXH_AKMOCL_ACE_IMPORTS"
+		package static let appContainerEnvironmentKey = "LMISXH_AKMOCL_APPCONTAINER"
+		package static let winsockEnvironmentKey = "LMISXH_AKMOCL_WINSOCK"
+		package static let cefCompatEnvironmentKey = "LMISXH_AKMOCL_CEF"
+		package static let cnCompatEnvironmentKey = "LMISXH_AKMOCL_CN"
+		package static let fullscreenEnvironmentKey = "LMISXH_AKMOCL_FULLSCREEN"
+		package static let hardwareCursorEnvironmentKey = "LMISXH_AKMOCL_CURSOR"
+		package static let menuEnvironmentKey = "LMISXH_AKMOCL_MENU"
+		package static let audioEnvironmentKey = "LMISXH_AKMOCL_AUDIO"
+		package static let aceTimingEnvironmentKey = "LMISXH_AKMOCL_ACE_TIMING"
+		package static let aceDispatcherEnvironmentKey = "LMISXH_AKMOCL_ACE_DISPATCHER"
+		package static let aceRosettaEnvironmentKey = "LMISXH_AKMOCL_ACE_ROSETTA"
+		package static let eflagsEnvironmentKey = "LMISXH_AKMOCL_EFLAGS"
+		package static let hybridThreadEnvironmentKey = "LMISXH_AKMOCL_HYBRID_THREAD"
+		package static let loaderLinkEnvironmentKey = "LMISXH_AKMOCL_LOADER_LINK"
 		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
 		package static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
-		package static let capabilityManifestMaximumBytes = 4 * 1_024
+		/// The only persisted runtime choice. It names the lane, not a version.
+		package static let runtimeSelectionFilename = "runtime-selection.json"
+		package static let runtimeSelectionMaximumBytes = 4 * 1_024
+		/// The first macOS major version that can run the native ARM64 lane.
+		package static let armLaneMinimumMacOSMajorVersion = 26
+		/// The last macOS major version with general Rosetta 2 support, so the x86_64 lane can run.
+		package static let x86LaneLastSupportedMacOSMajorVersion = 27
+		/// Runtime location bundled by releases 0.6 and 0.7; used only to detect their running
+		/// Wine during layout migration. Remove in 1.1 with the 0.6/0.7 migration.
+		package static let legacyBundledRuntimeRelativePath = "Contents/Resources/Runtime"
 	}
 
 	package enum Icon {
@@ -62,6 +95,46 @@ package enum AppConstants {
 		package static let dynamicIconHueChangeTolerance: Double = 0.02
 	}
 
+	package enum Presence {
+		/// Public Discord application ID from the Developer Portal. It is sent in the local
+		/// handshake and is not a secret.
+		package static let discordApplicationID = "1539589207381770261"
+		package static let messageMaximumBytes = 64 * 1_024
+		package static let connectionAttempts = 3
+		package static let initialRetryBackoff: Duration = .seconds(1)
+		package static let maximumRetryBackoff: Duration = .seconds(10)
+		package static let handshakeTimeout: Duration = .seconds(3)
+	}
+
+	package enum Reminders {
+		/// Days of daily resets scheduled ahead. macOS delivers only requests that already exist,
+		/// so the window rolls forward at each launch, wake, and settings change.
+		package static let rollingWindowDays = 7
+		/// macOS keeps at most 64 pending local notifications per app. Stay well under it.
+		package static let maximumPendingRequests = 48
+		package static let identifierPrefix = "reset."
+	}
+
+	package enum Announcements {
+		/// The most recently seen announcement IDs kept in the local history.
+		package static let seenHistoryLimit = 100
+	}
+
+	package enum Screenshots {
+		/// The folder under Pictures that holds screenshots unless the user picks another.
+		package static let defaultFolderName = "Arknights"
+		package static let notificationCategory = "screenshot"
+		package static let showInFinderAction = "screenshot.show-in-finder"
+		/// The `userInfo` key that carries the saved file path.
+		package static let pathUserInfoKey = "path"
+		package static let shutterSoundName = "Grab"
+		/// The System Settings pane that lists the apps allowed to record the screen.
+		package static let screenRecordingSettingsAddress =
+			"x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
+		/// Highest ` (n)` suffix tried before the save fails.
+		package static let maximumNameSuffix = 1_000
+	}
+
 	package enum Music {
 		static let defaultLauncherMusicURL =
 			"https://www.youtube.com/playlist?list=PLbuSQ8SJFnFEHL4_T9S0whD-TevceJIsl"
@@ -71,11 +144,13 @@ package enum AppConstants {
 		package static let skipMetadataPlaceholderTitle = "YouTube"
 		package static let fadeInDuration: Double = 1.5
 		package static let fadeOutDuration: Double = 1.0
-		package static let fadeSteps: Int = 15
-		package static let playlistShuffleDelay: Duration = .milliseconds(200)
+		package static let fadeSteps: Int = 10
 		package static let sourceChangeDebounce: Duration = .milliseconds(300)
-		package static let trackChangePollInterval: Duration = .milliseconds(250)
-		package static let trackChangePollLimit = 80
+		package static let trackStartTimeout: Duration = .seconds(20)
+		/// How often a track change reads the player when YouTube reports no usable event.
+		package static let trackStartRecheckInterval: Duration = .seconds(1)
+		package static let maxConsecutivePlayerFailures = 3
+		package static let playerEventBufferLimit = 32
 		package static let collapsedTitleMaxWidth: Double = 300
 		package static let titleLineHeight: Double = 14
 		package static let titleScrollGap: Double = 24
@@ -95,11 +170,21 @@ package enum AppConstants {
 		/// Reuse a completed directory measurement briefly while Settings is reopened, while
 		/// allowing later installs, repairs, and external cache changes to become visible.
 		package static let overviewCacheLifetime: TimeInterval = 30
+		/// Last measurements that seed Settings until the next measurement replaces them.
+		/// The format version lets a future layout be ignored instead of misread.
+		package static let overviewCacheFormatVersion = 1
+
+		package static let overviewCacheMaximumBytes = 64 * 1_024
+		/// Records the Application Support layout; a missing file means the 0.6/0.7 layout.
+		package static let layoutFilename = "layout.json"
+		package static let layoutSchemaVersion = 1
+		package static let overviewCacheEntryLimit = 8
 	}
 
 	package enum Settings {
 		package static let minWidth: Double = 760
-		package static let minHeight: Double = 520
+		/// Fits the window's 560 pt minimum content height minus the top inset and margins.
+		package static let minHeight: Double = 480
 		package static let maxWidth: Double = 820
 		package static let maxHeight: Double = 570
 		package static let windowMargin: Double = 24
@@ -147,23 +232,27 @@ package enum AppConstants {
 		/// The repository's current tag manifest, so tags for new wallpapers ship without a release.
 		/// App-owned, so it follows `main` on purpose and is not pinned. Bound: `wallpaperTagsMaximumBytes`.
 		/// Fallback: the bundled and cached tags.
-		package static let wallpaperTagsURL = URL(
-			string:
-				"https://raw.githubusercontent.com/LuMiSxh/Arknights-MacOS-Client/main/Sources/ArknightsCore/Resources/WallpaperTags.json"
-		)!
+		package static let wallpaperTagsURL = StaticURL.url(
+			"https://raw.githubusercontent.com/LuMiSxh/Arknights-MacOS-Client/main/Sources/ArknightsCore/Resources/WallpaperTags.json"
+		)
 		package static let imageMaximumBytes = 24 * 1_024 * 1_024
 		package static let imageCacheMaximumBytes: Int64 = 256 * 1_024 * 1_024
+		/// Downloaded artwork and logos; least recently used files go first.
+		package static let artworkCacheMaximumBytes: Int64 = 128 * 1_024 * 1_024
+		package static let indexSchemaVersion = 1
 		/// In-memory decoded gallery thumbnails; `NSCache` cost is bytes.
 		package static let thumbnailCacheMaximumBytes = 32 * 1_024 * 1_024
 		/// In-memory rendered Launcher and Game icon pairs (about 8 MiB each).
 		package static let iconPairCacheMaximumBytes = 48 * 1_024 * 1_024
 		package static let imageDownloadAttempts = 2
-		package static let imageMaximumDimension = 16_384
-		package static let imageMaximumPixels = 120_000_000
-		// Matches the exact percentage the live Fankit gallery page itself requests, since
-		// the CDN only ever serves a resized response for a URL something has already
-		// requested with this precise query value — see syntheticThumbnailURL(for:).
-		package static let thumbnailResizePercent = 50
+		/// Concurrent remote image downloads. The gallery requests a whole grid at once; the image
+		/// hosts multiplex over HTTP/2, so this bounds work in flight, not connections.
+		package static let imageFetchConcurrency = 16
+		// Shares the artwork limits so the gallery never offers an image that cannot be applied.
+		package static let imageMaximumDimension = Artwork.maximumDimension
+		package static let imageMaximumPixels = Artwork.maximumPixels
+		// The CDN resizes on demand. 480 px covers the 400 px decode in CachedPresetImage on Retina.
+		package static let thumbnailWidth = 480
 		package static let avatarIdentifierMaximumLength = 96
 		package static let wallpaperPageSize = 50
 		package static let wallpaperPageLimit = 5
@@ -186,12 +275,13 @@ package enum AppConstants {
 		static let maximumMessageBytes = 16 * 1_024
 		static let truncationMarker = " [trunc]"
 		package static let wineLogTailBytes = 2_000
+		package static let sdkLogMaximumBytes = 2 * 1_024 * 1_024
 		package static let crashReportSearchWindow: TimeInterval = 120
 	}
 
 	package enum Playtime {
 		package static let schemaVersion = 1
-		static let statisticsFilename = "playtime-v1.json"
+		static let statisticsFilename = "playtime.json"
 		package static let statisticsMaximumBytes = 64 * 1_024
 		package static let dailyHistoryLimit = 31
 	}
@@ -199,20 +289,22 @@ package enum AppConstants {
 	package enum Artwork {
 		package static let launcherMaximumBytes = 25 * 1_024 * 1_024
 		package static let officialLogoMaximumBytes = 2 * 1_024 * 1_024
-		package static let maximumDimension = 8_192
-		package static let maximumPixels = 36_000_000
+		// Measured 2026-11-04: the largest official wallpaper, "The Masses' Travels", is
+		// 13,280 x 7,470 px (99.2 MP, 16.4 MiB). Limits add about 10% and round to gallery limits.
+		package static let maximumDimension = 16_384
+		package static let maximumPixels = 120_000_000
 	}
 
 	package enum Timeouts {
 		package static let processTerminateGracePeriod: TimeInterval = 3
 		package static let processKillGracePeriod: TimeInterval = 1
-		package static let processRetirementPollInterval: Duration = .milliseconds(25)
+
 		/// Covers helper retirement and final wineserver verification before prefix ownership ends.
 		package static let runtimeShutdown: Duration = .seconds(20)
 		package static let windowReadiness: Duration = .seconds(90)
 		package static let windowPollInterval: Duration = .milliseconds(250)
-		package static let quitSheetDetachPollInterval: TimeInterval = 0.05
-		package static let quitSheetDetachPollLimit = 20
+		/// Bound on waiting for AppKit to detach a sheet before the quit path proceeds anyway.
+		package static let quitSheetDetachTimeout: Duration = .seconds(3)
 	}
 
 	package enum Theme {
@@ -231,10 +323,32 @@ package enum AppConstants {
 		package static let maximumRenderSaturation = 0.85
 		package static let minimumRenderBrightness = 0.80
 		package static let maximumRenderBrightness = 0.95
-		// The HUD glass tint stays near-black but picks up a whisper of the same hue as
-		// the accent, instead of being perfectly neutral — subtle, not a second signal color.
-		package static let backgroundTintSaturation = 0.1
-		package static let backgroundTintBrightness = 0.1
-		package static let backgroundTintOpacity = 0.52
+		// Home controls follow the artwork's composition. The score is the perceptual lightness (0 to 1)
+		// of linear-light Rec. 709 luminance, measured on a square of `artworkLuminanceSampleSide` pixels.
+		// It mixes the median of the whole frame with the median of the pixels under the Home controls.
+		package static let artworkLuminanceSampleSide = 64
+		package static let homeLuminanceOverallWeight = 0.4
+		package static let homeLuminanceControlWeight = 0.6
+		// Unit rectangles with the origin at the top left, in the row order of the sampled bitmap.
+		package static let homeControlRegions: [CGRect] = [
+			CGRect(x: 0, y: 0, width: 0.35, height: 0.22),  // Branding, top left
+			CGRect(x: 0.82, y: 0, width: 0.18, height: 0.16),  // Settings, top right
+			CGRect(x: 0.15, y: 0.80, width: 0.70, height: 0.20),  // Launch bar, bottom
+			CGRect(x: 0.72, y: 0.88, width: 0.28, height: 0.12),  // Version pill, bottom right
+		]
+		// Light glass above the light threshold, dark glass below the dark one. Between them the
+		// previous decision holds, so artwork near a boundary does not flip back and forth.
+		package static let lightHomeLuminanceThreshold = 0.52
+		package static let darkHomeLuminanceThreshold = 0.44
+		// Cached scores carry this version; bump it when the score changes.
+		package static let homeLuminanceVersion = "homeLuminance.v1"
+		package static let homeLuminanceCacheLimit = 64
+		/// Cached artwork accents; the least recently used entries go first.
+		package static let themeAccentCacheLimit = 64
+		package static let themeCacheSchemaVersion = 1
+	}
+
+	package enum Support {
+		package static let copyConfirmationDuration: Duration = .seconds(2)
 	}
 }

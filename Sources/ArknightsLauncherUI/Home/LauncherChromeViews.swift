@@ -6,48 +6,55 @@ import SwiftUI
 
 struct ArknightsWordmark: View {
 	let logo: NSImage?
-	package let region: GameRegion
+	let region: GameRegion
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+	@Environment(\.colorScheme) private var colorScheme
 
 	var body: some View {
 		ZStack(alignment: .leading) {
-			// Keep official wallpaper logos from competing with the launcher wordmark
-			// without introducing another card or glass surface.
-			wordmarkBacking
-
 			if let logo {
-				if region.publisher != .yostar {
-					Image(nsImage: logo)
-						.resizable()
-						.scaledToFit()
-						.colorInvert()
-						.id(wordmarkIdentity)
-						.transition(wordmarkTransition)
-				} else {
-					Image(nsImage: logo)
-						.resizable()
-						.scaledToFit()
-						.id(wordmarkIdentity)
-						.transition(wordmarkTransition)
-				}
+				officialLogo(logo)
+					.id(wordmarkIdentity)
+					.transition(wordmarkTransition)
 			} else {
 				Text(wordmarkFallback)
-					.font(.system(.title, design: .serif))
+					.font(LauncherTokens.Typography.wordmark)
 					.minimumScaleFactor(0.7)
 					.lineLimit(1)
 					.id(wordmarkIdentity)
 					.transition(wordmarkTransition)
 			}
 		}
-		.frame(width: 245, height: 69, alignment: .leading)
-		.shadow(color: .black.opacity(0.46), radius: 9, y: 3)
-		.padding(.trailing, 24)
+		.frame(
+			width: LauncherTokens.Layout.wordmarkWidth,
+			height: LauncherTokens.Layout.wordmarkHeight,
+			alignment: .leading
+		)
+		.shadow(
+			color: LauncherVisuals.Shade.wordmarkShadow,
+			radius: LauncherTokens.Layout.wordmarkShadowRadius,
+			y: LauncherTokens.Layout.wordmarkShadowYOffset
+		)
+		.padding(.trailing, LauncherTokens.Spacing.page)
 		.animation(wordmarkAnimation, value: wordmarkIdentity)
 		.accessibilityElement(children: .ignore)
 		.accessibilityLabel(
 			"Arknights \(region.displayName) macOS client"
 		)
+	}
+
+	private var isLightScheme: Bool { colorScheme == .light }
+
+	/// The logo source color depends on the publisher. Invert it when that color differs from the
+	/// home scheme's foreground: white on the dark home, black on the light home.
+	@ViewBuilder
+	private func officialLogo(_ logo: NSImage) -> some View {
+		let image = Image(nsImage: logo).resizable().scaledToFit()
+		if (region.publisher != .yostar) != isLightScheme {
+			image.colorInvert()
+		} else {
+			image
+		}
 	}
 
 	private var wordmarkFallback: String {
@@ -62,38 +69,21 @@ struct ArknightsWordmark: View {
 	}
 
 	private var wordmarkIdentity: String {
-		"\(region.rawValue).\(logo == nil ? "fallback" : "official")"
+		"\(region.rawValue).\(logo == nil ? "fallback" : "official").\(isLightScheme ? "light" : "dark")"
 	}
 
 	private var wordmarkAnimation: Animation? {
 		LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion)
 	}
 
-	@ViewBuilder
-	private var wordmarkBacking: some View {
-		if reduceTransparency {
-			Ellipse()
-				.fill(.black.opacity(0.62))
-				.frame(width: 292, height: 88)
-				.offset(x: -12, y: 3)
-		} else {
-			Ellipse()
-				.fill(.black.opacity(0.34))
-				.frame(width: 292, height: 88)
-				.blur(radius: 17)
-				.offset(x: -12, y: 3)
-		}
-	}
-
 	private var wordmarkTransition: AnyTransition {
-		reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.98))
+		.materialize(reduceMotion: reduceMotion, scale: 0.98)
 	}
 }
 
 struct LauncherPopupView: View {
 	let popup: LauncherPopup
-	package let accentColor: Color
-	let hudTintColor: Color
+
 	let dismiss: () -> Void
 	let openAction: () -> Void
 	@State private var contentHeight: CGFloat = 0
@@ -101,14 +91,14 @@ struct LauncherPopupView: View {
 	var body: some View {
 		ThemedModalView(
 			title: popup.title,
-			hudTintColor: hudTintColor,
-			width: 620,
+
+			width: LauncherTokens.Layout.popupWidth,
 			height: popupHeight
 		) {
 			Group {
 				switch popup.content {
 				case .markdown(let source):
-					MarkdownDocument(source: source, accentColor: accentColor)
+					MarkdownDocument(source: source)
 				case .attributed(let content):
 					Text(content)
 				}
@@ -125,7 +115,7 @@ struct LauncherPopupView: View {
 			if let actionTitle = popup.actionTitle {
 				CapsuleActionButton(
 					title: actionTitle,
-					tone: .accent(accentColor),
+					tone: .accent,
 					action: openAction
 				)
 				.keyboardShortcut(.defaultAction)
@@ -136,7 +126,6 @@ struct LauncherPopupView: View {
 			} else {
 				FloatingDoneButton(
 					title: popup.dismissTitle,
-					accentColor: accentColor,
 					action: dismiss
 				)
 			}
@@ -144,7 +133,11 @@ struct LauncherPopupView: View {
 	}
 
 	private var popupHeight: CGFloat {
-		guard contentHeight > 0 else { return 430 }
-		return min(max(contentHeight + 160, 320), 600)
+		guard contentHeight > 0 else { return LauncherTokens.Layout.popupDefaultHeight }
+		return min(
+			max(
+				contentHeight + LauncherTokens.Layout.popupContentInset,
+				LauncherTokens.Layout.modalMinimumHeight),
+			LauncherTokens.Layout.popupMaximumHeight)
 	}
 }

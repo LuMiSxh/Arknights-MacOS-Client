@@ -6,22 +6,22 @@ import ArknightsGameInstallation
 import SwiftUI
 
 struct LauncherUpdateView: View {
+	@Environment(\.launcherTheme) private var theme
 	private static let installingTitle = "Finishing update…"
 
 	let driver: LauncherUpdateUserDriver
-	package let accentColor: Color
-	let hudTintColor: Color
+
 	let checkForUpdates: () -> Void
 	@State private var contentHeight: CGFloat = 0
 
 	var body: some View {
 		ThemedModalView(
 			title: "Launcher Update",
-			hudTintColor: hudTintColor,
+
 			width: modalWidth,
 			height: modalHeight
 		) {
-			VStack(alignment: .leading, spacing: 16) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.panel) {
 				statusHeader
 				content
 			}
@@ -46,7 +46,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var statusHeader: some View {
-		VStack(alignment: .leading, spacing: 6) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			if let version = driver.version {
 				Text("Version \(version)")
 					.font(.headline)
@@ -75,74 +75,68 @@ struct LauncherUpdateView: View {
 			extractionContent
 		case .readyToInstall:
 			Text("The update can be installed now.")
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 		case .installing:
 			installingContent
 		case .installed:
-			Text(
-
-				driver.relaunched
-					? "The launcher was restarted."
-					: "The update was installed."
-
-			)
-			.foregroundStyle(.secondary)
+			Text("The update was installed.")
+				.foregroundStyle(theme.textSecondary)
 		case .noUpdate:
 			Text("No newer version was found.")
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 		case .failed:
 			Text(driver.message ?? LauncherUpdateUserDriver.errorDetail)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.textSelection(.enabled)
 		}
 	}
 
 	private var availableContent: some View {
-		VStack(alignment: .leading, spacing: 14) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.content) {
 			if let releaseNotes = driver.releaseNotes, !releaseNotes.isEmpty {
 				if driver.releaseNotesFormat == "markdown" {
-					MarkdownDocument(source: releaseNotes, accentColor: accentColor)
+					MarkdownDocument(source: releaseNotes)
 				} else {
 					Text(releaseNotes)
 						.textSelection(.enabled)
 				}
 			} else {
 				Text("Release notes are unavailable.")
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 			}
 			if driver.informationOnly {
 				Text("This version is informational only and cannot be installed by the launcher.")
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 			}
 		}
 	}
 
 	private var downloadContent: some View {
-		VStack(alignment: .leading, spacing: 10) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			ProgressView(value: downloadProgress)
-				.tint(accentColor)
+				.tint(theme.accentFill)
 				.accessibilityLabel(Text("Downloading update…"))
 				.accessibilityValue(Text(downloadProgressText))
 			Text(downloadProgressText)
-				.font(.caption.monospacedDigit())
-				.foregroundStyle(.secondary)
+				.font(LauncherTokens.Typography.progressCaption)
+				.foregroundStyle(theme.textSecondary)
 		}
 	}
 
 	private var extractionContent: some View {
-		VStack(alignment: .leading, spacing: 10) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			ProgressView(value: driver.extractionProgress)
-				.tint(accentColor)
+				.tint(theme.accentFill)
 				.accessibilityLabel(Text("Preparing update…"))
 				.accessibilityValue(Text(percentageText))
 			Text(percentageText)
-				.font(.caption.monospacedDigit())
-				.foregroundStyle(.secondary)
+				.font(LauncherTokens.Typography.progressCaption)
+				.foregroundStyle(theme.textSecondary)
 		}
 	}
 
 	private var installingContent: some View {
-		VStack(alignment: .leading, spacing: 10) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 			ProgressView()
 				.accessibilityLabel(Text(Self.installingTitle))
 			Text(
@@ -153,7 +147,7 @@ struct LauncherUpdateView: View {
 							? "The launcher is waiting for its current activity to finish."
 							: "The launcher will close and reopen automatically to finish the update.")
 			)
-			.foregroundStyle(.secondary)
+			.foregroundStyle(theme.textSecondary)
 		}
 	}
 
@@ -184,7 +178,7 @@ struct LauncherUpdateView: View {
 				CapsuleActionButton(
 					title: "Install Update",
 					systemImage: "arrow.down.app",
-					tone: .accent(accentColor),
+					tone: .accent,
 					action: { driver.choose(.install) }
 				)
 				.keyboardShortcut(.defaultAction)
@@ -204,9 +198,9 @@ struct LauncherUpdateView: View {
 				action: { driver.choose(.dismiss) }
 			)
 			CapsuleActionButton(
-				title: "Install Now",
+				title: "Install Update",
 				systemImage: "arrow.down.app",
-				tone: .accent(accentColor),
+				tone: .accent,
 				action: { driver.choose(.install) }
 			)
 			.keyboardShortcut(.defaultAction)
@@ -215,7 +209,7 @@ struct LauncherUpdateView: View {
 				CapsuleActionButton(
 					title: "Try Quitting Again",
 					systemImage: "arrow.clockwise",
-					tone: .accent(accentColor),
+					tone: .neutral,
 					action: driver.retryTerminationRequest
 				)
 			}
@@ -229,7 +223,7 @@ struct LauncherUpdateView: View {
 			CapsuleActionButton(
 				title: "Check Again",
 				systemImage: "arrow.clockwise",
-				tone: .accent(accentColor),
+				tone: .neutral,
 				action: retryUpdate
 			)
 			CapsuleActionButton(
@@ -241,7 +235,7 @@ struct LauncherUpdateView: View {
 			CapsuleActionButton(
 				title: "Try Again",
 				systemImage: "arrow.clockwise",
-				tone: .accent(accentColor),
+				tone: .accent,
 				action: retryUpdate
 			)
 			.keyboardShortcut(.defaultAction)
@@ -280,11 +274,9 @@ struct LauncherUpdateView: View {
 
 	private var statusColor: Color {
 		switch driver.phase {
-		case .failed: LauncherVisuals.dangerForeground
-		case .installed: LauncherVisuals.success
-		case .available, .downloading, .extracting, .readyToInstall, .installing:
-			accentColor
-		default: .secondary
+		case .failed: theme.danger
+		case .installed: theme.successInk
+		default: theme.textSecondary
 		}
 	}
 

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsCustomization
 import ArknightsInfrastructure
 import Foundation
 
@@ -47,12 +46,10 @@ actor HypergryphLauncherAPI {
 		}
 		let megabytes = totalBytes / 1_000_000 + (totalBytes % 1_000_000 == 0 ? 0 : 1)
 		return GameConfiguration(
-			gameLowestVersion: latest.version,
 			gameLatestVersion: latest.version,
 			gameLatestFilePath: latest.package.filePath.absoluteString,
 			gameStartExeName: "Arknights.exe",
 			gameStartParams: [],
-			gameUninstallScript: "",
 			decompressionSize: "\(megabytes)MB"
 		)
 	}
@@ -78,14 +75,15 @@ actor HypergryphLauncherAPI {
 		guard
 			let image = envelope.responses.first(where: { $0.kind == "get_main_bg_image" })?
 				.mainBackground?.image,
-			DownloadHTTPPolicy.isAllowedSource(image.url, for: profile.region),
 			image.md5.isEmpty
 				|| ManifestChecksum.isMD5(image.md5)
 		else { throw LauncherError.invalidResponse }
+		guard DownloadHTTPPolicy.isAllowedSource(image.url, for: profile.region) else {
+			throw InstallerError.invalidRemoteAsset(image.url)
+		}
 		return LauncherBranding(
 			launcherBackgroundImage: image.url,
 			launcherBackgroundImageCRC64: image.md5.isEmpty ? nil : image.md5,
-			copyrightInformation: nil,
 			privacyPolicy: nil,
 			userAgreement: nil,
 			noticePopOpen: false,
@@ -119,6 +117,7 @@ actor HypergryphLauncherAPI {
 			maximumBytes: maximumManifestResponseBytes,
 			operation: "manifest download",
 			region: profile.region,
+			fallbackURL: fileBaseURL.appending(path: "game_files"),
 			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: profile.region)
 		)
 		let decrypted = try HypergryphManifestCipher.decrypt(encrypted)
@@ -186,6 +185,7 @@ actor HypergryphLauncherAPI {
 			maximumBytes: maximumAPIResponseBytes,
 			operation: "metadata request",
 			region: profile.region,
+			fallbackURL: url,
 			redirectValidator: profile.isAllowedMetadataURL
 		)
 		return try JSONDecoder().decode(HypergryphBatchResponse.self, from: data)
@@ -213,9 +213,38 @@ struct HypergryphProfile: Sendable {
 	let launcherAppCode: String
 	let channel: String
 	let language: String
+	// Built once from the fixed launcher host instead of on every request.
+	let metadataURL: URL
+	let webMetadataURL: URL
 
-	var metadataURL: URL { URL(string: "https://\(launcherHost)/api/proxy/batch_proxy")! }
-	var webMetadataURL: URL { URL(string: "https://\(launcherHost)/api/proxy/web/batch_proxy")! }
+	init(
+		region: GameRegion,
+		launcherHost: String,
+		gameAppCode: String,
+		launcherAppCode: String,
+		channel: String,
+		language: String
+	) {
+		self.region = region
+		self.launcherHost = launcherHost
+		self.gameAppCode = gameAppCode
+		self.launcherAppCode = launcherAppCode
+		self.channel = channel
+		self.language = language
+		metadataURL = Self.apiURL(host: launcherHost, path: "/api/proxy/batch_proxy")
+		webMetadataURL = Self.apiURL(host: launcherHost, path: "/api/proxy/web/batch_proxy")
+	}
+
+	private static func apiURL(host: String, path: String) -> URL {
+		var components = URLComponents()
+		components.scheme = "https"
+		components.host = host
+		components.path = path
+		guard let url = components.url else {
+			preconditionFailure("Invalid Hypergryph launcher host: \(host)")
+		}
+		return url
+	}
 
 	@Sendable
 	func isAllowedMetadataURL(_ url: URL) -> Bool {

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 // Explains the two generated treatments without adding a second interaction to the gallery.
@@ -7,16 +8,18 @@ struct OperatorIconStylePreview: View {
 	let catalog: PresetCatalogService
 	let avatar: PresetAvatar?
 	let accentHue: Double?
-	package let accentColor: Color
+	@Environment(\.launcherTheme) private var theme
+	private static let previewMinimumWidth: CGFloat = 284
+	private static let previewMaximumWidth: CGFloat = 360
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 14) {
-			VStack(alignment: .leading, spacing: 3) {
+		VStack(alignment: .leading, spacing: LauncherTokens.Spacing.panel) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 				Text("Generated Icon Styles")
 					.font(.headline)
 				Text("Your operator is applied to both icons.")
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 			}
 
 			if let avatar {
@@ -26,7 +29,7 @@ struct OperatorIconStylePreview: View {
 					cacheKey: avatar.id,
 					accentHue: accentHue
 				)
-				HStack(spacing: 16) {
+				HStack(spacing: LauncherTokens.Spacing.panel) {
 					styleLabel(
 						"Launcher",
 						detail: "Launcher style"
@@ -41,10 +44,8 @@ struct OperatorIconStylePreview: View {
 					.frame(maxWidth: .infinity, minHeight: 82)
 			}
 		}
-		.padding(18)
-		.frame(minWidth: 282, maxWidth: 360)
-		.background(accentColor.opacity(0.06))
-		.preferredColorScheme(.dark)
+		.padding(LauncherTokens.Spacing.panel)
+		.frame(minWidth: Self.previewMinimumWidth, maxWidth: Self.previewMaximumWidth)
 	}
 
 	private func styleLabel(
@@ -52,12 +53,12 @@ struct OperatorIconStylePreview: View {
 	)
 		-> some View
 	{
-		VStack(spacing: 2) {
+		VStack(spacing: LauncherTokens.Spacing.compact) {
 			Text(title)
-				.font(.caption.bold())
+				.font(.caption.weight(.medium))
 			Text(detail)
 				.font(.caption)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.multilineTextAlignment(.center)
 				.lineLimit(2)
 				.fixedSize(horizontal: false, vertical: true)

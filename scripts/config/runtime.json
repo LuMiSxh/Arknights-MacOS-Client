@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 3,
+  "architecture": "x86",
+  "lanes": {
+    "x86": {
+      "minimumMacOS": "15.0",
+      "prefixRevision": 2,
+      "runtime": {
+        "name": "Arknights macOS Runtime 1.0.0",
+        "version": "1.0.0",
+        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.0/Arknights-MacOS-Runtime-v1.0.0-x86_64.tar.gz",
+        "sha256": "3be6e38f581001e9e9907976f43e416c2526380a9b9191b9a3db2cd4acc5dd24",
+        "sizeBytes": 119295049
+      },
+      "interface": {
+        "archive": {
+          "wineDirectory": "Wine",
+          "dxmtDirectory": "DXMT"
+        },
+        "executables": ["bin/wine64", "bin/wineserver"],
+        "features": {
+          "hardwareCursor": true,
+          "metalFXSpatialUpscaling": true,
+          "nativeFullscreenSpace": true
+        },
+        "requiredFiles": [
+          "lib/wine/x86_64-unix/winecoreaudio.so",
+          "lib/wine/x86_64-unix/winemac.so",
+          "lib/wine/x86_64-windows/winemetal.dll"
+        ],
+        "macDriver": "lib/wine/x86_64-unix/winemac.so",
+        "launcher": {
+          "path": "bin/Arknights",
+          "target": "wine64"
+        },
+        "dxmt": {
+          "payloadDirectory": "DXMT",
+          "destinations": {
+            "x64": "system32"
+          },
+          "libraries": [
+            "d3d10core.dll",
+            "d3d11.dll",
+            "dxgi.dll",
+            "winemetal.dll"
+          ]
+        }
+      },
+      "components": {
+        "wine": "11.17",
+        "dxmt": "0.80-361-g9839e55",
+        "moltenvk": "1.4.2"
+      },
+      "provenance": {
+        "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
+        "buildCommit": "6706c177fd486730800bf6354a9800389c84209e",
+        "wineRepository": "https://github.com/dappermint/winecx",
+        "wineCommit": "a54b8240683e92bf4c15cb1ba6bf92a9539bd768",
+        "dxmtRepository": "https://github.com/3Shain/dxmt",
+        "dxmtCommit": "9839e55f98d4aca103957ee4132d6395a325a9ed",
+        "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
+        "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
+        "nixpkgsRepository": "https://github.com/NixOS/nixpkgs",
+        "nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d",
+        "baseRecipeRepository": "https://github.com/dappermint/winecx-gptk",
+        "baseRecipeCommit": "0bf3eabc2f0d95154282eb86b11205cbbaae6c65",
+        "baseArchiveUrl": "https://github.com/dappermint/Whisky/releases/download/v4.7.3/Libraries.tar.gz",
+        "baseArchiveSha256": "a4b5d63493f80698cce5cad8e7212d9a51c8292037b00c478f4652636fcfd331"
+      }
+    },
+    "arm": {
+      "minimumMacOS": "26.0",
+      "prefixRevision": 2,
+      "runtime": {
+        "name": "Arknights macOS Runtime 1.0.0",
+        "version": "1.0.0",
+        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.0/Arknights-MacOS-Runtime-v1.0.0-arm64.tar.gz",
+        "sha256": "90ce60ffb2e3892843583e1af6dfd4014bc351410faaa50e4beb3d1d8de8fd63",
+        "sizeBytes": 237494359
+      },
+      "interface": {
+        "archive": {
+          "wineDirectory": "Wine",
+          "dxmtDirectory": "DXMT"
+        },
+        "executables": ["bin/wine64", "bin/wineserver"],
+        "features": {
+          "hardwareCursor": true,
+          "metalFXSpatialUpscaling": true,
+          "nativeFullscreenSpace": true
+        },
+        "requiredFiles": [
+          "lib/wine/aarch64-unix/libarm64ecfex.so",
+          "lib/wine/aarch64-unix/libwow64fex.so",
+          "lib/wine/aarch64-unix/winecoreaudio.so",
+          "lib/wine/aarch64-unix/winemac.so",
+          "lib/wine/aarch64-unix/winemetal.so",
+          "lib/wine/aarch64-windows/libarm64ecfex.dll",
+          "lib/wine/aarch64-windows/libwow64fex.dll",
+          "lib/wine/aarch64-windows/winemetal.dll"
+        ],
+        "macDriver": "lib/wine/aarch64-unix/winemac.so",
+        "launcher": {
+          "path": "bin/Arknights",
+          "target": "wine64"
+        },
+        "dxmt": {
+          "payloadDirectory": "DXMT",
+          "destinations": {
+            "x64": "system32"
+          },
+          "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll"]
+        }
+      },
+      "components": {
+        "wine": "11.18",
+        "dxmt": "0.80"
+      },
+      "provenance": {
+        "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
+        "buildCommit": "6706c177fd486730800bf6354a9800389c84209e",
+        "externalBuildRepository": "https://github.com/riverfog7/wine-build-new",
+        "externalBuildCommit": "7b3fff76fa5178f6ce0141b2c776afa2a822f101",
+        "wineRepository": "https://gitlab.winehq.org/wine/wine",
+        "wineCommit": "7b3fff76fa5178f6ce0141b2c776afa2a822f101",
+        "dxmtRepository": "https://github.com/3Shain/dxmt",
+        "dxmtCommit": "647b0020ba5764e5593b12407afd76964fa11e20"
+      }
+    }
+  }
+}

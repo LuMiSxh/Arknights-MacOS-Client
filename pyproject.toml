@@ -21,5 +21,88 @@ addopts = ["--disable-socket", "--strict-config", "--strict-markers"]
 pythonpath = ["scripts"]
 testpaths = ["scripts/tests"]
 
+[tool.ruff.lint]
+select = [
+    "ASYNC",
+    "B",
+    "BLE",
+    "C",
+    "D",
+    "DTZ",
+    "E",
+    "EXE",
+    "F",
+    "FA",
+    "FLY",
+    "FURB",
+    "G",
+    "I",
+    "INT",
+    "ISC",
+    "LOG",
+    "N",
+    "PERF",
+    "PGH",
+    "PIE",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    "PT",
+    "PTH",
+    "PYI",
+    "RET",
+    "RUF",
+    "S",
+    "SIM",
+    "T",
+    "TC",
+    "TRY",
+    "UP",
+    "W",
+    "YTT",
+]
+ignore = [
+    "B905", # zip strict changes behaviour
+    "C901",
+    "D100",
+    "D203", # clashes with D211
+    "D213", # clashes with D212
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D107",
+    "D205",
+    "D401",
+    "E501", # formatter owns wrapping
+    "PERF401",
+    "PLC0207",
+    "PLR0911",
+    "PLR0912",
+    "PLR0913",
+    "PLR0915",
+    "PLR0917",
+    "PLR2004", # literals
+    "PT007",
+    "PT009", # unittest-style asserts
+    "PTH201",
+    "RET503",
+    "RET504",
+    "RUF005",
+    "RUF043", # match patterns
+    "S101", # asserts as checks
+    "S108",
+    "S310",
+    "S314",
+    "S603", # fixed commands
+    "S607", # fixed commands
+    "T201", # CLI output
+    "TC001", # runtime use
+    "TC003", # runtime use
+    "TRY003", # messages
+    "TRY301",
+]
+
 [tool.uv]
 package = false

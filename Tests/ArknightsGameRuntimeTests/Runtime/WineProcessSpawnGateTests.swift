@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import ArknightsTestSupport
+import Foundation
+import Testing
+
+@testable import ArknightsGameRuntime
+
+/// A child that ignores SIGTERM and exits when its stdin closes.
+private struct StubbornChild {
+	let process = Process()
+	let stdin = Pipe()
+	let marker: URL
+
+	init(directory: URL) {
+		marker = directory.appending(path: "started")
+		process.executableURL = URL(filePath: "/bin/sh")
+		process.arguments = ["-c", "trap '' TERM; : > '\(marker.path)'; read ignored"]
+		process.standardInput = stdin
+	}
+
+	func spawn(through gate: WineProcessSpawnGate) async throws {
+		try gate.runIfAllowed(process: process) { try process.run() }
+		await waitForFile(at: marker)
+	}
+
+	func release() throws { try stdin.fileHandleForWriting.close() }
+}
+
+@Test(.timeLimit(.minutes(1)))
+func retirementWaitEndsWhenTheLastChildExits() async throws {
+	let storage = try TemporaryDirectory("spawn-gate-retirement")
+	defer { storage.remove() }
+	let gate = WineProcessSpawnGate()
+	let child = StubbornChild(directory: storage.url)
+	try await child.spawn(through: gate)
+	gate.denyFurtherSpawns()
+
+	let wait = Task {
+		try await gate.waitForRetirement(timeout: .seconds(30), clock: ParkedClock())
+	}
+	try child.release()
+	try await wait.value
+}
+
+@Test(.timeLimit(.minutes(1)))
+func cancellingARetirementWaitResumesItWithoutRetiringTheChild() async throws {
+	let storage = try TemporaryDirectory("spawn-gate-cancel")
+	defer { storage.remove() }
+	let gate = WineProcessSpawnGate()
+	let child = StubbornChild(directory: storage.url)
+	try await child.spawn(through: gate)
+	gate.denyFurtherSpawns()
+
+	let wait = Task {
+		try await gate.waitForRetirement(timeout: .seconds(30), clock: ParkedClock())
+	}
+	wait.cancel()
+	await #expect(throws: CancellationError.self) { try await wait.value }
+	#expect(child.process.isRunning)
+
+	try child.release()
+	try await gate.waitForRetirement(timeout: .seconds(30), clock: ParkedClock())
+}
+
+@Test(.timeLimit(.minutes(1)))
+func retirementWaitTimesOutWhileAChildStillRuns() async throws {
+	let storage = try TemporaryDirectory("spawn-gate-timeout")
+	defer { storage.remove() }
+	let gate = WineProcessSpawnGate()
+	let child = StubbornChild(directory: storage.url)
+	try await child.spawn(through: gate)
+	gate.denyFurtherSpawns()
+
+	await #expect(throws: WineProcessRetirementTimeout.self) {
+		try await gate.waitForRetirement(timeout: .seconds(30), clock: RecordingClock())
+	}
+	try child.release()
+}

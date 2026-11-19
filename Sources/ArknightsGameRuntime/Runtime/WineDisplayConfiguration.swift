@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import AppKit
 import ArknightsCore
 import Foundation
 
@@ -13,7 +12,7 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 	let retinaEnabled: Bool
 	let metalFXUpscalingEnabled: Bool
 	/// Game pixels per macOS point, used to turn a window size into a Unity resolution.
-	package let gamePixelsPerPoint: Int
+	let gamePixelsPerPoint: Int
 
 	init(
 		backingScaleFactor: CGFloat,
@@ -27,21 +26,16 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 		gamePixelsPerPoint = retinaEnabled ? max(1, Int(backingScaleFactor.rounded())) : 1
 	}
 
-	@MainActor
 	static func current(
 		renderingMode: GameRenderingMode,
+		backingScaleFactor: CGFloat,
 		arguments: [String] = ProcessInfo.processInfo.arguments,
-		forceDisabled: Bool = false,
 		metalFXSupported: Bool = false
 	) -> WineDisplayConfiguration {
-		let scale =
-			NSApp.keyWindow?.screen?.backingScaleFactor
-			?? NSScreen.main?.backingScaleFactor
-			?? 1
 		return WineDisplayConfiguration(
-			backingScaleFactor: scale,
+			backingScaleFactor: backingScaleFactor,
 			renderingMode: renderingMode,
-			forceDisabled: forceDisabled || arguments.contains("--no-retina"),
+			forceDisabled: arguments.contains("--no-retina"),
 			metalFXSupported: metalFXSupported
 		)
 	}
@@ -50,31 +44,44 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 	var logPixels: Int { 96 }
 	var browserScaleFactor: Int { retinaEnabled ? 2 : 1 }
 
-	func registryState(in prefixDirectory: URL) -> WineDisplayRegistryState? {
+	func registryState(
+		in prefixDirectory: URL,
+		log: LauncherLog? = nil
+	) -> WineDisplayRegistryState? {
 		let registryURL = prefixDirectory.appending(path: "user.reg")
-		guard
-			let contents = try? String(contentsOf: registryURL, encoding: .utf8)
-		else { return nil }
+		// A prefix that Wine has not initialized has no user.reg yet. That is not an error.
+		guard FileManager.default.fileExists(atPath: registryURL.path) else { return nil }
+		let contents: String
+		do {
+			contents = try String(contentsOf: registryURL, encoding: .utf8)
+		} catch {
+			log?.error("Could not read the prefix user.reg: \(error.localizedDescription)")
+			return nil
+		}
 
 		let macDriverSection = "[Software\\\\Wine\\\\Mac Driver]"
 		let desktopSection = "[Control Panel\\\\Desktop]"
+		let retinaModePrefix = "\"RetinaMode\"=\""
+		let preciseScrollingPrefix = "\"UsePreciseScrolling\"=\""
+		let logPixelsPrefix = "\"LogPixels\"=dword:"
 		var section = ""
-		var retinaMode: String?
+		var retinaMode: Bool?
 		var configuredLogPixels: Int?
-		var usePreciseScrolling: String?
+		var usePreciseScrolling: Bool?
 		for line in contents.split(separator: "\n", omittingEmptySubsequences: false) {
 			if line.hasPrefix("["), let closingBracket = line.firstIndex(of: "]") {
 				section = String(line[...closingBracket])
 				continue
 			}
-			if section == macDriverSection && line.hasPrefix("\"RetinaMode\"=\"") {
-				retinaMode = line.dropFirst(14).dropLast().lowercased()
+			if section == macDriverSection, line.hasPrefix(retinaModePrefix) {
+				retinaMode = Self.registryBool(line.dropFirst(retinaModePrefix.count).dropLast())
 			}
-			if section == macDriverSection && line.hasPrefix("\"UsePreciseScrolling\"=\"") {
-				usePreciseScrolling = String(line.dropFirst(23).dropLast().lowercased())
+			if section == macDriverSection, line.hasPrefix(preciseScrollingPrefix) {
+				usePreciseScrolling = Self.registryBool(
+					line.dropFirst(preciseScrollingPrefix.count).dropLast())
 			}
-			if section == desktopSection && line.hasPrefix("\"LogPixels\"=dword:") {
-				configuredLogPixels = Int(line.dropFirst(18), radix: 16)
+			if section == desktopSection, line.hasPrefix(logPixelsPrefix) {
+				configuredLogPixels = Int(line.dropFirst(logPixelsPrefix.count), radix: 16)
 			}
 		}
 		return WineDisplayRegistryState(
@@ -83,10 +90,19 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 			usePreciseScrolling: usePreciseScrolling
 		)
 	}
+
+	// Wine stores these values as the quoted strings "y" and "n".
+	private static func registryBool(_ value: Substring) -> Bool? {
+		switch value.lowercased() {
+		case "y": true
+		case "n": false
+		default: nil
+		}
+	}
 }
 
 struct WineDisplayRegistryState: Equatable, Sendable {
-	let retinaMode: String?
+	let retinaMode: Bool?
 	let logPixels: Int?
-	let usePreciseScrolling: String?
+	let usePreciseScrolling: Bool?
 }

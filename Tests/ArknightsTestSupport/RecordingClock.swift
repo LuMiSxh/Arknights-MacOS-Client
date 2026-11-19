@@ -1,46 +1,35 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Foundation
+import Synchronization
 
 /// A clock that returns from every sleep at once and records what was requested.
 package final class RecordingClock: Clock, @unchecked Sendable {
-	package struct Instant: InstantProtocol {
-		package var offset: Duration
-
-		package func advanced(by duration: Duration) -> Instant {
-			Instant(offset: offset + duration)
-		}
-
-		package func duration(to other: Instant) -> Duration {
-			other.offset - offset
-		}
-
-		package static func < (lhs: Instant, rhs: Instant) -> Bool {
-			lhs.offset < rhs.offset
-		}
-	}
+	package typealias Instant = TestClockInstant
 
 	package struct Sleep: Equatable, Sendable {
 		package let duration: Duration
 		package let tolerance: Duration?
 	}
 
-	private let lock = NSLock()
-	private var elapsed = Duration.zero
-	private var recorded: [Sleep] = []
+	private struct State {
+		var elapsed = Duration.zero
+		var recorded: [Sleep] = []
+	}
+
+	private let state = Mutex(State())
 
 	package init() {}
 
-	package var now: Instant { lock.withLock { Instant(offset: elapsed) } }
+	package var now: Instant { Instant(offset: state.withLock { $0.elapsed }) }
 	package var minimumResolution: Duration { .nanoseconds(1) }
-	package var sleeps: [Sleep] { lock.withLock { recorded } }
+	package var sleeps: [Sleep] { state.withLock { $0.recorded } }
 
 	package func sleep(until deadline: Instant, tolerance: Duration?) async throws {
 		try Task.checkCancellation()
-		lock.withLock {
-			recorded.append(
-				Sleep(duration: elapsed.distance(to: deadline.offset), tolerance: tolerance))
-			elapsed = max(elapsed, deadline.offset)
+		state.withLock { state in
+			state.recorded.append(
+				Sleep(duration: state.elapsed.distance(to: deadline.offset), tolerance: tolerance))
+			state.elapsed = max(state.elapsed, deadline.offset)
 		}
 	}
 }

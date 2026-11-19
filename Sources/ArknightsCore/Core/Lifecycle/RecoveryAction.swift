@@ -8,6 +8,9 @@ package enum RecoveryAction: String, CaseIterable, Identifiable, Sendable {
 	case openTroubleshooting
 	case reportProblem
 	case repair
+	case deleteDataFolder
+	case tryAgain
+	case quit
 
 	package var id: String { rawValue }
 }
@@ -15,6 +18,7 @@ package enum RecoveryAction: String, CaseIterable, Identifiable, Sendable {
 package enum RecoveryActionDisposition: Sendable {
 	case completed
 	case repairConfirmationRequired
+	case deleteDataFolderConfirmationRequired
 	case rosettaConfirmationRequired
 	case ignored
 }

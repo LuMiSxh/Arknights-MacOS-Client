@@ -75,7 +75,9 @@ extension WineRuntime {
 		executableDirectory: URL,
 		baseEnvironment: [String: String] = ProcessInfo.processInfo.environment,
 		userName: String = NSUserName(),
-		synchronizationMode: WineSynchronizationMode = .msync
+		frameRateLimit: GameFrameRateLimit?,
+		synchronizationMode: WineSynchronizationMode = .msync,
+		debugLogging: Bool = false
 	) -> [String: String] {
 		let home = prefixDirectory.appending(path: "home", directoryHint: .isDirectory)
 		var environment: [String: String] = [:]
@@ -87,8 +89,8 @@ extension WineRuntime {
 		environment["WINEHOMEDIR"] = home.path
 		// Crash-report matching (GameSessionController.recentCrashReportPath) looks for
 		// "Arknights-*.ips" under DiagnosticReports, so this name must stay in sync.
-		environment["WINEPRELOADERAPPNAME"] = "Arknights"
-		environment["WINEDEBUG"] = Self.debugChannels
+		environment["WINEPRELOADERAPPNAME"] = AppConstants.Runtime.applicationName
+		environment["WINEDEBUG"] = debugLogging ? Self.verboseDebugChannels : Self.debugChannels
 		environment["CFFIXED_USER_HOME"] = home.path
 		environment["XDG_CACHE_HOME"] = home.appending(path: ".cache").path
 		environment["XDG_CONFIG_HOME"] = home.appending(path: ".config").path
@@ -102,8 +104,18 @@ extension WineRuntime {
 		environment["GST_DEBUG"] = "1"
 		environment["DXMT_SHADER_CACHE"] = "1"
 		environment["DXMT_SHADER_CACHE_PATH"] = home.appending(path: ".cache/dxmt").path
-		// Keep normal launches quiet; graphics diagnostics raises this to "info".
-		environment["DXMT_LOG_LEVEL"] = "error"
+		// Keep normal launches quiet; debug logging and graphics diagnostics raise this to "info".
+		environment["DXMT_LOG_LEVEL"] = debugLogging ? "info" : "error"
+		if debugLogging {
+			// Send DXMT output to the runtime log, as graphics diagnostics does.
+			environment["DXMT_LOG_PATH"] = "none"
+		}
+		// DXMT reads "key=value" entries separated by ";". With no cap the entry is omitted and
+		// the game keeps its own frame pacing.
+		if let frameRateLimit {
+			environment["DXMT_CONFIG"] =
+				"d3d11.preferredMaxFrameRate=\(frameRateLimit.framesPerSecond)"
+		}
 		for (name, value) in Self.synchronizationEnvironment(for: synchronizationMode) {
 			environment[name] = value
 		}
@@ -118,12 +130,16 @@ extension WineRuntime {
 	func runtimeEnvironment(
 		prefixDirectory: URL,
 		graphicsDiagnostics: Bool = false,
-		synchronizationMode: WineSynchronizationMode = .msync
+		frameRateLimit: GameFrameRateLimit?,
+		synchronizationMode: WineSynchronizationMode = .msync,
+		debugLogging: Bool = false
 	) -> [String: String] {
 		var environment = Self.isolatedEnvironment(
 			prefixDirectory: prefixDirectory,
 			executableDirectory: executableURL.deletingLastPathComponent(),
-			synchronizationMode: synchronizationMode
+			frameRateLimit: frameRateLimit,
+			synchronizationMode: synchronizationMode,
+			debugLogging: debugLogging
 		)
 		if graphicsDiagnostics {
 			environment["WINEDEBUG"] = "-all,err+all,+macdrv,+display"
@@ -133,17 +149,18 @@ extension WineRuntime {
 		return environment
 	}
 
-	// Injects the x86-64 bridge that normalizes Wine's extracted executable icon.
-	// A custom icon path replaces that default image without modifying the game executable.
-	// Wine passes the injection on to every process the game starts; the launcher PID lets
-	// the bridge keep those helpers out of the Dock while the game, its direct child, stays.
+	// Injects the bridge that runs inside Wine's process tree. GameIconBridge normalizes the
+	// extracted executable icon. Wine passes the injection to every process the game starts;
+	// the launcher PID lets the bridge keep helpers out of the Dock.
 	func gameIconEnvironment(
 		customIconURL: URL?,
 		launcherProcessIdentifier: Int32 = ProcessInfo.processInfo.processIdentifier
 	) -> [String: String] {
-		guard let gameIconBridgeURL else { return [:] }
+		var libraries: [String] = []
+		if let gameIconBridgeURL { libraries.append(gameIconBridgeURL.path) }
+		guard !libraries.isEmpty else { return [:] }
 		var environment = [
-			"DYLD_INSERT_LIBRARIES": gameIconBridgeURL.path,
+			"DYLD_INSERT_LIBRARIES": libraries.joined(separator: ":"),
 			"ARKNIGHTS_CLIENT_LAUNCHER_PID": String(launcherProcessIdentifier),
 		]
 		if let customIconURL {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
 import ArknightsInfrastructure
 import Foundation
 
@@ -45,7 +46,7 @@ package struct RuntimeMigrationState: Codable, Equatable, Sendable {
 // missing system registry, or an explicitly invalidated step all restart from that point
 // forward, rather than replaying every step unconditionally.
 struct RuntimeMigrationPlan: Sendable {
-	package private(set) var state: RuntimeMigrationState
+	private(set) var state: RuntimeMigrationState
 	let pending: [RuntimeMigration]
 
 	init(
@@ -77,8 +78,28 @@ struct RuntimeMigrationPlan: Sendable {
 	}
 }
 
+// Wine's `wineboot` rewrites a prefix whose `.update-timestamp` differs from the mtime of the
+// runtime's `wine.inf`. A rebuilt runtime changes that mtime, so the prefix needs the same
+// update that `initializePrefix` replays with the Mac driver disabled.
+enum WinePrefixUpdateStamp {
+	static let fileName = ".update-timestamp"
+	static let wineInfRelativePath = "share/wine/wine.inf"
+	// Wine skips the update when the stamp file starts with this text.
+	private static let disabledMarker = "disable"
+
+	/// `contents` is nil when the stamp file is missing. Parses like wineboot's `strtoul`:
+	/// leading ASCII digits, or 0 when there are none.
+	static func isStale(contents: String?, wineInfModificationTime: Int) -> Bool {
+		guard let contents else { return true }
+		if contents.hasPrefix(disabledMarker) { return false }
+		let recorded = Int(contents.prefix { $0.isASCII && $0.isNumber }) ?? 0
+		return recorded != wineInfModificationTime
+	}
+}
+
 // Reads and writes `RuntimeMigrationState` inside the Wine prefix, importing the legacy
 // single-file revision/configuration markers older builds used before this schema existed.
+// Remove this legacy import in 1.1.
 struct RuntimeMigrationStore {
 	static let stateFileName = ".arknights-runtime-migrations.json"
 	static let legacyRevisionFileName = ".arknights-runtime-revision"
@@ -154,11 +175,7 @@ struct RuntimeMigrationStore {
 	private func removeIfPresent(at url: URL) throws {
 		do {
 			try fileManager.removeItem(at: url)
-		} catch let error as CocoaError
-			where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile
-		{
-			return
-		} catch let error as POSIXError where error.code == .ENOENT {
+		} catch let error where GameShimIO.isMissingFile(error) {
 			return
 		}
 	}

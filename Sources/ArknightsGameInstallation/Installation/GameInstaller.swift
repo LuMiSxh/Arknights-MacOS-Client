@@ -19,8 +19,6 @@ package struct GameInstaller: Sendable {
 	// install locations are honored. `nil` disables cross-region reuse.
 	let reuseSourceDirectories: (@Sendable (GameRegion) async -> [URL])?
 
-	var fileManager: FileManager { .default }
-
 	package init(
 		api: any LauncherAPIProviding,
 		session: URLSession = .shared,

@@ -12,25 +12,6 @@ extension GameInstaller {
 		verifyAllExistingFiles: Bool = false,
 		progress: @escaping ProgressHandler
 	) async throws -> InstallResult {
-		try await install(
-			configuration: configuration,
-			region: region,
-			into: installDirectory,
-			verifyAllExistingFiles: verifyAllExistingFiles,
-			monitorClock: ContinuousClock(),
-			progress: progress
-		)
-	}
-
-	// `monitorClock` paces the install-wide progress monitor; tests inject a manual clock.
-	package func install(
-		configuration: GameConfiguration,
-		region: GameRegion,
-		into installDirectory: URL,
-		verifyAllExistingFiles: Bool,
-		monitorClock: any Clock<Duration>,
-		progress: @escaping ProgressHandler
-	) async throws -> InstallResult {
 		// Only lease acquisition gets the lease mapping; body errors keep their per-step mapping.
 		var leaseAcquired = false
 		do {
@@ -42,7 +23,6 @@ extension GameInstaller {
 					into: installDirectory,
 					installationRoot: lease.directory,
 					verifyAllExistingFiles: verifyAllExistingFiles,
-					monitorClock: monitorClock,
 					progress: progress
 				)
 			}
@@ -57,7 +37,6 @@ extension GameInstaller {
 		into installDirectory: URL,
 		installationRoot: InstallerDirectory,
 		verifyAllExistingFiles: Bool,
-		monitorClock: any Clock<Duration>,
 		progress: @escaping ProgressHandler
 	) async throws -> InstallResult {
 		let (manifest, cdn) = try await Self.fetchRemoteResources {
@@ -115,7 +94,6 @@ extension GameInstaller {
 		}
 		let counter = ProgressCounter(
 			totalBytes: progressBaseline.totalBytes,
-			totalFiles: progressBaseline.totalFiles,
 			downloadedBytes: progressBaseline.downloadedBytes,
 			completedFiles: progressBaseline.completedFiles,
 			sequence: verification.lastSequence
@@ -123,16 +101,14 @@ extension GameInstaller {
 		if pendingFiles.isEmpty {
 			try Task.checkCancellation()
 			try saveState(configuration: configuration, manifest: manifest, to: installationRoot)
-			return InstallResult(
-				downloadedFiles: 0, downloadedBytes: 0, installDirectory: installDirectory)
+			return InstallResult(downloadedFiles: 0, downloadedBytes: 0)
 		}
 		await progress(await counter.current(file: pendingFiles[0].path))
-		let reuse = await reuseSession(for: region, target: installationRoot)
+		let reuse = try await reuseSession(for: region, target: installationRoot)
 		try Task.checkCancellation()
 		try await InstallProgressMonitor.run(
 			counter: counter,
 			fallbackFile: pendingFiles[0].path,
-			clock: monitorClock,
 			progress: progress
 		) {
 			try await withWindowedTaskGroup(
@@ -163,8 +139,7 @@ extension GameInstaller {
 		)
 		return InstallResult(
 			downloadedFiles: pendingFiles.count,
-			downloadedBytes: downloadedBytes,
-			installDirectory: installDirectory
+			downloadedBytes: downloadedBytes
 		)
 	}
 }

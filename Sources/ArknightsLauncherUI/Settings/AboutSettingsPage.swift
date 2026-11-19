@@ -3,13 +3,12 @@
 import AppKit
 import ArknightsCore
 import ArknightsCustomization
+import Foundation
 import SwiftUI
 
 struct AboutSettingsPage: View {
-	package let region: GameRegion
-	package let runtimeName: String?
-	package let accentColor: Color
-	package let launcherIconManager: LauncherIconManager
+	@Environment(\.launcherTheme) private var theme
+	let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
 	let revealApplication: () -> Void
 	@Binding var presentedDocument: BundledDocument?
@@ -17,17 +16,16 @@ struct AboutSettingsPage: View {
 	var body: some View {
 		SettingsPage(
 			title: "About",
-			subtitle: "\("Arknights Client") \(appVersion)",
-			accentColor: accentColor
+			subtitle: "Arknights Client, version \(appVersion)"
 		) {
-			SettingsPanel(title: "Arknights Client", systemImage: "info.circle") {
+			SettingsPanel(title: "Arknights Client") {
 				ViewThatFits(in: .horizontal) {
-					HStack(alignment: .center, spacing: LauncherVisuals.Spacing.content) {
+					HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
 						identitySummary
 						Spacer(minLength: 0)
 						identityActions
 					}
-					VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.content) {
+					VStack(alignment: .leading, spacing: LauncherTokens.Spacing.content) {
 						identitySummary
 						HStack {
 							Spacer(minLength: 0)
@@ -37,92 +35,29 @@ struct AboutSettingsPage: View {
 				}
 			}
 
-			SettingsPanel(title: "Documents", systemImage: "doc.text") {
+			SettingsPanel(title: "Documents") {
 				ViewThatFits(in: .horizontal) {
-					HStack(spacing: LauncherVisuals.Spacing.tight) {
-						documentLink(
-							.changelog, title: "Changelog",
-							systemImage: "clock.arrow.circlepath"
-						)
-						.frame(maxWidth: .infinity)
-						documentLink(
-							.projectLicense, title: "MPL-2.0 License",
-							systemImage: "checkmark.seal"
-						)
-						.frame(maxWidth: .infinity)
-						documentLink(
-							.thirdPartyNotices, title: "Third-Party Notices",
-							systemImage: "doc.on.doc"
-						)
-						.frame(maxWidth: .infinity)
+					HStack(spacing: LauncherTokens.Spacing.control) {
+						documentLinks(isInline: true)
 					}
 					VStack(spacing: 0) {
-						documentLink(
-							.changelog, title: "Changelog",
-							systemImage: "clock.arrow.circlepath")
-						SettingsHairline()
-						documentLink(
-							.projectLicense, title: "MPL-2.0 License",
-							systemImage: "checkmark.seal")
-						SettingsHairline()
-						documentLink(
-							.thirdPartyNotices, title: "Third-Party Notices",
-							systemImage: "doc.on.doc")
+						documentLinks(isInline: false)
 					}
 				}
-				HStack(spacing: 18) {
-					AccentLink(
-						title: "View online",
-						destination: SupportLinks.thirdPartyNotices,
-						accentColor: accentColor
-					)
-					AccentLink(
-						title: "Privacy Notice",
-						destination: SupportLinks.privacyNotice,
-						accentColor: accentColor
-					)
+				HStack(spacing: LauncherTokens.Spacing.panel) {
+					QuietLink(title: "View online", destination: SupportLinks.thirdPartyNotices)
+					QuietLink(title: "Privacy Notice", destination: SupportLinks.privacyNotice)
 				}
 				.font(.caption)
 			}
 
-			SettingsPanel(
-				title: "Support", systemImage: "questionmark.circle"
-			) {
-				SettingsActionRow(
-					title: "Launcher Issues",
-					detail:
-						"Report problems with the launcher, starting the game, or the sign-in window. The report includes diagnostic details automatically."
-				) {
-					CapsuleActionButton(
-						title: "Report…", systemImage: "ladybug",
-						tone: .neutral, presentation: .compact,
-						action: reportLauncherProblem
-					)
-				}
-
-				SettingsHairline()
-
-				SettingsActionRow(
-					title: "Game & Account Issues",
-					detail:
-						"Contact \(publisherName) for account, payment, or game-service problems."
-				) {
-					CapsuleActionButton(
-						title: "Contact \(publisherName)…",
-						systemImage: "arrow.up.right.square",
-						tone: .neutral, presentation: .compact,
-						action: contactPublisher
-					)
-				}
-			}
-
-			SettingsPanel(title: "Arknights", systemImage: "link") {
-				VStack(alignment: .leading, spacing: 8) {
+			SettingsPanel(title: "Arknights") {
+				VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 					ViewThatFits(in: .horizontal) {
-						HStack(spacing: 18) {
+						HStack(spacing: LauncherTokens.Spacing.panel) {
 							publisherLinks
 						}
-						VStack(alignment: .leading, spacing: 8) {
+						VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 							publisherLinks
 						}
 					}
@@ -130,18 +65,11 @@ struct AboutSettingsPage: View {
 						"This launcher is an independent community project and is not affiliated with Hypergryph, its affiliates, or any third-party publisher."
 					)
 					.font(.caption)
-					.foregroundStyle(.secondary)
-					HStack(spacing: 4) {
+					.foregroundStyle(theme.textSecondary)
+					HStack(spacing: LauncherTokens.Spacing.compact) {
 						Text("Built with AI assistance.")
-							.foregroundStyle(.secondary)
-						AccentLink(
-							title: "Learn more",
-							destination: URL(
-								string:
-									"https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/docs/ai-assistance.md"
-							)!,
-							accentColor: accentColor
-						)
+							.foregroundStyle(theme.textSecondary)
+						QuietLink(title: "Learn more", destination: SupportLinks.aiAssistance)
 					}
 					.font(.caption)
 				}
@@ -153,17 +81,20 @@ struct AboutSettingsPage: View {
 
 	@ViewBuilder
 	private var identitySummary: some View {
-		HStack(alignment: .center, spacing: LauncherVisuals.Spacing.content) {
+		HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
 			Image(nsImage: launcherIconManager.currentIcon)
 				.resizable()
-				.frame(width: 76, height: 76)
+				.frame(
+					width: LauncherTokens.Layout.aboutIconSize,
+					height: LauncherTokens.Layout.aboutIconSize
+				)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.tight) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 				Text("Unofficial macOS launcher")
-					.foregroundStyle(.secondary)
-				AccentLink(
-					title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!,
-					accentColor: accentColor
+					.foregroundStyle(theme.textSecondary)
+				QuietLink(
+					title: "LuMiSxh",
+					destination: SupportLinks.maintainerProfile
 				)
 				.font(.callout.weight(.medium))
 			}
@@ -172,78 +103,65 @@ struct AboutSettingsPage: View {
 
 	@ViewBuilder
 	private var identityActions: some View {
-		HStack(spacing: LauncherVisuals.Spacing.tight) {
-			CapsuleActionButton(
-				title: "Show in Finder", systemImage: "folder",
-				tone: .neutral, showsTitle: false,
+		HStack(spacing: LauncherTokens.Spacing.control) {
+			ExternalLinkButton(
+				title: "Show in Finder", presentation: .standard,
 				action: revealApplication
 			)
-			.help("Reveal the launcher application in Finder")
-			CapsuleActionButton(
-				title: "GitHub", tone: .neutral
-			) {
-				NSWorkspace.shared.open(
-					URL(string: "https://github.com/LuMiSxh/Arknights-MacOS-Client")!
-				)
+			ExternalLinkButton(title: "View on GitHub", presentation: .standard) {
+				NSWorkspace.shared.open(SupportLinks.sourceRepository)
 			}
 			.help("Open project repository")
-			CapsuleActionButton(
-				title: "Donate",
-				systemImage: "heart.fill",
-				tone: .neutral
-			) {
+			ExternalLinkButton(title: "Donate", presentation: .standard) {
 				NSWorkspace.shared.open(SupportLinks.donate)
 			}
 			.help("Support the project on Ko-fi")
 		}
 	}
 
-	private func reportLauncherProblem() {
-		NSWorkspace.shared.open(IssueReportURL.build(runtimeName: runtimeName))
-	}
-
-	private func contactPublisher() {
-		NSWorkspace.shared.open(SupportLinks.contact(for: region))
-	}
-
 	@ViewBuilder
 	private func documentLink(
 		_ document: BundledDocument,
-		title: String,
 		systemImage: String
 	) -> some View {
 		DocumentLinkRow(
-			title: title,
-			systemImage: systemImage,
-			accentColor: accentColor
+			title: document.title,
+			systemImage: systemImage
 		) {
 			presentedDocument = document
 		}
 	}
 
-	private var publisherName: String {
-		switch region.publisher {
-		case .gryphline: "Gryphline"
-		case .hypergryph: "Hypergryph"
-		default: "Yostar"
-		}
+	/// Lists the documents once for both layouts. The inline row fills its width; the
+	/// stacked list separates rows with hairlines.
+	@ViewBuilder
+	private func documentLinks(isInline: Bool) -> some View {
+		documentLink(
+			.changelog,
+			systemImage: "clock.arrow.circlepath"
+		)
+		.frame(maxWidth: isInline ? .infinity : nil)
+		if !isInline { SettingsHairline() }
+		documentLink(
+			.projectLicense,
+			systemImage: "checkmark.seal"
+		)
+		.frame(maxWidth: isInline ? .infinity : nil)
+		if !isInline { SettingsHairline() }
+		documentLink(
+			.thirdPartyNotices,
+			systemImage: "doc.on.doc"
+		)
+		.frame(maxWidth: isInline ? .infinity : nil)
 	}
 
 	@ViewBuilder
 	private var publisherLinks: some View {
 		if let agreement = branding?.userAgreement {
-			AccentLink(
-				title: "User Agreement",
-				destination: agreement,
-				accentColor: accentColor
-			)
+			QuietLink(title: "User Agreement", destination: agreement)
 		}
 		if let privacy = branding?.privacyPolicy {
-			AccentLink(
-				title: "Privacy Policy",
-				destination: privacy,
-				accentColor: accentColor
-			)
+			QuietLink(title: "Privacy Policy", destination: privacy)
 		}
 	}
 }

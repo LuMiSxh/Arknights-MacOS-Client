@@ -4,18 +4,15 @@ import ArknightsCore
 import SwiftUI
 import YouTubePlayerKit
 
-/// Keeps the controller's WebKit player mounted while wiring launcher lifecycle changes.
+/// Keeps the controller's WebKit player mounted while the view is on screen.
 package struct BackgroundMusicView: View {
-	let lifecycle: LauncherLifecycleStore
 	let settings: LauncherPreferencesController
 	let controller: BackgroundMusicController
 
 	package init(
-		lifecycle: LauncherLifecycleStore,
 		settings: LauncherPreferencesController,
 		controller: BackgroundMusicController
 	) {
-		self.lifecycle = lifecycle
 		self.settings = settings
 		self.controller = controller
 	}
@@ -41,22 +38,7 @@ package struct BackgroundMusicView: View {
 			}
 		}
 		.task {
-			controller.startIfNeeded()
-		}
-		.onChange(of: lifecycle.state.refresh.isChecking) { _, isChecking in
-			controller.refreshDidChange(isChecking: isChecking)
-		}
-		.onChange(of: settings.launcherMusicURL) { _, _ in
-			controller.sourceDidChange()
-		}
-		.onChange(of: settings.playsLauncherMusic) { _, isPlaying in
-			controller.enabledDidChange(to: isPlaying)
-		}
-		.onChange(of: settings.launcherMusicVolume) { _, newVolume in
-			controller.volumeDidChange(to: newVolume)
-		}
-		.onChange(of: lifecycle.activity) { _, activity in
-			controller.gameRunningDidChange(to: activity.hasGameProcess)
+			controller.start()
 		}
 		.onDisappear {
 			controller.stop()

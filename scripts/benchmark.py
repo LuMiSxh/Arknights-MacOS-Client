@@ -3,8 +3,6 @@
 
 """Sample CPU, GPU, and memory use of a running game for a fair comparison."""
 
-from __future__ import annotations
-
 import argparse
 import csv
 import json
@@ -16,7 +14,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, NotRequired, TypedDict, cast
 
 from lib.common import BUILD_DIR, ScriptError, run_main
 from lib.console import info, success, warning
@@ -75,6 +73,82 @@ CSV_FIELDS = (
     "cpu_speed_limit",
     "power_source",
 )
+
+
+class Sample(TypedDict):
+    """One recorded sample; a metric the run could not read stays `None`."""
+
+    timestamp: str | None
+    elapsed_seconds: float | None
+    cpu_percent: float | None
+    system_cpu_percent: float | None
+    background_cpu_percent: float | None
+    background_process_count: int | None
+    resident_mib: float | None
+    process_count: int | None
+    gpu_device_percent: float | None
+    gpu_renderer_percent: float | None
+    gpu_tiler_percent: float | None
+    free_mib: float | None
+    wired_mib: float | None
+    compressed_mib: float | None
+    cpu_speed_limit: float | None
+    power_source: str | None
+
+
+class MetricSummary(TypedDict):
+    count: int
+    mean: float
+    median: float
+    p95: float
+    min: float
+    max: float
+    stdev: float
+
+
+class Summary(TypedDict):
+    sampleCount: int
+    metrics: dict[str, MetricSummary]
+    durationSeconds: NotRequired[float]
+
+
+class MachineInformation(TypedDict):
+    model: str
+    chip: str
+    logicalCores: int
+    memoryBytes: int
+    macOSVersion: str
+    macOSBuild: str
+
+
+class DisplayInformation(TypedDict, total=False):
+    pixels: str
+    points: str
+    refreshHz: float | None
+
+
+class WindowBounds(TypedDict):
+    x: int
+    y: int
+    width: int
+    height: int
+
+
+class WindowInformation(WindowBounds):
+    process: str
+
+
+class ChartRun(TypedDict):
+    """One run in the website chart dataset."""
+
+    label: str
+    target: str
+    case: str
+    note: str
+    machine: dict[str, Any]
+    summary: Summary
+    samples: list[Sample]
+    slot: NotRequired[int]
 
 
 class BenchmarkError(ScriptError):
@@ -208,8 +282,8 @@ def percentile(values: Sequence[float], fraction: float) -> float:
     return statistics.quantiles(values, n=100, method="inclusive")[int(fraction) - 1]
 
 
-def summarize(samples: Sequence[dict[str, Any]]) -> dict[str, Any]:
-    metrics: dict[str, dict[str, float | int]] = {}
+def summarize(samples: Sequence[Sample]) -> Summary:
+    metrics: dict[str, MetricSummary] = {}
     for metric in METRIC_LABELS:
         values = [
             float(sample[metric])
@@ -247,7 +321,7 @@ def _try_run(command: Sequence[str]) -> str:
     return _run(command, required=False)
 
 
-def machine_information(run: Callable[[Sequence[str]], str]) -> dict[str, Any]:
+def machine_information(run: Callable[[Sequence[str]], str]) -> MachineInformation:
     return {
         "model": run(["sysctl", "-n", "hw.model"]).strip(),
         "chip": run(["sysctl", "-n", "machdep.cpu.brand_string"]).strip(),
@@ -258,7 +332,7 @@ def machine_information(run: Callable[[Sequence[str]], str]) -> dict[str, Any]:
     }
 
 
-def parse_display_information(text: str) -> dict[str, Any]:
+def parse_display_information(text: str) -> DisplayInformation:
     try:
         value: Any = json.loads(text)
     except json.JSONDecodeError:
@@ -286,7 +360,7 @@ def parse_display_information(text: str) -> dict[str, Any]:
     return {}
 
 
-def parse_window_bounds(text: str) -> dict[str, int] | None:
+def parse_window_bounds(text: str) -> WindowBounds | None:
     parts = [part.strip() for part in text.strip().split(",")]
     if len(parts) != 4:
         return None
@@ -310,7 +384,7 @@ def foreground_app(run: Callable[[Sequence[str]], str]) -> str | None:
 
 def window_information(
     run: Callable[[Sequence[str]], str], selected: Sequence[ProcessRow]
-) -> dict[str, Any] | None:
+) -> WindowInformation | None:
     for row in selected:
         name = Path(row.command).name.replace('"', '\\"')
         bounds = parse_window_bounds(
@@ -426,7 +500,7 @@ def sample(
     background_rss_totals: dict[int, float] = {}
     background_names: dict[int, str] = {}
     previous_time = start
-    samples: list[dict[str, Any]] = []
+    samples: list[Sample] = []
     warned_empty = False
     for _ in range(sample_count):
         wait(interval)
@@ -553,10 +627,10 @@ def _load_json(path: Path) -> dict[str, Any]:
     return value
 
 
-def _read_samples(path: Path) -> list[dict[str, Any]]:
+def _read_samples(path: Path) -> list[Sample]:
     try:
         with path.open(encoding="utf-8", newline="") as file:
-            rows: list[dict[str, Any]] = []
+            rows: list[Sample] = []
             for row in csv.DictReader(file):
                 parsed: dict[str, Any] = {}
                 for field in CSV_FIELDS:
@@ -569,15 +643,13 @@ def _read_samples(path: Path) -> list[dict[str, Any]]:
                         parsed[field] = int(value)
                     else:
                         parsed[field] = float(value)
-                rows.append(parsed)
+                rows.append(cast("Sample", parsed))
             return rows
     except (OSError, ValueError) as error:
         raise BenchmarkError(f"cannot read {path}: {error}") from error
 
 
-def _downsample(
-    samples: Sequence[dict[str, Any]], maximum: int
-) -> list[dict[str, Any]]:
+def _downsample(samples: Sequence[Sample], maximum: int) -> list[Sample]:
     if maximum <= 0:
         raise BenchmarkError("max-samples must be greater than zero")
     if len(samples) <= maximum:
@@ -589,9 +661,11 @@ def _downsample(
     return selected
 
 
-def _read_run(path: Path, label: str, maximum_samples: int) -> dict[str, Any]:
+def _read_run(
+    path: Path, label: str, maximum_samples: int, slot: int | None = None
+) -> ChartRun:
     manifest = _load_json(path / "manifest.json")
-    return {
+    run: ChartRun = {
         "label": label
         or {
             "arknights-client": "Arknights Client",
@@ -604,6 +678,32 @@ def _read_run(path: Path, label: str, maximum_samples: int) -> dict[str, Any]:
         "summary": _load_json(path / "summary.json"),
         "samples": _downsample(_read_samples(path / "samples.csv"), maximum_samples),
     }
+    if slot is not None:
+        run["slot"] = slot
+    return run
+
+
+def _read_slots(slots: Sequence[int] | None, count: int) -> list[int | None]:
+    """Return one palette slot per run. A run without a slot falls back to its position."""
+    if not slots:
+        return [None] * count
+    if len(slots) != count:
+        raise ScriptError(f"expected {count} color slots, got {len(slots)}")
+    if len(set(slots)) != len(slots) or any(slot < 0 for slot in slots):
+        raise ScriptError("color slots must be non-negative and unique")
+    return list(slots)
+
+
+def _parse_slots(value: str) -> list[int] | None:
+    """Parse the `--slots` argument. An empty value keeps the positional fallback."""
+    if not value.strip():
+        return None
+    try:
+        return [int(part) for part in value.split(",")]
+    except ValueError as error:
+        raise ScriptError(
+            f"--slots must be comma-separated integers: {value}"
+        ) from error
 
 
 def export(
@@ -616,14 +716,21 @@ def export(
     candidate_label: str = "",
     extra: Path | None = None,
     extra_label: str = "",
+    slots: Sequence[int] | None = None,
     maximum_samples: int = 600,
 ) -> Path:
-    runs = [
-        _read_run(baseline, baseline_label, maximum_samples),
-        _read_run(candidate, candidate_label, maximum_samples),
+    requested: list[tuple[Path, str]] = [
+        (baseline, baseline_label),
+        (candidate, candidate_label),
     ]
     if extra is not None:
-        runs.append(_read_run(extra, extra_label, maximum_samples))
+        requested.append((extra, extra_label))
+    runs = [
+        _read_run(path, label, maximum_samples, slot)
+        for (path, label), slot in zip(
+            requested, _read_slots(slots, len(requested)), strict=True
+        )
+    ]
     dataset = {
         "schemaVersion": 1,
         "title": title or "Arknights Client vs PlayCover",
@@ -699,6 +806,11 @@ def main(arguments: list[str] | None = None) -> int:
     export_parser.add_argument("--candidate-label", default="")
     export_parser.add_argument("--extra", type=Path, default=None)
     export_parser.add_argument("--extra-label", default="")
+    export_parser.add_argument(
+        "--slots",
+        default="",
+        help="comma-separated palette slots, one per run in argument order",
+    )
     export_parser.add_argument("--max-samples", type=int, default=600)
     parsed = parser.parse_args(arguments)
     if parsed.command == "sample":
@@ -724,6 +836,7 @@ def main(arguments: list[str] | None = None) -> int:
                 candidate_label=parsed.candidate_label,
                 extra=parsed.extra,
                 extra_label=parsed.extra_label,
+                slots=_parse_slots(parsed.slots),
                 maximum_samples=parsed.max_samples,
             )
         )

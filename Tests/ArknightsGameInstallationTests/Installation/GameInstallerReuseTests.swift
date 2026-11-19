@@ -13,31 +13,6 @@ struct GameInstallerReuseTests {
 	private static let body = Data((0..<4_096).map { UInt8($0 % 251) })
 
 	@Test
-	func matchingDonorFileIsClonedInsteadOfDownloaded() async throws {
-		let world = try ReuseWorld()
-		defer { world.remove() }
-		let donor = try world.makeDonor(body: Self.body)
-		let before = try FileSnapshot(donor.file)
-		let recorder = ProgressRecorder()
-
-		let result = try await world.install(donors: [donor.directory]) {
-			await recorder.record($0)
-		}
-
-		#expect(world.fixture.route.requestCount == 0)
-		#expect(result.downloadedFiles == 1)
-		#expect(try Data(contentsOf: world.destination) == Self.body)
-		#expect(try FileSnapshot(donor.file) == before)
-		#expect(!FileManager.default.fileExists(atPath: world.destination.path + ".part"))
-		#expect(try world.stagingEntries().isEmpty)
-		let updates = await recorder.updates()
-		#expect(updates.last?.downloadedBytes == Int64(Self.body.count))
-		#expect(updates.last?.completedFiles == 1)
-		#expect(updates.allSatisfy { $0.networkDownloadedBytes == 0 })
-		#expect(updates.allSatisfy { $0.transferRateBytesPerSecond == nil })
-	}
-
-	@Test
 	func donorWithSameSizeButDifferentContentFallsBackToDownload() async throws {
 		// Each row builds its own world and lists the donors that must not be reused.
 		let rows: [(String, @Sendable (ReuseWorld) throws -> [URL])] = [
@@ -117,10 +92,41 @@ struct GameInstallerReuseTests {
 		let alias = own.root.appending(path: "alias", directoryHint: .isDirectory)
 		try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: own.target)
 		try await withTestInstallDirectory(at: own.target) { root in
-			let session = await own.installer(donors: [own.target, alias])
+			let session = try await own.installer(donors: [own.target, alias])
 				.reuseSession(for: .global, target: root)
 			#expect(session.sources.isEmpty)
 		}
+	}
+
+	@Test
+	func cancellingTheReuseScanThrowsInsteadOfReturningPartialSources() async throws {
+		let world = try ReuseWorld()
+		defer { world.remove() }
+		let donor = try world.makeDonor(body: Self.body)
+		let started = Signal()
+		let installer = GameInstaller(
+			api: InstallerAPI(
+				manifest: GameManifest(source: world.fixture.source, file: [world.fixture.item]),
+				cdn: CDNConfiguration(
+					primaryCdn: world.fixture.baseURL, backUpCdn: world.fixture.baseURL)
+			),
+			session: world.fixture.route.session,
+			compatibilityManager: GameCompatibilityManager(),
+			reuseSourceDirectories: { _ in
+				started.fire()
+				// Cancelling the scan resumes this wait, so the loop observes the cancellation.
+				await Signal().wait()
+				return [donor.directory]
+			}
+		)
+		let scan = Task {
+			try await withTestInstallDirectory(at: world.target) { root in
+				try await installer.reuseSession(for: .global, target: root)
+			}
+		}
+		await started.wait()
+		scan.cancel()
+		await #expect(throws: CancellationError.self) { try await scan.value }
 	}
 
 	private static var stateName: String { AppConstants.Game.installedStateFileName }

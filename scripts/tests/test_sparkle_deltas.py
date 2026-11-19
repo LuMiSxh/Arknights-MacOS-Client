@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: MPL-2.0
 
-from __future__ import annotations
-
 import json
 import subprocess
+import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from pathlib import Path
 
@@ -13,7 +12,7 @@ import sparkle_deltas
 REPOSITORY = "owner/repo"
 UPDATE_NAME = "Example.Client.tar.xz"
 # `fetch` derives legacy names from the real project's asset stem.
-LEGACY_UPDATE_NAME = "Arknights.Client.zip"
+
 NAMESPACE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
 
 
@@ -28,31 +27,6 @@ def release(
         "assets": [{"name": asset}],
         **overrides,
     }
-
-
-def test_selects_newest_published_archives_excluding_current_and_unpublished() -> None:
-    releases = [
-        release("0.5.0", "2026-05-01T00:00:00Z"),
-        release("0.4.0", "2026-04-01T00:00:00Z", draft=True),
-        release("0.3.0", "2026-03-01T00:00:00Z", prerelease=True),
-        release("0.2.0", "2026-02-01T00:00:00Z"),
-        release("0.1.5", "2026-01-15T00:00:00Z", asset="Other.dmg"),
-        release("0.1.0", "2026-01-01T00:00:00Z"),
-        release("0.6.0", "2026-06-01T00:00:00Z"),
-    ]
-
-    sources = sparkle_deltas.select_sources(
-        releases,
-        current_version="0.6.0",
-        stem="Example.Client",
-        update_name=UPDATE_NAME,
-        count=2,
-    )
-
-    assert sources == [
-        ("0.5.0", "v0.5.0", UPDATE_NAME),
-        ("0.2.0", "v0.2.0", UPDATE_NAME),
-    ]
 
 
 def fetch(
@@ -79,36 +53,6 @@ def fetch(
     )
 
 
-def test_download_failure_skips_deltas_without_failing_the_release(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    def fail_download(command: list[str]) -> None:
-        raise sparkle_deltas.ScriptError("download failed with status 500")
-
-    releases = [release("0.5.0", "2026-05-01T00:00:00Z")]
-    fetch(tmp_path, monkeypatch, releases, fail_download)
-
-    assert not list(tmp_path.iterdir())
-    assert "Skipping deltas from 0.5.0" in capsys.readouterr().err
-
-
-def test_fetch_keeps_each_sources_archive_format(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    def write_download(command: list[str]) -> None:
-        Path(command[command.index("--output") + 1]).write_bytes(b"archive")
-
-    releases = [
-        release("0.5.0", "2026-05-01T00:00:00Z", asset=LEGACY_UPDATE_NAME),
-        release("0.6.0", "2026-06-01T00:00:00Z"),
-    ]
-    fetch(tmp_path, monkeypatch, releases, write_download)
-
-    names = sorted(path.name for path in tmp_path.iterdir())
-    assert names[0].endswith(".0.5.0.zip")
-    assert names[1].endswith(".0.6.0.tar.xz")
-
-
 def appcast_with_delta(directory: Path) -> Path:
     appcast = directory / "appcast.xml"
     appcast.write_text(
@@ -121,6 +65,98 @@ def appcast_with_delta(directory: Path) -> Path:
     )
     (directory / "Example Client42-41.delta").write_bytes(b"delta")
     return appcast
+
+
+def appcast_without_delta(directory: Path) -> Path:
+    appcast = directory / "appcast.xml"
+    appcast.write_text(
+        f'<rss xmlns:sparkle="{NAMESPACE}"><channel>'
+        "<item><sparkle:version>16</sparkle:version>"
+        '<enclosure url="https://h/v0.5.2/old.tar.xz" /></item>'
+        "<item><sparkle:version>30</sparkle:version>"
+        '<enclosure url="https://h/v0.8.0/new.tar.xz" /></item>'
+        "</channel></rss>\n"
+    )
+    return appcast
+
+
+def test_finalize_annotates_the_newest_item_and_signs_without_deltas(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[tuple[list[object], dict[str, object]]] = []
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(sparkle_deltas.subprocess, "run", fake_run)
+    appcast = appcast_without_delta(tmp_path)
+    info_link = "https://github.com/owner/repo/releases/tag/v0.8.0"
+
+    published = sparkle_deltas.finalize_deltas(
+        tmp_path,
+        appcast,
+        tmp_path / "dist",
+        Path("/tools/sign_update"),
+        "SECRET",
+        minimum_build=18,
+        info_link=info_link,
+    )
+
+    assert published == []
+    text = appcast.read_text()
+    assert "<sparkle:belowVersion>18</sparkle:belowVersion>" in text
+    assert info_link in text
+    root = ET.fromstring(text)
+    oldest, newest = root.findall("./channel/item")
+    below = newest.find(
+        f"{{{NAMESPACE}}}informationalUpdate/{{{NAMESPACE}}}belowVersion"
+    )
+    assert below is not None
+    assert below.text == "18"
+    assert oldest.find(f"{{{NAMESPACE}}}informationalUpdate") is None
+    command, kwargs = calls[0]
+    assert command == [
+        Path("/tools/sign_update"),
+        "--ed-key-file",
+        "-",
+        "--disable-signing-warning",
+        appcast,
+    ]
+    assert kwargs["input"] == b"SECRET"
+
+
+def test_finalize_signs_a_feed_without_deltas_or_gate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[list[object]] = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(sparkle_deltas.subprocess, "run", fake_run)
+    appcast = appcast_without_delta(tmp_path)
+
+    published = sparkle_deltas.finalize_deltas(
+        tmp_path, appcast, tmp_path / "dist", Path("/tools/sign_update"), "SECRET"
+    )
+
+    assert published == []
+    assert calls[0][-1] == appcast
+
+
+def test_finalize_requires_an_info_link_for_the_gate(tmp_path: Path) -> None:
+    appcast = appcast_without_delta(tmp_path)
+    with pytest.raises(RuntimeError, match="information link"):
+        sparkle_deltas.finalize_deltas(
+            tmp_path,
+            appcast,
+            tmp_path / "dist",
+            Path("x"),
+            "K",
+            minimum_build=18,
+        )
 
 
 def test_finalize_renames_deltas_rewrites_urls_and_resigns(
@@ -153,21 +189,6 @@ def test_finalize_renames_deltas_rewrites_urls_and_resigns(
         appcast,
     ]
     assert kwargs["input"] == b"SECRET"
-
-
-def test_finalize_without_deltas_leaves_appcast_untouched(tmp_path: Path) -> None:
-    appcast = tmp_path / "appcast.xml"
-    appcast.write_text(
-        '<rss><channel><item><enclosure url="u"/></item></channel></rss>'
-    )
-    before = appcast.read_bytes()
-
-    published = sparkle_deltas.finalize_deltas(
-        tmp_path, appcast, tmp_path / "out", Path("x"), ""
-    )
-
-    assert published == []
-    assert appcast.read_bytes() == before
 
 
 def test_finalize_fails_without_key_or_when_sign_update_fails(

@@ -3,8 +3,6 @@
 
 """Build and verify the distributable application disk image."""
 
-from __future__ import annotations
-
 import argparse
 import sys
 import tempfile
@@ -38,14 +36,12 @@ def dmgbuild_arguments(
 
 
 def build_dmg(
-    runtime: Path,
     configuration: ProjectConfiguration | None = None,
     strict_licenses: bool = False,
 ) -> Path:
     configuration = configuration or load_project_configuration()
     project = configuration.project_directory
     app = build(
-        runtime,
         project_configuration=configuration,
         strict_licenses=strict_licenses,
     )
@@ -54,9 +50,9 @@ def build_dmg(
     with tempfile.TemporaryDirectory(prefix=".dmg-build.", dir=dist) as name:
         staged = Path(name) / destination.name
         info("Creating the compressed disk image")
-        run(dmgbuild_arguments(app, staged, configuration), cwd=project)
+        run(dmgbuild_arguments(app, staged, configuration), cwd=project, capture=True)
         info("Verifying the disk image")
-        run(["hdiutil", "verify", staged])
+        run(["hdiutil", "verify", "-quiet", staged], capture=True)
         staged.replace(destination)
     success(f"Built {destination.relative_to(project)}")
     return destination
@@ -64,14 +60,13 @@ def build_dmg(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--runtime", required=True, type=Path)
     parser.add_argument(
         "--strict-licenses",
         action="store_true",
-        help="fail on unverified licenses or a runtime without license files",
+        help="fail on an unverified license",
     )
     arguments = parser.parse_args()
-    build_dmg(arguments.runtime.resolve(), strict_licenses=arguments.strict_licenses)
+    build_dmg(strict_licenses=arguments.strict_licenses)
 
 
 if __name__ == "__main__":

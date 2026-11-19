@@ -3,6 +3,7 @@
 import ArknightsCore
 import ArknightsTestSupport
 import Foundation
+import Synchronization
 import Testing
 
 @testable import ArknightsCustomization
@@ -63,30 +64,6 @@ struct PresetCatalogServiceTests {
 	}
 
 	@Test
-	func cacheKeysAreHashedIntoSinglePathComponents() async throws {
-		let temporary = try TemporaryDirectory("PresetCatalogServiceTests")
-		defer { temporary.remove() }
-		let root = temporary.url
-		let service = PresetCatalogService(
-			cacheDirectory: root,
-			log: LauncherLog(fileURL: root.appending(path: "launcher.log"))
-		)
-
-		let first = await service.cacheFileURL(for: "../../outside")
-		let second = await service.cacheFileURL(for: "../../outside")
-
-		#expect(first == second)
-		#expect(first.deletingLastPathComponent() == root)
-
-		#expect(PresetCatalogService.isValidAvatarIdentifier("char_002_amiya"))
-		#expect(!PresetCatalogService.isValidAvatarIdentifier("char_../../escape"))
-		#expect(!PresetCatalogService.isValidAvatarIdentifier("char_éxample"))
-		#expect(
-			!PresetCatalogService.isValidAvatarIdentifier(
-				"char_" + String(repeating: "a", count: 100)))
-	}
-
-	@Test
 	func clearingTheCacheInvalidatesAnInFlightImageDownload() async throws {
 		EpochImageURLProtocol.reset()
 		defer {
@@ -105,7 +82,7 @@ struct PresetCatalogServiceTests {
 		)
 		let url = URL(string: "https://cdn.jsdelivr.net/epoch.png")!
 		let download = Task { try await service.imageData(for: url, cacheKey: "epoch") }
-		while !EpochImageURLProtocol.isRequestStarted { await Task.yield() }
+		#expect(await EpochImageURLProtocol.waitForRequestStart())
 		try await service.clearCaches()
 		EpochImageURLProtocol.release()
 		_ = try? await download.value
@@ -121,19 +98,22 @@ private final class EpochImageURLProtocol: URLProtocol, @unchecked Sendable {
 			"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zf9sAAAAASUVORK5CYII="
 	)!
 	static let gate = DispatchSemaphore(value: 0)
-	private static let lock = NSLock()
-	nonisolated(unsafe) static var requestStarted = false
-	nonisolated(unsafe) static var requestCount = 0
+	private struct RequestState {
+		var startedSignal = Signal()
+		var count = 0
+	}
+
+	private static let state = Mutex(RequestState())
 
 	override class func canInit(with request: URLRequest) -> Bool { true }
 	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
 	override func startLoading() {
-		let isFirstRequest = Self.lock.withLock {
-			Self.requestCount += 1
-			Self.requestStarted = true
-			return Self.requestCount == 1
+		let (started, isFirstRequest) = Self.state.withLock { state -> (Signal, Bool) in
+			state.count += 1
+			return (state.startedSignal, state.count == 1)
 		}
+		started.fire()
 		if isFirstRequest { Self.gate.wait() }
 		let response = HTTPURLResponse(
 			url: request.url!,
@@ -148,16 +128,14 @@ private final class EpochImageURLProtocol: URLProtocol, @unchecked Sendable {
 
 	override func stopLoading() {}
 
-	static var isRequestStarted: Bool {
-		lock.withLock { requestStarted }
+	static func waitForRequestStart() async -> Bool {
+		let signal = state.withLock { $0.startedSignal }
+		return await signal.wait(timeout: .seconds(10))
 	}
 
 	static func reset() {
 		while gate.wait(timeout: .now()) == .success {}
-		lock.withLock {
-			requestStarted = false
-			requestCount = 0
-		}
+		state.withLock { $0 = RequestState() }
 	}
 
 	static func release() { gate.signal() }

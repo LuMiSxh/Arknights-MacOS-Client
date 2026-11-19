@@ -28,7 +28,6 @@ private enum PresetGallerySuggestion: Identifiable {
 
 struct PresetGallerySuggestions: View {
 	let destination: PresetGalleryDestination
-	package let accentColor: Color
 	let avatars: [PresetAvatar]
 	let wallpaperTerms: [String]
 	let onSelect: (String) -> Void
@@ -46,11 +45,10 @@ struct PresetGallerySuggestions: View {
 
 	var body: some View {
 		ScrollView(.horizontal, showsIndicators: false) {
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherTokens.Spacing.control) {
 				ForEach(suggestions) { suggestion in
 					PresetGallerySuggestionChip(
 						destination: destination,
-						accentColor: accentColor,
 						suggestion: suggestion,
 						onSelect: onSelect
 					)
@@ -58,7 +56,7 @@ struct PresetGallerySuggestions: View {
 			}
 		}
 		.scrollClipDisabled()
-		.padding(.bottom, suggestions.isEmpty ? 0 : 8)
+		.padding(.bottom, suggestions.isEmpty ? 0 : LauncherTokens.Spacing.control)
 		.animation(
 			LauncherMotion.animation(.state, reduceMotion: reduceMotion),
 			value: suggestions.map(\.id)
@@ -67,17 +65,18 @@ struct PresetGallerySuggestions: View {
 }
 
 private struct PresetGallerySuggestionChip: View {
+	@Environment(\.launcherTheme) private var theme
 	let destination: PresetGalleryDestination
-	package let accentColor: Color
 	let suggestion: PresetGallerySuggestion
 	let onSelect: (String) -> Void
 	@FocusState private var isFocused: Bool
+	private static let chipMaxWidth: CGFloat = 220
 
 	var body: some View {
 		Button {
 			onSelect(suggestion.title)
 		} label: {
-			HStack(spacing: 5) {
+			HStack(spacing: LauncherTokens.Spacing.compact) {
 				Image(
 					systemName: destination == .artwork ? "tag" : "person.crop.square"
 				)
@@ -86,16 +85,16 @@ private struct PresetGallerySuggestionChip: View {
 					.lineLimit(1)
 					.truncationMode(.tail)
 			}
-			.padding(.horizontal, 12)
-			.padding(.vertical, 6)
-			.frame(maxWidth: 220, alignment: .leading)
+			.padding(.horizontal, LauncherTokens.Spacing.content)
+			.padding(.vertical, LauncherTokens.Spacing.control)
+			.frame(maxWidth: Self.chipMaxWidth, alignment: .leading)
 			.contentShape(Capsule())
 			.adaptiveControlForeground(
-				isFocused ? accentColor : .secondary,
-				disabledTint: .secondary
+				isFocused ? theme.accentInk : theme.textSecondary,
+				disabledTint: theme.textSecondary
 			)
 			.adaptiveControlSurface(
-				tint: LauncherVisuals.controlTint,
+				tint: theme.controlStroke,
 				in: Capsule()
 			)
 		}

@@ -13,9 +13,9 @@ extension CustomizationController {
 		guard usesDynamicTheme(), let heroArtwork else {
 			dynamicThemeHue = nil
 			accentColor = LauncherVisuals.cyan
-			hudTintColor = LauncherVisuals.hudGlassTint
 			updateDynamicAppIcon(hue: nil)
 			_ = startOperatorPresetIconRefresh(hue: nil)
+			StartupTimeline.shared.mark("theme colors applied")
 			return
 		}
 		let themeCacheKey = activeThemeCacheKey
@@ -34,6 +34,7 @@ extension CustomizationController {
 			applyThemeAccent(cachedAccent)
 			updateDynamicAppIcon(hue: cachedAccent.hue)
 			_ = startOperatorPresetIconRefresh(hue: cachedAccent.hue)
+			StartupTimeline.shared.mark("theme colors applied")
 			return
 		}
 
@@ -60,6 +61,42 @@ extension CustomizationController {
 			self.applyThemeAccent(resolvedAccent)
 			self.updateDynamicAppIcon(hue: resolvedAccent?.hue)
 			await self.startOperatorPresetIconRefresh(hue: resolvedAccent?.hue).value
+			StartupTimeline.shared.mark("theme colors applied")
+		}
+	}
+
+	// Scores the artwork's Home composition off the main actor. Scores are cached per artwork key,
+	// and a result for artwork that is no longer visible is dropped.
+	func updateArtworkColorScheme() {
+		guard let heroArtwork else {
+			homeSchemeSlot.invalidate()
+			artworkColorScheme = .dark
+			return
+		}
+		let cacheKey = activeThemeCacheKey
+		let cache = homeLuminanceCache
+		homeSchemeSlot.replace { [weak self] token in
+			guard let self else { return }
+			let score = await cache.score(for: heroArtwork, cacheKey: cacheKey)
+			guard self.homeSchemeSlot.owns(token),
+				self.heroArtwork === heroArtwork,
+				self.activeThemeCacheKey == cacheKey
+			else { return }
+			guard let score else {
+				self.artworkColorScheme = .dark
+				return
+			}
+			self.artworkColorScheme = HomeLuminance.colorScheme(
+				for: score, previous: self.artworkColorScheme)
+		}
+	}
+
+	// The wordmark pill never uses this; it always stays dark.
+	package func homeColorScheme(for theme: HomeTheme) -> ColorScheme {
+		switch theme {
+		case .automatic: artworkColorScheme
+		case .dark: .dark
+		case .light: .light
 		}
 	}
 
@@ -91,7 +128,6 @@ extension CustomizationController {
 	private func applyThemeAccent(_ extracted: ExtractedAccent?) {
 		dynamicThemeHue = extracted?.hue
 		accentColor = extracted?.accentColor ?? LauncherVisuals.cyan
-		hudTintColor = extracted?.backgroundTint ?? LauncherVisuals.hudGlassTint
 	}
 
 	private func applyDynamicLauncherIcon(_ image: NSImage, persistToBundle: Bool) {

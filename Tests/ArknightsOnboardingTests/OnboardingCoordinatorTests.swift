@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import ArknightsTestSupport
 import Foundation
 import Testing
@@ -9,63 +10,11 @@ import Testing
 @MainActor
 struct OnboardingCoordinatorTests {
 	@Test
-	func currentLauncherCanAdvanceAndResume() async {
+	func stepSavedOnTheOldRuntimeStepResumesOnInstall() {
 		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingCoordinatorTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = OnboardingProgressStore(defaults: defaults)
-		let coordinator = OnboardingCoordinator(store: store)
-
-		await coordinator.startIfNeeded(
-			isDeveloperMode: false,
-			isOnboardingPreview: false,
-			gameIsInstalled: true,
-			checkForUpdates: { .current },
-			checkIntelTranslation: { .available }
-		)
-		#expect(coordinator.isPresented)
-		#expect(coordinator.step == .welcome)
-
-		coordinator.advance()
-		coordinator.advance()
-		#expect(coordinator.step == .display)
-
-		let resumed = OnboardingCoordinator(store: store)
-		await resumed.startIfNeeded(
-			isDeveloperMode: false,
-			isOnboardingPreview: false,
-			gameIsInstalled: true,
-			checkForUpdates: { .current },
-			checkIntelTranslation: { .available }
-		)
-		resumed.advance()
-
-		#expect(resumed.step == .display)
-
-		store.save(step: .look)
-		let withoutGame = OnboardingCoordinator(store: store)
-		await withoutGame.startIfNeeded(
-			isDeveloperMode: false,
-			isOnboardingPreview: false,
-			gameIsInstalled: false,
-			checkForUpdates: { .current },
-			checkIntelTranslation: { .available }
-		)
-		withoutGame.advance()
-		#expect(withoutGame.step == .region)
-
-		defaults.set(5, forKey: "onboarding.currentStep")
-		let fromEarlierLauncher = OnboardingCoordinator(
-			store: OnboardingProgressStore(defaults: defaults))
-		await fromEarlierLauncher.startIfNeeded(
-			isDeveloperMode: false,
-			isOnboardingPreview: false,
-			gameIsInstalled: true,
-			checkForUpdates: { .current },
-			checkIntelTranslation: { .available }
-		)
-		#expect(fromEarlierLauncher.step == .welcome)
-		fromEarlierLauncher.advance()
-		#expect(fromEarlierLauncher.step == .region)
+		defaults.set(16, forKey: "onboarding.currentStep")
+		#expect(OnboardingProgressStore(defaults: defaults).savedStep == .install)
 	}
 
 	@Test(arguments: [
@@ -115,6 +64,48 @@ struct OnboardingCoordinatorTests {
 		#expect(store.needsOnboarding == updateIsAvailable, Comment(rawValue: caseLabel))
 	}
 
+	@Test(.timeLimit(.minutes(1)))
+	func retryDuringPendingCheckWinsOverStaleResult() async {
+		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingCoordinatorTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let coordinator = OnboardingCoordinator(store: OnboardingProgressStore(defaults: defaults))
+		var staleCheck: CheckedContinuation<LauncherUpdateCheckOutcome, Never>?
+		let staleCheckStarted = Signal()
+		var intelChecks = 0
+
+		let first = Task {
+			await coordinator.startIfNeeded(
+				isDeveloperMode: false,
+				isOnboardingPreview: false,
+				gameIsInstalled: true,
+				checkForUpdates: {
+					await withCheckedContinuation { continuation in
+						staleCheck = continuation
+						staleCheckStarted.fire()
+					}
+				},
+				checkIntelTranslation: {
+					intelChecks += 1
+					return .available
+				}
+			)
+		}
+		await staleCheckStarted.wait()
+
+		await coordinator.retryUpdateCheck(
+			{ .current },
+			checkIntelTranslation: {
+				intelChecks += 1
+				return .available
+			})
+		staleCheck?.resume(returning: .updateAvailable("9.9.9"))
+		await first.value
+
+		#expect(coordinator.updateState == .current)
+		#expect(coordinator.intelTranslationState == .available)
+		#expect(intelChecks == 1)
+	}
+
 	@Test
 	func requiredSetupCannotBeSkippedUntilFinished() async {
 		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingCoordinatorTests")
@@ -130,7 +121,7 @@ struct OnboardingCoordinatorTests {
 			checkForUpdates: { .current },
 			checkIntelTranslation: { .available }
 		)
-		#expect(coordinator.requiredSchema == 2)
+		#expect(coordinator.requiredSchema == 3)
 
 		coordinator.skip()
 		#expect(coordinator.isPresented)
@@ -140,5 +131,4 @@ struct OnboardingCoordinatorTests {
 		#expect(!store.needsOnboarding)
 		#expect(store.pendingRequiredSchema == nil)
 	}
-
 }
