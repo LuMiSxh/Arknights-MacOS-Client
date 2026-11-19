@@ -81,6 +81,7 @@ extension GameInstaller {
 			try partialByteCount(of: item, in: installationRoot)
 		}
 		let downloadedBytes = try Self.totalByteCount(of: pendingFiles)
+		try requireFreeSpace(forPending: pendingFiles, in: installationRoot)
 		log?.debug(
 			"Manifest has \(manifest.file.count) files; \(pendingFiles.count) need download "
 				+ "(\(downloadedBytes) bytes); repair=\(verifyAllExistingFiles)"

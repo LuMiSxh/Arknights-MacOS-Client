@@ -15,6 +15,7 @@ package struct GameInstaller: Sendable {
 	let compatibilityManager: GameCompatibilityManager
 	let concurrentDownloads = AppConstants.Network.concurrentDownloads
 	let log: LauncherLog?
+	let availableCapacity: @Sendable (URL) throws -> Int64
 	// Directories of other regions' installations, resolved per operation so custom
 	// install locations are honored. `nil` disables cross-region reuse.
 	let reuseSourceDirectories: (@Sendable (GameRegion) async -> [URL])?
@@ -24,8 +25,12 @@ package struct GameInstaller: Sendable {
 		session: URLSession = .shared,
 		compatibilityManager: GameCompatibilityManager,
 		log: LauncherLog? = nil,
+		availableCapacity: @escaping @Sendable (URL) throws -> Int64 = {
+			try GameInstaller.availableCapacityBytes(at: $0)
+		},
 		reuseSourceDirectories: (@Sendable (GameRegion) async -> [URL])? = nil
 	) {
+		self.availableCapacity = availableCapacity
 		self.api = api
 		chunkSession = HTTPChunkSession(
 			configuration: session.configuration,

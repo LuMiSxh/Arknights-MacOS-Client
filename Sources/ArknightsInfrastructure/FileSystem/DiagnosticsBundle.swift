@@ -32,10 +32,13 @@ package enum DiagnosticsBundle {
 		package enum Content: Sendable {
 			/// An existing file to copy into the archive unchanged.
 			case file(URL)
-			/// An existing text log to copy with `DiagnosticsRedaction` applied.
+			/// A text log to copy with `DiagnosticsRedaction` applied. It is optional: a log that
+			/// disappears before the copy is skipped and reported instead of failing the archive.
 			case redactedLog(URL)
 			/// Text to write at `archivePath`.
 			case text(String)
+			/// Text to write at `archivePath` with `DiagnosticsRedaction` applied.
+			case redactedText(String)
 		}
 
 		package let archivePath: String
@@ -91,14 +94,19 @@ package enum DiagnosticsBundle {
 				}
 				try fileManager.copyItem(at: source, to: destination)
 			case .redactedLog(let source):
-				guard fileManager.fileExists(atPath: source.path) else {
-					throw DiagnosticsBundleError.missingSource(source)
+				// A log can vanish between listing and copying (rotation, cleanup); skip it.
+				do {
+					try copyRedacted(
+						from: source, to: destination, redaction: redaction, fileManager,
+						report: reportCleanupFailure)
+				} catch  where Self.isMissing(error) {
+					reportCleanupFailure(DiagnosticsBundleError.missingSource(source))
+					remove(destination, using: fileManager, report: reportCleanupFailure)
 				}
-				try copyRedacted(
-					from: source, to: destination, redaction: redaction, fileManager,
-					report: reportCleanupFailure)
 			case .text(let text):
 				try text.write(to: destination, atomically: true, encoding: .utf8)
+			case .redactedText(let text):
+				try redaction.redact(text).write(to: destination, atomically: true, encoding: .utf8)
 			}
 		}
 		try readme.write(
@@ -109,7 +117,10 @@ package enum DiagnosticsBundle {
 		do {
 			let result = try await ChildProcess(
 				executable: URL(fileURLWithPath: "/usr/bin/ditto"),
-				arguments: ["-c", "-k", "--sequesterRsrc", staging.path, archive.path],
+				// Without extended attributes the archive has no `__MACOSX/._*` entries.
+				arguments: [
+					"-c", "-k", "--norsrc", "--noextattr", "--noacl", staging.path, archive.path,
+				],
 				output: .discarded
 			).run()
 			try Task.checkCancellation()
@@ -121,6 +132,15 @@ package enum DiagnosticsBundle {
 			throw error
 		}
 		return archive
+	}
+
+	private static func isMissing(_ error: any Error) -> Bool {
+		if let cocoa = error as? CocoaError {
+			return cocoa.code == .fileNoSuchFile || cocoa.code == .fileReadNoSuchFile
+		}
+		if let posix = error as? POSIXError { return posix.code == .ENOENT }
+		return (error as NSError).domain == NSPOSIXErrorDomain
+			&& (error as NSError).code == Int(ENOENT)
 	}
 
 	/// Rejects absolute paths and `..` so an item cannot write outside the staging folder.

@@ -243,11 +243,41 @@ package struct AppPaths: Sendable {
 	package var logsDirectory: URL { logRoot }
 
 	/// Where the publisher SDK writes its logs inside the publisher's Wine prefix.
-	package func sdkLogDirectory(for publisher: GamePublisher, lane: RuntimeLane) -> URL {
-		winePrefix(for: publisher, lane: lane).appending(
-			path: "drive_c/users/crossover/AppData/LocalLow/HyperGryph/Arknights/sdklogs",
-			directoryHint: .isDirectory
-		)
+	///
+	/// The SDK writes under the prefix user's profile. That user is the macOS account name or
+	/// `crossover`, so this lists the folder of every profile.
+	package func sdkLogDirectories(
+		for publisher: GamePublisher,
+		lane: RuntimeLane,
+		fileManager: FileManager = .default
+	) throws -> [URL] {
+		let users = winePrefix(for: publisher, lane: lane).appending(
+			path: "drive_c/users", directoryHint: .isDirectory)
+		let profiles: [URL]
+		do {
+			profiles = try fileManager.contentsOfDirectory(
+				at: users, includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+		} catch  where Self.isMissingPathError(error) {
+			return []
+		}
+		// Every folder from the profile down must be a real directory, so a link never leads out of the prefix.
+		return try profiles.sorted { $0.lastPathComponent < $1.lastPathComponent }.compactMap {
+			profile in
+			let logs = profile.appending(
+				path: "AppData/LocalLow/HyperGryph/Arknights/sdklogs", directoryHint: .isDirectory)
+			return try DiagnosticsFileSelection.isPlainFolder(logs, below: users) ? logs : nil
+		}
+	}
+
+	/// Where macOS writes crash reports for the current user.
+	package static var systemCrashReportsDirectory: URL {
+		FileManager.default.homeDirectoryForCurrentUser.appending(
+			path: "Library/Logs/DiagnosticReports", directoryHint: .isDirectory)
+	}
+
+	/// Where a log moves when the next session replaces it: `unity.log` becomes `unity.previous.log`.
+	package static func previousLogFile(of log: URL) -> URL {
+		log.deletingPathExtension().appendingPathExtension("previous.log")
 	}
 
 	/// Where the launcher keeps copies of the publisher SDK logs.

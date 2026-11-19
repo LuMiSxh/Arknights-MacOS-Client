@@ -54,6 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The China (Bilibili) sign-in window stays above the game.
 - The launcher remembers muted music, and playlists start on a random track.
 - Rebuilt the website in the launcher's design.
+- **Help → Save Diagnostics…** now saves `environment.json` instead of `environment.txt`. It also adds the logs of the previous game session, the game's crash logs, and recent macOS crash reports of the launcher, Wine, and the game.
 
 ### Fixed
 
@@ -65,6 +66,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Launcher music fades out once when the game window appears, and track titles stay correct.
 - The **Needs attention** dialog responds while Settings is open.
 - A slow Game Mode helper no longer blocks quitting.
+- **Repair** of a complete game no longer fails with **IN-DSK**. It now needs free space only for the files it downloads.
+- **Help → Save Diagnostics…** now finds the SDK logs of China, China (Bilibili), and Taiwan.
+- Server artwork that fails to download now retries on its own instead of staying blank until a restart.
 
 ### Removed
 

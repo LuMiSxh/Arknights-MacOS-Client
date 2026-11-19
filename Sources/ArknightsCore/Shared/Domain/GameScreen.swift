@@ -38,6 +38,13 @@ package struct GameScreenInfo: Equatable, Sendable {
 		self.backingScaleFactor = backingScaleFactor
 		self.notchHeight = notchHeight
 	}
+
+	/// The display as `environment.json` reports it, without the display's name or UUID.
+	package var diagnosticsDisplay: DiagnosticsEnvironment.Display {
+		DiagnosticsEnvironment.Display(
+			size: "\(Int(frameSize.width))x\(Int(frameSize.height))",
+			scale: backingScaleFactor, hasNotch: notchHeight > 0)
+	}
 }
 
 /// The connected displays and the order Wine lists them in. Tests build one directly. Only

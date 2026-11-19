@@ -44,14 +44,20 @@ To open the app data folder, go to **Settings → Storage → Logs and data**. C
 | `launcher.log`, `launcher.previous.log`                                       | Setup, downloads, updates, and errors  |
 | `arknights-yostar.log`, `arknights-gryphline.log`, `arknights-hypergryph.log` | Game start messages for that publisher |
 | `unity.log`                                                                   | Messages from the game itself          |
+| `unity.previous.log`, `arknights-<publisher>.previous.log`                    | The same logs from the session before  |
 | `chromium.log`                                                                | The sign-in window                     |
 | `sdklogs/<publisher>/`                                                        | Publisher SDK logs (see below)         |
 
 Logs can contain private paths, URLs, account IDs, or access keys. Do not attach them directly. If a maintainer asks for logs, choose **Help → Save Diagnostics…**. The launcher saves the file to Downloads. The file includes:
 
-- Launcher and game logs.
+- Launcher and game logs, including the session before.
+- `environment.json` with app, system, runtime, game, and settings details.
 - The SDK logs for China, China (Bilibili), and Taiwan.
+- The game crash reporter logs from the last 7 days, and the China (Bilibili) platform logs.
+- macOS crash reports from the last 7 days for the launcher, Wine, and the game.
 - The pinned runtime version.
+
+The file never holds save data, the game's event logs, or settings databases.
 
 The launcher redacts your home folder, user name, and URL queries. It does not remove account IDs or access keys. Review the file before you attach it.
 

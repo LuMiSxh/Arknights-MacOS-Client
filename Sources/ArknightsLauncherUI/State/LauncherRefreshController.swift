@@ -267,6 +267,8 @@ final class LauncherRefreshController {
 			guard !customArtworkWasPersisted else { return nil as Data? }
 			do {
 				return try await artworkCache.imageData(for: branding, region: region)
+			} catch is CancellationError {
+				return nil
 			} catch {
 				log.error(
 					"Artwork for \(region.displayName) failed: \(error.localizedDescription)"

@@ -92,9 +92,12 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 
 		let stagedBridge = temporaryURL(in: gameDirectory, suffix: "bridge")
 		defer {
-			GameShimIO.attempt("Could not remove the staged window bridge", log: log) {
-				try fileManager.removeItem(at: stagedBridge)
-			}
+			GameShimIO.removeIfPresent(
+				"Could not remove the staged window bridge",
+				at: stagedBridge,
+				fileManager: fileManager,
+				log: log
+			)
 		}
 		try fileManager.copyItem(at: bridgeURL, to: stagedBridge)
 		try GameShimIO.swapHelper(

@@ -42,7 +42,7 @@ The launcher opens a GitHub issue with the error code, server, launcher version,
 
 You do not need logs at first. If a maintainer asks for logs, choose **Help → Save Diagnostics…** or **Settings → Help → Diagnostics → Save…**. The launcher saves a zip file to Downloads.
 
-The file includes the SDK logs for China, China (Bilibili), and Taiwan, and the pinned runtime version. Nothing is uploaded. Review the file before you attach it to the issue. It can contain account IDs and access keys.
+The file lists your app, system, game, and settings details in `environment.json`. It also holds the launcher and game logs, including the session before, the SDK and crash reporter logs, macOS crash reports from the last 7 days, and the pinned runtime version. It does not hold save data. Nothing is uploaded. Review the file before you attach it to the issue. It can contain account IDs and access keys.
 
 > [!WARNING]
 > GitHub issues are public. Never post passwords, tokens, or payment details.

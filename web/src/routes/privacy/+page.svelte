@@ -140,11 +140,13 @@
 	</p>
 	<p>
 		Save Diagnostics… in the Help menu writes a zip file to your Downloads
-		folder. The file holds the launcher and game logs, with your display and
-		runtime settings. The app redacts your home folder, your user name, and
-		URL queries from the logs. The app does not upload the file. The file
-		leaves your Mac only when you send it yourself, for example as an
-		attachment to an issue or a message.
+		folder. The file holds the launcher and game logs, the game crash
+		reporter logs, and macOS crash reports from the last seven days for the
+		app, Wine, and the game. It also lists your app, system, display, game,
+		and runtime settings. It never holds save data. The app redacts your
+		home folder, your user name, and URL queries from the text files. The
+		app does not upload the file. The file leaves your Mac only when you
+		send it yourself, for example as an attachment to an issue or a message.
 	</p>
 	<p>
 		On this website, the Report an issue footer link opens the public GitHub
