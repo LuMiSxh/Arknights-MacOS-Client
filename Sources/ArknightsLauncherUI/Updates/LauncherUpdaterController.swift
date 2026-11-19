@@ -159,8 +159,13 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 
 	func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
 		userDriver.recordAvailableUpdate(item)
-		recordProbeOutcome(
-			.found(version: item.displayVersionString, running: Bundle.main.shortVersionString))
+		let offered = item.displayVersionString
+		let running = Bundle.main.shortVersionString
+		// An unparsable version keeps the old rule: any different version counts as newer.
+		let isNewer =
+			running.flatMap { LauncherAnnouncement.compare(offered, $0) }
+			.map { $0 == .orderedDescending } ?? (offered != running)
+		recordProbeOutcome(.found(version: offered, isNewerThanRunning: isNewer))
 	}
 
 	func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
