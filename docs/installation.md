@@ -74,7 +74,7 @@ The setup assistant opens on the first start. Change any choice later in **Setti
    - Choose **Change…** to pick another location for the game files.
    - **x86_64** needs Rosetta 2. If it is missing, choose **Install Rosetta 2…**, then **Check Again**.
    - On macOS 28 or later, see [macOS support](help/runtime.md#macos-support).
-   - Choose **Download and Continue** to download what is missing, or **Continue** if everything is installed. The game download continues in the background while you finish setup. The setup rail shows its progress on every step. Choose **Pause** to stop it and **Resume** to continue. The runtime download pauses and resumes the same way. **Back** never stops a download.
+   - Choose **Download and Continue** to download what is missing, or **Continue** if everything is installed. The game and runtime downloads continue in the background while you finish setup. The setup rail shows its progress on every step. Choose **Pause** to stop it and **Resume** to continue. The runtime download pauses and resumes the same way. **Back** never stops a download.
    - If a download fails, the step shows what happened and a support code under the failed item. Choose **Download and Continue** to try again.
    - If the game download fails on a later step, the setup rail shows **Download failed** and its support code. Choose **Retry** to start the download again.
    - See [Game runtime](help/runtime.md).

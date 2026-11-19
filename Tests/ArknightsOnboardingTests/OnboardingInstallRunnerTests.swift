@@ -41,12 +41,8 @@ struct OnboardingInstallRunnerTests {
 		let recorder = Recorder()
 		let actions = makeActions(recorder)
 		let runner = OnboardingInstallRunner()
-		var advances = 0
-
-		let first = runner.installRuntime(
-			.arm, startsGameDownload: true, actions: actions, whenInstalled: { advances += 1 })
-		let second = runner.installRuntime(
-			.arm, startsGameDownload: true, actions: actions, whenInstalled: { advances += 1 })
+		let first = runner.installRuntime(.arm, startsGameDownload: true, actions: actions)
+		let second = runner.installRuntime(.arm, startsGameDownload: true, actions: actions)
 		#expect(first)
 		#expect(!second)
 		#expect(runner.isRunning)
@@ -57,6 +53,5 @@ struct OnboardingInstallRunnerTests {
 
 		#expect(recorder.gameStarts == 1)
 		#expect(recorder.runtimeInstalls == 1)
-		#expect(advances == 1)
 	}
 }

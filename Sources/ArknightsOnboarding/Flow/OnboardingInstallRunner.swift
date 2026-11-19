@@ -20,17 +20,15 @@ final class OnboardingInstallRunner {
 	func installRuntime(
 		_ lane: RuntimeLane,
 		startsGameDownload: Bool,
-		actions: OnboardingActions,
-		whenInstalled: @escaping @MainActor () -> Void
+		actions: OnboardingActions
 	) -> Bool {
 		guard !isRunning else { return false }
 		isRunning = true
 		if startsGameDownload { actions.installOrUpdate() }
 		slot.replace { [self] token in
-			let installed = await actions.installRuntime(lane)
+			_ = await actions.installRuntime(lane)
 			guard slot.owns(token) else { return }
 			isRunning = false
-			if installed { whenInstalled() }
 		}
 		return true
 	}

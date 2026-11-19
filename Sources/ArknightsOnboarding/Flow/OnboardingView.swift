@@ -309,22 +309,27 @@ package struct OnboardingView: View {
 	}
 
 	// The game download and runtime install start here and nowhere else. A complete install
-	// downloads nothing, so a setup rerun only confirms what is already there.
+	// downloads nothing, so a setup rerun only confirms what is already there. A runtime that is
+	// installing for the chosen lane counts as present: the install owns its download.
 	private var installPlan: OnboardingInstallPlan {
 		OnboardingInstallPlan(
 			gameIsInstalled: installation.isInstalled,
 			gameIsDownloading: installation.isDownloading,
 			runtimeIsInstalled: runtimeLane.map {
-				runtimeSelection.state(for: $0) == .current
+				runtimeSelection.state(for: $0) == .current || runtimeSelection.installingLane == $0
 			} ?? false
 		)
 	}
 
 	private var canInstall: Bool {
-		guard !runtimeSelection.isInstalling, !coordinator.installRunner.isRunning,
-			let runtimeLane,
-			runtimeSelection.availableLanes.contains(runtimeLane)
-		else { return false }
+		guard let runtimeLane, runtimeSelection.availableLanes.contains(runtimeLane) else {
+			return false
+		}
+		// The install already runs for this lane, so **Continue** only advances.
+		if runtimeSelection.installingLane == runtimeLane { return true }
+		guard !runtimeSelection.isInstalling, !coordinator.installRunner.isRunning else {
+			return false
+		}
 		if runtimeLane == .x86 {
 			switch coordinator.intelTranslationState {
 			case .checking, .waitingForLauncherCheck: return false
@@ -342,28 +347,20 @@ package struct OnboardingView: View {
 	// Resuming re-runs the install; the installer continues from its partial archive.
 	private func resumeRuntimeInstall() {
 		guard let lane = runtimeSelection.pausedLane else { return }
-		coordinator.installRunner.installRuntime(
-			lane,
-			startsGameDownload: false,
-			actions: actions
-		) { [coordinator] in
-			guard coordinator.step == .install else { return }
-			coordinator.advance()
-		}
+		coordinator.installRunner.installRuntime(lane, startsGameDownload: false, actions: actions)
 	}
 
 	private func performInstallAction() {
 		guard let runtimeLane else { return }
 		let plan = installPlan
 		if plan.runtimeNeedsDownload {
+			// Like a game download, the install runs in the background while setup advances.
 			coordinator.installRunner.installRuntime(
 				runtimeLane,
 				startsGameDownload: plan.gameNeedsDownload,
 				actions: actions
-			) { [coordinator] in
-				guard coordinator.step == .install else { return }
-				coordinator.advance()
-			}
+			)
+			coordinator.advance()
 			return
 		}
 		if runtimeLane != runtimeSelection.selectedLane {

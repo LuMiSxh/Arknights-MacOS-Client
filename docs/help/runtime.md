@@ -75,7 +75,7 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 
 1. In the **Install** step, choose **ARM64 (Apple Silicon)** or **x86_64**. **ARM64 (Apple Silicon)** is recommended. On macOS 28 or later, only **ARM64 (Apple Silicon)** is offered.
 2. Choose **Download and Continue** or **Continue**.
-3. Wait for the download if one starts.
+3. Finish setup. A runtime download continues in the background if one starts.
 
 - **Download and Continue** downloads and installs the runtime.
 - **Continue** uses the installed runtime you chose. It keeps the current runtime if you did not switch.
