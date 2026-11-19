@@ -142,7 +142,8 @@ struct PresetWallpaperGrid: View {
 							CachedPresetImage(
 								catalog: catalog,
 								url: wp.thumbnailURL ?? wp.url,
-								cacheKey: "thumb_\(wp.id)",
+								// The width in the key retires thumbnails cached at another size.
+								cacheKey: "thumb_w\(AppConstants.Presets.thumbnailWidth)_\(wp.id)",
 								contentMode: .fill,
 								placeholderIcon: "photo"
 							)
