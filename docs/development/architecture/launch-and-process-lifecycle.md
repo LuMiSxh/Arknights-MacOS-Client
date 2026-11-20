@@ -27,7 +27,7 @@ per-prefix Wine and DXMT migration. See
 ## Launch process
 
 > [!IMPORTANT]
-> The selected runtime is x86_64 or ARM64. The x86_64 lane runs through Rosetta 2; the ARM64 lane runs natively on macOS 26 or later. The launcher gives Wine an isolated
+> The selected runtime is x86_64 or ARM64. The x86_64 lane runs through Rosetta 2; the ARM64 lane runs natively on macOS 27 or later. The launcher gives Wine an isolated
 > prefix and an allowlisted environment, mounts the game directory as `G:`, installs the pinned DXMT
 > libraries, and starts `G:\Arknights.exe`. DXMT translates Direct3D to Metal. See
 > [Game runtime](../../help/runtime.md) and

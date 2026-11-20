@@ -1,6 +1,6 @@
 ---
 title: Game runtime
-description: Supported macOS versions, the x86_64 and ARM64 runtimes, Rosetta 2, and recovery from a failed runtime
+description: Supported macOS versions, how the launcher picks the x86_64 or ARM64 runtime, Rosetta 2, and recovery from a failed runtime
 order: 41
 ---
 
@@ -15,32 +15,23 @@ Only Apple silicon Macs work: M-series Macs and the MacBook Neo (A18 Pro).
 | Runtime                   | How it runs               | macOS             |
 | ------------------------- | ------------------------- | ----------------- |
 | **x86_64**                | Through Rosetta 2         | macOS 15 to 27    |
-| **ARM64 (Apple Silicon)** | Natively on Apple silicon | macOS 26 or later |
+| **ARM64 (Apple Silicon)** | Natively on Apple silicon | macOS 27 or later |
 
-Use **ARM64 (Apple Silicon)** if your Mac runs macOS 26 or later.
-
-The **Recommended** badge marks **ARM64 (Apple Silicon)**. In **Settings → Runtime**, the **Active runtime** panel shows a macOS requirement only when your Mac does not meet it.
+The launcher picks the runtime for your Mac. You do not choose one during setup.
 
 ## macOS support
 
-| macOS          | Runtime you can use                                      |
-| -------------- | -------------------------------------------------------- |
-| macOS 15           | **x86_64** only.                                                    |
-| macOS 26 and 27    | **ARM64 (Apple Silicon)** is recommended. **x86_64** is a fallback. |
-| macOS 28 and later | **ARM64 (Apple Silicon)** only.                                     |
+| macOS              | Runtime the launcher uses                                              |
+| ------------------ | ---------------------------------------------------------------------- |
+| macOS 15 to 26     | **x86_64**                                                             |
+| macOS 27           | **ARM64 (Apple Silicon)**. You can override it with **x86_64**.        |
+| macOS 28 and later | **ARM64 (Apple Silicon)**                                              |
 
 Apple says macOS 27 is the last release with general Rosetta support. From macOS 28, the launcher blocks the x86_64 runtime.
 
 The launcher does not rely on Rosetta for ARM64. See Apple's [Rosetta details](https://support.apple.com/en-au/102527) and [developer notice](https://developer.apple.com/news/?id=w5ngl9k2).
 
-On macOS 28 or later, setup selects **ARM64 (Apple Silicon)** by default. The **Install** step does not offer **x86_64**.
-
-If you selected x86_64 on an earlier macOS and then upgraded, the **Install** step asks you to switch to the ARM64 runtime. To switch:
-
-1. Continue setup to the **Install** step.
-2. Choose **ARM64 (Apple Silicon)**.
-
-The next game launch uses the ARM64 runtime.
+The launcher decides again after every macOS or launcher update. If the runtime it needs is missing, Home shows **Runtime setup required**. Choose **Set Up Runtime** to download it. Your game environment for the other runtime stays on disk.
 
 ## Rosetta 2
 
@@ -71,39 +62,42 @@ sudo game-test-tool disable
 
 Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release notes](https://developer.apple.com/documentation/macos-release-notes/macos-27-release-notes?changes=l_2).
 
-## Choose a runtime during setup
+## Runtime during setup
 
-1. In the **Install** step, choose **ARM64 (Apple Silicon)** or **x86_64**. **ARM64 (Apple Silicon)** is recommended. On macOS 28 or later, only **ARM64 (Apple Silicon)** is offered.
-2. Choose **Download and Continue** or **Continue**.
-3. Finish setup. A runtime download continues in the background if one starts.
+The **Install** step shows the runtime the launcher picked. It offers no choice.
+
+1. Choose **Download and Continue** or **Continue**.
+2. Finish setup. A runtime download continues in the background if one starts.
 
 - **Download and Continue** downloads and installs the runtime.
-- **Continue** uses the installed runtime you chose. It keeps the current runtime if you did not switch.
-
-The launcher shows a note when the game may ask you to sign in again.
+- **Continue** uses the runtime that is already installed.
 
 While the runtime downloads, the progress line shows the percentage, download size, and speed. Choose **Pause** to stop the download in setup or in the **Active runtime** panel. Choose **Resume** to continue from the partial file. Pause works only while the runtime downloads, not while it installs.
 
 If the game is installed but the runtime is missing, Home shows **Runtime setup required**. Choose **Set Up Runtime** on Home to download it.
 
-## Switch runtimes in Settings
+## Override the runtime in Settings
+
+Override the runtime only to work around a problem. The **Active runtime** panel in **Settings → Runtime** shows the runtime in use. It has no picker.
 
 1. Open **Settings → Runtime**.
-2. In the **Active runtime** panel, choose **Switch to x86_64** or **Switch to ARM64**.
-3. Read the warning about the separate game environment (Wine prefix).
-4. Choose **Switch and Download** or **Switch**.
+2. In the **Danger zone**, open **Runtime choice**.
+3. Choose **Automatic** or a runtime. The menu lists only the runtimes your macOS allows.
+4. Read the warning about the separate game environment (Wine prefix).
+5. Choose **Switch and Download** or **Switch**.
 
-The warning title names the target, such as **Switch to ARM64?**.
+The warning title names the target, such as **Switch to x86_64?**.
 
-- **Switch and Download** selects the runtime at once and downloads it. Home shows the runtime setup state, not **Play**, until the download finishes. To go back, switch to the installed runtime in **Settings → Runtime**.
+- **Switch and Download** selects the runtime at once and downloads it. Home shows the runtime setup state, not **Play**, until the download finishes.
 - **Switch** uses an installed runtime.
+- **Automatic** returns to the runtime the launcher picks.
 
-The next game launch uses the new runtime. On macOS 28 or later, the **Active runtime** panel does not offer **x86_64**. While the game or a download is running, the panel cannot switch runtimes. It shows the reason.
+The next game launch uses the new runtime. If a macOS update no longer allows your override, the launcher ignores it. While the game or a download is running, the menu is disabled. The panel shows the reason.
 
 ## What a switch changes
 
-- The launcher downloads the selected runtime. The **Active runtime** panel shows its download size while the runtime is not installed.
-- The other runtime stays on disk. The panel shows the installed version for each runtime.
+- The launcher downloads the new runtime. The **Active runtime** panel shows its download size while the runtime is not installed.
+- The other runtime stays on disk.
 - **Remove Other Runtime…** in the **Danger zone** deletes the runtime you are not using. Its game environment stays on disk.
 - **Remove Runtime…** in the **Danger zone** deletes the runtime you are using. Its game environment stays on disk. Set up the runtime again before you play.
 - Each runtime keeps its own game environment.
@@ -142,8 +136,8 @@ If a download fails:
 - [`RT-ROS`](errors/rt-ros.md): Rosetta missing
 - [`RT-BLK`](errors/rt-blk.md): Intel translation blocked
 
-If the Mac cannot run the selected runtime, update macOS for **ARM64 (Apple Silicon)**, or choose another runtime.
+If the Mac cannot run the runtime, set **Runtime choice** to **Automatic** in the **Danger zone**, or update macOS.
 
 A launcher release may not include the ARM64 download. In that case, update the launcher.
 
-If another operation runs, wait for it to finish. Then try again. If nothing helps, [report a problem](README.md#report-a-problem). Include the runtime you chose.
+If another operation runs, wait for it to finish. Then try again. If nothing helps, [report a problem](README.md#report-a-problem). Include the runtime in use.

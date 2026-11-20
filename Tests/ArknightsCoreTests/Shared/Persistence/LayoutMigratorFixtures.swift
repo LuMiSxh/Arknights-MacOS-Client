@@ -38,7 +38,7 @@ struct MigrationFixture {
 				path: "Caches", directoryHint: .isDirectory),
 			libraryDirectory: temporary.url.appending(
 				path: "Library", directoryHint: .isDirectory),
-			runtimeSelection: RuntimeSelection(selected: .x86)
+			runtimeSelection: RuntimeSelection(override: .x86)
 		)
 		selectionStore = RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile)
 	}

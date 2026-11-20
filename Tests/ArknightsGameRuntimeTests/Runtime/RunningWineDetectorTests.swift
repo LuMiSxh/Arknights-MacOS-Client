@@ -21,7 +21,7 @@ private struct WineDetectorFixture {
 				path: "Caches", directoryHint: .isDirectory),
 			libraryDirectory: temporary.url.appending(
 				path: "Library", directoryHint: .isDirectory),
-			runtimeSelection: RuntimeSelection(selected: .x86)
+			runtimeSelection: RuntimeSelection(override: .x86)
 		)
 		bundleURL = temporary.url.appending(
 			path: "Arknights Client.app", directoryHint: .isDirectory)

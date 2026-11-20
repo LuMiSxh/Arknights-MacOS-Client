@@ -32,14 +32,16 @@ package protocol LauncherInstallationActions {
 	@discardableResult
 	func installRosetta() async -> IntelTranslationState
 
-	/// Installs the pinned runtime for `lane` and selects it after a successful install.
+	/// Installs the pinned runtime for `lane`. A lane other than the launcher's choice becomes the
+	/// override.
 	@discardableResult
 	func installRuntime(_ lane: RuntimeLane) async -> Bool
 	/// Pauses the runtime download and keeps the partial archive. Installing the lane again resumes it.
 	func pauseRuntimeDownload()
-	/// Switches to an already installed lane. The next game launch uses it.
+	/// Sets the lane override, or clears it with nil so the launcher chooses. An override must be
+	/// installed. The next game launch uses the result.
 	@discardableResult
-	func selectRuntimeLane(_ lane: RuntimeLane) -> Bool
+	func selectRuntimeOverride(_ lane: RuntimeLane?) -> Bool
 	/// Removes the runtime of the lane that is not selected.
 	@discardableResult
 	func removeOtherRuntime() async -> Bool

@@ -170,13 +170,13 @@
 		<ul class="runtime-strip">
 			<li>
 				<a href={resolve('/performance/')}>
-					<span>macOS 15–25</span>
+					<span>macOS 15–26</span>
 					<span>x86_64 · Rosetta 2</span>
 				</a>
 			</li>
 			<li class="is-recommended">
 				<a href={resolve('/performance/')}>
-					<span>macOS 26–27</span>
+					<span>macOS 27</span>
 					<span>ARM64 recommended</span>
 				</a>
 			</li>

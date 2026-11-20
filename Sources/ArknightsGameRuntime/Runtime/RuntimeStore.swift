@@ -35,15 +35,16 @@ package struct RuntimeStore: Sendable {
 		paths.installedRuntimeVersion(for: lane)
 	}
 
+	/// Sets the lane override, or clears it with nil so the launcher chooses the lane again.
 	package func select(
-		lane: RuntimeLane,
+		override lane: RuntimeLane?,
 		access: RuntimeAccess = RuntimeAccess()
 	) throws {
-		guard access.allows(lane) else {
+		if let lane, !access.allows(lane) {
 			throw RuntimeStoreError.laneNotAllowed(lane)
 		}
 		try selectionStore.update(access: access, recovering: installedVersionsOnDisk) {
-			$0.selected = lane
+			$0.override = lane
 		}
 	}
 
@@ -57,10 +58,15 @@ package struct RuntimeStore: Sendable {
 	/// Removes the lane's version directories under the lane lease. The record changes first, so
 	/// a failed delete never leaves a record that names a missing runtime. The selected lane is
 	/// refused unless `allowSelected` is set; the selection itself stays either way.
-	package func remove(lane: RuntimeLane, allowSelected: Bool = false) throws {
+	package func remove(
+		lane: RuntimeLane,
+		allowSelected: Bool = false,
+		access: RuntimeAccess = RuntimeAccess()
+	) throws {
 		try withInstallLease(at: paths.runtimeLeaseDirectory(for: lane)) { _ in
-			try selectionStore.update(recovering: installedVersionsOnDisk) { selection in
-				if !allowSelected, selection.selected == lane {
+			try selectionStore.update(access: access, recovering: installedVersionsOnDisk) {
+				selection in
+				if !allowSelected, selection.effectiveLane(access: access) == lane {
 					throw RuntimeStoreError.cannotRemoveSelectedLane(lane)
 				}
 				selection.installedVersions[lane] = nil

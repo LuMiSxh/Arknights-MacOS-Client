@@ -10,8 +10,13 @@ extension RuntimeSettingsPage {
 
 	@ViewBuilder var activeRuntimePanel: some View {
 		SettingsPanel(title: "Active runtime") {
-			runtimeX86Content
-			runtimeARMContent
+			activeLaneRow
+
+			if runtimeSelection.laneOverride != nil {
+				runtimeNote(
+					"You chose this runtime in the Danger zone. Set it to Automatic to let the launcher choose."
+				)
+			}
 
 			if let panelChangesReason {
 				runtimeNote(panelChangesReason)
@@ -153,6 +158,8 @@ extension RuntimeSettingsPage {
 
 	var removeRuntimePanel: some View {
 		DangerZonePanel {
+			runtimeChoiceRow
+			SettingsHairline()
 			SettingsActionRow(
 				title: "Remove runtime",
 				detail:
@@ -199,11 +206,13 @@ extension RuntimeSettingsPage {
 
 	// MARK: - Lane rows
 
-	private func runtimeLaneRow(_ lane: RuntimeLane) -> some View {
-		SettingsActionRow(
+	/// The lane the launcher chose. It has no picker: the Danger zone holds the override.
+	private var activeLaneRow: some View {
+		let lane = runtimeSelection.selectedLane
+		let state = runtimeSelection.state(for: lane)
+		return SettingsActionRow(
 			title: lane.title,
 			detail: lane.summary,
-			badge: lane == .arm ? "Recommended" : nil,
 			secondaryDetail: runtimeSelection.pausedLane == lane
 				? "Download paused" : runtimeLaneStatus(lane)
 		) {
@@ -217,49 +226,21 @@ extension RuntimeSettingsPage {
 					Task { _ = await actions.installRuntime(lane) }
 				}
 				.disabled(runtimeChangesDisabled)
-			} else if runtimeSelection.selectedLane == lane {
-				Image(systemName: "checkmark.circle.fill")
-					.foregroundStyle(theme.accentInk)
-					.accessibilityLabel("Selected")
-			} else if runtimeSelection.availableLanes.contains(lane) {
+			} else if state == .notInstalled, !runtimeSelection.isInstalling {
 				CapsuleActionButton(
-					title: "Switch to \(lane.shortLabel)",
-					systemImage: "arrow.triangle.swap",
-					tone: .neutral,
+					title: "Download",
+					systemImage: "arrow.down",
+					tone: .accent,
 					presentation: .compact
 				) {
-					if runtimeSelection.switchRequiresWarning {
-						pendingRuntimeLane = lane
-					} else {
-						performRuntimeSwitch(to: lane)
-					}
+					Task { _ = await actions.installRuntime(lane) }
 				}
 				.disabled(runtimeChangesDisabled)
+			} else if state == .current {
+				Image(systemName: "checkmark.circle.fill")
+					.foregroundStyle(theme.accentInk)
+					.accessibilityLabel("Installed")
 			}
-		}
-	}
-
-	@ViewBuilder private var runtimeX86Content: some View {
-		let showsLane =
-			runtimeSelection.installedVersion(for: .x86) != nil
-			|| (runtimeSelection.allowsX86 && runtimeSelection.availableLanes.contains(.x86))
-		if showsLane { runtimeLaneRow(.x86) }
-		if !runtimeSelection.allowsX86 {
-			runtimeNote("x86_64 requires macOS 27 or earlier.")
-		} else if !showsLane {
-			runtimeNote("x86_64 is not available in this launcher release.")
-		}
-	}
-
-	@ViewBuilder private var runtimeARMContent: some View {
-		let showsLane =
-			runtimeSelection.installedVersion(for: .arm) != nil
-			|| (runtimeSelection.allowsARM64 && runtimeSelection.availableLanes.contains(.arm))
-		if showsLane { runtimeLaneRow(.arm) }
-		if !runtimeSelection.allowsARM64 {
-			runtimeNote("ARM64 requires macOS 26 or later.")
-		} else if !showsLane {
-			runtimeNote("ARM64 is not available in this launcher release.")
 		}
 	}
 
@@ -284,7 +265,7 @@ extension RuntimeSettingsPage {
 		}
 	}
 
-	private func runtimeNote(_ text: String) -> some View {
+	func runtimeNote(_ text: String) -> some View {
 		SettingsFootnote(text)
 	}
 
@@ -294,45 +275,9 @@ extension RuntimeSettingsPage {
 		InlineFailureView(message: failure.message, code: failure.code)
 	}
 
-	// MARK: - Switch confirmation
-
-	var runtimeSwitchDialogTitle: String {
-		guard let lane = pendingRuntimeLane else { return RuntimeSwitchWarning.title }
-		return lane == .arm ? "Switch to ARM64?" : "Switch to x86_64?"
-	}
-
-	var runtimeSwitchButtonTitle: String {
-		guard let lane = pendingRuntimeLane else { return "Switch" }
-		return runtimeSelection.state(for: lane) == .current
-			? "Switch" : "Switch and Download"
-	}
-
-	var runtimeSwitchMessage: String {
-		guard let lane = pendingRuntimeLane, let pin = runtimeSelection.pinnedRuntime(for: lane)
-		else { return RuntimeSwitchWarning.message }
-		return RuntimeSwitchWarning.message(
-			for: pin,
-			isInstalled: runtimeSelection.state(for: lane) == .current
-		)
-	}
-
-	func confirmRuntimeSwitch() {
-		guard let lane = pendingRuntimeLane else { return }
-		pendingRuntimeLane = nil
-		performRuntimeSwitch(to: lane)
-	}
-
-	private func performRuntimeSwitch(to lane: RuntimeLane) {
-		if runtimeSelection.state(for: lane) == .current {
-			_ = actions.selectRuntimeLane(lane)
-		} else {
-			Task { _ = await actions.installRuntime(lane) }
-		}
-	}
-
 	// MARK: - Copy
 
-	private var runtimeChangesDisabled: Bool {
+	var runtimeChangesDisabled: Bool {
 		lifecycle.activity != .idle || runtimeSelection.isInstalling
 	}
 
@@ -342,7 +287,7 @@ extension RuntimeSettingsPage {
 	}
 
 	/// The game reason is in the page banner. Panels show the rest.
-	private var panelChangesReason: String? {
+	var panelChangesReason: String? {
 		gameSession.isGameActive ? nil : runtimeChangesReason
 	}
 

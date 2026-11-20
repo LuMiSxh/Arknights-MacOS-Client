@@ -130,7 +130,6 @@ package struct ContentView: View {
 						locateExistingInstallation: { model.actions.locateExistingInstallation() },
 						installRuntime: { lane in await model.actions.installRuntime(lane) },
 						pauseRuntime: { model.actions.pauseRuntimeDownload() },
-						selectRuntimeLane: { lane in model.actions.selectRuntimeLane(lane) },
 						openLauncherUpdate: { model.actions.openLauncherUpdate() },
 						retryIntelTranslation: {
 							await model.actions.refreshIntelTranslationForUI(force: true)

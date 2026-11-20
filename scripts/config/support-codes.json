@@ -345,7 +345,7 @@
         "A runtime file did not have the expected signature."
       ],
       "steps": [
-        "Choose **Set Up Runtime** on Home, or **Switch to x86_64** in **Settings → Runtime**.",
+        "Choose **Set Up Runtime** on Home. If you chose a runtime yourself, set **Runtime choice** to **Automatic** in the **Danger zone** of **Settings → Runtime**.",
         "Wait for the download to finish again.",
         "If verification fails again, install pending launcher updates and report the problem."
       ],

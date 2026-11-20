@@ -93,7 +93,7 @@ package func makeInstalledRuntime(
 	let selectionFile = paths.runtimeSelectionFile
 	if !FileManager.default.fileExists(atPath: selectionFile.path) {
 		try RuntimeSelectionStore(fileURL: selectionFile).save(
-			RuntimeSelection(selected: paths.runtimeLane))
+			RuntimeSelection(override: paths.runtimeLane))
 	}
 	try RuntimeStore(
 		paths: paths, selectionStore: RuntimeSelectionStore(fileURL: selectionFile)

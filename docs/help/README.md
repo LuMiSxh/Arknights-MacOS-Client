@@ -14,7 +14,7 @@ Find the page for your task or problem.
 - Show your session on Discord → [Discord presence](discord-presence.md)
 - Get a notification before the daily reset → [Daily reset reminder](daily-reset-reminder.md)
 - Save a picture of the game window → [Screenshots](screenshots.md)
-- Supported macOS versions, or choose and switch the game runtime → [Game runtime](runtime.md)
+- Supported macOS versions, or override the game runtime → [Game runtime](runtime.md)
 - Change rendering, window size, or frame rate → [Display and performance](display.md)
 - General questions → [FAQ](faq.md)
 

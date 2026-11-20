@@ -49,7 +49,7 @@ func runtimeLanesUseSeparateWinePrefixes() throws {
 			applicationSupportDirectory: root.appending(path: "Support"),
 			cachesDirectory: root.appending(path: "Caches"),
 			libraryDirectory: root.appending(path: "Library"),
-			runtimeSelection: RuntimeSelection(selected: lane)
+			runtimeSelection: RuntimeSelection(override: lane)
 		)
 	}
 	let x86 = paths(.x86)
@@ -80,7 +80,7 @@ func runtimeStorePathsUseTheirDocumentedNames() throws {
 }
 
 @Test
-func missingSelectionDefaultsToARMWhateverTheRuntimeTreesHold() throws {
+func missingSelectionUsesTheOSDefaultWhateverTheRuntimeTreesHold() throws {
 	let temporary = try TemporaryDirectory("AppPathsDefaultLaneTests")
 	defer { temporary.remove() }
 	let support = temporary.url.appending(path: "Support", directoryHint: .isDirectory)
@@ -96,7 +96,7 @@ func missingSelectionDefaultsToARMWhateverTheRuntimeTreesHold() throws {
 		applicationSupportDirectory: support,
 		runtimeAccess: RuntimeAccess(
 			macOSVersion: OperatingSystemVersion(
-				majorVersion: 26, minorVersion: 0, patchVersion: 0))
+				majorVersion: 27, minorVersion: 0, patchVersion: 0))
 	)
 
 	#expect(paths.runtimeLane == .arm)

@@ -15,12 +15,15 @@ private struct SwitchFixture {
 	let paths: AppPaths
 	let controller: RuntimeSelectionController
 	let release: AsyncStream<Void>.Continuation
+	let access = RuntimeAccess(
+		macOSVersion: OperatingSystemVersion(majorVersion: 27, minorVersion: 0, patchVersion: 0))
 
 	init(failingDownload: Bool = false) throws {
 		temporary = try TemporaryDirectory("RuntimeSelectionSwitchTests")
 		let paths = AppPaths(
 			applicationSupportDirectory: temporary.url,
-			runtimeSelection: RuntimeSelection(selected: .x86)
+			runtimeSelection: RuntimeSelection(override: .x86),
+			runtimeAccess: access
 		)
 		self.paths = paths
 		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
@@ -30,9 +33,7 @@ private struct SwitchFixture {
 			paths: paths,
 			selectionStore: RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile),
 			lifecycle: makeLifecycleStore(in: temporary),
-			access: RuntimeAccess(
-				macOSVersion: OperatingSystemVersion(
-					majorVersion: 26, minorVersion: 0, patchVersion: 0)),
+			access: access,
 			configuration: try makeRuntimeConfiguration(
 				arm: makeRuntimeLane(
 					version: "0.9.0+arm",
@@ -54,7 +55,8 @@ private struct SwitchFixture {
 
 	var persistedLane: RuntimeLane {
 		get throws {
-			try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load().selected
+			try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load()
+				.effectiveLane(access: access)
 		}
 	}
 
@@ -109,7 +111,7 @@ struct RuntimeSelectionSwitchTests {
 		defer { fixture.temporary.remove() }
 		let download = await fixture.startARMDownload()
 
-		try fixture.controller.select(lane: .x86)
+		try fixture.controller.select(override: .x86)
 		fixture.release.yield()
 
 		#expect(await download.value == false)

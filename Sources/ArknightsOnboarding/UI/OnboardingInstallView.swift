@@ -6,14 +6,13 @@ import ArknightsGameRuntime
 import Foundation
 import SwiftUI
 
-// The one step that downloads: the runtime, then the game files location, then Rosetta 2 for the
-// x86_64 runtime. The server is already chosen, so the page names it before anything downloads.
+// The one step that downloads: the runtime the launcher chose, then the game files location, then
+// Rosetta 2 for the x86_64 runtime. The server is already chosen, so the page names it before
+// anything downloads.
 struct OnboardingInstallView: View {
 	let installation: InstallationController
 	let lifecycle: LauncherLifecycleStore
 	let runtimeSelection: RuntimeSelectionController
-	@Binding var selectedLane: RuntimeLane?
-	let isDisabled: Bool
 	let intelTranslationState: IntelTranslationState
 	let rosettaInstallationState: RosettaInstallationState
 	let chooseInstallDirectory: () -> Void
@@ -27,13 +26,14 @@ struct OnboardingInstallView: View {
 			subtitle:
 				"Set up the runtime and game files for \(installation.region.displayName) from \(installation.region.publisherName)"
 		) {
-			OnboardingQuestion(
-				question: "Choose a runtime",
-				answers: answers,
-				selection: $selectedLane,
-				isDisabled: isDisabled,
-				footnote: footnote
-			)
+			SettingsPanel(title: "Runtime") {
+				SettingsActionRow(
+					title: lane == .x86 ? "x86_64" : "ARM64 (Apple Silicon)",
+					detail: laneDetail(lane)
+				) {
+					EmptyView()
+				}
+			}
 
 			QuietLink(title: "About game runtimes", destination: SupportLinks.runtimeGuide)
 				.font(.callout)
@@ -55,7 +55,7 @@ struct OnboardingInstallView: View {
 				locateExistingInstallation: locateExistingInstallation
 			)
 
-			if selectedLane == .x86 {
+			if lane == .x86 {
 				OnboardingRosettaPanel(
 					intelTranslationState: intelTranslationState,
 					rosettaInstallationState: rosettaInstallationState,
@@ -69,30 +69,7 @@ struct OnboardingInstallView: View {
 		}
 	}
 
-	private var answers: [OnboardingAnswer<RuntimeLane>] {
-		runtimeSelection.availableLanes.map { lane in
-			OnboardingAnswer(
-				value: lane,
-				title: lane == .x86 ? "x86_64" : "ARM64 (Apple Silicon)",
-				detail: laneDetail(lane),
-				systemImage: lane == .x86 ? "cpu" : "apple.logo",
-				isRecommended: lane == .arm
-			)
-		}
-	}
-
-	private var footnote: String? {
-		if !runtimeSelection.allowsX86 {
-			return "x86_64 requires macOS 27 or earlier."
-		}
-		if !runtimeSelection.allowsARM64 {
-			return "ARM64 requires macOS 26 or later."
-		}
-		if !runtimeSelection.availableLanes.contains(.arm) {
-			return "ARM64 is not available in this launcher release."
-		}
-		return nil
-	}
+	private var lane: RuntimeLane { runtimeSelection.selectedLane }
 
 	private func laneDetail(_ lane: RuntimeLane) -> String {
 		"\(lane.summary) \(laneInfo(lane))"

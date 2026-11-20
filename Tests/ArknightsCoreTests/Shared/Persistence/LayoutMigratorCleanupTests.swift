@@ -14,7 +14,7 @@ func runtimeVersionEntriesSurviveOnlyWhileTheirDirectoriesExist() async throws {
 	let store = fixture.selectionStore
 	try store.save(
 		RuntimeSelection(
-			selected: .x86,
+			override: .x86,
 			installedVersions: [.x86: "0.8.0", .arm: "0.8.0"]))
 
 	let result = await LayoutMigrator.migrate(
@@ -25,7 +25,7 @@ func runtimeVersionEntriesSurviveOnlyWhileTheirDirectoriesExist() async throws {
 
 	#expect(result.failure == nil, "\(String(describing: result.failure))")
 	let selection = try store.load()
-	#expect(selection.selected == .x86)
+	#expect(selection.override == .x86)
 	#expect(selection.installedVersions == [.x86: "0.8.0"])
 }
 

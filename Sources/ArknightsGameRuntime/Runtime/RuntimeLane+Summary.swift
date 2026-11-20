@@ -7,7 +7,7 @@ extension RuntimeLane {
 	package var summary: String {
 		switch self {
 		case .arm: "Runs natively on Apple silicon."
-		case .x86: "Runs through Rosetta 2. Use it on macOS 15 or as a fallback."
+		case .x86: "Runs through Rosetta 2."
 		}
 	}
 }

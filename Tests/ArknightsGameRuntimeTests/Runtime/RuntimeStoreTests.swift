@@ -15,40 +15,40 @@ private func makeRuntimeStore(_ paths: AppPaths) -> RuntimeStore {
 
 struct RuntimeStoreTests {
 	@Test
-	func selectingALaneIsPersistedForTheNextLaunch() throws {
+	func anOverrideIsPersistedForTheNextLaunch() throws {
 		let temporary = try TemporaryDirectory("RuntimeStoreSelectionTests")
 		defer { temporary.remove() }
 		let access = RuntimeAccess(
 			macOSVersion: OperatingSystemVersion(
-				majorVersion: 26, minorVersion: 0, patchVersion: 0))
+				majorVersion: 27, minorVersion: 0, patchVersion: 0))
 		let paths = AppPaths(
 			applicationSupportDirectory: temporary.url, runtimeAccess: access)
 		let store = makeRuntimeStore(paths)
 
-		try store.select(lane: .x86, access: access)
+		try store.select(override: .x86, access: access)
 
 		let reloaded = AppPaths(applicationSupportDirectory: temporary.url, runtimeAccess: access)
 		#expect(reloaded.runtimeLane == .x86)
 	}
 
 	@Test
-	func armSelectionIsRefusedBeforeMacOS26() throws {
+	func anARMOverrideIsRefusedBeforeItsMinimumMacOS() throws {
 		let temporary = try TemporaryDirectory("RuntimeStoreLaneGateTests")
 		defer { temporary.remove() }
 		let access = RuntimeAccess(
 			macOSVersion: OperatingSystemVersion(
-				majorVersion: 25, minorVersion: 0, patchVersion: 0))
+				majorVersion: 26, minorVersion: 5, patchVersion: 0))
 		let paths = AppPaths(
 			applicationSupportDirectory: temporary.url, runtimeAccess: access)
 		let store = makeRuntimeStore(paths)
 
 		#expect(throws: RuntimeStoreError.laneNotAllowed(.arm)) {
-			try store.select(lane: .arm, access: access)
+			try store.select(override: .arm, access: access)
 		}
 		let selection = try RuntimeSelectionStore(
 			fileURL: paths.runtimeSelectionFile
-		).load(access: access)
-		#expect(selection.selected == .x86)
+		).load()
+		#expect(selection.override == nil)
 	}
 
 	@Test
@@ -57,7 +57,7 @@ struct RuntimeStoreTests {
 		defer { temporary.remove() }
 		let paths = AppPaths(
 			applicationSupportDirectory: temporary.url,
-			runtimeSelection: RuntimeSelection(selected: .x86)
+			runtimeSelection: RuntimeSelection(override: .x86)
 		)
 		let store = makeRuntimeStore(paths)
 		try makeInstalledRuntime(version: "0.9.0", lane: .x86, paths: paths)
@@ -94,13 +94,13 @@ struct RuntimeStoreTests {
 		defer { temporary.remove() }
 		let paths = AppPaths(
 			applicationSupportDirectory: temporary.url,
-			runtimeSelection: RuntimeSelection(selected: .x86)
+			runtimeSelection: RuntimeSelection(override: .x86)
 		)
 		let store = makeRuntimeStore(paths)
 		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
 
 		try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).save(
-			RuntimeSelection(selected: .x86))
+			RuntimeSelection(override: .x86))
 
 		#expect(throws: RuntimeStoreError.cannotRemoveSelectedLane(.x86)) {
 			try store.remove(lane: .x86)
@@ -157,12 +157,12 @@ struct RuntimeStoreTests {
 			try await withThrowingTaskGroup(of: Void.self) { group in
 				group.addTask { try store.recordInstalled(lane: .x86, version: "1.0.0") }
 				group.addTask { try store.recordInstalled(lane: .arm, version: "2.0.0") }
-				group.addTask { try store.select(lane: .x86) }
+				group.addTask { try store.select(override: .x86) }
 				try await group.waitForAll()
 			}
 			let selection = try RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile).load()
 			#expect(selection.installedVersions == [.x86: "1.0.0", .arm: "2.0.0"])
-			#expect(selection.selected == .x86)
+			#expect(selection.override == .x86)
 		}
 	}
 }

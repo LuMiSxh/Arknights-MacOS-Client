@@ -29,7 +29,6 @@ struct OnboardingInstallRunnerTests {
 				return await withCheckedContinuation { recorder.continuation = $0 }
 			},
 			pauseRuntime: {},
-			selectRuntimeLane: { _ in true },
 			openLauncherUpdate: {},
 			retryIntelTranslation: { .available },
 			installRosetta: { .available }

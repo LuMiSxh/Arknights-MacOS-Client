@@ -21,7 +21,7 @@ See [Error codes](errors/README.md) for codes such as `IN-DLD`.
 
 ## Setup says Rosetta is missing or unavailable
 
-Follow [Rosetta 2](runtime.md#rosetta-2). On a macOS 27 beta, also turn off [Legacy Game Test Mode](runtime.md#legacy-game-test-mode-on-macos-27-beta). On macOS 28 or later, choose [ARM64](runtime.md#macos-support).
+Follow [Rosetta 2](runtime.md#rosetta-2). On a macOS 27 beta, also turn off [Legacy Game Test Mode](runtime.md#legacy-game-test-mode-on-macos-27-beta). On macOS 28 or later, set [Runtime choice](runtime.md#override-the-runtime-in-settings) to **Automatic**.
 
 ## The download is stuck or fails
 

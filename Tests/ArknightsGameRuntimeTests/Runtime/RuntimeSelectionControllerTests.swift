@@ -39,7 +39,8 @@ private func access(macOS major: Int) -> RuntimeAccess {
 private func makePaths(_ temporary: TemporaryDirectory) -> AppPaths {
 	AppPaths(
 		applicationSupportDirectory: temporary.url,
-		runtimeSelection: RuntimeSelection(selected: .x86)
+		runtimeSelection: RuntimeSelection(override: .x86),
+		runtimeAccess: access(macOS: 27)
 	)
 }
 
@@ -199,7 +200,7 @@ struct RuntimeSelectionControllerTests {
 			paths: paths,
 			storage: temporary,
 			configuration: try configuration(arm: unpublishedARM()),
-			access: access(macOS: 26),
+			access: access(macOS: 27),
 			installOperation: makeInstallOperation(paths: paths)
 		)
 
@@ -222,13 +223,13 @@ struct RuntimeSelectionControllerTests {
 			paths: paths,
 			storage: temporary,
 			configuration: try configuration(),
-			access: access(macOS: 26),
+			access: access(macOS: 27),
 			installOperation: makeInstallOperation(paths: paths)
 		)
 
 		#expect(controller.state(for: .arm) == testCase.state)
 		#expect(throws: RuntimeSelectionError.notInstalled(.arm)) {
-			try controller.select(lane: .arm)
+			try controller.select(override: .arm)
 		}
 	}
 }

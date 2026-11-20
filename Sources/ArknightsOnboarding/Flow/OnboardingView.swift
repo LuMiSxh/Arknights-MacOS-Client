@@ -21,10 +21,6 @@ package struct OnboardingView: View {
 	@State private var presentedGallery: PresetGalleryDestination?
 	@State private var isSkipConfirmationPresented = false
 	@State private var scrollPosition = ScrollPosition(edge: .top)
-	@State private var runtimeLane: RuntimeLane?
-	@State private var pendingRuntimeLane: RuntimeLane?
-	@State private var isRuntimeWarningPresented = false
-	@State private var didInitializeRuntimeLane = false
 
 	let retryUpdateCheck: () -> Void
 
@@ -92,8 +88,6 @@ package struct OnboardingView: View {
 								installation: installation,
 								lifecycle: lifecycle,
 								runtimeSelection: runtimeSelection,
-								selectedLane: runtimeLaneBinding,
-								isDisabled: runtimeSelection.isInstalling,
 								intelTranslationState: coordinator.intelTranslationState,
 								rosettaInstallationState: lifecycle.state.readiness
 									.rosettaInstallation,
@@ -139,10 +133,6 @@ package struct OnboardingView: View {
 				.scrollPosition($scrollPosition)
 				.onChange(of: coordinator.step) {
 					scrollPosition.scrollTo(edge: .top)
-					if coordinator.step == .install, !didInitializeRuntimeLane {
-						runtimeLane = runtimeSelection.selectedLane
-						didInitializeRuntimeLane = true
-					}
 				}
 
 				FloatingActionFooterFade(height: 76)
@@ -220,26 +210,6 @@ package struct OnboardingView: View {
 				destination: destination
 			)
 		}
-		.onAppear {
-			if !didInitializeRuntimeLane {
-				runtimeLane = runtimeSelection.selectedLane
-				didInitializeRuntimeLane = true
-			}
-		}
-		.confirmationDialog(
-			runtimeWarningTitle,
-			isPresented: $isRuntimeWarningPresented,
-			titleVisibility: .visible
-		) {
-			Button(runtimeWarningButtonTitle) {
-				if let pendingRuntimeLane { runtimeLane = pendingRuntimeLane }
-				pendingRuntimeLane = nil
-				runtimeSelection.clearFailure()
-			}
-			Button("Cancel", role: .cancel) { pendingRuntimeLane = nil }
-		} message: {
-			Text(runtimeWarningMessage)
-		}
 	}
 
 	// The new page enters from the side it travels toward and the old page fades out. SwiftUI reads
@@ -310,21 +280,20 @@ package struct OnboardingView: View {
 
 	// The game download and runtime install start here and nowhere else. A complete install
 	// downloads nothing, so a setup rerun only confirms what is already there. A runtime that is
-	// installing for the chosen lane counts as present: the install owns its download.
+	// installing for the launcher's lane counts as present: the install owns its download.
 	private var installPlan: OnboardingInstallPlan {
-		OnboardingInstallPlan(
+		let lane = runtimeSelection.selectedLane
+		return OnboardingInstallPlan(
 			gameIsInstalled: installation.isInstalled,
 			gameIsDownloading: installation.isDownloading,
-			runtimeIsInstalled: runtimeLane.map {
-				runtimeSelection.state(for: $0) == .current || runtimeSelection.installingLane == $0
-			} ?? false
+			runtimeIsInstalled: runtimeSelection.state(for: lane) == .current
+				|| runtimeSelection.installingLane == lane
 		)
 	}
 
 	private var canInstall: Bool {
-		guard let runtimeLane, runtimeSelection.availableLanes.contains(runtimeLane) else {
-			return false
-		}
+		let runtimeLane = runtimeSelection.selectedLane
+		guard runtimeSelection.availableLanes.contains(runtimeLane) else { return false }
 		// The install already runs for this lane, so **Continue** only advances.
 		if runtimeSelection.installingLane == runtimeLane { return true }
 		guard !runtimeSelection.isInstalling, !coordinator.installRunner.isRunning else {
@@ -341,7 +310,7 @@ package struct OnboardingView: View {
 		if plan.runtimeNeedsDownload {
 			return lifecycle.activity == .idle || lifecycle.activity.isInstalling
 		}
-		return runtimeLane == runtimeSelection.selectedLane || lifecycle.activity == .idle
+		return true
 	}
 
 	// Resuming re-runs the install; the installer continues from its partial archive.
@@ -351,64 +320,19 @@ package struct OnboardingView: View {
 	}
 
 	private func performInstallAction() {
-		guard let runtimeLane else { return }
 		let plan = installPlan
 		if plan.runtimeNeedsDownload {
 			// Like a game download, the install runs in the background while setup advances.
 			coordinator.installRunner.installRuntime(
-				runtimeLane,
+				runtimeSelection.selectedLane,
 				startsGameDownload: plan.gameNeedsDownload,
 				actions: actions
 			)
 			coordinator.advance()
 			return
 		}
-		if runtimeLane != runtimeSelection.selectedLane {
-			guard actions.selectRuntimeLane(runtimeLane) else { return }
-		}
 		if plan.gameNeedsDownload { actions.installOrUpdate() }
 		coordinator.advance()
-	}
-
-	private var runtimeLaneBinding: Binding<RuntimeLane?> {
-		Binding(
-			get: { runtimeLane },
-			set: { newLane in
-				guard let newLane, newLane != runtimeLane else { return }
-				if runtimeSelection.switchRequiresWarning,
-					newLane == .arm || runtimeLane == .arm
-				{
-					pendingRuntimeLane = newLane
-					isRuntimeWarningPresented = true
-				} else {
-					runtimeLane = newLane
-					runtimeSelection.clearFailure()
-				}
-			}
-		)
-	}
-
-	private var runtimeWarningTitle: String {
-		runtimeWarningLane == .arm ? "Switch to ARM64?" : "Switch to x86_64?"
-	}
-
-	private var runtimeWarningButtonTitle: String {
-		runtimeWarningLane == .arm ? "Use ARM64" : "Use x86_64"
-	}
-
-	private var runtimeWarningLane: RuntimeLane {
-		pendingRuntimeLane ?? runtimeLane ?? .x86
-	}
-
-	private var runtimeWarningMessage: String {
-		let lane = runtimeWarningLane
-		guard let pin = runtimeSelection.pinnedRuntime(for: lane) else {
-			return RuntimeSwitchWarning.message
-		}
-		return RuntimeSwitchWarning.message(
-			for: pin,
-			isInstalled: runtimeSelection.state(for: lane) == .current
-		)
 	}
 
 	private func retryIntelTranslation() {
