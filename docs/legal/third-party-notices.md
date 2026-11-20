@@ -19,7 +19,7 @@ The app bundles one compact file with the notices of its own components. This we
 | Runtime | Component | Version or revision | License | Exact provenance source |
 | --- | --- | --- | --- | --- |
 | x86 | WineCX / Wine | 11.17, `a54b8240683e92bf4c15cb1ba6bf92a9539bd768` | LGPL-2.1-or-later | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/a54b8240683e92bf4c15cb1ba6bf92a9539bd768) |
-| x86 | DXMT | 0.80-361-g9839e55, `9839e55f98d4aca103957ee4132d6395a325a9ed` | LGPL-2.1-or-later | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/9839e55f98d4aca103957ee4132d6395a325a9ed) |
+| x86 | DXMT | 0.80-408-g0df8610, `0df86108348bab2aaa5c4610a5eb63a9de9047ac` | LGPL-2.1-or-later | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/0df86108348bab2aaa5c4610a5eb63a9de9047ac) |
 | x86 | MoltenVK | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf` | Apache-2.0 | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
 | arm | WineCX / Wine | 11.18, `7b3fff76fa5178f6ce0141b2c776afa2a822f101` | LGPL-2.1-or-later | [wine/wine commit](https://gitlab.winehq.org/wine/wine/-/tree/7b3fff76fa5178f6ce0141b2c776afa2a822f101) |
 | arm | DXMT | 0.80, `647b0020ba5764e5593b12407afd76964fa11e20` | LGPL-2.1-or-later | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/647b0020ba5764e5593b12407afd76964fa11e20) |
@@ -36,8 +36,8 @@ The client pins one runtime archive per architecture. The launcher downloads the
 
 | Runtime | Release | Archive SHA-256 | Archive size |
 | --- | --- | --- | --- |
-| x86 | [v1.0.0](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.0) | `3be6e38f581001e9e9907976f43e416c2526380a9b9191b9a3db2cd4acc5dd24` | 119295049 bytes |
-| arm | [v1.0.0](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.0) | `90ce60ffb2e3892843583e1af6dfd4014bc351410faaa50e4beb3d1d8de8fd63` | 237494359 bytes |
+| x86 | [v1.0.1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.1) | `86b9d3969d8099d5b4a8de63be034f82ad02dfa07f3828851f0e266ed9898b27` | 119317122 bytes |
+| arm | [v1.0.1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.1) | `90c30e949bcca283eadde90de44c998f9f61b1347809a2319f5391f0f4aa67db` | 237494553 bytes |
 <!-- runtime:end build -->
 
 > [!IMPORTANT]

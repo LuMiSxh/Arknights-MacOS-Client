@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Updated the runtime to 1.0.1.
 - The launcher now chooses the runtime for your macOS version: **ARM64 (Apple Silicon)** on macOS 27 or later, **x86_64** on earlier versions. A runtime chosen in 1.0.0 is replaced by this choice.
 - **ARM64 (Apple Silicon)** now requires macOS 27 or later.
 - Setup no longer asks you to choose a runtime.

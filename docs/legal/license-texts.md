@@ -946,7 +946,7 @@ That's all there is to it!
 
 ### DXMT
 
-Version 0.80-361-g9839e55. `LGPL-2.1-or-later`. [Source](https://github.com/3Shain/dxmt/tree/9839e55f98d4aca103957ee4132d6395a325a9ed).
+Version 0.80-408-g0df8610. `LGPL-2.1-or-later`. [Source](https://github.com/3Shain/dxmt/tree/0df86108348bab2aaa5c4610a5eb63a9de9047ac).
 
 The text of `lgpl-2.1.txt` is under [WineCX / Wine](#winecx--wine).
 
