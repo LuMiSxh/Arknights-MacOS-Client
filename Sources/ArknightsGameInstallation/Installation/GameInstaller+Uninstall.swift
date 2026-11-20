@@ -54,8 +54,18 @@ extension GameInstaller {
 		let listed = (manifestFiles ?? []).compactMap { resolveManifestFile($0.path, in: root) }
 		var touchedDirectories = Set<String>()
 
-		try trashFiles(listed, in: root, touched: &touchedDirectories)
-		removeInstallerWorkingFiles(in: root)
+		do {
+			try trashFiles(listed, in: root, touched: &touchedDirectories)
+		} catch {
+			// The files were put back, so the game must keep working.
+			bestEffort("Could not re-apply compatibility files after a failed uninstall") {
+				_ = try compatibilityManager.prepareForLaunch(in: root.url)
+			}
+			throw error
+		}
+		// An unreadable state file is the only record of what is installed, so it stays.
+		let keepState = manifestFiles == nil && stateFileExists(in: root)
+		removeInstallerWorkingFiles(in: root, keepingState: keepState)
 		// Without a file list a `.part` file cannot be told apart from the user's own, so it stays.
 		if manifestFiles != nil {
 			for entry in listed {
@@ -177,9 +187,20 @@ extension GameInstaller {
 		}
 	}
 
-	private func removeInstallerWorkingFiles(in root: InstallerDirectory) {
+	private func stateFileExists(in root: InstallerDirectory) -> Bool {
 		let state = root.file(named: AppConstants.Game.installedStateFileName)
-		bestEffort("Could not remove the installed state") { try state.unlink() }
+		do {
+			return try state.stat() != nil
+		} catch {
+			return true
+		}
+	}
+
+	private func removeInstallerWorkingFiles(in root: InstallerDirectory, keepingState: Bool) {
+		let state = root.file(named: AppConstants.Game.installedStateFileName)
+		if !keepingState {
+			bestEffort("Could not remove the installed state") { try state.unlink() }
+		}
 		let staging = root.file(named: AppConstants.Game.installerStagingDirectoryName)
 		bestEffort("Could not remove the installer working folder") {
 			if let attributes = try staging.stat(), attributes.st_mode & S_IFMT == S_IFDIR {

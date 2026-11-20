@@ -73,4 +73,19 @@ struct GameInstallerUninstallTests {
 		#expect(fileManager.fileExists(atPath: executable.path))
 		#expect(fileManager.fileExists(atPath: notes.path))
 	}
+
+	@Test
+	func uninstallKeepsAnUnreadableInstalledStateFile() async throws {
+		let fixture = try InstallerFixture.make(body: Data("game".utf8))
+		defer { fixture.remove() }
+		let state = fixture.directory.appending(path: AppConstants.Game.installedStateFileName)
+		let corrupt = Data("not json".utf8)
+		try corrupt.write(to: state)
+
+		let outcome = try await fixture.installer.uninstall(
+			from: fixture.directory, scope: .installedFilesOnly)
+
+		#expect(outcome == .installedFilesUnknown)
+		#expect(try Data(contentsOf: state) == corrupt)
+	}
 }
