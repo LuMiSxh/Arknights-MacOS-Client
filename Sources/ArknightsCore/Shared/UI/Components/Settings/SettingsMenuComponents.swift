@@ -9,6 +9,8 @@ package struct GlassMenuPicker<Value: Hashable, TrailingMenuItems: View>: View {
 	let selection: Binding<Value>
 	let options: [(value: Value, title: String)]
 	var isDisabled = false
+	/// Tints the chevron chip with the danger role, for pickers inside a Danger zone.
+	var isDestructive = false
 	/// Overrides an option's displayed text inside the open menu only, leaving `title` as the
 	/// collapsed button's label — lets a caller show detail (e.g. a result count) that's only
 	/// worth the width once the list is actually open.
@@ -22,6 +24,7 @@ package struct GlassMenuPicker<Value: Hashable, TrailingMenuItems: View>: View {
 		selection: Binding<Value>,
 		options: [(value: Value, title: String)],
 		isDisabled: Bool = false,
+		isDestructive: Bool = false,
 		listTitle: @escaping (Value) -> String? = { _ in nil },
 		dividerBefore: @escaping (Value) -> Bool = { _ in false },
 		@ViewBuilder trailingMenuItems: @escaping () -> TrailingMenuItems
@@ -29,6 +32,7 @@ package struct GlassMenuPicker<Value: Hashable, TrailingMenuItems: View>: View {
 		self.selection = selection
 		self.options = options
 		self.isDisabled = isDisabled
+		self.isDestructive = isDestructive
 		self.listTitle = listTitle
 		self.dividerBefore = dividerBefore
 		self.trailingMenuItems = trailingMenuItems
@@ -38,6 +42,7 @@ package struct GlassMenuPicker<Value: Hashable, TrailingMenuItems: View>: View {
 		selection: Binding<Value>,
 		options: [(value: Value, title: String)],
 		isDisabled: Bool = false,
+		isDestructive: Bool = false,
 		listTitle: @escaping (Value) -> String? = { _ in nil },
 		dividerBefore: @escaping (Value) -> Bool = { _ in false }
 	) where TrailingMenuItems == EmptyView {
@@ -45,6 +50,7 @@ package struct GlassMenuPicker<Value: Hashable, TrailingMenuItems: View>: View {
 			selection: selection,
 			options: options,
 			isDisabled: isDisabled,
+			isDestructive: isDestructive,
 			listTitle: listTitle,
 			dividerBefore: dividerBefore,
 			trailingMenuItems: { EmptyView() }
@@ -52,7 +58,7 @@ package struct GlassMenuPicker<Value: Hashable, TrailingMenuItems: View>: View {
 	}
 
 	package var body: some View {
-		GlassCapsuleMenu(isDisabled: isDisabled) {
+		GlassCapsuleMenu(isDisabled: isDisabled, isDestructive: isDestructive) {
 			optionButtons
 			trailingMenuItems()
 		} label: {
@@ -117,6 +123,7 @@ private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 	@Environment(\.controlSize) private var controlSize
 	@State private var isHovering = false
 	let isDisabled: Bool
+	var isDestructive = false
 	@ViewBuilder let items: Items
 	@ViewBuilder let label: Label
 
@@ -130,12 +137,13 @@ private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 					.foregroundStyle(theme.textPrimary)
 				Image(systemName: "chevron.up.chevron.down")
 					.font(LauncherTokens.Typography.menuChevron)
-					.foregroundStyle(theme.accentInk)
+					.foregroundStyle(isDestructive ? theme.dangerInk : theme.accentInk)
 					.frame(width: 16, height: 16)
 					.background {
 						Color.clear.adaptiveGlassEffect(
-							tint: theme.accentGlassTint,
-							borderTint: theme.accentGlassStroke,
+							tint: isDestructive ? theme.dangerGlassTint : theme.accentGlassTint,
+							borderTint: isDestructive
+								? theme.dangerGlassStroke : theme.accentGlassStroke,
 							in: Circle(),
 							showsBorder: true
 						)

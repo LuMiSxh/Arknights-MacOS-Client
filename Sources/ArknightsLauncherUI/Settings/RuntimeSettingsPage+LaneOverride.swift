@@ -25,7 +25,8 @@ extension RuntimeSettingsPage {
 			GlassMenuPicker(
 				selection: runtimeChoiceBinding,
 				options: runtimeChoices,
-				isDisabled: runtimeChangesDisabled
+				isDisabled: runtimeChangesDisabled,
+				isDestructive: true
 			)
 		}
 	}

@@ -56,7 +56,7 @@ The launcher must feel like a current macOS app first, and an Arknights launcher
 
 ### Settings-only
 
-- S1. Order panels on each page: most used first, then an optional collapsed advanced panel, then the **Danger zone** last. Put every destructive action in its page's **Danger zone**.
+- S1. Order panels on each page: most used first, then an optional collapsed advanced panel, then the **Danger zone** last. Put every destructive action in its page's **Danger zone**. A menu picker in a **Danger zone** tints its chevron chip with the danger role, not the accent.
 - S2. Show at most six visible rows in a panel. Split a larger panel by user task.
 - S3. Keep page actions inside the page. The floating footer holds only **Done**.
 - S4. Name the page and panel in every `docs/help` path. A rename updates `docs/help`, design.md, CHANGELOG.md, and setup in the same change.
