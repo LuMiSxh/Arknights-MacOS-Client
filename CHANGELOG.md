@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [1.0.1] - 2026-11-20
 
+> [!IMPORTANT]
+> Huge thanks to @riverfog7 for providing this client with an [ARM runtime](https://github.com/riverfog7/wine-build-new)!
+
 ### Changed
 
 - The launcher now chooses the runtime for your macOS version: **ARM64 (Apple Silicon)** on macOS 27 or later, **x86_64** on earlier versions. A runtime chosen in 1.0.0 is replaced by this choice.
