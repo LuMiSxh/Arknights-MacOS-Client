@@ -58,8 +58,10 @@ package enum AppConstants {
 		/// The only persisted runtime choice. It names the lane, not a version.
 		package static let runtimeSelectionFilename = "runtime-selection.json"
 		package static let runtimeSelectionMaximumBytes = 4 * 1_024
-		/// The first macOS major version that can run the native ARM64 lane.
-		package static let armLaneMinimumMacOSMajorVersion = 26
+		/// The first macOS release that runs the native ARM64 lane. Earlier releases lack the x18
+		/// register ABI that Wine needs, so wineboot dies there. Lower it after a measurement.
+		package static let armLaneMinimumMacOS = OperatingSystemVersion(
+			majorVersion: 27, minorVersion: 0, patchVersion: 0)
 		/// The last macOS major version with general Rosetta 2 support, so the x86_64 lane can run.
 		package static let x86LaneLastSupportedMacOSMajorVersion = 27
 		/// Runtime location bundled by releases 0.6 and 0.7; used only to detect their running

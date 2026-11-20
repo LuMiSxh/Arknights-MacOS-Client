@@ -215,7 +215,9 @@ package final class InstallationController {
 		pendingInstallDirectory = nil
 	}
 
-	func assessInstallDirectory(_ selected: URL) {
+	/// `expectsGameFiles` is set when the user locates an existing installation: a folder
+	/// with files is then the point, so only refusals stop it.
+	func assessInstallDirectory(_ selected: URL, expectsGameFiles: Bool = false) {
 		do {
 			let contents = try InstallDirectoryPolicy.inspect(selected)
 			let issue = InstallDirectoryPolicy.assess(
@@ -226,7 +228,7 @@ package final class InstallationController {
 				homeDirectory: FileManager.default.homeDirectoryForCurrentUser,
 				contents: contents
 			)
-			if let issue {
+			if let issue, issue.isRefusal || !expectsGameFiles {
 				pendingInstallDirectory = PendingInstallDirectory(url: selected, issue: issue)
 			} else {
 				applyInstallDirectory(selected)

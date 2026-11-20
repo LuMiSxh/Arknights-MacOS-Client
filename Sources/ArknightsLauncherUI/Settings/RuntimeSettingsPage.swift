@@ -13,7 +13,7 @@ struct RuntimeSettingsPage: View {
 	let lifecycle: LauncherLifecycleStore
 	let actions: any LauncherInstallationActions
 	let runtime: InstalledRuntimeDetails?
-	@State var pendingRuntimeLane: RuntimeLane?
+	@State var pendingRuntimeChoice: RuntimeLaneChoice?
 	@State var isRemoveRuntimeConfirmationPresented = false
 	@State var isRemoveSelectedRuntimeConfirmationPresented = false
 	@State var isShowingTechnicalDetails = false
@@ -22,7 +22,7 @@ struct RuntimeSettingsPage: View {
 	var body: some View {
 		SettingsPage(
 			title: "Runtime",
-			subtitle: "Choose the runtime and manage its files"
+			subtitle: "See the active runtime and manage its files"
 		) {
 			if gameSession.isGameActive, let reason = lifecycle.activity.lockReason {
 				SettingsLockBanner(reason: reason)
@@ -44,13 +44,13 @@ struct RuntimeSettingsPage: View {
 		.confirmationDialog(
 			runtimeSwitchDialogTitle,
 			isPresented: Binding(
-				get: { pendingRuntimeLane != nil },
-				set: { if !$0 { pendingRuntimeLane = nil } }
+				get: { pendingRuntimeChoice != nil },
+				set: { if !$0 { pendingRuntimeChoice = nil } }
 			),
 			titleVisibility: .visible
 		) {
 			Button(runtimeSwitchButtonTitle, action: confirmRuntimeSwitch)
-			Button("Cancel", role: .cancel) { pendingRuntimeLane = nil }
+			Button("Cancel", role: .cancel) { pendingRuntimeChoice = nil }
 		} message: {
 			Text(runtimeSwitchMessage)
 		}

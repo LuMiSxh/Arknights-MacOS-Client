@@ -26,14 +26,16 @@ package final class RuntimeSelectionStore: Sendable {
 		self.log = log
 	}
 
-	/// Returns the persisted selection, or the OS default when no file exists.
-	package func load(access: RuntimeAccess = RuntimeAccess()) throws -> RuntimeSelection {
-		try files.read(RuntimeSelection.self, at: fileURL)
-			?? RuntimeSelection(selected: access.defaultLane)
+	/// Returns the persisted selection, or an empty one (no override) when no file exists.
+	package func load() throws -> RuntimeSelection {
+		try files.read(RuntimeSelection.self, at: fileURL) ?? RuntimeSelection()
 	}
 
-	package func save(_ selection: RuntimeSelection) throws {
-		try files.write(selection, to: fileURL, createParentDirectory: true)
+	/// Writes the document with the effective lane under `access` recorded for older builds.
+	package func save(_ selection: RuntimeSelection, access: RuntimeAccess = RuntimeAccess()) throws
+	{
+		try files.write(
+			selection.recording(access: access), to: fileURL, createParentDirectory: true)
 	}
 
 	/// Runs `body` under the write lock. Use it for a read-modify-write that `update` cannot express.
@@ -42,7 +44,7 @@ package final class RuntimeSelectionStore: Sendable {
 	}
 
 	/// Loads, mutates, and saves the document under the write lock. A missing or
-	/// unreadable document restarts from the default lane plus `recovering`'s installed versions.
+	/// unreadable document restarts with no override plus `recovering`'s installed versions.
 	/// A throwing `mutate` leaves the file untouched.
 	package func update(
 		access: RuntimeAccess = RuntimeAccess(),
@@ -50,9 +52,9 @@ package final class RuntimeSelectionStore: Sendable {
 		_ mutate: (inout RuntimeSelection) throws -> Void
 	) throws {
 		try withExclusiveAccess {
-			var selection = try loadOrRecover(access: access, recovering: recovering).selection
+			var selection = try loadOrRecover(recovering: recovering).selection
 			try mutate(&selection)
-			try save(selection)
+			try save(selection, access: access)
 		}
 	}
 
@@ -63,13 +65,12 @@ package final class RuntimeSelectionStore: Sendable {
 		recovering: () throws -> [RuntimeLane: String]
 	) throws {
 		try withExclusiveAccess {
-			let loaded = try loadOrRecover(access: access, recovering: recovering)
-			if loaded.needsSave { try save(loaded.selection) }
+			let loaded = try loadOrRecover(recovering: recovering)
+			if loaded.needsSave { try save(loaded.selection, access: access) }
 		}
 	}
 
 	private func loadOrRecover(
-		access: RuntimeAccess,
 		recovering: () throws -> [RuntimeLane: String]
 	) throws -> (selection: RuntimeSelection, needsSave: Bool) {
 		let existing: RuntimeSelection?
@@ -87,7 +88,7 @@ package final class RuntimeSelectionStore: Sendable {
 		if let existing { return (existing, false) }
 		let recovered = try recovering()
 		return (
-			RuntimeSelection(selected: access.defaultLane, installedVersions: recovered),
+			RuntimeSelection(installedVersions: recovered),
 			unreadable || !recovered.isEmpty
 		)
 	}

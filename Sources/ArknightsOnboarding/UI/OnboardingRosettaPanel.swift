@@ -53,7 +53,7 @@ struct OnboardingRosettaPanel: View {
 		case .unavailable:
 			"The check could not finish. Restart your Mac, then check again. If it keeps failing, include the launcher log in a bug report."
 		case .unsupportedOS:
-			"macOS 28 and later cannot run the x86_64 runtime. Choose ARM64 (Apple Silicon) above."
+			"macOS 28 and later cannot run the x86_64 runtime. Set Runtime choice to Automatic in the Danger zone of Settings → Runtime."
 		}
 	}
 

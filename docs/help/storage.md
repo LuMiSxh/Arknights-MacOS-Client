@@ -10,7 +10,7 @@ Each server keeps its own game files in a folder named after the server. Servers
 
 Game environments are named after their publisher and architecture. The x86_64 runtime uses `Environments/<publisher>-x86`. The ARM64 runtime uses `Environments/<publisher>-arm`. A switch keeps both game environments.
 
-The launcher downloads one runtime for the selected architecture. To choose, switch, or remove a runtime, see [Game runtime](runtime.md).
+The launcher downloads one runtime for the selected architecture. To override or remove a runtime, see [Game runtime](runtime.md).
 
 ## Where files live
 

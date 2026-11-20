@@ -29,8 +29,9 @@ extension InstallationController {
 		panel.allowsMultipleSelection = false
 		panel.directoryURL = installDirectory
 		if panel.runModal() == .OK, let selected = panel.url {
-			installDirectory = selected
-			preferences.setInstallDirectory(selected, for: region)
+			assessInstallDirectory(selected, expectsGameFiles: true)
+			// A refused folder leaves the install directory unchanged.
+			guard installDirectory == selected else { return }
 			let requestedRegion = region
 			let refreshTask = updateInstalledState()
 			Task { [weak self] in

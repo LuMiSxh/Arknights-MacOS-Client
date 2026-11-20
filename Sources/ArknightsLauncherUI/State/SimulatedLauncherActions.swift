@@ -167,7 +167,9 @@ import ArknightsCore
 		func resetArtwork() {}
 
 		func installRuntime(_ lane: RuntimeLane) async -> Bool {
-			model.runtimeSelection.simulateSelect(lane: lane)
+			if lane != model.runtimeSelection.selectedLane {
+				model.runtimeSelection.simulateSelect(override: lane)
+			}
 			model.updateDeveloperSimulation { $0.runtime = .installed }
 			return true
 		}
@@ -176,8 +178,8 @@ import ArknightsCore
 			model.runtimeSelection.simulatePause()
 		}
 
-		func selectRuntimeLane(_ lane: RuntimeLane) -> Bool {
-			model.runtimeSelection.simulateSelect(lane: lane)
+		func selectRuntimeOverride(_ lane: RuntimeLane?) -> Bool {
+			model.runtimeSelection.simulateSelect(override: lane)
 			return true
 		}
 

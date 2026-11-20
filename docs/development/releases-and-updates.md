@@ -87,7 +87,7 @@ If an artifact lacks a notice, has another runtime checksum, or points to the wr
 
 [`runtime.json`](../../scripts/config/runtime.json) is the single source of truth for the pinned runtimes. It has schema 3 and two lanes: `x86` and `arm`. Each lane carries the archive name, version, URL, SHA-256, size, interface, component versions, provenance, `minimumMacOS`, and `prefixRevision`.
 
-One launcher release serves both architectures. The architecture is a user choice inside the app, not a separate app build or Sparkle channel. The launcher downloads the runtime for the chosen architecture on first use or after a switch.
+One launcher release serves both architectures. The launcher chooses the lane by macOS version, not by a separate app build or Sparkle channel. It picks `arm` from `AppConstants.Runtime.armLaneMinimumMacOS` (27.0) and `x86` below. **Settings** → **Runtime** → **Danger zone** → **Runtime choice** overrides the automatic choice. The launcher downloads the runtime for the chosen lane on first use or after a switch.
 
 ### Runtime lanes
 
@@ -98,7 +98,7 @@ A lane is one runtime architecture. The x86 lane runs the WineCX and DXMT binari
 | `x86` | 15.0          | `Environments/<publisher>-x86` | WineCX, DXMT, MoltenVK |
 | `arm` | 26.0          | `Environments/<publisher>-arm` | Wine, FEX, Mesa, DXMT  |
 
-The top-level `architecture` value is the default lane for `just runtime` and local tooling. The launcher selects a lane explicitly from its saved selection; it never reads the x86 interface for an ARM runtime.
+The top-level `architecture` value is the default lane for `just runtime` and local tooling. The launcher resolves the lane from the macOS version and the saved override; it never reads the x86 interface for an ARM runtime. The `minimumMacOS` column is the lane's hard floor; the automatic choice can require a newer version.
 
 Each runtime release compiles all compatibility patches into one build. The client selects patch behavior at launch with one `LMISXH_AKMOCL_<NAME>` gate per patch. It sends each gate its lane contains as `1` or `0`. See [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md#host-checks-and-compatibility-profiles).
 
@@ -208,6 +208,8 @@ The extractor accepts a `## [X.Y.Z]` heading with an optional ` - description` s
 Releases are ad-hoc signed and not notarized. Users must follow the [installation guide](../installation.md) for Apple's **Open Anyway** flow. Sparkle signs updates separately with Ed25519 and replaces the complete app bundle through its helper. This does not remove the first-launch Gatekeeper confirmation.
 
 The launcher checks for app updates silently when it opens (the user can disable this in Settings). Sparkle owns download, verification, and installation of the app. The runtime is not part of the app update; the launcher replaces a stale pinned runtime after the app updates. Game updates are checked separately and never download without a user action.
+
+The workflow sets `CFBundleVersion` one above the newest build in the latest appcast. A yanked release leaves that appcast, so its users would keep a higher build. Pass that build plus one as `minimum_build` (`just release X.Y.Z 28`) so Sparkle offers them the replacement.
 
 Clients read the appcast through the stable `releases/latest/download/appcast.xml` URL. Each release has a complete `.tar.xz` update archive (up to 0.6.x: `.zip`). Sparkle 2.9.6, the oldest shipped updater, extracts both.
 

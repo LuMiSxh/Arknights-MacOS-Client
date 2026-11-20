@@ -16,7 +16,7 @@ struct RuntimeDiscoveryTests {
 		defer { temporary.remove() }
 		let paths = AppPaths(
 			applicationSupportDirectory: temporary.url,
-			runtimeSelection: RuntimeSelection(selected: .x86))
+			runtimeSelection: RuntimeSelection(override: .x86))
 		let configuration = try makeRuntimeConfiguration(x86: makeRuntimeLane(version: "2.0.0"))
 		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
 
@@ -32,7 +32,7 @@ struct RuntimeDiscoveryTests {
 		defer { temporary.remove() }
 		let paths = AppPaths(
 			applicationSupportDirectory: temporary.url,
-			runtimeSelection: RuntimeSelection(selected: .x86))
+			runtimeSelection: RuntimeSelection(override: .x86))
 		let configuration = try makeRuntimeConfiguration(x86: makeRuntimeLane(version: "2.0.0"))
 		try makeInstalledRuntime(version: "1.0.0", lane: .x86, paths: paths)
 

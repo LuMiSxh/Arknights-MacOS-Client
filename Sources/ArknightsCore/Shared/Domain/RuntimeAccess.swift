@@ -2,8 +2,8 @@
 
 import Foundation
 
-/// Decides which runtime lanes the host may run. x86 needs macOS 27 or earlier; ARM needs
-/// macOS 26.0 or newer.
+/// Decides which runtime lanes the host may run and which one the launcher uses. x86 needs
+/// macOS 27 or earlier; ARM needs `AppConstants.Runtime.armLaneMinimumMacOS` or newer.
 package struct RuntimeAccess: Sendable {
 	package let macOSVersion: OperatingSystemVersion
 
@@ -19,12 +19,13 @@ package struct RuntimeAccess: Sendable {
 			return macOSVersion.majorVersion
 				<= AppConstants.Runtime.x86LaneLastSupportedMacOSMajorVersion
 		case .arm:
-			return macOSVersion.majorVersion >= AppConstants.Runtime.armLaneMinimumMacOSMajorVersion
+			let minimum = AppConstants.Runtime.armLaneMinimumMacOS
+			return (macOSVersion.majorVersion, macOSVersion.minorVersion, macOSVersion.patchVersion)
+				>= (minimum.majorVersion, minimum.minorVersion, minimum.patchVersion)
 		}
 	}
 
-	/// The lane a fresh install uses when no selection is persisted. ARM64 is the recommended lane
-	/// wherever it runs. macOS 15 can only run x86_64.
+	/// The lane the launcher uses unless the user overrides it. ARM64 is preferred wherever it runs.
 	package var defaultLane: RuntimeLane {
 		allows(.arm) ? .arm : .x86
 	}

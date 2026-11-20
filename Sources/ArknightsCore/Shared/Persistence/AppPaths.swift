@@ -31,6 +31,8 @@ package struct AppPaths: Sendable {
 	package let screenshotsDirectory: URL
 	/// The selected runtime lane. Every publisher prefix and derived cache uses it.
 	package let runtimeLane: RuntimeLane
+	/// The user's lane override when the OS allows it. Nil means the launcher chose `runtimeLane`.
+	package let runtimeLaneOverride: RuntimeLane?
 	/// A problem reading `runtimeSelectionFile`, when the file exists but is unusable.
 	package let runtimeLaneDiagnostic: String?
 	/// The root of the downloaded, managed runtimes. Never inside the app bundle.
@@ -115,17 +117,17 @@ package struct AppPaths: Sendable {
 			do {
 				// A lock-free read is safe here: `JSONFileStore.write` replaces the file
 				// atomically, so a concurrent writer never exposes a partial document.
-				selection = try RuntimeSelectionStore(fileURL: selectionFile).load(
-					access: runtimeAccess)
+				selection = try RuntimeSelectionStore(fileURL: selectionFile).load()
 			} catch {
-				selection = RuntimeSelection(selected: runtimeAccess.defaultLane)
+				selection = RuntimeSelection()
 				diagnostic =
 					"Could not read the runtime selection at \(selectionFile.path): "
 					+ "\(error.localizedDescription); using the \(runtimeAccess.defaultLane.rawValue) lane"
 			}
 		}
 		runtimeLaneDiagnostic = diagnostic
-		runtimeLane = selection.selected
+		runtimeLane = selection.effectiveLane(access: runtimeAccess)
+		runtimeLaneOverride = selection.validOverride(access: runtimeAccess)
 	}
 
 	private static func environmentDirectoryName(

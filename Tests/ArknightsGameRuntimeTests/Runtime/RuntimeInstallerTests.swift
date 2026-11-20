@@ -86,7 +86,7 @@ private func makePin(
 private func makePaths(_ temporary: TemporaryDirectory) -> AppPaths {
 	AppPaths(
 		applicationSupportDirectory: temporary.url,
-		runtimeSelection: RuntimeSelection(selected: .x86)
+		runtimeSelection: RuntimeSelection(override: .x86)
 	)
 }
 

@@ -63,16 +63,19 @@ def latest_published_build(appcast_text: str) -> int:
     return max(builds)
 
 
-def bundle_version(run_number: int, appcast_text: str | None) -> int:
+def bundle_version(
+    run_number: int, appcast_text: str | None, minimum_build: int = 0
+) -> int:
     """Return the CFBundleVersion that Sparkle orders updates by.
 
     The CI run number restarts when the workflow is renamed or recreated, so the
     result must stay above every build already published. Without a previous
-    appcast (the first release), the run number is used.
+    appcast (the first release), the run number is used. A yanked release no
+    longer appears in the latest appcast, so `minimum_build` lifts the result
+    above builds that users may still have installed.
     """
-    if appcast_text is None:
-        return run_number
-    return max(latest_published_build(appcast_text) + 1, run_number)
+    published = 0 if appcast_text is None else latest_published_build(appcast_text) + 1
+    return max(published, run_number, minimum_build)
 
 
 def main() -> None:
@@ -87,6 +90,7 @@ def main() -> None:
     )
     bundle_parser.add_argument("run_number", type=int)
     bundle_parser.add_argument("--previous-appcast", type=Path)
+    bundle_parser.add_argument("--minimum-build", type=int, default=0)
     arguments = parser.parse_args()
     if arguments.command == "bundle-version":
         appcast_text = (
@@ -94,7 +98,9 @@ def main() -> None:
             if arguments.previous_appcast
             else None
         )
-        print(bundle_version(arguments.run_number, appcast_text))
+        print(
+            bundle_version(arguments.run_number, appcast_text, arguments.minimum_build)
+        )
         return
     changelog = PROJECT_DIR / "CHANGELOG.md"
     if arguments.command == "notes":

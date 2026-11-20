@@ -15,6 +15,7 @@ import Foundation
 			let availableLanes: [RuntimeLane]
 			let installedVersions: [RuntimeLane: String]
 			let selectedLane: RuntimeLane
+			let laneOverride: RuntimeLane?
 			let failure: RuntimeSelectionFailure?
 		}
 
@@ -30,6 +31,7 @@ import Foundation
 					availableLanes: availableLanes,
 					installedVersions: installedVersions,
 					selectedLane: selectedLane,
+					laneOverride: laneOverride,
 					failure: failure
 				)
 			}
@@ -53,9 +55,10 @@ import Foundation
 			installProgress = nil
 		}
 
-		/// Selects a lane in memory only, for the developer preview.
-		package func simulateSelect(lane: RuntimeLane) {
-			selectedLane = lane
+		/// Sets the lane override in memory only, for the developer preview.
+		package func simulateSelect(override lane: RuntimeLane?) {
+			laneOverride = lane
+			selectedLane = lane ?? access.defaultLane
 		}
 
 		private func restoreRealState() {
@@ -64,6 +67,7 @@ import Foundation
 			availableLanes = saved.availableLanes
 			installedVersions = saved.installedVersions
 			selectedLane = saved.selectedLane
+			laneOverride = saved.laneOverride
 			failure = saved.failure
 			installingLane = nil
 			installProgress = nil

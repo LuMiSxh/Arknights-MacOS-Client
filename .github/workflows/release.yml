@@ -12,6 +12,11 @@ on:
         required: false
         default: false
         type: boolean
+      minimum_build:
+        description: Lowest CFBundleVersion to use. Set it above a yanked build that users still have installed; leave 0 otherwise.
+        required: false
+        default: 0
+        type: number
 
 permissions:
   contents: read
@@ -132,6 +137,7 @@ jobs:
       - name: Set release version
         env:
           GH_TOKEN: ${{ github.token }}
+          MINIMUM_BUILD: ${{ inputs.minimum_build }}
         run: |
           set -euo pipefail
           # Sparkle orders updates by CFBundleVersion, so it must never fall below the
@@ -172,7 +178,8 @@ jobs:
               ;;
           esac
           bundle_version="$(uv run --locked --no-dev scripts/release.py bundle-version \
-            "$GITHUB_RUN_NUMBER" ${appcast_args[@]+"${appcast_args[@]}"})"
+            "$GITHUB_RUN_NUMBER" --minimum-build "${MINIMUM_BUILD:-0}" \
+            ${appcast_args[@]+"${appcast_args[@]}"})"
           echo "CFBundleVersion: $bundle_version"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $bundle_version" Resources/Info.plist
 

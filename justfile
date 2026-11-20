@@ -207,9 +207,9 @@ icon:
 announcement *args:
     {{ uv }} scripts/manage_announcements.py "$@"
 
-# Trigger a draft release for the required X.Y.Z version. Requires repository write access.
+# Trigger a draft release for the required X.Y.Z version. Pass minimum_build above a yanked build. Requires repository write access.
 [group('Owner')]
-release version:
+release version minimum_build="0":
     #!/usr/bin/env bash
     set -euo pipefail
     die() { echo "$1" >&2; exit 1; }
@@ -220,7 +220,7 @@ release version:
     upstream="$(git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null)" || die "main has no upstream"
     [[ "$(git rev-parse HEAD)" == "$(git rev-parse "$upstream")" ]] || die "main must match $upstream"
     gh auth status >/dev/null
-    gh workflow run release.yml --ref main --field version={{ quote(version) }}
+    gh workflow run release.yml --ref main --field version={{ quote(version) }} --field minimum_build={{ quote(minimum_build) }}
     echo "Triggered draft release v"{{ quote(version) }}
 
 # Show manual and Sparkle app-download statistics for published releases. Requires GitHub CLI access.

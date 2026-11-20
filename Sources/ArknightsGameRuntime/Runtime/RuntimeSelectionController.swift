@@ -160,7 +160,10 @@ package final class RuntimeSelectionController {
 	private let selectionStore: RuntimeSelectionStore
 	package let lifecycle: LauncherLifecycleStore
 	package let access: RuntimeAccess
+	/// The lane the launcher uses: the user's override when the OS allows it, otherwise the default.
 	package internal(set) var selectedLane: RuntimeLane
+	/// The user's lane override from the Danger zone. Nil means the launcher chooses.
+	package internal(set) var laneOverride: RuntimeLane?
 	package internal(set) var availableLanes: [RuntimeLane]
 	package internal(set) var installingLane: RuntimeLane?
 	package internal(set) var installProgress: RuntimeInstallProgress?
@@ -192,8 +195,6 @@ package final class RuntimeSelectionController {
 	@ObservationIgnored package var isLaunchInProgress: () -> Bool = { false }
 	/// Called after a runtime installs, so prefixes of the lane can migrate. Set by the composition root.
 	@ObservationIgnored package var onRuntimeInstalled: (() -> Void)?
-	package var allowsX86: Bool { access.allows(.x86) }
-	package var allowsARM64: Bool { access.allows(.arm) }
 
 	/// Whether switching away from the selected lane needs the confirmation. A lane without a game
 	/// environment loses no sign-in, so its switch runs without the warning.
@@ -229,6 +230,7 @@ package final class RuntimeSelectionController {
 			try store.recoverRecordIfNeeded()
 		}
 		self.selectedLane = paths.runtimeLane
+		self.laneOverride = paths.runtimeLaneOverride
 		self.installedVersions = Self.installedVersions(in: store)
 
 		let resolvedConfiguration: RuntimeConfiguration?
@@ -301,7 +303,9 @@ package final class RuntimeSelectionController {
 		installedVersions = Self.installedVersions(in: store)
 		availableLanes = Self.offeredLanes(in: configuration, access: access)
 		do {
-			selectedLane = try selectionStore.load(access: access).selected
+			let selection = try selectionStore.load()
+			selectedLane = selection.effectiveLane(access: access)
+			laneOverride = selection.validOverride(access: access)
 		} catch {
 			log?.error(
 				"Runtime selection could not be read; \(launcherDiagnosticDescription(for: error))")
@@ -315,10 +319,10 @@ package final class RuntimeSelectionController {
 		}
 	}
 
-	/// Selects `lane` and then downloads and installs its pin. The lane stays selected while its
-	/// download runs, pauses, or fails, so Home shows runtime setup instead of Play. Game
-	/// installation may run at the same time because the two downloads write to different trees.
-	/// Any other activity waits.
+	/// Downloads and installs the pin of `lane`. A lane other than the effective one becomes the
+	/// override first. The lane stays selected while its download runs, pauses, or fails, so Home
+	/// shows runtime setup instead of Play. Game installation may run at the same time because the
+	/// two downloads write to different trees. Any other activity waits.
 	@discardableResult
 	package func install(lane: RuntimeLane) async -> Bool {
 		guard installingLane == nil,
@@ -424,9 +428,10 @@ package final class RuntimeSelectionController {
 		}
 	}
 
-	/// Selects a lane that may not be installed yet, so a download of it can start. Home then shows
-	/// the runtime setup state until the download completes. Refused while a game launch or any
-	/// activity other than a game installation is in progress.
+	/// Makes `lane` the effective lane when it may not be installed yet, so a download of it can
+	/// start. Home then shows the runtime setup state until the download completes. The effective
+	/// lane itself needs no write. Refused while a game launch or any activity other than a game
+	/// installation is in progress.
 	package func selectForDownload(lane: RuntimeLane) throws {
 		guard lifecycle.activity == .idle || lifecycle.activity.isInstalling,
 			installingLane == nil, !isLaunchInProgress()
@@ -440,7 +445,7 @@ package final class RuntimeSelectionController {
 			present(error)
 			throw error
 		}
-		try commitSelection(of: lane)
+		if lane != selectedLane { try commitSelection(of: lane) }
 	}
 
 	/// Pauses the running download. The installer keeps its `.part` archive, so installing the
@@ -453,19 +458,23 @@ package final class RuntimeSelectionController {
 		task.cancel()
 	}
 
-	package func select(lane: RuntimeLane) throws {
+	/// Sets the lane override, or clears it with nil so the launcher chooses again. A lane must be
+	/// installed. The automatic lane may not be: Home then offers its setup.
+	package func select(override lane: RuntimeLane?) throws {
 		guard lifecycle.activity == .idle, !isLaunchInProgress() else {
 			throw RuntimeSelectionError.busy
 		}
-		guard availableLanes.contains(lane) else {
-			let error = RuntimeSelectionError.laneNotAvailable(lane)
-			present(error)
-			throw error
-		}
-		guard state(for: lane) == .current else {
-			let error = RuntimeSelectionError.notInstalled(lane)
-			present(error)
-			throw error
+		if let lane {
+			guard availableLanes.contains(lane) else {
+				let error = RuntimeSelectionError.laneNotAvailable(lane)
+				present(error)
+				throw error
+			}
+			guard state(for: lane) == .current else {
+				let error = RuntimeSelectionError.notInstalled(lane)
+				present(error)
+				throw error
+			}
 		}
 		// Leaving a lane mid-download abandons that download. Its partial archive stays on disk.
 		if installingLane != nil {
@@ -475,18 +484,22 @@ package final class RuntimeSelectionController {
 		try commitSelection(of: lane)
 	}
 
-	private func commitSelection(of lane: RuntimeLane) throws {
+	private func commitSelection(of lane: RuntimeLane?) throws {
+		let effective = lane ?? access.defaultLane
 		do {
-			try store.select(lane: lane, access: access)
+			try store.select(override: lane, access: access)
 		} catch {
 			let error = RuntimeSelectionError.installFailed(
-				lane, launcherDiagnosticDescription(for: error))
+				effective, launcherDiagnosticDescription(for: error))
 			present(error)
 			throw error
 		}
-		selectedLane = lane
+		laneOverride = lane
+		selectedLane = effective
 		clearFailure()
-		log?.info("Runtime lane selected; lane=\(lane.rawValue)")
+		log?.info(
+			"Runtime lane selected; lane=\(effective.rawValue) override=\(lane?.rawValue ?? "none")"
+		)
 	}
 
 	/// Removes the lane that is not selected. The selected lane is never touched.
@@ -504,9 +517,9 @@ package final class RuntimeSelectionController {
 
 	@concurrent
 	private static func removeRuntime(
-		lane: RuntimeLane, allowSelected: Bool, store: RuntimeStore
+		lane: RuntimeLane, allowSelected: Bool, store: RuntimeStore, access: RuntimeAccess
 	) async throws {
-		try store.remove(lane: lane, allowSelected: allowSelected)
+		try store.remove(lane: lane, allowSelected: allowSelected, access: access)
 	}
 
 	/// Holds the maintenance lease for the whole removal, so no game session, install, or other
@@ -520,7 +533,8 @@ package final class RuntimeSelectionController {
 		defer { lifecycle.end(lease) }
 		failure = nil
 		do {
-			try await Self.removeRuntime(lane: lane, allowSelected: allowSelected, store: store)
+			try await Self.removeRuntime(
+				lane: lane, allowSelected: allowSelected, store: store, access: access)
 		} catch {
 			let error = RuntimeSelectionError.removeFailed(
 				lane, launcherDiagnosticDescription(for: error))

@@ -9,6 +9,26 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-11-20
+
+> [!IMPORTANT]
+> Huge thanks to @riverfog7 for providing this client with an [ARM runtime](https://github.com/riverfog7/wine-build-new)!
+
+### Changed
+
+- Updated the runtime to 1.0.1.
+- The launcher now chooses the runtime for your macOS version: **ARM64 (Apple Silicon)** on macOS 27 or later, **x86_64** on earlier versions. A runtime chosen in 1.0.0 is replaced by this choice.
+- **ARM64 (Apple Silicon)** now requires macOS 27 or later.
+- Setup no longer asks you to choose a runtime.
+- To pick a runtime yourself, open **Settings → Runtime** and use **Runtime choice** in the **Danger zone**. Choose **Automatic** to let the launcher choose again.
+
+### Fixed
+
+- Fixed the game not starting on macOS 26 after the update to 1.0.0, with **RT-SET** or **GM-CRS**.
+- **Uninstall Game…** keeps the install record when the launcher can't read it.
+- A failed **Uninstall Game…** restores the game's compatibility files, so the game still starts.
+- **Locate Existing Installation…** refuses your home folder, the launcher's data folder, and another server's game folder.
+
 ## [1.0.0] - 2026-11-19
 
 > [!IMPORTANT]
@@ -486,7 +506,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v1.0.1
 [1.0.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v1.0.0
 [0.7.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.7.1
 [0.7.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.7.0

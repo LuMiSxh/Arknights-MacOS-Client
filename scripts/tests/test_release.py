@@ -75,15 +75,21 @@ PUBLISHED_APPCAST = """<?xml version="1.0" standalone="yes"?>
 
 
 @pytest.mark.parametrize(
-    ("run_number", "appcast_text", "expected"),
+    ("run_number", "appcast_text", "minimum_build", "expected"),
     [
-        (20, PUBLISHED_APPCAST, 26),
-        (30, PUBLISHED_APPCAST, 30),
-        (25, None, 25),
+        (20, PUBLISHED_APPCAST, 0, 26),
+        (30, PUBLISHED_APPCAST, 0, 30),
+        (25, None, 0, 25),
+        (20, PUBLISHED_APPCAST, 28, 28),
     ],
-    ids=("counter-behind-appcast", "counter-ahead-of-appcast", "no-previous-appcast"),
+    ids=(
+        "counter-behind-appcast",
+        "counter-ahead-of-appcast",
+        "no-previous-appcast",
+        "above-yanked-build",
+    ),
 )
 def test_bundle_version_stays_above_published_builds(
-    run_number: int, appcast_text: str | None, expected: int
+    run_number: int, appcast_text: str | None, minimum_build: int, expected: int
 ) -> None:
-    assert bundle_version(run_number, appcast_text) == expected
+    assert bundle_version(run_number, appcast_text, minimum_build) == expected
