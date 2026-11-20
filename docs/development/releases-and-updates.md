@@ -209,6 +209,8 @@ Releases are ad-hoc signed and not notarized. Users must follow the [installatio
 
 The launcher checks for app updates silently when it opens (the user can disable this in Settings). Sparkle owns download, verification, and installation of the app. The runtime is not part of the app update; the launcher replaces a stale pinned runtime after the app updates. Game updates are checked separately and never download without a user action.
 
+The workflow sets `CFBundleVersion` one above the newest build in the latest appcast. A yanked release leaves that appcast, so its users would keep a higher build. Pass that build plus one as `minimum_build` (`just release X.Y.Z 28`) so Sparkle offers them the replacement.
+
 Clients read the appcast through the stable `releases/latest/download/appcast.xml` URL. Each release has a complete `.tar.xz` update archive (up to 0.6.x: `.zip`). Sparkle 2.9.6, the oldest shipped updater, extracts both.
 
 The workflow creates the archives from the fully packaged app, preserving bundle symlinks and executable modes. It generates and signs the appcast with Sparkle's `generate_appcast`. Before it creates the draft, it validates the key pair and runs Sparkle's `sign_update --verify` on the appcast, the archive, and every delta. This rejects a bad signature or a tampered file before publication.
