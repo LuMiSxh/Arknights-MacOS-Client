@@ -17,9 +17,9 @@
  *
  * The launcher injects this x86-64 dylib with DYLD_INSERT_LIBRARIES. Wine later asks
  * NSApplication to publish the icon it extracted from Arknights.exe. Intercepting that
- * single public AppKit setter lets the launcher either normalize the extracted icon to
- * the macOS icon grid or replace it with a launcher-owned PNG, without modifying Wine,
- * its prefix, or the game executable.
+ * single public AppKit setter lets the launcher replace the icon with a launcher-owned PNG,
+ * without modifying Wine, its prefix, or the game executable. Without a custom icon, Wine's
+ * image passes through unchanged; the Wine squircle patch already places it on the icon grid.
  *
  * Wine passes the injection on to every process the game starts, such as the Bilibili
  * sign-in helper or a console host. Each of those would otherwise get its own "wine"
@@ -41,35 +41,12 @@
  * the method hook.
  */
 
-/* NSPoint, NSSize, and NSRect are intentionally mirrored instead of importing AppKit.
- * Their x86-64 layouts are pairs of doubles, which must exactly match the objc_msgSend
- * function signatures below for struct arguments and return values to use the correct ABI. */
-typedef struct {
-	double x;
-	double y;
-} AKPoint;
-
-typedef struct {
-	double width;
-	double height;
-} AKSize;
-
-typedef struct {
-	AKPoint origin;
-	AKSize size;
-} AKRect;
 
 typedef void (*SetApplicationIconImageIMP)(id, SEL, id);
 typedef signed char (*SetActivationPolicyIMP)(id, SEL, long);
 
-/* A 412-point content square inside a 512-point canvas is the 80.5% macOS icon grid.
- * The integer enum values mirror NSCompositingOperationCopy, NSImageInterpolationHigh,
- * and NSApplicationActivationPolicyRegular/Accessory/Prohibited; naming them here avoids loading
- * AppKit merely to obtain those declarations. */
-static const double icon_canvas_dimension = 512.0;
-static const double icon_content_dimension = 412.0;
-static const long compositing_operation_copy = 1;
-static const long image_interpolation_high = 3;
+/* The integer enum values mirror NSApplicationActivationPolicyRegular/Accessory/Prohibited;
+ * naming them here avoids loading AppKit merely to obtain those declarations. */
 static const long activation_policy_regular = 0;
 static const long activation_policy_accessory = 1;
 static const long activation_policy_prohibited = 2;
@@ -104,26 +81,12 @@ static id send_id_with_id(id receiver, SEL selector, id value) {
 	return ((id (*)(id, SEL, id))objc_msgSend)(receiver, selector, value);
 }
 
-static id send_id_with_size(id receiver, SEL selector, AKSize value) {
-	return ((id (*)(id, SEL, AKSize))objc_msgSend)(receiver, selector, value);
-}
-
 static void send_void(id receiver, SEL selector) {
 	((void (*)(id, SEL))objc_msgSend)(receiver, selector);
 }
 
 static void send_void_with_integer(id receiver, SEL selector, long value) {
 	((void (*)(id, SEL, long))objc_msgSend)(receiver, selector, value);
-}
-
-static AKSize send_size(id receiver, SEL selector) {
-	return ((AKSize (*)(id, SEL))objc_msgSend)(receiver, selector);
-}
-
-static void send_draw_message(
-    id receiver, SEL selector, AKRect destination, AKRect source, long operation, double fraction) {
-	((void (*)(id, SEL, AKRect, AKRect, long, double))objc_msgSend)(
-	    receiver, selector, destination, source, operation, fraction);
 }
 
 /* Resolves the optional launcher-owned PNG only after Wine has initialized AppKit.
@@ -152,55 +115,17 @@ static id load_custom_game_icon(void) {
 	return custom_game_icon;
 }
 
-/* Places Wine's full-bleed executable icon on the same transparent 512x512 canvas used
- * by launcher presets. Failures conservatively return the original NSImage so icon
- * handling can never prevent the game from presenting its Dock tile. Drawing uses the
- * current AppKit graphics context on Wine's setter-calling thread, not the polling thread. */
-static id normalized_game_icon(id source) {
-	if (source == nil)
-		return nil;
-
-	Class image_class = objc_getClass("NSImage");
-	Class graphics_context_class = objc_getClass("NSGraphicsContext");
-	if (image_class == Nil || graphics_context_class == Nil)
-		return source;
-
-	AKSize canvas_size = {icon_canvas_dimension, icon_canvas_dimension};
-	id result = send_id((id)image_class, sel_registerName("alloc"));
-	result = send_id_with_size(result, sel_registerName("initWithSize:"), canvas_size);
-	if (result == nil)
-		return source;
-
-	send_void(result, sel_registerName("lockFocus"));
-	id context = send_id((id)graphics_context_class, sel_registerName("currentContext"));
-	send_void_with_integer(
-	    context, sel_registerName("setImageInterpolation:"), image_interpolation_high);
-
-	double inset = (icon_canvas_dimension - icon_content_dimension) / 2.0;
-	AKRect destination = {{inset, inset}, {icon_content_dimension, icon_content_dimension}};
-	AKRect source_rect = {{0.0, 0.0}, send_size(source, sel_registerName("size"))};
-	send_draw_message(
-	    source,
-	    sel_registerName("drawInRect:fromRect:operation:fraction:"),
-	    destination,
-	    source_rect,
-	    compositing_operation_copy,
-	    1.0);
-	send_void(result, sel_registerName("unlockFocus"));
-	return result;
-}
-
 /* Replacement IMP for NSApplication.setApplicationIconImage:. A valid custom image takes
- * precedence; a missing or unreadable one falls back to the normalized executable icon.
- * Calling the saved IMP preserves AppKit's normal Dock and application-icon side effects.
- * The pool catches AppKit's autoreleased temporaries, which no Wine-owned pool is guaranteed
- * to cover on the calling thread; both publishable icons are +1 and survive it. */
+ * precedence; otherwise Wine's image passes through unchanged. Calling the saved IMP
+ * preserves AppKit's normal Dock and application-icon side effects. The pool catches
+ * AppKit's autoreleased temporaries, which no Wine-owned pool is guaranteed to cover on the
+ * calling thread; the retained custom icon survives it. */
 static void set_application_icon_image(id application, SEL selector, id image) {
 	@autoreleasepool {
 		SetApplicationIconImageIMP original;
 		id resolved = load_custom_game_icon();
 		if (resolved == nil)
-			resolved = normalized_game_icon(image);
+			resolved = image;
 		pthread_mutex_lock(&icon_setter_lock);
 		original = original_set_application_icon_image;
 		pthread_mutex_unlock(&icon_setter_lock);
