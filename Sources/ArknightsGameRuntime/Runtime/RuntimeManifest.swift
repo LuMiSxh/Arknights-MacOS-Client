@@ -40,10 +40,11 @@ package struct RuntimeManifest: Codable, Sendable {
 		package let dxmt: DXMT
 
 		/// The Developer ID loader bundle inside the prepared runtime tree, next to the macDriver.
-		package var loaderPath: String? {
+		package var loaderPaths: [String] {
 			let components = macDriver.split(separator: "/")
-			guard components.count > 1 else { return nil }
-			return components.dropLast().joined(separator: "/") + "/wine.app"
+			guard components.count > 1 else { return [] }
+			let directory = components.dropLast().joined(separator: "/")
+			return [directory + "/wine.app"]
 		}
 
 		/// The DXMT files that must exist for the declared destinations and libraries.

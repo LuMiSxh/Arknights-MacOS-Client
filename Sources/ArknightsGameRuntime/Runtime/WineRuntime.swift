@@ -140,6 +140,10 @@ struct WineRuntime: Sendable {
 		fileManager: FileManager,
 		compatibilityManager: GameCompatibilityManager
 	) throws -> WineRuntime {
+		let executable = runtimeRoot.appending(path: "bin/wine64")
+		guard fileManager.isExecutableFile(atPath: executable.path) else {
+			throw WineRuntimeDiscoveryError.missingExecutable(executable)
+		}
 		let manifest: RuntimeManifest
 		do {
 			let data = try Data(contentsOf: configurationURL)
@@ -152,10 +156,6 @@ struct WineRuntime: Sendable {
 			throw WineRuntimeDiscoveryError.unreadableConfiguration(
 				configurationURL, error.localizedDescription
 			)
-		}
-		let executable = runtimeRoot.appending(path: manifest.interface.launcher.path)
-		guard fileManager.isExecutableFile(atPath: executable.path) else {
-			throw WineRuntimeDiscoveryError.missingExecutable(executable)
 		}
 		guard manifest.prefixRevision > 0 else {
 			throw WineRuntimeDiscoveryError.invalidConfiguration(

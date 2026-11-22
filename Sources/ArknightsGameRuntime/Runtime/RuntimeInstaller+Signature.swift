@@ -14,10 +14,9 @@ extension RuntimeInstaller {
 
 	func verifySignatures(pin: PinnedRuntime, at runtimeRoot: URL) throws {
 		guard pin.lane == .arm else { return }
-		guard let loaderPath = pin.interface.loaderPath,
-			case let loaderURL = runtimeRoot.appending(path: loaderPath),
-			FileManager.default.fileExists(atPath: loaderURL.path)
-		else {
+		let loaderURLs = pin.interface.loaderPaths.map { runtimeRoot.appending(path: $0) }
+		let existingLoader = loaderURLs.first { FileManager.default.fileExists(atPath: $0.path) }
+		guard let loaderURL = existingLoader else {
 			throw RuntimeInstallError.invalidInterface("the ARM interface has no loader bundle")
 		}
 		try verifyDeveloperID(

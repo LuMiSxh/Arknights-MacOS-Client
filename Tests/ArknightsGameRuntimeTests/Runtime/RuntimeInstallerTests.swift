@@ -15,11 +15,11 @@ private func runtimeArchive() -> Data {
 	builder.directory("Libraries/Wine")
 	builder.directory("Libraries/Wine/bin")
 	builder.append(
-		name: "Libraries/Wine/bin/wine", mode: 0o755, content: Data("wine".utf8))
+		name: "Libraries/Wine/bin/wine64", mode: 0o755, content: Data("wine64".utf8))
 	builder.append(
 		name: "Libraries/Wine/bin/wineserver", mode: 0o755, content: Data("wineserver".utf8))
 	builder.append(
-		name: "Libraries/Wine/bin/wine64", typeFlag: 0x32, linkName: "wine")
+		name: "Libraries/Wine/bin/Arknights", typeFlag: 0x32, linkName: "wine64")
 	builder.directory("Libraries/Wine/lib/wine/x86_64-unix")
 	builder.append(
 		name: "Libraries/Wine/lib/wine/x86_64-unix/winemac.so",
@@ -59,7 +59,7 @@ private func makePin(
 		prefixRevision: 2,
 		interface: RuntimeManifest.Interface(
 			archive: .init(wineDirectory: "Wine", dxmtDirectory: "DXMT"),
-			executables: ["bin/wine", "bin/wineserver"],
+			executables: ["bin/wine64", "bin/wineserver"],
 			features: RuntimeFeatures(
 				hardwareCursor: true,
 				metalFXSpatialUpscaling: false,
@@ -71,7 +71,7 @@ private func makePin(
 				"lib/wine/x86_64-windows/winemetal.dll",
 			],
 			macDriver: "lib/wine/x86_64-unix/winemac.so",
-			launcher: .init(path: "bin/wine64", target: "wine"),
+			launcher: .init(path: "bin/Arknights", target: "wine64"),
 			dxmt: .init(
 				payloadDirectory: "DXMT",
 				destinations: ["x64": "system32"],
@@ -135,7 +135,7 @@ struct RuntimeInstallerTests {
 		#expect(installed.version == "1.0.0")
 		#expect(
 			FileManager.default.isExecutableFile(
-				atPath: installed.directory.appending(path: "bin/wine").path))
+				atPath: installed.directory.appending(path: "bin/wine64").path))
 		#expect(
 			FileManager.default.fileExists(
 				atPath: installed.directory.appending(path: "DXMT/x64/d3d11.dll").path))
@@ -147,7 +147,7 @@ struct RuntimeInstallerTests {
 				atPath: installed.directory.appending(path: "Licenses/MIT.txt").path))
 		#expect(
 			(try FileManager.default.destinationOfSymbolicLink(
-				atPath: installed.directory.appending(path: "bin/wine64").path)) == "wine")
+				atPath: installed.directory.appending(path: "bin/Arknights").path)) == "wine64")
 		#expect(!FileManager.default.fileExists(atPath: oldVersion.path))
 		#expect(!FileManager.default.fileExists(atPath: laneDownloads.path))
 		#expect(!FileManager.default.fileExists(atPath: legacyPart.path))

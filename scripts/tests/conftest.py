@@ -8,7 +8,7 @@ from typing import Any
 def interface(architecture: str, dxmt_libraries: list[str]) -> dict[str, Any]:
     return {
         "archive": {"wineDirectory": "Wine", "dxmtDirectory": "DXMT"},
-        "executables": ["bin/wine", "bin/wineserver"],
+        "executables": ["bin/wine64", "bin/wineserver"],
         "features": {
             "hardwareCursor": True,
             "metalFXSpatialUpscaling": True,
@@ -19,7 +19,7 @@ def interface(architecture: str, dxmt_libraries: list[str]) -> dict[str, Any]:
             f"lib/wine/{architecture}-windows/winemetal.dll",
         ],
         "macDriver": f"lib/wine/{architecture}-unix/winemac.so",
-        "launcher": {"path": "bin/wine64", "target": "wine"},
+        "launcher": {"path": "bin/Arknights", "target": "wine64"},
         "dxmt": {
             "payloadDirectory": "DXMT",
             "destinations": {"x64": "system32"},
