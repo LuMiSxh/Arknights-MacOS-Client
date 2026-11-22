@@ -14,13 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Added the **Rounded Dock icon** runtime patch. It draws the game icon in the Dock with macOS rounded corners. Turn it off under **Settings → Runtime → Runtime patches**.
-- Added the **Game name in Dock** runtime patch. It shows the game's window title in the Dock.
-
-### Changed
-
-- The game's Dock tile is removed when the game exits, so it no longer stays among recent apps.
-- A custom game icon now appears in the Dock unchanged.
-- The launcher no longer sets a Finder icon on the **ARM64 (Apple Silicon)** runtime's loader bundle.
+- Added the **Game name in Dock** runtime patch. It names the game's Dock tile after the game's window title. Turn it off under **Settings → Runtime → Runtime patches**.
 
 ## [1.0.1] - 2026-11-20
 
