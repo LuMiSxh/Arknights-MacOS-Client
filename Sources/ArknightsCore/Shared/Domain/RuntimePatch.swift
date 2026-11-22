@@ -15,11 +15,14 @@ package enum RuntimePatch: String, CaseIterable, Sendable {
 	case eflags
 	case hybridThread
 	case loaderLink
+	case squircleIcon
+	case dockIdentity
 
 	/// The runtime lanes whose build contains the patch.
 	package var lanes: Set<RuntimeLane> {
 		switch self {
-		case .aceImports, .appContainer, .winsock, .menu: [.x86, .arm]
+		case .aceImports, .appContainer, .winsock, .menu, .squircleIcon, .dockIdentity:
+			[.x86, .arm]
 		case .audio, .aceTiming, .aceDispatcher, .aceRosetta: [.x86]
 		case .eflags, .hybridThread, .loaderLink: [.arm]
 		}
