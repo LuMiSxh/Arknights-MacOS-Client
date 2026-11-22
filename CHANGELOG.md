@@ -14,7 +14,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Added the **Rounded Dock icon** runtime patch. It draws the game icon in the Dock with macOS rounded corners. Turn it off under **Settings → Runtime → Runtime patches**.
-- Added the **Game name in Dock** runtime patch. It names the game's Dock tile after the game's window title. Turn it off under **Settings → Runtime → Runtime patches**.
 
 ## [1.0.1] - 2026-11-20
 

@@ -53,8 +53,8 @@ process. The game process stays unmodified.
 
 A separate signed Objective-C bridge runs in the main Wine process.
 
-- After Wine initializes AppKit, it sets the original or a launcher-owned custom game icon through
-  AppKit's public application-icon setter. Game files stay untouched.
+- After Wine initializes AppKit, it sets Wine's game icon or a launcher-owned custom game icon
+  through AppKit's public application-icon setter. Game files stay untouched.
 - Wine passes the bridge to every process the game starts. The launcher also passes its own process
   ID, so the bridge keeps only its direct child, the game, in the Dock. Other windows become accessory
   windows. macOS then cannot keep "wine" entries among recent apps after the game exits.
