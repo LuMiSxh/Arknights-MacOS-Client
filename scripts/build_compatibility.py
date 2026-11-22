@@ -191,7 +191,7 @@ def main() -> None:
     arguments = parser.parse_args()
     components = tuple(arguments.components) if arguments.components else None
     for path in build(arguments.output, components):
-        success(f"Built {path.relative_to(PROJECT_DIR)}")
+        success(f"Built {path}")
 
 
 if __name__ == "__main__":

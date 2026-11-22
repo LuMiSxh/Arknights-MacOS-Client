@@ -15,11 +15,11 @@ package func makeRuntimeInterface(
 ) -> [String: Any] {
 	[
 		"archive": ["wineDirectory": "Wine", "dxmtDirectory": "DXMT"],
-		"executables": ["bin/wine64", "bin/wineserver"],
+		"executables": ["bin/wine", "bin/wineserver"],
 		"features": features,
 		"requiredFiles": ["lib/wine/x86_64-unix/winemac.so"],
 		"macDriver": macDriver,
-		"launcher": ["path": "bin/Arknights", "target": "wine64"],
+		"launcher": ["path": "bin/wine64", "target": "wine"],
 		"dxmt": [
 			"payloadDirectory": "DXMT",
 			"destinations": ["x64": "system32"],

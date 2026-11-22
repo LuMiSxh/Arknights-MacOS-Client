@@ -20,7 +20,7 @@ private func manifestData(
 		],
 		"interface": [
 			"archive": ["wineDirectory": "Wine", "dxmtDirectory": "DXMT"],
-			"executables": ["bin/wine64", "bin/wineserver"],
+			"executables": ["bin/wine", "bin/wineserver"],
 			"features": [
 				"hardwareCursor": true,
 				"metalFXSpatialUpscaling": false,
@@ -28,7 +28,7 @@ private func manifestData(
 			],
 			"requiredFiles": ["lib/wine/aarch64-unix/winemac.so"],
 			"macDriver": macDriver,
-			"launcher": ["path": "bin/Arknights", "target": "wine64"],
+			"launcher": ["path": "bin/wine64", "target": "wine"],
 			"dxmt": [
 				"payloadDirectory": "DXMT",
 				"destinations": ["x64": "system32"],

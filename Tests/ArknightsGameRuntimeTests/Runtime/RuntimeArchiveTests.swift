@@ -13,7 +13,7 @@ struct RuntimeArchiveTests {
 		defer { temporary.remove() }
 		var builder = TarBuilder()
 		builder.directory("Libraries")
-		builder.append(name: "Libraries/Wine/bin/Arknights", content: Data("launcher".utf8))
+		builder.append(name: "Libraries/Wine/bin/wine64", content: Data("launcher".utf8))
 		builder.append(name: "Libraries/DXMT/x64/d3d11.dll", content: Data("dxmt".utf8))
 		builder.append(name: "Licenses/MIT.txt", content: Data("mit".utf8))
 		builder.append(name: "NOTICE.md", content: Data("notice".utf8))
@@ -27,7 +27,7 @@ struct RuntimeArchiveTests {
 		#expect(root == destination.appending(path: "Libraries", directoryHint: .isDirectory))
 		#expect(
 			FileManager.default.fileExists(
-				atPath: root.appending(path: "Wine/bin/Arknights").path))
+				atPath: root.appending(path: "Wine/bin/wine64").path))
 		#expect(
 			FileManager.default.fileExists(
 				atPath: root.appending(path: "DXMT/x64/d3d11.dll").path))
@@ -68,7 +68,7 @@ struct RuntimeArchiveTests {
 	}
 
 	@Test(arguments: [
-		(typeFlag: UInt8(0x32), name: "Libraries/bin/Arknights", linkName: "/etc/evil"),
+		(typeFlag: UInt8(0x32), name: "Libraries/bin/wine64", linkName: "/etc/evil"),
 		(typeFlag: UInt8(0x31), name: "Libraries/bin/hard", linkName: "../../outside"),
 	])
 	func rejectsLinksOutsideTheArchive(typeFlag: UInt8, name: String, linkName: String) throws {

@@ -22,7 +22,7 @@ def interface(architecture: str, dxmt_libraries: list[str]) -> dict[str, object]
             f"lib/wine/{architecture}-windows/winemetal.dll",
         ],
         "macDriver": f"lib/wine/{architecture}-unix/winemac.so",
-        "launcher": {"path": "bin/Arknights", "target": "wine64"},
+        "launcher": {"path": "bin/wine64", "target": "wine"},
         "dxmt": {
             "payloadDirectory": "DXMT",
             "destinations": {"x64": "system32"},

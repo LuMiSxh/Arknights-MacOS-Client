@@ -25,14 +25,14 @@ def layout() -> RuntimeLayout:
         archive_wine_directory=PurePosixPath("Wine"),
         archive_dxmt_directory=PurePosixPath("DXMT"),
         features=RuntimeFeatures(True, True, True),
-        executables=(PurePosixPath("bin/wine64"), PurePosixPath("bin/wineserver")),
+        executables=(PurePosixPath("bin/wine"), PurePosixPath("bin/wineserver")),
         required_files=(
             PurePosixPath("lib/wine/aarch64-unix/winecoreaudio.so"),
             PurePosixPath("lib/wine/aarch64-windows/winemetal.dll"),
         ),
         mac_driver=PurePosixPath("lib/wine/aarch64-unix/winemac.so"),
         launcher=RuntimeSymlink(
-            path=PurePosixPath("bin/Arknights"), target=PurePosixPath("wine64")
+            path=PurePosixPath("bin/wine64"), target=PurePosixPath("wine")
         ),
         dxmt=DXMTLayout(
             payload_directory=PurePosixPath("DXMT"),
@@ -281,7 +281,7 @@ def test_prepare_runtime_selects_the_lane_directory(
     )
 
     assert destination == tmp_path / ".build/runtime-arm"
-    assert (destination / "bin/wine64").is_file()
+    assert (destination / "bin/wine").is_file()
     assert (destination / "DXMT/x64/dxgi.dll").is_file()
     assert (destination / "Licenses/index.json").is_file()
     assert (destination / "NOTICE.md").is_file()
