@@ -2,8 +2,10 @@
 
 /*
  * Starts Arknights: Endfield as a child of the official Games.exe. Endfield.exe runs only
- * under that parent, and Games.exe alone idles without spawning the game. Games.exe stays
- * suspended and is terminated when the game exits, so no launcher process is left behind.
+ * under that parent, and Games.exe alone idles without spawning the game. Games.exe runs
+ * (idle) and is terminated when the game exits, so no launcher process is left behind.
+ * It must not be suspended: under FEX, an x86_64 child of a suspended parent spins
+ * before its loader starts.
  */
 
 #define WIN32_LEAN_AND_MEAN
@@ -120,12 +122,12 @@ int wmain(int argc, wchar_t **argv) {
     truncate_to_directory(game_dir);
 
     games_startup.cb = sizeof games_startup;
-    if (!CreateProcessW(argv[1], games_line, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL,
+    if (!CreateProcessW(argv[1], games_line, NULL, NULL, FALSE, 0, NULL,
                         games_dir[0] ? games_dir : NULL, &games_startup, &games)) {
         report_win32_failure(L"CreateProcessW(Games.exe)");
         goto cleanup;
     }
-    // Games.exe stays suspended. Only its handle is needed, so the thread handle is not kept.
+    // Only the process handle is needed, so the thread handle is not kept.
     CloseHandle(games.hThread);
 
     // The first call only reports the size and fails by design.

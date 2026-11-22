@@ -205,5 +205,7 @@ The lab moves into the client only when all of these pass:
 | ---- | ------- | ------- | ------ | ------- | ----- |
 | 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | launcher | In-game in a native macOS fullscreen Space. | `LMISXH_AKMOCL_FULLSCREEN=1`. After the game quits, `PlatformProcess.exe` keeps running and holds the prefix open. |
 | 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | `Games.exe` alone | No game. | `Games.exe` loads Qt and WinHTTP, then idles. |
+| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | stepministrator (ARM64 llvm-mingw, `Games.exe` not suspended) | No game. | `Games.exe` spins while mapping `hgeventlogsdk.dll`, and `Endfield.exe` spins after `EndfieldBase.dll`, both at about 63% CPU. |
+| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | stepministrator (ARM64 llvm-mingw, `Games.exe` suspended) | No game. | `Endfield.exe` spins at about 66% CPU with no loader trace. |
 | 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | stepministrator (x86_64 MinGW) | No game. | The helper spins at about 66% CPU and loads no DLL. It hangs before the Wine loader under FEX. |
 | 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | launcher | Login and in-game. ACE passed. | Game 1.6.4, GRYPHLINK 1.6.0. The launcher defaults to **Vulkan (Recommended)**. The launcher accepted the lab install at `G:\`. No macOS fullscreen Space. FPS not measured yet. |
