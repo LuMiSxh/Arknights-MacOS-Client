@@ -1,0 +1,51 @@
+{
+  "proxy_rsps": [
+    {
+      "kind": "get_latest_game",
+      "get_latest_game_rsp": {
+        "action": 1,
+        "version": "1.6.4",
+        "request_version": "",
+        "pkg": {
+          "packs": [
+            {
+              "url": "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.6/update/6/6/Windows/1.6.4_O0xruPqxQxZ9aEYl/packs/Beyond_Release_v1d6-Rel-os-10781849-3_prod_obt_official.zip.001",
+              "md5": "35f8a534e10c28d0c5462f068b438df7",
+              "package_size": "1073741824"
+            },
+            {
+              "url": "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.6/update/6/6/Windows/1.6.4_O0xruPqxQxZ9aEYl/packs/Beyond_Release_v1d6-Rel-os-10781849-3_prod_obt_official.zip.002",
+              "md5": "757548b5be4a39df230e9fafd7477da3",
+              "package_size": "1073741824"
+            },
+            {
+              "url": "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.6/update/6/6/Windows/1.6.4_O0xruPqxQxZ9aEYl/packs/Beyond_Release_v1d6-Rel-os-10781849-3_prod_obt_official.zip.003",
+              "md5": "60210d8d8715f2ec1bb3be0ad4f409a7",
+              "package_size": "1073741824"
+            }
+          ],
+          "total_size": "130924997432",
+          "file_path": "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.6/update/6/6/Windows/1.6.4_O0xruPqxQxZ9aEYl/files",
+          "url": "",
+          "md5": "",
+          "package_size": "0",
+          "file_id": "0",
+          "sub_channel": "6",
+          "game_files_md5": "2e359eebefa0f0035adc636fa1fe30e2",
+          "new_game_files_md5": "",
+          "package_type": "ALL_PACKAGE"
+        },
+        "other_pkgs": [],
+        "patch": null,
+        "state": 0,
+        "launcher_action": 0,
+        "pre_patch": null,
+        "client_version": "1.6.4",
+        "package_splitting": -1,
+        "local_version_tip": 0
+      }
+    }
+  ],
+  "timestamp": "1795352012208",
+  "seq": "1"
+}
