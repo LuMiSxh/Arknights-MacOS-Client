@@ -70,10 +70,21 @@ Safety rules:
 
 `stepministrator` is our own small Windows helper. We wrote it from scratch under MPL-2.0. Its name refers to reakjra/stepministrator (GPL-3.0). We did not copy code from it.
 
-- The helper starts the official `Games.exe` suspended.
-- It creates `Endfield.exe` with `Games.exe` as the parent process through `PROC_THREAD_ATTRIBUTE_PARENT_PROCESS`.
-- Location: `<lab>/bin/stepministrator.exe`.
-- Status: planned. The helper is built in a later step. `launch --parent stepministrator` stops until the file exists.
+`Endfield.exe` runs only when its parent process is the official `Games.exe`. `Games.exe` alone idles. On 2026-11-22 a trace showed that it loads Qt and WinHTTP and then waits. GRYPHLINK's `Launcher.exe` drives it to start the game.
+
+How the helper works:
+
+1. It starts the official `Games.exe` suspended.
+2. It starts `G:\Endfield.exe` with `Games.exe` as its parent process, through `PROC_THREAD_ATTRIBUTE_PARENT_PROCESS`.
+3. It waits for the game to exit. Then it terminates the suspended `Games.exe`.
+
+Build the helper with MinGW. Install the toolchain first with `brew install mingw-w64`:
+
+```sh
+uv run --locked python experiments/endfield/lab.py build-stepministrator
+```
+
+The output is `<lab>/bin/stepministrator.exe`. Add `--dry-run` to print the compiler command only.
 
 ## Usage
 
@@ -111,6 +122,12 @@ Run the installer tests:
 uv run --locked python -m pytest experiments/endfield -q
 ```
 
+Build the helper into `<lab>/bin`. Add `--dry-run` to print the compiler command only:
+
+```sh
+uv run --locked python experiments/endfield/lab.py build-stepministrator
+```
+
 Print a launch without starting it:
 
 ```sh
@@ -128,7 +145,7 @@ uv run --locked python experiments/endfield/lab.py launch \
 Options:
 
 - `--backend`: `dxmt-d3d11`, `vkd3d-kk`, or `vulkan-kk`.
-- `--parent`: `direct`, `launcher`, or `stepministrator`.
+- `--parent`: `direct`, `launcher`, or `stepministrator`. Only `direct` adds the renderer flag for `--backend`. The `stepministrator` parent passes no renderer flag. The game takes its renderer from the launcher setting.
 - `--runtime PATH`: use a patched runtime, for example `<lab>/runtimes/<name>`.
 - `--debug`: `default`, `ace`, or `vulkan`.
 - `--wine-debug RAW`: set a raw `WINEDEBUG` value. It overrides `--debug`.
@@ -170,7 +187,7 @@ Run the steps in this order:
 5. Record where ACE fails. Use `--debug ace`.
 6. Apply the ACE patches in the private ARM Wine repository. Build a patched runtime under `<lab>/runtimes/<name>`.
 7. Rerun the baseline with `--runtime`.
-8. Test the `stepministrator` parent after the helper exists.
+8. Test the `stepministrator` parent after running `build-stepministrator`.
 9. Compare the backends on one fixed scene. Record FPS, RAM, visuals, and DLSS.
 
 ## Exit criteria
@@ -186,4 +203,7 @@ The lab moves into the client only when all of these pass:
 
 | Date | Runtime | Backend | Parent | Outcome | Notes |
 | ---- | ------- | ------- | ------ | ------- | ----- |
+| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | launcher | In-game in a native macOS fullscreen Space. | `LMISXH_AKMOCL_FULLSCREEN=1`. After the game quits, `PlatformProcess.exe` keeps running and holds the prefix open. |
+| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | `Games.exe` alone | No game. | `Games.exe` loads Qt and WinHTTP, then idles. |
+| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | stepministrator (x86_64 MinGW) | No game. | The helper spins at about 66% CPU and loads no DLL. It hangs before the Wine loader under FEX. |
 | 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | launcher | Login and in-game. ACE passed. | Game 1.6.4, GRYPHLINK 1.6.0. The launcher defaults to **Vulkan (Recommended)**. The launcher accepted the lab install at `G:\`. No macOS fullscreen Space. FPS not measured yet. |

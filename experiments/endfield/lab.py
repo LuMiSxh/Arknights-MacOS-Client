@@ -47,7 +47,25 @@ WINE_DEBUG_PRESETS = {
 PARENTS = ("direct", "launcher", "stepministrator")
 DXMT_DLL_DIRECTORY = Path("DXMT/x64")
 KOSMICKRISP_ICD = Path("share/vulkan/icd.d/kosmickrisp_mesa_icd.aarch64.json")
-STEPMINISTRATOR = Path("bin/stepministrator.exe")
+# Lives inside the prefix: Wine routes a Unix exe path through start.exe, which hangs in
+# imm32 initialization on the ARM runtime. A C:\ path starts the helper directly.
+STEPMINISTRATOR = r"C:\stepministrator\stepministrator.exe"
+STEPMINISTRATOR_SOURCE = (
+    Path(__file__).resolve().parent / "stepministrator/stepministrator.c"
+)
+MINGW_COMPILER = "x86_64-w64-mingw32-gcc"
+# GUI subsystem: the console build hung in imm32 initialization on the ARM runtime.
+MINGW_FLAGS = (
+    "-municode",
+    "-mwindows",
+    "-O2",
+    "-s",
+    "-static",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+)
+HOMEBREW_BIN = "/opt/homebrew/bin"
 PREFIX_WINE_OVERRIDES = "winemac.drv=d"
 DXMT_OVERRIDES = "d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
 # backend -> (WINEDLLOVERRIDES, game argument that selects the renderer)
@@ -120,6 +138,8 @@ def base_environment(lab: Path, runtime: Path) -> dict[str, str]:
         # Runtime patch 0009: borderless fullscreen windows enter a native macOS Space.
         # Override with `--env LMISXH_AKMOCL_FULLSCREEN=0` for windowed tests.
         "LMISXH_AKMOCL_FULLSCREEN": "1",
+        # Command-Q quits (default on in the runtime; explicit for the sidecar record).
+        "LMISXH_AKMOCL_MENU": "1",
     }
 
 
@@ -219,11 +239,12 @@ def launch_plan(args: argparse.Namespace, lab: Path, runtime: Path) -> LaunchPla
             fail(f"runtime has no KosmicKrisp ICD: {icd}")
         env["VK_DRIVER_FILES"] = str(icd)
     env |= dict(args.env)
-    game_arguments = [renderer_argument, *FIXED_GAME_ARGUMENTS, *args.game_args]
+    # Only the direct parent picks the renderer. The official launcher passes none.
+    game_arguments = [*FIXED_GAME_ARGUMENTS, *args.game_args]
     required = [lab / "prefix"]
     notes: list[str] = []
     if args.parent == "direct":
-        argv = [wine, GAME_EXECUTABLE, *game_arguments]
+        argv = [wine, GAME_EXECUTABLE, renderer_argument, *game_arguments]
         cwd = game_directory
         required.append(game_executable)
     elif args.parent == "launcher":
@@ -236,17 +257,18 @@ def launch_plan(args: argparse.Namespace, lab: Path, runtime: Path) -> LaunchPla
             "and the renderer flag are not passed"
         )
     else:
-        helper = lab / STEPMINISTRATOR
-        argv = [wine, str(helper), args.games_exe, GAME_EXECUTABLE, *game_arguments]
-        cwd = game_directory
+        helper = host_path(STEPMINISTRATOR, lab)
+        argv = [wine, STEPMINISTRATOR, args.games_exe, GAME_EXECUTABLE, *game_arguments]
+        # The helper sets the game's working directory itself.
+        cwd = helper.parent
         required += [host_path(args.games_exe, lab), game_executable, helper]
     return LaunchPlan(argv=argv, cwd=cwd, env=env, required=required, notes=notes)
 
 
 def missing_message(path: Path, lab: Path) -> str:
     hint = (
-        " (the helper is built in a later step)"
-        if path == lab / STEPMINISTRATOR
+        " (build it with build-stepministrator)"
+        if path == host_path(STEPMINISTRATOR, lab)
         else ""
     )
     return f"missing: {path}{hint}"
@@ -287,8 +309,29 @@ def run_launch(args: argparse.Namespace) -> None:
     log.parent.mkdir(parents=True, exist_ok=True)
     sidecar.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     code = run_logged(plan.argv, plan.env, plan.cwd, log)
+    # With the launcher parent, wine returns when the launcher stub exits, while the game
+    # may still run. The other parents return only after the game has exited.
+    if args.parent != "launcher":
+        end_leftovers(plan.env, runtime)
     if code:
         raise SystemExit(code)
+
+
+def end_leftovers(env: dict[str, str], runtime: Path) -> None:
+    # The game's PlatformProcess.exe outlives the game and keeps the prefix alive.
+    quiet = env | {"WINEDEBUG": "-all"}
+    subprocess.run(
+        [str(runtime / "bin/wine64"), "taskkill", "/f", "/im", "PlatformProcess.exe"],
+        env=quiet,
+        check=False,
+        capture_output=True,
+    )
+    try:
+        subprocess.run(
+            [str(runtime / "bin/wineserver"), "-w"], env=quiet, check=False, timeout=30
+        )
+    except subprocess.TimeoutExpired:
+        warning("the prefix is still running after 30 s; check for leftover processes")
 
 
 def run_install(args: argparse.Namespace) -> None:
@@ -296,6 +339,24 @@ def run_install(args: argparse.Namespace) -> None:
         installer.run(lab_root(), plan_only=args.plan, force=args.force)
     except installer.InstallError as error:
         fail(str(error))
+
+
+def run_build_stepministrator(args: argparse.Namespace) -> None:
+    compiler = shutil.which(
+        MINGW_COMPILER, path=f"{os.environ.get('PATH', '')}{os.pathsep}{HOMEBREW_BIN}"
+    )
+    if compiler is None:
+        fail(f"{MINGW_COMPILER} not found; install MinGW with `brew install mingw-w64`")
+    output = host_path(STEPMINISTRATOR, lab_root())
+    command = [compiler, *MINGW_FLAGS, "-o", str(output), str(STEPMINISTRATOR_SOURCE)]
+    if args.dry_run:
+        print(shlex.join(command))
+        return
+    output.parent.mkdir(parents=True, exist_ok=True)
+    code = subprocess.run(command, check=False).returncode
+    if code:
+        fail(f"{MINGW_COMPILER} exited with {code}")
+    success(f"built {output}")
 
 
 def env_pair(value: str) -> tuple[str, str]:
@@ -337,6 +398,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     install.add_argument(
         "--force", action="store_true", help="skip the free disk space check"
+    )
+
+    build = commands.add_parser(
+        "build-stepministrator", help="compile bin/stepministrator.exe with MinGW"
+    )
+    build.add_argument(
+        "--dry-run", action="store_true", help="print the compiler command only"
     )
 
     launch = commands.add_parser("launch", help="start the game once")
@@ -385,6 +453,8 @@ def main() -> None:
         run_prefix(args)
     elif args.command == "install":
         run_install(args)
+    elif args.command == "build-stepministrator":
+        run_build_stepministrator(args)
     else:
         run_launch(args)
 
