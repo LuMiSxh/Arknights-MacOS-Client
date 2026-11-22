@@ -89,7 +89,6 @@ extension RuntimePatch {
 		case .hybridThread: "Thread start fix"
 		case .loaderLink: "App name"
 		case .squircleIcon: "Rounded Dock icon"
-		case .dockIdentity: "Game name in Dock"
 		}
 	}
 
@@ -119,8 +118,6 @@ extension RuntimePatch {
 			"Shows the game’s own name instead of Wine in the menu bar and Dock. Off restores Wine’s name."
 		case .squircleIcon:
 			"Draws the game’s Dock icon with the rounded corners of macOS app icons. Off shows the icon as Wine reads it."
-		case .dockIdentity:
-			"Uses the game’s window title as its Dock name and removes the Dock icon when the game exits. Off restores Wine’s name."
 		}
 	}
 }
