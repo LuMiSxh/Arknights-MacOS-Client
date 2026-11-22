@@ -39,7 +39,7 @@ struct WineRuntime: Sendable {
 	let dxmtPayloadDirectory: String
 	let dxmtPayloadDestinations: [DXMTDestination]
 	let dxmtPayloadLibraries: [String]
-	let gameIconBridgeURL: URL?
+	let helperDockBridgeURL: URL?
 	// Candidate loader bundles in priority order; empty when the lane has none.
 	let loaderBundleURLs: [URL]
 	let features: RuntimeFeatures
@@ -55,7 +55,7 @@ struct WineRuntime: Sendable {
 		dxmtPayloadDirectory: String = WineRuntime.defaultDXMTPayloadDirectory,
 		dxmtPayloadDestinations: [DXMTDestination] = WineRuntime.dxmtDestinations,
 		dxmtPayloadLibraries: [String] = WineRuntime.dxmtLibraryNames,
-		gameIconBridgeURL: URL? = nil,
+		helperDockBridgeURL: URL? = nil,
 		loaderBundleURLs: [URL] = [],
 		features: RuntimeFeatures = .conservative,
 		pins: RuntimePins = RuntimePins(),
@@ -69,7 +69,7 @@ struct WineRuntime: Sendable {
 		self.dxmtPayloadDirectory = dxmtPayloadDirectory
 		self.dxmtPayloadDestinations = dxmtPayloadDestinations
 		self.dxmtPayloadLibraries = dxmtPayloadLibraries
-		self.gameIconBridgeURL = gameIconBridgeURL
+		self.helperDockBridgeURL = helperDockBridgeURL
 		self.loaderBundleURLs = loaderBundleURLs
 		self.features = features
 		self.pins = pins
@@ -127,11 +127,11 @@ struct WineRuntime: Sendable {
 		compatibilityManager: GameCompatibilityManager
 	) throws -> WineRuntime {
 		let bridge = Bundle.main.resourceURL?.appending(
-			path: "Compatibility/GameIcon/GameIconBridge.dylib")
+			path: "Compatibility/HelperDock/HelperDockBridge.dylib")
 		return try discover(
 			runtimeRoot: runtimeRoot,
 			configurationURL: configurationURL,
-			gameIconBridgeURL: bridge,
+			helperDockBridgeURL: bridge,
 			fileManager: fileManager,
 			compatibilityManager: compatibilityManager
 		)
@@ -140,7 +140,7 @@ struct WineRuntime: Sendable {
 	private static func discover(
 		runtimeRoot: URL,
 		configurationURL: URL,
-		gameIconBridgeURL: URL?,
+		helperDockBridgeURL: URL?,
 		fileManager: FileManager,
 		compatibilityManager: GameCompatibilityManager
 	) throws -> WineRuntime {
@@ -213,7 +213,7 @@ struct WineRuntime: Sendable {
 			dxmtPayloadDirectory: manifest.interface.dxmt.payloadDirectory,
 			dxmtPayloadDestinations: dxmtDestinations,
 			dxmtPayloadLibraries: dxmtLibraries,
-			gameIconBridgeURL: gameIconBridgeURL,
+			helperDockBridgeURL: helperDockBridgeURL,
 			loaderBundleURLs: manifest.architecture == .arm
 				? manifest.interface.loaderPaths.map { runtimeRoot.appending(path: $0) } : [],
 			features: manifest.interface.features,
@@ -351,7 +351,10 @@ struct WineRuntime: Sendable {
 		if metalPerformanceHUDEnabled {
 			environment["MTL_HUD_ENABLED"] = "1"
 		}
-		for (key, value) in gameIconEnvironment(customIconURL: gameIconURL) {
+		if let gameIconURL {
+			environment[AppConstants.Runtime.dockIconOverrideEnvironmentKey] = gameIconURL.path
+		}
+		for (key, value) in helperDockEnvironment() {
 			environment[key] = value
 		}
 		if isNativeARMLane {
@@ -433,7 +436,8 @@ struct WineRuntime: Sendable {
 	) -> [String: String] {
 		var controllerEnvironment = environment
 		controllerEnvironment.removeValue(forKey: "DYLD_INSERT_LIBRARIES")
-		controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_GAME_ICON_PATH")
+		controllerEnvironment.removeValue(
+			forKey: AppConstants.Runtime.dockIconOverrideEnvironmentKey)
 		controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_LAUNCHER_PID")
 		// The controller is a helper window, so it never uses the game's cursor or MetalFX path.
 		controllerEnvironment[AppConstants.Runtime.hardwareCursorEnvironmentKey] = "0"

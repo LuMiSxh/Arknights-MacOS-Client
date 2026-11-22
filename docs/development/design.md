@@ -304,4 +304,4 @@ An operator preset gives a matched pair: a Launcher icon and a Game icon from th
 Settings offers one **Choose Operator…** action for both icons, plus a **Custom icons** row with one menu for each icon.
 
 > [!IMPORTANT]
-> For **Use Default**, the Wine game process uses the original executable icon. The icon scales to the same 412/512 visual grid as the launcher and native Dock icons. Preset and custom game icons use the same canvas. Never patch icon resources inside `Arknights.exe`.
+> For **Use Default**, the Wine game process uses the original executable icon. With **Rounded Dock icon** on, the runtime draws it on the macOS icon grid with rounded corners. Preset game icons use the same 512-point canvas as the launcher icon. A custom game icon is published unchanged. Never patch icon resources inside `Arknights.exe`.
