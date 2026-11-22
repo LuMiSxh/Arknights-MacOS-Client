@@ -35,6 +35,9 @@ Each finding lists its source. Verify a finding before you rely on it.
 - **Parent check.** `Endfield.exe` runs only when the official `Games.exe` is its parent process ([reakjra/stepministrator](https://github.com/reakjra/stepministrator)).
 - **Launch chain.** A `+process` trace of a working run shows the chain. GRYPHLINK `Launcher.exe` starts `1.6.0\Games.exe`. `Games.exe` starts `"G:\Endfield.exe" -launcher_lang=en-us -launcher_sub_channel=6` with a plain `CreateProcess`. The game gets no renderer flag; the launcher's **Rendering Mode** setting selects Vulkan. The game then starts `PlatformProcess.exe` and ACE starts `ACE-Service64.exe -autorun`.
 - **Next parent test.** Start `Games.exe` alone with `--parent launcher --launcher-exe 'C:\Program Files\GRYPHLINK\1.6.0\Games.exe'`. If the game starts, the client needs no helper. Otherwise build stepministrator in the private ARM runtime pipeline with its llvm-mingw toolchain and ship it in the runtime.
+- **Runtime candidate.** The catalog runtime `wine-11-22-arm64-v0-7-2-alpha-2` works with `--runtime <lab>/runtimes/wine-11-22-arm64-v0-7-2-alpha-2/wine`. A local `bin/wine64 -> wine` symlink was added.
+- **Endfield environment.** Yaagl's Endfield defaults are `FEX_MAXINST=5000`, `FEX_MULTIBLOCK=1`, `WINE_DARWIN_SPARSE_READ=1`, `WINE_NGX_SIGNER=1`, and `GST_PLUGIN_FEATURE_RANK=atdec:MAX,avdec_h264:MAX`. Pass them with `--env`.
+- **Sidecar.** Projecting the game to an iPad with Sidecar caused GPU lockups and Mac freezes. It also broke the native fullscreen Space. Test on a physical display only.
 
 ## Distribution protocol
 
@@ -74,17 +77,28 @@ Safety rules:
 
 How the helper works:
 
-1. It starts the official `Games.exe` suspended.
+1. It starts the official `Games.exe` suspended. It never runs, so it has no window, no Dock tile and no CPU. This is the approach of LLauncher's MIT `gryphlink-start`.
 2. It starts `G:\Endfield.exe` with `Games.exe` as its parent process, through `PROC_THREAD_ATTRIBUTE_PARENT_PROCESS`.
-3. It waits for the game to exit. Then it terminates the suspended `Games.exe`.
+3. It waits for the game to exit. Then it terminates `Games.exe`.
 
-Build the helper with MinGW. Install the toolchain first with `brew install mingw-w64`:
+Start lab runs from your own terminal. Runs started from an agent's shell hang: x86_64 processes spin at about 60% CPU and show no window. All stepministrator failures logged before 2026-11-22 came from that shell, not from FEX.
+
+Open work:
+
+- **Shader cache.** The first start compiles shaders. Check that the next start reuses the cache.
+- **Intro video.** After you start the game on a fresh account, the screen stays black where the intro video should play.
+  - Media Foundation DLLs (`mf`, `mfplat`, `mfreadwrite`, `winegstreamer`) load, but `GST_DEBUG=2` shows no pipeline activity.
+  - `GST_PLUGIN_FEATURE_RANK=atdec:MAX,avdec_h264:MAX` (Yaagl's setting for Endfield) did not help.
+  - Next, trace with `--wine-debug "err+all,+mfplat,+loaddll"`.
+  - Killing the game during shader compilation may have left a broken cache. A game repair is being tested.
+
+Build the helper with ARM64 llvm-mingw. Unpack llvm-mingw into `<lab>/toolchains/` first:
 
 ```sh
-uv run --locked python experiments/endfield/lab.py build-stepministrator
+uv run --locked python experiments/endfield/lab.py build-helpers
 ```
 
-The output is `<lab>/bin/stepministrator.exe`. Add `--dry-run` to print the compiler command only.
+The output is `<lab>/prefix/drive_c/stepministrator/stepministrator.exe`. Add `--dry-run` to print the compiler command only.
 
 ## Usage
 
@@ -122,10 +136,10 @@ Run the installer tests:
 uv run --locked python -m pytest experiments/endfield -q
 ```
 
-Build the helper into `<lab>/bin`. Add `--dry-run` to print the compiler command only:
+Build the helpers. Add `--dry-run` to print the compiler commands only:
 
 ```sh
-uv run --locked python experiments/endfield/lab.py build-stepministrator
+uv run --locked python experiments/endfield/lab.py build-helpers
 ```
 
 Print a launch without starting it:
@@ -144,7 +158,7 @@ uv run --locked python experiments/endfield/lab.py launch \
 
 Options:
 
-- `--backend`: `dxmt-d3d11`, `vkd3d-kk`, or `vulkan-kk`.
+- `--backend`: `dxmt-d3d11`, `vkd3d-kk`, `vulkan-kk`, or `vulkan-mvk`. `vulkan-mvk` uses a lab-only MoltenVK from `<lab>/toolchains/moltenvk-*/` (KhronosGroup release, `icd.d/MoltenVK_icd.json` with an absolute library path and without `is_portability_driver`). The ARM Wine does not enumerate portability drivers, so the loader skips MoltenVK while that flag is set. On 2026-11-22 `vulkan-kk` hung the M4 GPU ("firmware-detected lockup") when the game loaded its world.
 - `--parent`: `direct`, `launcher`, or `stepministrator`. Only `direct` adds the renderer flag for `--backend`. The `stepministrator` parent passes no renderer flag. The game takes its renderer from the launcher setting.
 - `--runtime PATH`: use a patched runtime, for example `<lab>/runtimes/<name>`.
 - `--debug`: `default`, `ace`, or `vulkan`.
@@ -187,7 +201,7 @@ Run the steps in this order:
 5. Record where ACE fails. Use `--debug ace`.
 6. Apply the ACE patches in the private ARM Wine repository. Build a patched runtime under `<lab>/runtimes/<name>`.
 7. Rerun the baseline with `--runtime`.
-8. Test the `stepministrator` parent after running `build-stepministrator`.
+8. Test the `stepministrator` parent after running `build-helpers`.
 9. Compare the backends on one fixed scene. Record FPS, RAM, visuals, and DLSS.
 
 ## Exit criteria
@@ -205,7 +219,11 @@ The lab moves into the client only when all of these pass:
 | ---- | ------- | ------- | ------ | ------- | ----- |
 | 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | launcher | In-game in a native macOS fullscreen Space. | `LMISXH_AKMOCL_FULLSCREEN=1`. After the game quits, `PlatformProcess.exe` keeps running and holds the prefix open. |
 | 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | `Games.exe` alone | No game. | `Games.exe` loads Qt and WinHTTP, then idles. |
-| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | stepministrator (ARM64 llvm-mingw, `Games.exe` not suspended) | No game. | `Games.exe` spins while mapping `hgeventlogsdk.dll`, and `Endfield.exe` spins after `EndfieldBase.dll`, both at about 63% CPU. |
-| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | stepministrator (ARM64 llvm-mingw, `Games.exe` suspended) | No game. | `Endfield.exe` spins at about 66% CPU with no loader trace. |
-| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | stepministrator (x86_64 MinGW) | No game. | The helper spins at about 66% CPU and loads no DLL. It hangs before the Wine loader under FEX. |
+| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | stepministrator (ARM64 llvm-mingw, `Games.exe` not suspended) | No game. | `Games.exe` spins while mapping `hgeventlogsdk.dll`, and `Endfield.exe` spins after `EndfieldBase.dll`, both at about 63% CPU. Invalid: started from an agent shell, which hangs Wine GUI processes. |
+| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | stepministrator (ARM64 llvm-mingw, `Games.exe` suspended) | No game. | `Endfield.exe` spins at about 66% CPU with no loader trace. Invalid: started from an agent shell, which hangs Wine GUI processes. |
+| 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | stepministrator (x86_64 MinGW) | No game. | The helper spins at about 66% CPU and loads no DLL. It hangs before the Wine loader under FEX. Invalid: started from an agent shell, which hangs Wine GUI processes. |
 | 2026-11-22 | ARM 1.0.1, unpatched | vulkan-kk | launcher | Login and in-game. ACE passed. | Game 1.6.4, GRYPHLINK 1.6.0. The launcher defaults to **Vulkan (Recommended)**. The launcher accepted the lab install at `G:\`. No macOS fullscreen Space. FPS not measured yet. |
+| 2026-11-22 | ARM 1.0.1 | vulkan-kk | stepministrator (ARM64, Games.exe running, windows hidden) | In-game | Games.exe and its QtWebEngineProcess used about 160% CPU while hidden. |
+| 2026-11-22 | ARM 1.0.1 | vulkan-mvk (MoltenVK 1.4.2) | stepministrator | Reached the world | Needed the ICD without is_portability_driver; Games.exe crashed in MoltenVK; game footprint about 34 GB on a 16 GB Mac; the Mac froze later (Sidecar active). |
+| 2026-11-22 | ARM 1.0.1 | vulkan-kk | stepministrator | Mac froze at the world load | gpuEvent "firmware-detected lockup"; Sidecar was active. |
+| 2026-11-22 | wine-11-22-arm64-v0-7-2-alpha-2 | vulkan-kk | stepministrator (Games.exe suspended) | Game starts; intro video stays black | Games.exe 0% CPU, no window, no Dock tile. |

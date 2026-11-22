@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
 
 /*
- * Starts Arknights: Endfield as a child of the official Games.exe. Endfield.exe runs only
- * under that parent, and Games.exe alone idles without spawning the game. Games.exe runs
- * (idle) and is terminated when the game exits, so no launcher process is left behind.
- * It must not be suspended: under FEX, an x86_64 child of a suspended parent spins
- * before its loader starts.
+ * Starts Arknights: Endfield as a child of the official Games.exe, because the game runs only
+ * under that parent. Games.exe is created suspended and never runs, so it shows no window, gets
+ * no Dock tile and uses no CPU. This is the approach of LLauncher's MIT gryphlink-start. The
+ * helper terminates Games.exe when the game exits.
  */
 
 #define WIN32_LEAN_AND_MEAN
@@ -110,6 +109,9 @@ int wmain(int argc, wchar_t **argv) {
     DWORD exit_code = 0;
     int status = 1;
 
+    // Unbuffered, so the lab log shows each line while the game runs.
+    setvbuf(stderr, NULL, _IONBF, 0);
+
     games_line = build_command_line(&argv[1], 1);
     game_line = build_command_line(&argv[2], argc - 2);
     games_dir = _wcsdup(argv[1]);
@@ -122,7 +124,8 @@ int wmain(int argc, wchar_t **argv) {
     truncate_to_directory(game_dir);
 
     games_startup.cb = sizeof games_startup;
-    if (!CreateProcessW(argv[1], games_line, NULL, NULL, FALSE, 0, NULL,
+    if (!CreateProcessW(argv[1], games_line, NULL, NULL, FALSE,
+                        CREATE_SUSPENDED, NULL,
                         games_dir[0] ? games_dir : NULL, &games_startup, &games)) {
         report_win32_failure(L"CreateProcessW(Games.exe)");
         goto cleanup;

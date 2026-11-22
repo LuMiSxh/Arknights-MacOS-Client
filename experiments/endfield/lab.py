@@ -47,13 +47,18 @@ WINE_DEBUG_PRESETS = {
 PARENTS = ("direct", "launcher", "stepministrator")
 DXMT_DLL_DIRECTORY = Path("DXMT/x64")
 KOSMICKRISP_ICD = Path("share/vulkan/icd.d/kosmickrisp_mesa_icd.aarch64.json")
+# Lab-only MoltenVK (KhronosGroup release, unpacked by hand): KosmicKrisp hangs the M4 GPU
+# when the game loads its world.
+MOLTENVK_ICD_GLOB = "toolchains/moltenvk-*/icd.d/MoltenVK_icd.json"
 # Lives inside the prefix: Wine routes a Unix exe path through start.exe, which hangs in
 # imm32 initialization on the ARM runtime. A C:\ path starts the helper directly.
 STEPMINISTRATOR = r"C:\stepministrator\stepministrator.exe"
 STEPMINISTRATOR_SOURCE = (
     Path(__file__).resolve().parent / "stepministrator/stepministrator.c"
 )
-MINGW_COMPILER = "x86_64-w64-mingw32-gcc"
+# ARM64 build: the x86_64 MinGW build hung under FEX before the Wine loader started.
+MINGW_COMPILER = "aarch64-w64-mingw32-clang"
+MINGW_TOOLCHAIN_GLOB = "toolchains/llvm-mingw-*/bin"
 # GUI subsystem: the console build hung in imm32 initialization on the ARM runtime.
 MINGW_FLAGS = (
     "-municode",
@@ -65,7 +70,7 @@ MINGW_FLAGS = (
     "-Wextra",
     "-Werror",
 )
-HOMEBREW_BIN = "/opt/homebrew/bin"
+
 PREFIX_WINE_OVERRIDES = "winemac.drv=d"
 DXMT_OVERRIDES = "d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
 # backend -> (WINEDLLOVERRIDES, game argument that selects the renderer)
@@ -74,8 +79,9 @@ BACKENDS: dict[str, tuple[str, str]] = {
     # Wine's builtin d3d12 (vkd3d) runs on Vulkan, so it also goes through KosmicKrisp.
     "vkd3d-kk": ("dcomp,mscoree,mshtml=", "-force-d3d12"),
     "vulkan-kk": ("dcomp,mscoree,mshtml=", "-force-vulkan"),
+    "vulkan-mvk": ("dcomp,mscoree,mshtml=", "-force-vulkan"),
 }
-VULKAN_BACKENDS = {"vkd3d-kk", "vulkan-kk"}
+VULKAN_BACKENDS = {"vkd3d-kk", "vulkan-kk", "vulkan-mvk"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,7 +176,8 @@ def run_logged(argv: list[str], env: dict[str, str], cwd: Path, log: Path) -> in
     """Run a process, copying its combined output to stdout and to the log file."""
     log.parent.mkdir(parents=True, exist_ok=True)
     with (
-        log.open("w", encoding="utf-8") as file,
+        # Line-buffered, so the log can be read while the game runs.
+        log.open("w", encoding="utf-8", buffering=1) as file,
         subprocess.Popen(
             argv,
             env=env,
@@ -233,12 +240,16 @@ def launch_plan(args: argparse.Namespace, lab: Path, runtime: Path) -> LaunchPla
         "WINEDEBUG": args.wine_debug or WINE_DEBUG_PRESETS[args.debug],
         "WINEDLLOVERRIDES": override,
     }
-    if args.backend in VULKAN_BACKENDS:
+    if args.backend == "vulkan-mvk":
+        icds = sorted(lab.glob(MOLTENVK_ICD_GLOB))
+        if not icds:
+            fail(f"no MoltenVK ICD matches {lab / MOLTENVK_ICD_GLOB}")
+        env["VK_DRIVER_FILES"] = str(icds[-1])
+    elif args.backend in VULKAN_BACKENDS:
         icd = runtime / KOSMICKRISP_ICD
         if not icd.is_file():
             fail(f"runtime has no KosmicKrisp ICD: {icd}")
         env["VK_DRIVER_FILES"] = str(icd)
-    env |= dict(args.env)
     # Only the direct parent picks the renderer. The official launcher passes none.
     game_arguments = [*FIXED_GAME_ARGUMENTS, *args.game_args]
     required = [lab / "prefix"]
@@ -262,15 +273,13 @@ def launch_plan(args: argparse.Namespace, lab: Path, runtime: Path) -> LaunchPla
         # The helper sets the game's working directory itself.
         cwd = helper.parent
         required += [host_path(args.games_exe, lab), game_executable, helper]
+    env |= dict(args.env)
     return LaunchPlan(argv=argv, cwd=cwd, env=env, required=required, notes=notes)
 
 
 def missing_message(path: Path, lab: Path) -> str:
-    hint = (
-        " (build it with build-stepministrator)"
-        if path == host_path(STEPMINISTRATOR, lab)
-        else ""
-    )
+    helper = host_path(STEPMINISTRATOR, lab)
+    hint = " (build it with build-helpers)" if path == helper else ""
     return f"missing: {path}{hint}"
 
 
@@ -341,22 +350,34 @@ def run_install(args: argparse.Namespace) -> None:
         fail(str(error))
 
 
-def run_build_stepministrator(args: argparse.Namespace) -> None:
+def run_build_helpers(args: argparse.Namespace) -> None:
+    lab = lab_root()
+    toolchains = sorted(lab.glob(MINGW_TOOLCHAIN_GLOB))
     compiler = shutil.which(
-        MINGW_COMPILER, path=f"{os.environ.get('PATH', '')}{os.pathsep}{HOMEBREW_BIN}"
+        MINGW_COMPILER, path=os.pathsep.join(str(path) for path in toolchains)
     )
     if compiler is None:
-        fail(f"{MINGW_COMPILER} not found; install MinGW with `brew install mingw-w64`")
-    output = host_path(STEPMINISTRATOR, lab_root())
-    command = [compiler, *MINGW_FLAGS, "-o", str(output), str(STEPMINISTRATOR_SOURCE)]
+        fail(f"{MINGW_COMPILER} not found; unpack llvm-mingw into {lab / 'toolchains'}")
+    stepministrator = host_path(STEPMINISTRATOR, lab)
+    command = [
+        compiler,
+        *MINGW_FLAGS,
+        "-o",
+        str(stepministrator),
+        str(STEPMINISTRATOR_SOURCE),
+    ]
     if args.dry_run:
         print(shlex.join(command))
         return
-    output.parent.mkdir(parents=True, exist_ok=True)
+    stepministrator.parent.mkdir(parents=True, exist_ok=True)
+    # Replace by rename, so a running helper keeps its mapped image.
+    staged = stepministrator.with_name(f".{stepministrator.name}.new")
+    command[command.index(str(stepministrator))] = str(staged)
     code = subprocess.run(command, check=False).returncode
     if code:
-        fail(f"{MINGW_COMPILER} exited with {code}")
-    success(f"built {output}")
+        fail(f"{command[0]} exited with {code}")
+    staged.replace(stepministrator)
+    success(f"built {stepministrator}")
 
 
 def env_pair(value: str) -> tuple[str, str]:
@@ -400,9 +421,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--force", action="store_true", help="skip the free disk space check"
     )
 
-    build = commands.add_parser(
-        "build-stepministrator", help="compile bin/stepministrator.exe with MinGW"
-    )
+    build = commands.add_parser("build-helpers", help="compile stepministrator.exe")
     build.add_argument(
         "--dry-run", action="store_true", help="print the compiler command only"
     )
@@ -453,8 +472,8 @@ def main() -> None:
         run_prefix(args)
     elif args.command == "install":
         run_install(args)
-    elif args.command == "build-stepministrator":
-        run_build_stepministrator(args)
+    elif args.command == "build-helpers":
+        run_build_helpers(args)
     else:
         run_launch(args)
 
