@@ -98,7 +98,7 @@ import Foundation
 					executables: ["Arknights.exe"],
 					features: .conservative,
 					requiredFiles: [],
-					macDriver: "Arknights.app/Contents/MacOS/winemac.so",
+					macDriver: "wine.app/Contents/MacOS/winemac.so",
 					launcher: .init(path: "Arknights.app", target: "Arknights"),
 					dxmt: .init(
 						payloadDirectory: "dxmt",

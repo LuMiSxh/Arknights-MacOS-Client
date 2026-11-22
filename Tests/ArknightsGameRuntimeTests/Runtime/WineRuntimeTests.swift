@@ -90,7 +90,7 @@ func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 @Test
 func runtimeProcessWaitTerminatesAndResumesWhenCancelled() async throws {
 	let runtime = WineRuntime(
-		executableURL: URL(filePath: "/runtime/bin/Arknights"),
+		executableURL: URL(filePath: "/runtime/bin/wine64"),
 		displayName: "Test",
 		revision: "test",
 		compatibilityManager: GameCompatibilityManager()

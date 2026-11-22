@@ -40,8 +40,6 @@ struct WineRuntime: Sendable {
 	let dxmtPayloadDestinations: [DXMTDestination]
 	let dxmtPayloadLibraries: [String]
 	let helperDockBridgeURL: URL?
-	// Candidate loader bundles in priority order; empty when the lane has none.
-	let loaderBundleURLs: [URL]
 	let features: RuntimeFeatures
 	let pins: RuntimePins
 	private let compatibilityManager: GameCompatibilityManager
@@ -56,7 +54,6 @@ struct WineRuntime: Sendable {
 		dxmtPayloadDestinations: [DXMTDestination] = WineRuntime.dxmtDestinations,
 		dxmtPayloadLibraries: [String] = WineRuntime.dxmtLibraryNames,
 		helperDockBridgeURL: URL? = nil,
-		loaderBundleURLs: [URL] = [],
 		features: RuntimeFeatures = .conservative,
 		pins: RuntimePins = RuntimePins(),
 		compatibilityManager: GameCompatibilityManager
@@ -70,7 +67,6 @@ struct WineRuntime: Sendable {
 		self.dxmtPayloadDestinations = dxmtPayloadDestinations
 		self.dxmtPayloadLibraries = dxmtPayloadLibraries
 		self.helperDockBridgeURL = helperDockBridgeURL
-		self.loaderBundleURLs = loaderBundleURLs
 		self.features = features
 		self.pins = pins
 		self.compatibilityManager = compatibilityManager
@@ -144,7 +140,7 @@ struct WineRuntime: Sendable {
 		fileManager: FileManager,
 		compatibilityManager: GameCompatibilityManager
 	) throws -> WineRuntime {
-		let executable = runtimeRoot.appending(path: "bin/Arknights")
+		let executable = runtimeRoot.appending(path: "bin/wine64")
 		guard fileManager.isExecutableFile(atPath: executable.path) else {
 			throw WineRuntimeDiscoveryError.missingExecutable(executable)
 		}
@@ -214,8 +210,6 @@ struct WineRuntime: Sendable {
 			dxmtPayloadDestinations: dxmtDestinations,
 			dxmtPayloadLibraries: dxmtLibraries,
 			helperDockBridgeURL: helperDockBridgeURL,
-			loaderBundleURLs: manifest.architecture == .arm
-				? manifest.interface.loaderPaths.map { runtimeRoot.appending(path: $0) } : [],
 			features: manifest.interface.features,
 			pins: RuntimePins(
 				wineVersion: manifest.components?.wine,

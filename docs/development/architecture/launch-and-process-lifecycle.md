@@ -311,7 +311,7 @@ pure `MusicPhase.applying(_:)`.
 
 | Process or helper                       | Started by                                                      | Responsibility                                   | Shutdown owner                           |
 | --------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------- |
-| `Arknights.exe` through `bin/Arknights` | `WineRuntime`                                                   | Main Unity game                                  | `GameSessionController` via `wineserver` |
+| `Arknights.exe` through `bin/wine64`    | `WineRuntime`                                                   | Main Unity game                                  | `GameSessionController` via `wineserver` |
 | Vuplex / Chromium helper                | Official game helper through the Vuplex component               | Account and in-game web pages                    | Wine prefix cleanup                      |
 | `PlatformProcess.exe`                   | Official game notice flow through the PlatformProcess component | Separate Qt WebEngine Notices window             | Wine prefix cleanup                      |
 | Bilibili `PCGamePlatform.exe`           | Official Bilibili client with the launcher's controller         | Bilibili's own CEF login window                  | Wine prefix cleanup                      |

@@ -39,13 +39,12 @@ package struct RuntimeManifest: Codable, Sendable {
 		package let launcher: Launcher
 		package let dxmt: DXMT
 
-		/// Candidate Developer ID loader bundles inside the prepared runtime tree, first match wins.
-		/// `wine.app` is the legacy name, used by runtimes pinned before the rename to `Arknights.app`.
+		/// The Developer ID loader bundle inside the prepared runtime tree, next to the macDriver.
 		package var loaderPaths: [String] {
 			let components = macDriver.split(separator: "/")
 			guard components.count > 1 else { return [] }
 			let directory = components.dropLast().joined(separator: "/")
-			return [directory + "/Arknights.app", directory + "/wine.app"]
+			return [directory + "/wine.app"]
 		}
 
 		/// The DXMT files that must exist for the declared destinations and libraries.

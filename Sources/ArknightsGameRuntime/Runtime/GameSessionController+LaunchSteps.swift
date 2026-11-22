@@ -215,7 +215,6 @@ extension GameSessionController {
 		let request = context.request
 		try Task.checkCancellation()
 		guard activeGameSessionID == request.id else { return nil }
-		RuntimeLoaderIcon.apply(to: context.runtime, log: log, setIcon: applyLoaderIcon)
 		let features = context.runtime.features
 		let screen = GameScreenList.system().resolve(request.options.display)
 		if let saved = request.options.display, screen?.isFallback == true {
