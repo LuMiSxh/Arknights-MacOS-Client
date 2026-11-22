@@ -149,15 +149,23 @@ extension WineRuntime {
 		return environment
 	}
 
-	// Injects the helper Dock bridge into Wine's process tree. Wine passes the injection to every
-	// process the game starts; the launcher PID lets the bridge tell the game from its helpers.
-	func helperDockEnvironment(
+	// Injects the bridge that runs inside Wine's process tree. GameIconBridge normalizes the
+	// extracted executable icon. Wine passes the injection to every process the game starts;
+	// the launcher PID lets the bridge keep helpers out of the Dock.
+	func gameIconEnvironment(
+		customIconURL: URL?,
 		launcherProcessIdentifier: Int32 = ProcessInfo.processInfo.processIdentifier
 	) -> [String: String] {
-		guard let helperDockBridgeURL else { return [:] }
-		return [
-			"DYLD_INSERT_LIBRARIES": helperDockBridgeURL.path,
+		var libraries: [String] = []
+		if let gameIconBridgeURL { libraries.append(gameIconBridgeURL.path) }
+		guard !libraries.isEmpty else { return [:] }
+		var environment = [
+			"DYLD_INSERT_LIBRARIES": libraries.joined(separator: ":"),
 			"ARKNIGHTS_CLIENT_LAUNCHER_PID": String(launcherProcessIdentifier),
 		]
+		if let customIconURL {
+			environment["ARKNIGHTS_CLIENT_GAME_ICON_PATH"] = customIconURL.path
+		}
+		return environment
 	}
 }

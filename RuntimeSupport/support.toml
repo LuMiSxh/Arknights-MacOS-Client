@@ -16,10 +16,10 @@ artifacts = [
 ]
 
 [[components]]
-name = "helper-dock"
-directory = "HelperDock"
+name = "game-icon"
+directory = "GameIcon"
 artifacts = [
-  { source = "HelperDockBridge.m", output = "HelperDockBridge.dylib", kind = "macos-library", arguments = ["-lobjc"] },
+  { source = "GameIconBridge.m", output = "GameIconBridge.dylib", kind = "macos-library", arguments = ["-lobjc"] },
 ]
 
 [[components]]

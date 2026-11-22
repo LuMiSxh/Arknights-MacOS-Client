@@ -51,13 +51,13 @@ process. The game process stays unmodified.
   active.
 - The components do not inspect page data.
 
-The helper Dock bridge is a small Objective-C dylib that Wine loads into the processes the game starts.
+A separate signed Objective-C bridge runs in the main Wine process.
 
-- The launcher passes its own process ID. The game, the launcher's direct child, keeps its Dock tile.
-- Helper processes, such as the Bilibili sign-in helper, switch to accessory activation. They show no
-  "wine" Dock tile, so macOS cannot keep one among recent apps after the game exits.
-- The game's icon and Dock name come from the **Rounded Dock icon** and **Game name in Dock** runtime
-  patches. A custom game icon reaches the runtime as `LMISXH_AKMOCL_DOCK_ICON_OVERRIDE`.
+- After Wine initializes AppKit, it sets the original or a launcher-owned custom game icon through
+  AppKit's public application-icon setter. Game files stay untouched.
+- Wine passes the bridge to every process the game starts. The launcher also passes its own process
+  ID, so the bridge keeps only its direct child, the game, in the Dock. Other windows become accessory
+  windows. macOS then cannot keep "wine" entries among recent apps after the game exits.
 
 This diagram shows how the launcher, Wine, and the helpers connect:
 
@@ -316,7 +316,7 @@ pure `MusicPhase.applying(_:)`.
 | `PlatformProcess.exe`                   | Official game notice flow through the PlatformProcess component | Separate Qt WebEngine Notices window             | Wine prefix cleanup                      |
 | Bilibili `PCGamePlatform.exe`           | Official Bilibili client with the launcher's controller         | Bilibili's own CEF login window                  | Wine prefix cleanup                      |
 | `wineserver`                            | Wine runtime                                                    | Prefix-wide synchronization and process lifetime | `GameSessionController`                  |
-| Helper Dock bridge                      | Runtime environment injection                                   | Helper Dock tile only                            | Process termination                      |
+| Native game icon bridge                 | Runtime environment injection                                   | AppKit game icon only                            | Process termination                      |
 
 The compatibility components keep the official helper's arguments and content. They are not a proxy for
 browser data or credentials. For the `G:` target, see
