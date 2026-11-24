@@ -53,8 +53,8 @@ process. The game process stays unmodified.
 
 A separate signed Objective-C bridge runs in the main Wine process.
 
-- After Wine initializes AppKit, it sets the original or a launcher-owned custom game icon through
-  AppKit's public application-icon setter. Game files stay untouched.
+- After Wine initializes AppKit, it sets Wine's game icon or a launcher-owned custom game icon
+  through AppKit's public application-icon setter. Game files stay untouched.
 - Wine passes the bridge to every process the game starts. The launcher also passes its own process
   ID, so the bridge keeps only its direct child, the game, in the Dock. Other windows become accessory
   windows. macOS then cannot keep "wine" entries among recent apps after the game exits.
@@ -375,9 +375,10 @@ state that a newer launch owns. See [Troubleshooting](../../help/troubleshooting
 - **Compatibility profiles:** `RuntimePatchEnvironment` builds the `LMISXH_AKMOCL_*` environment
   for every launch. Each compatibility patch has one gate: `_ACE_IMPORTS`, `_APPCONTAINER`,
   `_WINSOCK`, `_CEF`, `_CN`, `_FULLSCREEN`, `_CURSOR`, `_MENU`, `_AUDIO`, `_ACE_TIMING`,
-  `_ACE_DISPATCHER`, and `_ACE_ROSETTA`. The launch sends every gate as `1` or `0`; there is no
-  master switch. A lane receives only the gates its build contains: `_AUDIO`, `_ACE_TIMING`,
-  `_ACE_DISPATCHER`, and `_ACE_ROSETTA` are x86 only, and `_EFLAGS` and `_HYBRID_THREAD` are ARM
+  `_ACE_DISPATCHER`, `_ACE_ROSETTA`, and `_SQUIRCLE_ICON`. The launch sends every
+  gate as `1` or `0`; there is no master switch. A lane receives only the gates its build contains:
+  `_AUDIO`, `_ACE_TIMING`, `_ACE_DISPATCHER`, and `_ACE_ROSETTA` are x86 only, and `_EFLAGS` and
+  `_HYBRID_THREAD` are ARM
   only. Settings → Runtime → Runtime patches can set any default-on gate to `0` through
   `RuntimePatch`. The runtime is built once with all patches compiled in, so the gates only choose
   behavior at launch.

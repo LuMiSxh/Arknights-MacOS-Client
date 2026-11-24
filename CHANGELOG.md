@@ -9,6 +9,16 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added the **Rounded Dock icon** runtime patch. This was a client side change and moved into the runtime patch system.
+
+### Changed
+
+- Updated the bundled runtime to v1.0.2-rc1. On Apple silicon, the game environment now uses Wine 11.22.
+
 ## [1.0.1] - 2026-11-20
 
 > [!IMPORTANT]

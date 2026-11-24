@@ -107,6 +107,8 @@ Use **Runtime patches** only when a maintainer asks, or when a problem started a
 
 Keep the defaults on unless you know what a patch does. The game may break or behave differently with a patch off. To undo a change, turn the switch back on. **Restore Defaults** turns every patch back on. The list shows only the patches that your runtime contains.
 
+**Rounded Dock icon** draws the game's Dock icon with rounded corners. Turn it off to show the icon as Wine reads it.
+
 ## Debug logging
 
 Use **Debug logging** when a maintainer asks for detailed logs. Turn it on in **Settings → Help → Troubleshooting**.

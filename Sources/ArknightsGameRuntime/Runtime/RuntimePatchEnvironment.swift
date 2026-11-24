@@ -18,6 +18,7 @@ struct RuntimePatchEnvironment {
 		case .eflags: AppConstants.Runtime.eflagsEnvironmentKey
 		case .hybridThread: AppConstants.Runtime.hybridThreadEnvironmentKey
 		case .loaderLink: AppConstants.Runtime.loaderLinkEnvironmentKey
+		case .squircleIcon: AppConstants.Runtime.squircleIconEnvironmentKey
 		}
 	}
 

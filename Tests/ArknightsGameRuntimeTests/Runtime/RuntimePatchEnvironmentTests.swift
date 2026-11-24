@@ -15,6 +15,7 @@ private let sharedGateKeys = [
 	"LMISXH_AKMOCL_FULLSCREEN",
 	"LMISXH_AKMOCL_CURSOR",
 	"LMISXH_AKMOCL_MENU",
+	"LMISXH_AKMOCL_SQUIRCLE_ICON",
 ]
 private let x86GateKeys = [
 	"LMISXH_AKMOCL_AUDIO",

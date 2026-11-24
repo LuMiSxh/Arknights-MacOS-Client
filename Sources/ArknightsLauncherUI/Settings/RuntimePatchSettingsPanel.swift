@@ -88,6 +88,7 @@ extension RuntimePatch {
 		case .eflags: "CPU flag carry"
 		case .hybridThread: "Thread start fix"
 		case .loaderLink: "App name"
+		case .squircleIcon: "Rounded Dock icon"
 		}
 	}
 
@@ -115,6 +116,8 @@ extension RuntimePatch {
 			"Repairs how threads start in mixed ARM64 and x64 code. Turning it off can cause crashes."
 		case .loaderLink:
 			"Shows the game’s own name instead of Wine in the menu bar and Dock. Off restores Wine’s name."
+		case .squircleIcon:
+			"Draws the game’s Dock icon with the rounded corners of macOS app icons. Off shows the icon as Wine reads it."
 		}
 	}
 }
