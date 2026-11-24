@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: MPL-2.0
 
+import hashlib
 import json
 import re
 import shutil
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,9 @@ from lib.common import PROJECT_DIR, ScriptError
 from lib.project_config import RUNTIME_CONFIG
 
 NEW_TAG = "v99.0.0"
+RELEASE_URL = (
+    f"https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/{NEW_TAG}"
+)
 NEW_SOURCE_COMMIT = "2" * 40
 NEW_WINE_COMMIT = "1" * 40
 LANES = ("x86", "arm")
@@ -35,119 +39,88 @@ def current_tag(root: Path, architecture: str = "x86") -> str:
     return re.search(r"/download/(v[^/]+)/", url).group(1)
 
 
-def release_interface(architecture: str) -> dict[str, Any]:
-    """Render one lane interface in the root-relative layout that provenance.json uses."""
-    manifest = runtime_manifest()
-    interface = manifest["lanes"][architecture]["interface"]
-    dxmt = interface["dxmt"]["payloadDirectory"]
-    return {
-        "executables": sorted(
-            [*interface["executables"], interface["launcher"]["path"]]
-        ),
-        "requiredFiles": sorted(
-            [*interface["requiredFiles"], interface["macDriver"]]
-            + [
-                f"{dxmt}/{target}/{library}"
-                for target in interface["dxmt"]["destinations"]
-                for library in interface["dxmt"]["libraries"]
-            ]
-        ),
-        "features": interface["features"],
-        "minimumMacOS": manifest["lanes"][architecture]["minimumMacOS"],
-    }
-
-
-def release_fragment(
-    tag: str, architecture: str, moltenvk_commit: str = "4" * 40
-) -> dict[str, Any]:
-    """One lane fragment of a schema 2 release, with the interface of runtime.json."""
-    interface = release_interface(architecture)
-    archive, source = runtime_update.asset_names(tag, architecture)
-    # Like the runtime's resolved lock view: features sit beside the interface.
-    features = interface.pop("features")
-    contents: dict[str, Any] = {"interface": interface, "features": features}
-    if architecture == "x86":
-        contents["baseArtifact"] = {
-            "url": "https://github.com/dappermint/Whisky/releases/download/v4.7.3/Libraries.tar.gz",
-            "sha256": "e" * 64,
-        }
-        contents["baseProvenance"] = {
-            "moltenvk": {
-                "commit": moltenvk_commit,
-                "repository": "https://github.com/KhronosGroup/MoltenVK.git",
-            }
-        }
-    return {
-        "target": runtime_update.LANE_TARGETS[architecture],
-        "arch": runtime_update.RELEASE_ARCHITECTURES[architecture],
-        "version": tag.removeprefix("v"),
+def release_manifest(lane: str) -> dict[str, Any]:
+    """Return the runtime manifest that a release writes for one lane (manifest schema 1)."""
+    architecture = runtime_update.RELEASE_ARCHITECTURES[lane]
+    pinned = runtime_manifest()["lanes"][lane]
+    provenance = {
+        "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
         "buildCommit": NEW_SOURCE_COMMIT,
-        "runtimeLock": {"contents": contents},
-        "wine": {
-            "source": "built",
-            "repository": "https://github.com/dappermint/winecx.git",
-            "commit": NEW_WINE_COMMIT,
-            "version": "11.18",
-        },
-        "dxmt": {
-            "repository": "https://github.com/3Shain/dxmt.git",
-            "commit": "5" * 40,
-            "version": "0.81",
-        },
-        "runtimeArchive": {
-            "name": archive,
-            "sha256": ARCHIVE_DIGESTS[architecture],
-            "sizeBytes": ARCHIVE_SIZES[architecture],
-        },
-        "correspondingSourceArchive": {"name": source, "sha256": "b" * 64},
+        "wineRepository": "https://github.com/dappermint/winecx",
+        "wineCommit": NEW_WINE_COMMIT,
+        "dxmtRepository": "https://github.com/3Shain/dxmt",
+        "dxmtCommit": "5" * 40,
     }
-
-
-def release_provenance(
-    tag: str = NEW_TAG, moltenvk_commit: str = "4" * 40
-) -> dict[str, Any]:
-    """A schema 2 provenance.json that carries one fragment per lane."""
+    deltas: list[dict[str, Any]] = []
+    if lane == "x86":
+        provenance |= {
+            "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
+            "moltenvkCommit": "4" * 40,
+        }
+    else:
+        # Oldest first, as the release lists them; the pin sorts them newest first.
+        deltas = [
+            {
+                "from": "0.7.0",
+                "name": f"runtime-{architecture}-from-0.7.0.delta.tar.xz",
+                "sha256": "d" * 64,
+                "sizeBytes": 1_000,
+            },
+            {
+                "from": "0.8.0",
+                "name": f"runtime-{architecture}-from-0.8.0.delta.tar.xz",
+                "sha256": "e" * 64,
+                "sizeBytes": 2_000,
+            },
+        ]
     return {
-        "schemaVersion": 2,
-        "releaseTag": tag,
-        "runtimes": [
-            release_fragment(tag, architecture, moltenvk_commit)
-            for architecture in LANES
-        ],
+        "schemaVersion": 1,
+        "arch": architecture,
+        "version": NEW_TAG.removeprefix("v"),
+        "minimumMacOS": pinned["minimumMacOS"],
+        "archive": {
+            "name": f"runtime-{architecture}.tar.xz",
+            "sha256": ARCHIVE_DIGESTS[lane],
+            "sizeBytes": ARCHIVE_SIZES[lane],
+        },
+        "deltas": deltas,
+        "interface": pinned["interface"],
+        "components": {"wine": "11.18", "dxmt": "0.81"},
+        "provenance": provenance,
     }
+
+
+def release_assets(manifests: Mapping[str, Mapping[str, Any]]) -> dict[str, bytes]:
+    """Return one release: each lane manifest and the `SHA256SUMS` that lists all assets."""
+    assets: dict[str, bytes] = {}
+    digests: dict[str, str] = {}
+    for lane, manifest in manifests.items():
+        body = json.dumps(manifest).encode("utf-8")
+        name = f"runtime-{runtime_update.RELEASE_ARCHITECTURES[lane]}.json"
+        assets[name] = body
+        digests[name] = hashlib.sha256(body).hexdigest()
+        for asset in (manifest["archive"], *manifest["deltas"]):
+            digests[asset["name"]] = asset["sha256"]
+    listing = "".join(f"{digests[name]}  {name}\n" for name in sorted(digests))
+    assets[runtime_update.CHECKSUMS_ASSET] = listing.encode("utf-8")
+    return assets
 
 
 def release_fetch(
-    tag: str = NEW_TAG,
-    provenance: dict[str, Any] | None = None,
-    mutate: Callable[[dict[str, str | bytes]], None] | None = None,
-    listed_sizes: dict[str, int] | None = None,
+    manifests: Mapping[str, Mapping[str, Any]] | None = None,
+    mutate: Callable[[dict[str, bytes]], None] | None = None,
 ) -> Callable[[str], bytes]:
-    """Serve the release assets and metadata from memory; fail on any other URL."""
-    provenance = provenance or release_provenance(tag)
-    assets: dict[str, str | bytes] = {"provenance.json": json.dumps(provenance)}
-    for fragment in provenance["runtimes"]:
-        for key in ("runtimeArchive", "correspondingSourceArchive"):
-            name = fragment[key]["name"]
-            assets[f"{name}.sha256"] = f"{fragment[key]['sha256']}  {name}\n"
-    if mutate:
+    """Serve the release assets from memory; fail on any other URL."""
+    if manifests is None:
+        manifests = {lane: release_manifest(lane) for lane in LANES}
+    assets = release_assets(manifests)
+    if mutate is not None:
         mutate(assets)
-    if listed_sizes is None:
-        listed_sizes = {
-            fragment["runtimeArchive"]["name"]: fragment["runtimeArchive"]["sizeBytes"]
-            for fragment in provenance["runtimes"]
-        }
-    metadata = {
-        "assets": [{"name": name, "size": size} for name, size in listed_sizes.items()]
-    }
+    prefix = f"{RELEASE_URL}/"
 
     def fetch(url: str) -> bytes:
-        if url == f"{runtime_update.RELEASE_API}{tag}":
-            return json.dumps(metadata).encode()
-        prefix = f"{runtime_update.REPOSITORY_URL}/releases/download/{tag}/"
         assert url.startswith(prefix), url
-        value = assets[url.removeprefix(prefix)]
-        return value.encode() if isinstance(value, str) else value
+        return assets[url.removeprefix(prefix)]
 
     return fetch
 
@@ -173,21 +146,44 @@ def test_project_runtime_pin_is_current() -> None:
 def test_update_pins_both_lanes_from_one_release(project: Path) -> None:
     changed = runtime_update.update(project, NEW_TAG, release_fetch())
 
-    manifest = manifest_of(project)
+    lanes = manifest_of(project)["lanes"]
     assert changed == [RUNTIME_CONFIG, runtime_update.NOTICES_DOCUMENT]
-    for architecture in LANES:
-        archive, _ = runtime_update.asset_names(NEW_TAG, architecture)
-        assert manifest["lanes"][architecture]["runtime"] == {
-            "name": "Arknights macOS Runtime 99.0.0",
-            "version": "99.0.0",
-            "url": runtime_update.asset_url(NEW_TAG, archive),
-            "sha256": ARCHIVE_DIGESTS[architecture],
-            "sizeBytes": ARCHIVE_SIZES[architecture],
-            "deltas": [],
-        }
-    assert manifest["lanes"]["x86"]["components"]["wine"] == "11.18"
-    assert manifest["lanes"]["x86"]["provenance"]["buildCommit"] == NEW_SOURCE_COMMIT
-    assert manifest["lanes"]["x86"]["provenance"]["wineCommit"] == NEW_WINE_COMMIT
+    assert lanes["x86"]["runtime"] == {
+        "name": "Arknights macOS Runtime 99.0.0",
+        "version": "99.0.0",
+        "url": f"{RELEASE_URL}/runtime-x86_64.tar.xz",
+        "sha256": "a" * 64,
+        "sizeBytes": 123_456,
+        "deltas": [],
+    }
+    assert lanes["arm"]["runtime"] == {
+        "name": "Arknights macOS Runtime 99.0.0",
+        "version": "99.0.0",
+        "url": f"{RELEASE_URL}/runtime-arm64.tar.xz",
+        "sha256": "c" * 64,
+        "sizeBytes": 234_567,
+        "deltas": [
+            {
+                "from": "0.8.0",
+                "url": f"{RELEASE_URL}/runtime-arm64-from-0.8.0.delta.tar.xz",
+                "sha256": "e" * 64,
+                "sizeBytes": 2_000,
+            },
+            {
+                "from": "0.7.0",
+                "url": f"{RELEASE_URL}/runtime-arm64-from-0.7.0.delta.tar.xz",
+                "sha256": "d" * 64,
+                "sizeBytes": 1_000,
+            },
+        ],
+    }
+    assert lanes["x86"]["components"] == {
+        "wine": "11.18",
+        "dxmt": "0.81",
+        "moltenvk": "1.4.2",
+    }
+    assert lanes["x86"]["provenance"] == release_manifest("x86")["provenance"]
+    assert lanes["arm"]["interface"] == release_manifest("arm")["interface"]
     notices = (project / runtime_update.NOTICES_DOCUMENT).read_text(encoding="utf-8")
     assert f"releases/tag/{NEW_TAG}" in notices
     runtime_update.check(project)
@@ -210,222 +206,73 @@ def test_update_pins_one_lane_and_keeps_the_other(
     runtime_update.check(project)
 
 
-def test_update_leaves_the_interfaces_untouched(project: Path) -> None:
-    def interfaces() -> dict[str, Any]:
-        return {
-            lane: manifest_of(project)["lanes"][lane]["interface"] for lane in LANES
-        }
-
-    before = interfaces()
-
-    runtime_update.update(project, NEW_TAG, release_fetch())
-
-    assert interfaces() == before
-
-
-def test_update_seeds_an_empty_arm_lane_from_its_fragment(project: Path) -> None:
-    manifest = manifest_of(project)
-    manifest["lanes"]["arm"]["components"] = {}
-    manifest["lanes"]["arm"]["provenance"] = {}
-    (project / RUNTIME_CONFIG).write_text(json.dumps(manifest), encoding="utf-8")
-    provenance = release_provenance()
-    provenance["runtimes"][1]["wine"] = {
-        "source": "external",
-        "repository": "https://gitlab.winehq.org/wine/wine.git",
-        "commit": "7b3fff76fa5178f6ce0141b2c776afa2a822f101",
-        "version": "11.18",
-        "externalBuild": {
-            "repository": "https://github.com/riverfog7/wine-build-new",
-            "commit": "3" * 40,
-        },
-    }
-
-    runtime_update.update(
-        project,
-        NEW_TAG,
-        release_fetch(provenance=provenance),
-        architectures=("arm",),
-    )
-
-    lane = manifest_of(project)["lanes"]["arm"]
-    assert lane["components"] == {"wine": "11.18", "dxmt": "0.81"}
-    assert lane["provenance"]["wineRepository"] == "https://gitlab.winehq.org/wine/wine"
-    assert lane["provenance"]["wineCommit"] == (
-        "7b3fff76fa5178f6ce0141b2c776afa2a822f101"
-    )
-    assert lane["provenance"]["dxmtRepository"] == "https://github.com/3Shain/dxmt"
-    assert lane["provenance"]["buildCommit"] == NEW_SOURCE_COMMIT
-    assert lane["provenance"]["externalBuildRepository"] == (
-        "https://github.com/riverfog7/wine-build-new"
-    )
-    assert lane["provenance"]["externalBuildCommit"] == "3" * 40
-    runtime_update.check(project)
-
-
-@pytest.mark.parametrize("architecture", LANES)
-def test_update_needs_a_fragment_for_each_lane(
-    project: Path, architecture: str
+@pytest.mark.parametrize(
+    ("key", "value", "message"),
+    [
+        ("version", "98.0.0", "does not describe"),
+        ("arch", "x86_64", "does not describe"),
+        ("schemaVersion", 2, "is not runtime manifest schema 1"),
+    ],
+)
+def test_manifest_must_describe_its_lane_and_release(
+    project: Path, key: str, value: object, message: str
 ) -> None:
-    before = (project / RUNTIME_CONFIG).read_text(encoding="utf-8")
-    provenance = release_provenance()
-    provenance["runtimes"] = [
-        fragment
-        for fragment in provenance["runtimes"]
-        if fragment["target"] != runtime_update.LANE_TARGETS[architecture]
-    ]
+    manifests = {lane: release_manifest(lane) for lane in LANES}
+    manifests["arm"][key] = value
 
-    with pytest.raises(ScriptError, match=f"one {architecture} runtime"):
-        runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
-
-    assert (project / RUNTIME_CONFIG).read_text(encoding="utf-8") == before
-
-
-@pytest.mark.parametrize(("key", "value"), [("version", "98.0.0"), ("arch", "x86_64")])
-def test_fragment_must_describe_its_lane_and_release(
-    project: Path, key: str, value: str
-) -> None:
-    provenance = release_provenance()
-    provenance["runtimes"][1][key] = value
-
-    with pytest.raises(ScriptError, match="does not describe"):
-        runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
+    with pytest.raises(ScriptError, match=message):
+        runtime_update.update(project, NEW_TAG, release_fetch(manifests=manifests))
 
 
 @pytest.mark.parametrize(
-    ("key", "value"), [("releaseTag", "v0.7.0-rc2"), ("schemaVersion", 1)]
+    ("name", "replacement", "message"),
+    [
+        pytest.param(
+            "runtime-x86_64.json",
+            f"{'f' * 64}  runtime-x86_64.json\n",
+            "for runtime-x86_64.json",
+            id="manifest-differs",
+        ),
+        pytest.param(
+            "runtime-x86_64.tar.xz",
+            f"{'f' * 64}  runtime-x86_64.tar.xz\n",
+            "for runtime-x86_64.tar.xz",
+            id="archive-differs",
+        ),
+        pytest.param(
+            "runtime-x86_64.tar.xz",
+            "",
+            "does not list runtime-x86_64.tar.xz",
+            id="archive-unlisted",
+        ),
+    ],
 )
-def test_provenance_of_another_release_or_schema_fails(
-    project: Path, key: str, value: object
+def test_sha256sums_must_list_the_manifest_and_its_archive(
+    project: Path, name: str, replacement: str, message: str
 ) -> None:
-    provenance = release_provenance()
-    provenance[key] = value
-
-    with pytest.raises(ScriptError, match="is not schema 2"):
-        runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
-
-
-def test_checksum_file_mismatch_fails_without_writing(project: Path) -> None:
-    archive, _ = runtime_update.asset_names(NEW_TAG, "x86")
     before = (project / RUNTIME_CONFIG).read_text(encoding="utf-8")
 
-    def corrupt(assets: dict[str, str | bytes]) -> None:
-        assets[f"{archive}.sha256"] = f"{'f' * 64}  {archive}\n"
+    def mutate(assets: dict[str, bytes]) -> None:
+        text = assets["SHA256SUMS"].decode("utf-8")
+        line = rf"^[0-9a-f]+  {re.escape(name)}\n"
+        assets["SHA256SUMS"] = re.sub(
+            line, replacement, text, flags=re.MULTILINE
+        ).encode()
 
-    with pytest.raises(ScriptError, match="differs from provenance.json"):
-        runtime_update.update(project, NEW_TAG, release_fetch(mutate=corrupt))
-    assert (project / RUNTIME_CONFIG).read_text(encoding="utf-8") == before
-
-
-def test_checksum_file_for_another_asset_fails(project: Path) -> None:
-    _, source = runtime_update.asset_names(NEW_TAG, "arm")
-
-    def rename(assets: dict[str, str | bytes]) -> None:
-        assets[f"{source}.sha256"] = f"{'b' * 64}  other.tar.gz\n"
-
-    with pytest.raises(ScriptError, match="does not describe"):
-        runtime_update.update(project, NEW_TAG, release_fetch(mutate=rename))
-
-
-def test_listed_size_must_match_the_fragment(project: Path) -> None:
-    listed = {runtime_update.asset_names(NEW_TAG, lane)[0]: 1 for lane in LANES}
-
-    with pytest.raises(ScriptError, match="lists 1 bytes"):
-        runtime_update.update(project, NEW_TAG, release_fetch(listed_sizes=listed))
-
-
-def test_size_comes_from_the_release_when_the_fragment_has_none(project: Path) -> None:
-    provenance = release_provenance()
-    del provenance["runtimes"][0]["runtimeArchive"]["sizeBytes"]
-    archive, _ = runtime_update.asset_names(NEW_TAG, "x86")
-
-    runtime_update.update(
-        project,
-        NEW_TAG,
-        release_fetch(provenance=provenance, listed_sizes={archive: 555}),
-        architectures=("x86",),
-    )
-
-    assert manifest_of(project)["lanes"]["x86"]["runtime"]["sizeBytes"] == 555
-
-
-@pytest.mark.parametrize("architecture", ["x86", "arm"])
-def test_interface_drift_fails_without_writing(
-    project: Path, architecture: str
-) -> None:
-    provenance = release_provenance()
-    (fragment,) = [
-        runtime
-        for runtime in provenance["runtimes"]
-        if runtime["target"] == runtime_update.LANE_TARGETS[architecture]
-    ]
-    fragment["runtimeLock"]["contents"]["interface"]["minimumMacOS"] = "27.0"
-    before = (project / RUNTIME_CONFIG).read_text(encoding="utf-8")
-
-    with pytest.raises(ScriptError, match="interface differs.*minimumMacOS"):
-        runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
+    with pytest.raises(ScriptError, match=re.escape(message)):
+        runtime_update.update(project, NEW_TAG, release_fetch(mutate=mutate))
     assert (project / RUNTIME_CONFIG).read_text(encoding="utf-8") == before
 
 
 def test_changed_moltenvk_commit_needs_a_version(project: Path) -> None:
-    provenance = release_provenance(moltenvk_commit="6" * 40)
+    manifests = {lane: release_manifest(lane) for lane in LANES}
+    manifests["x86"]["provenance"]["moltenvkCommit"] = "6" * 40
 
     with pytest.raises(ScriptError, match="--moltenvk-version"):
-        runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
+        runtime_update.update(project, NEW_TAG, release_fetch(manifests=manifests))
 
-    runtime_update.update(
-        project, NEW_TAG, release_fetch(provenance=provenance), "1.4.3"
-    )
+    runtime_update.update(project, NEW_TAG, release_fetch(manifests=manifests), "1.4.3")
     assert manifest_of(project)["lanes"]["x86"]["components"]["moltenvk"] == "1.4.3"
-
-
-@pytest.mark.parametrize(
-    ("tag", "listed", "expected"),
-    [
-        pytest.param(
-            "v99.0.0",
-            {
-                "Arknights-MacOS-Runtime-v99.0.0-arm64.tar.xz": 234_567,
-                "Arknights-MacOS-Runtime-v99.0.0-arm64-source.tar.gz": 1_000,
-                "Arknights-MacOS-Runtime-v99.0.0-from-v9.1.0-arm64.delta.tar.xz": 2_000,
-                "Arknights-MacOS-Runtime-v99.0.0-from-v9.1.0-arm64.delta.tar.xz.sha256": 90,
-                "Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-arm64.delta.tar.xz": 1_000,
-                "Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-arm64.delta.tar.xz.sha256": 90,
-                "Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-x86_64.delta.tar.xz": 3_000,
-                "Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-x86_64.delta.tar.xz.sha256": 90,
-            },
-            [
-                (
-                    "98.0.0",
-                    "Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-arm64.delta.tar.xz",
-                ),
-                (
-                    "9.1.0",
-                    "Arknights-MacOS-Runtime-v99.0.0-from-v9.1.0-arm64.delta.tar.xz",
-                ),
-            ],
-            id="arm-deltas-with-sidecars-newest-first",
-        ),
-        pytest.param(
-            "v99.0.0",
-            {"Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-arm64.delta.tar.xz": 1_000},
-            [],
-            id="delta-without-sidecar",
-        ),
-        pytest.param(
-            "v99.0.0-rc1",
-            {
-                "Arknights-MacOS-Runtime-v99.0.0-rc1-from-v98.0.0-arm64.delta.tar.xz": 1_000,
-                "Arknights-MacOS-Runtime-v99.0.0-rc1-from-v98.0.0-arm64.delta.tar.xz.sha256": 90,
-            },
-            [],
-            id="prerelease-has-no-deltas",
-        ),
-    ],
-)
-def test_delta_names_select_each_lane_delta_with_its_sidecar(
-    tag: str, listed: dict[str, int], expected: list[tuple[str, str]]
-) -> None:
-    assert runtime_update.delta_names(tag, "arm", listed) == expected
 
 
 def releases_fetch(releases: list[dict[str, object]]) -> Callable[[str], bytes]:

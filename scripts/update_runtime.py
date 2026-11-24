@@ -3,8 +3,8 @@
 
 """Pin both lanes of a published runtime release and update every mention of it.
 
-Without options the script resolves `latest`, reads `provenance.json` and the `.sha256`
-files of that release over HTTPS, and rewrites both lanes of `runtime.json`, the generated
+Without options the script resolves `latest`, reads the runtime manifest of each lane and
+`SHA256SUMS` of that release over HTTPS, and rewrites both lanes of `runtime.json`, the generated
 `runtime` blocks, and (through `scripts/licenses.py`) the license documents. `--architecture`
 limits the update to one lane. `--tag TAG` pins a given release. `latest` skips drafts and
 prereleases unless `--include-prerelease` is set. `--check` verifies `runtime.json` and the

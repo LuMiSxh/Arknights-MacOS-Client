@@ -112,7 +112,7 @@ Each archive is a `.tar.xz` with one top-level `Runtime/` directory. That direct
 
 A lane's `deltas` list names archives that update an older release to the pinned runtime. Each entry has `from`, `url`, `sha256`, and `sizeBytes`. The client uses a delta only when the installed runtime version equals `from`. It falls back to the full archive on any delta failure.
 
-The update script lists deltas only from releases. A prerelease pin has no deltas. The script sorts the deltas newest source first. A release without deltas pins an empty list.
+The release manifest lists only the deltas of a release. A prerelease has none. The script copies the deltas and sorts them newest source first. A release without deltas pins an empty list.
 
 ### Update the pin
 
@@ -123,7 +123,7 @@ The update script lists deltas only from releases. A prerelease pin has no delta
 5. Test a fresh and an existing prefix through install or update, game start, and clean exit.
 6. If you pinned one lane, confirm that the other lane and its prefix are unchanged.
 
-One release tag covers both lanes. Each lane has its own archive, named with its architecture.
+One release tag covers both lanes. Each lane has its own archive and manifest, named with its architecture.
 
 `TAG` is a release tag or `latest`. `latest` is the default. It selects the newest published release and skips drafts. It skips prereleases unless you add `--include-prerelease`.
 
@@ -142,29 +142,25 @@ One release tag covers both lanes. Each lane has its own archive, named with its
 
 The script reads these assets of the release over HTTPS. It does not download a runtime archive.
 
-| Asset                                                   | Use                                                            |
-| ------------------------------------------------------- | -------------------------------------------------------------- |
-| `provenance.json`                                       | The schema 2 document. Each lane has one runtime fragment.     |
-| `Arknights-MacOS-Runtime-TAG-ARCH.tar.xz.sha256`        | The archive checksum of a lane. `ARCH` is `x86_64` or `arm64`. |
-| `Arknights-MacOS-Runtime-TAG-ARCH-source.tar.gz.sha256` | The source archive checksum of a lane.                         |
-| `Arknights-MacOS-Runtime-TAG-from-vFROM-ARCH.delta.tar.xz.sha256` | The checksum of a delta from release `FROM`. Optional. |
+- `runtime-x86_64.json`: the runtime manifest of the `x86` lane. Schema 1.
+- `runtime-arm64.json`: the runtime manifest of the `arm` lane. Schema 1.
+- `SHA256SUMS`: the digest of each asset. The script checks the manifests, archives, and deltas against it.
 
-The release metadata lists the archive and delta sizes. The script checks the archive sizes against the fragments.
+The manifest names the archive, the deltas, the lane interface, the component versions, and the provenance. The script copies these fields into `runtime.json`.
 
 The script fails and writes nothing in these cases:
 
-- `provenance.json` has another schema version or names another tag.
-- A lane has no fragment, or its fragment names another architecture or version.
-- A `.sha256` file differs from its fragment in name or checksum.
-- The release metadata lists another size than the fragment.
-- The release interface of a lane differs from that lane's block in `runtime.json`. The script never rewrites the interface. Change it by hand and review the Swift runtime code.
-- The MoltenVK commit changed. `provenance.json` has no MoltenVK version. Pass `--moltenvk-version`.
+- The manifest is not valid JSON, has another schema version, or lacks a field.
+- The manifest names another architecture or version than the tag.
+- `SHA256SUMS` does not list the manifest, the archive, or a delta, or lists another digest for it.
+- The copied interface, components, or provenance are not a valid runtime configuration.
+- The MoltenVK commit changed. Pass `--moltenvk-version` with the new version.
 
 ### What the script rewrites
 
 | Target                                          | Fields                                                                                             |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `runtime.json`                                  | `lanes.LANE.runtime`, `lanes.LANE.minimumMacOS`, and the component sources of each pinned lane.   |
+| `runtime.json`                                  | `lanes.LANE` fields `runtime`, `minimumMacOS`, `interface`, `components`, and `provenance`.       |
 | `docs/legal/third-party-notices.md`             | The `runtime` blocks `components` and `build`.                                                     |
 | `docs/legal/source-code.md`, `license-texts.md` | The script calls `scripts/licenses.py`. That script regenerates them.                              |
 
@@ -174,10 +170,7 @@ A second run with the same tag changes nothing. Pinning one lane never rewrites 
 
 Change these by hand when the release changes them.
 
-- The `interface` block of the lane. Increase `prefixRevision` when a runtime or prefix configuration change must reach existing installations. The archive checksum is part of the effective runtime revision, so a binary-only refresh replays the runtime migrations without a `prefixRevision` increase.
-- The `minimumMacOS` value of the lane when the runtime raises its deployment target.
-- The `components` and `provenance` entries when the runtime adds or removes a component. Every component needs a paired `Repository` and `Commit` entry.
-- The `features` object in the lane's `interface`. It records `hardwareCursor`, `metalFXSpatialUpscaling`, and `nativeFullscreenSpace`. The Python and Swift decoders both reject a lane that omits one or stores a non-boolean value. The launcher uses these capabilities to set the cursor and fullscreen gates at launch.
+- `prefixRevision` of the lane. Increase it when a runtime or prefix configuration change must reach existing installations. The archive checksum is part of the effective runtime revision, so a binary-only refresh replays the runtime migrations without a `prefixRevision` increase.
 - The `libraries` list in `docs/legal/licenses/index.json` only if the client index itself gains a component. The runtime closure is not part of the client.
 
 ### Check the pin
