@@ -22,7 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Updated the bundled runtime to v1.0.2-rc1. On Apple silicon, the game environment now uses Wine 11.22.
+- Updated the bundled runtime to v1.0.2-rc2.
 - Runtime archives use xz compression, so runtime downloads are smaller.
 
 ## [1.0.1] - 2026-11-20

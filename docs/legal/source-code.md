@@ -29,8 +29,8 @@ The runtimes contain software under the GNU LGPL and GNU GPL licenses. Wine is o
 
 ### What this offer covers today
 
-- The x86 runtime release page: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc1).
-- The arm runtime release page: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc1).
+- The x86 runtime release page: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc2](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc2).
+- The arm runtime release page: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc2](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc2).
 - The pinned source trees of the runtime components, as `runtime.json` records them. [Third-party notices](third-party-notices.md) links each tree.
 - The license texts and notices inside each runtime archive. An installed runtime keeps them in its `Licenses/` directory and `NOTICE.md`.
 
