@@ -25,7 +25,7 @@ The app bundles one compact file with the notices of its own components. This we
 | arm | DXMT | 0.80, `647b0020ba5764e5593b12407afd76964fa11e20` | LGPL-2.1-or-later | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/647b0020ba5764e5593b12407afd76964fa11e20) |
 <!-- runtime:end components -->
 
-The x86_64 runtime contains WineCX, DXMT, and MoltenVK. The ARM64 runtime contains Wine, FEX, Mesa, and DXMT. Each runtime archive carries its own license index, license texts, and `NOTICE.md`. The launcher shows those notices for the installed runtime under **Settings → About**.
+The x86_64 runtime contains WineCX, DXMT, and MoltenVK. The ARM64 runtime contains Wine, FEX, Mesa, and DXMT. Each runtime archive carries its own license index, license texts, and `NOTICE.md`, which stay with the installed runtime.
 
 The client does not generate a runtime closure inventory. The runtime archive is the authoritative record of its own components, build inputs, and notices.
 
@@ -83,7 +83,7 @@ The documentation website embeds these packages. They are not part of the app. T
 <!-- licenses:begin runtime -->
 ## Runtime components
 
-The launcher downloads one runtime archive for the architecture that you choose. The app bundle does not contain a runtime. Each archive lists its components and licenses in `Licenses/index.json` and carries its own `NOTICE.md`. The launcher shows those notices for the installed runtime under **Settings → About**. The client does not generate a runtime closure inventory.
+The launcher downloads one runtime archive for the architecture that you choose. The app bundle does not contain a runtime. Each archive lists its components and licenses in `Licenses/index.json` and carries its own `NOTICE.md`, which stay with the installed runtime. The client does not generate a runtime closure inventory.
 <!-- licenses:end runtime -->
 
 A runtime dependency can carry an additional notice. The release artifact and upstream source distributions remain authoritative for the complete notice set.

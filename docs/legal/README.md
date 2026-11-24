@@ -25,10 +25,10 @@ Arknights Client is a community project. It is not affiliated with Yostar, Gryph
 | x86_64 runtime               | Downloaded on first use. Each component's own license. See [Third-party notices](third-party-notices.md) |
 | ARM64 runtime                | Downloaded on first use. Each component's own license. See [Third-party notices](third-party-notices.md) |
 | Sparkle and YouTubePlayerKit | Their own licenses. See [License texts](license-texts.md)                                                |
-| Arknights game files         | Not included. Downloaded from the publisher after you choose a region                                    |
+| Arknights game files         | Not included. Downloaded from the publisher after you choose a server                                    |
 | Artwork                      | Not included. Official wallpapers are downloaded and cached at runtime                                   |
 
 > [!WARNING]
 > The launcher's MPL-2.0 license does not cover the downloaded runtime components, the game, or its artwork. Check each component's license before you redistribute a build.
 
-The app bundles one compact file with the notices of its own components. Each runtime archive carries its own license texts and notices; the launcher shows them for the installed runtime under **Settings → About**. This website publishes the launcher notices.
+The app bundles one compact file with the notices of its own components. Each runtime archive carries its own license texts and notices, which stay with the installed runtime. This website publishes the launcher notices.

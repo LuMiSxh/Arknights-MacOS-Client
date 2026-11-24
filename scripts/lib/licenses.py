@@ -450,9 +450,8 @@ def render_runtime_block() -> str:
         "The launcher downloads one runtime archive for the architecture that you choose. "
         "The app bundle does not contain a runtime. Each archive lists its components and "
         f"licenses in `{RUNTIME_LICENSE_DIRECTORY}/index.json` and carries its own "
-        f"`{RUNTIME_NOTICE_FILE}`. The launcher shows those notices for the installed "
-        "runtime under **Settings → About**. The client does not generate a runtime "
-        "closure inventory.\n"
+        f"`{RUNTIME_NOTICE_FILE}`, which stay with the installed runtime. "
+        "The client does not generate a runtime closure inventory.\n"
     )
 
 
@@ -489,8 +488,9 @@ def render_source_offer(manifest: Mapping[str, Any]) -> str:
     lines.append(
         "- The pinned source trees of the runtime components, as `runtime.json` records "
         "them. [Third-party notices](third-party-notices.md) links each tree.\n"
-        "- The license texts and notices inside each runtime archive. The launcher "
-        "shows them for the installed runtime under **Settings → About**.\n\n"
+        "- The license texts and notices inside each runtime archive. An installed "
+        f"runtime keeps them in its `{RUNTIME_LICENSE_DIRECTORY}/` directory and "
+        f"`{RUNTIME_NOTICE_FILE}`.\n\n"
         "### What this offer does not cover today\n\n"
         "- The app bundle does not contain a runtime. Each runtime archive is the "
         "authoritative record of its own build inputs, notices, and corresponding "
@@ -603,8 +603,7 @@ def render_license_texts(
             "These entries describe the runtimes that the launcher can download. "
             "Each runtime archive carries the authoritative license texts and "
             f"notices in its `{RUNTIME_LICENSE_DIRECTORY}/` directory and "
-            f"`{RUNTIME_NOTICE_FILE}`. The launcher shows them for the installed "
-            "runtime under **Settings → About**.",
+            f"`{RUNTIME_NOTICE_FILE}`. They stay with the installed runtime.",
             (c for c in components if c.scope == RUNTIME_REFERENCE_SCOPE),
             directory,
         )

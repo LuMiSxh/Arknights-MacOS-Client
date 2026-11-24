@@ -431,7 +431,7 @@ THE SOFTWARE.
 <!-- licenses:begin runtime-texts -->
 ## Runtime components
 
-These entries describe the runtimes that the launcher can download. Each runtime archive carries the authoritative license texts and notices in its `Licenses/` directory and `NOTICE.md`. The launcher shows them for the installed runtime under **Settings → About**.
+These entries describe the runtimes that the launcher can download. Each runtime archive carries the authoritative license texts and notices in its `Licenses/` directory and `NOTICE.md`. They stay with the installed runtime.
 
 ### WineCX / Wine
 
