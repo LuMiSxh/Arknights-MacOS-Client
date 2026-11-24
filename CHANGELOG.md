@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed the launcher music never starting. With **Launcher music** on, Home showed no music and no music pill.
+
 ### Added
 
 - Added the **Rounded Dock icon** runtime patch. This was a client side change and moved into the runtime patch system.

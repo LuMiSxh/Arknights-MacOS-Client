@@ -155,6 +155,9 @@ package final class BackgroundMusicController {
 	func start() {
 		guard !isFollowingChanges else { return }
 		isFollowingChanges = true
+		lifecycle.log.info(
+			"Background music started following launcher state; enabled=\(settings.playsLauncherMusic)"
+		)
 		activityObserverID = lifecycle.observeActivityChanges { [weak self] in
 			guard let self else { return }
 			self.gameActivityDidChange(to: self.lifecycle.activity)
