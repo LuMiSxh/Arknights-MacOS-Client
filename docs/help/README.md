@@ -38,7 +38,7 @@ To report a problem, use one of these options:
 - Choose **Report a Problem** next to an error.
 - Choose **Settings → Help → Report a Problem…**.
 
-The launcher opens a GitHub issue with the error code, server, launcher version, macOS version, chip, and memory size. Add what you did and what happened.
+The launcher opens a GitHub issue with the launcher version, macOS version, chip, memory size, and runtime name. It adds the error code and server when an error is shown. Add what you did and what happened.
 
 You do not need logs at first. If a maintainer asks for logs, choose **Help → Save Diagnostics…** or **Settings → Help → Diagnostics → Save…**. The launcher saves a zip file to Downloads.
 

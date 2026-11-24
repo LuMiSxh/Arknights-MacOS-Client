@@ -12,28 +12,11 @@ affects CPU, GPU, memory, and power, and how the client compares with PlayCover.
 How the launcher runs the game is described in
 [Launch and process lifecycle](development/architecture/launch-and-process-lifecycle.md#launch-process).
 
-## Summary
-
-- The ARM64 runtime uses about 43 % less CPU and about half the GPU of the x86_64 runtime in LS-5.
-- ARM64 still uses about 1.7 times the CPU and 1.3 times the GPU of PlayCover in LS-5.
-- In the main menu, ARM64 CPU use is close to PlayCover. Its GPU use is lower.
-- ARM64 uses more memory: about 2.2 GB in the menu and 2.5 GB in LS-5.
-- Your numbers will differ.
-
-| | CPU, LS-5 | GPU, LS-5 | CPU, menu | GPU, menu |
-|---|---|---|---|---|
-| Arknights Client, ARM64 | 85 % | 38 % | 74 % | 38 % |
-| Arknights Client, x86_64 | 150 % | 74 % | 113 % | 70 % |
-| PlayCover | 49 % | 28 % | 67 % | 42 % |
-
-The table shows mean values from the measured runs. CPU 100 % means one CPU core.
-A 10-core Mac can show up to 1000 %. Lower is better for CPU and GPU.
-
 ## Comparison
 
 Measured on an Apple M4 with 16 GB of memory. The x86_64 and PlayCover runs are from 23 October
 2026 on macOS 27.0.1. The ARM64 run is from 12 November 2026 on macOS 27.2.1.
-Every client played LS-5 with auto-deploy in a 1280 × 800 window.
+The two launcher clients played LS-5 with auto-deploy in a 1280 × 800 window. PlayCover used a 1080p 16:10 window at 1330 × 831 points.
 Each LS-5 run lasted about 60 seconds. Every run used 60 FPS, except the MetalFX run, which used a 120 FPS cap.
 
 ```chart
@@ -43,6 +26,8 @@ Each LS-5 run lasted about 60 seconds. Every run used 60 FPS, except the MetalFX
   "title": "At a glance"
 }
 ```
+
+CPU 100 % means one CPU core. A 10-core Mac can show up to 1000 %. Lower is better for CPU and GPU.
 
 ```chart
 {
@@ -108,7 +93,7 @@ Measured on the same Mac, each client stood in the main menu for 30 seconds.
 ```
 
 > [!NOTE]
-> These numbers come from one controlled setup. The 1280 × 800 window is one fixed size.
+> These numbers come from one controlled setup. Each client used one fixed window size.
 > Most players use fullscreen or a different size. The test Mac also drives a 6K display.
 > macOS composites that desktop while the game runs in a window. Part of the measured load is
 > therefore not the game. Your own numbers will differ.

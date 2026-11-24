@@ -71,7 +71,7 @@ a 2× display it is twice the window size in each direction. Read the shown valu
 PlayCover's window points × scaler. The window size alone does not make two runs comparable.
 
 The launcher has a **Frame rate limit** in the **Performance** panel of **Settings → Game**. Use the
-slider to choose **30 FPS**, **60 FPS**, or **120 FPS**. The limit applies on
+segmented control to choose **30 FPS**, **60 FPS**, or **120 FPS**. The limit applies on
 the next launch. Set the same value in
 both clients and record it.
 

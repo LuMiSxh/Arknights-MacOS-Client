@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 
-"""Safely extract a verified Wine runtime archive for release packaging."""
+"""Safely extract a verified runtime archive into its `Runtime/` root."""
 
 import posixpath
 import tarfile
@@ -8,8 +8,7 @@ from pathlib import Path, PurePosixPath
 
 from lib.common import fail, remove_path
 
-# Runtime 0.7.0 ships its license texts beside the runtime directory.
-RUNTIME_COMPANIONS = frozenset({"Licenses", "NOTICE.md"})
+RUNTIME_ROOT = "Runtime"
 
 
 def validate_member(member: tarfile.TarInfo) -> PurePosixPath:
@@ -38,7 +37,7 @@ def extract(archive: Path, destination: Path) -> Path:
         fail(f"destination already exists: {destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
 
-    with tarfile.open(archive, mode="r:gz") as contents:
+    with tarfile.open(archive, mode="r:xz") as contents:
         validated = [
             (member, validate_member(member)) for member in contents.getmembers()
         ]
@@ -46,14 +45,10 @@ def extract(archive: Path, destination: Path) -> Path:
         members = [member for member, _ in kept]
         paths = [path for _, path in kept]
         top_levels = {
-            path.parts[0]
-            for path in paths
-            if path.parts
-            and path.parts[0] != "."
-            and path.parts[0] not in RUNTIME_COMPANIONS
+            path.parts[0] for path in paths if path.parts and path.parts[0] != "."
         }
-        if len(top_levels) != 1:
-            fail("runtime archive must contain exactly one top-level directory")
+        if top_levels != {RUNTIME_ROOT}:
+            fail(f"runtime archive must contain exactly one top-level {RUNTIME_ROOT}/")
 
         destination.mkdir()
         try:
@@ -62,7 +57,7 @@ def extract(archive: Path, destination: Path) -> Path:
             remove_path(destination)
             raise
 
-    runtime_root = destination / next(iter(top_levels))
+    runtime_root = destination / RUNTIME_ROOT
     if not runtime_root.is_dir():
         fail("runtime archive top-level entry is not a directory")
     return runtime_root

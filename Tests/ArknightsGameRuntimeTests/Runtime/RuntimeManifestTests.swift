@@ -19,6 +19,7 @@ private func manifestData(
 			"sizeBytes": 4,
 		],
 		"interface": [
+			// Manifests installed before archive schema 3 still carry this key; decoding ignores it.
 			"archive": ["wineDirectory": "Wine", "dxmtDirectory": "DXMT"],
 			"executables": ["bin/wine64", "bin/wineserver"],
 			"features": [

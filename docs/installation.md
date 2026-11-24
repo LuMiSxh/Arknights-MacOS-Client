@@ -25,7 +25,7 @@ Read on for details on each step.
 - macOS 15 or later (see [Game runtime](help/runtime.md#macos-support))
 - The **x86_64** runtime needs Rosetta 2.
 - The **ARM64 (Apple Silicon)** runtime needs macOS 27 or later. It does not need Rosetta 2.
-- An account for your region
+- An account for your server
 - An internet connection and free space for the game and its updates
 
 > [!NOTE]
@@ -85,7 +85,7 @@ After the launcher verifies the download, **Play** becomes available.
 
 ### Anti-cheat
 
-Taiwan, China, and China (Bilibili) use ACE Anti-Cheat. Before the first start, the launcher asks you to confirm that running them through Wine is unofficial. Use these servers at your own risk.
+Taiwan, China, and China (Bilibili) use ACE Anti-Cheat. Before the first start, the launcher asks you to confirm that running them on this Mac is unofficial. Use these servers at your own risk.
 
 ## First launch
 
@@ -94,7 +94,7 @@ Taiwan, China, and China (Bilibili) use ACE Anti-Cheat. Before the first start, 
    - Taiwan signs in through your default browser.
    - Other servers sign in inside the game.
 
-The first start is slower. The window can stay blank for up to one minute the first time.
+The first start is slower. The window can stay blank for up to 90 seconds the first time.
 
 > [!TIP]
 > Quitting Arknights Client also quits the game. Closing the launcher window does not.

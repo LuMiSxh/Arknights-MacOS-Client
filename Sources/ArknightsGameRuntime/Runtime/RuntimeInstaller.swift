@@ -66,7 +66,7 @@ package struct RuntimeInstaller: Sendable {
 	package let access: RuntimeAccess
 	let log: LauncherLog?
 	private let chunkSession: HTTPChunkSession
-	private let store: RuntimeStore
+	let store: RuntimeStore
 	private let clock: any Clock<Duration>
 
 	package init(
@@ -113,11 +113,6 @@ package struct RuntimeInstaller: Sendable {
 		pin: PinnedRuntime,
 		progress: @escaping ProgressHandler
 	) async throws -> InstalledRuntime {
-		let downloadedBytes = Int64(pin.sizeBytes)
-		try checkDiskSpace(pin, at: paths.runtimeRoot)
-
-		let partURL = try await download(pin, progress: progress)
-
 		let staging = paths.runtimeStagingRoot.appending(
 			path: UUID().uuidString, directoryHint: .isDirectory)
 		defer {
@@ -125,24 +120,12 @@ package struct RuntimeInstaller: Sendable {
 			try? FileManager.default.removeItem(at: staging)
 		}
 
-		await progress(
-			RuntimeInstallProgress(
-				downloadedBytes: downloadedBytes, totalBytes: downloadedBytes,
-				phase: .extracting))
-		let librariesRoot = try RuntimeArchive.extract(
-			at: partURL,
-			into: staging.appending(path: "extract", directoryHint: .isDirectory),
-			fileManager: FileManager.default
-		)
-		let prepared = try flatten(
-			pin, librariesRoot: librariesRoot, into: staging)
+		// A failed delta never fails the install: the full archive is the fallback.
+		let preparedRuntime = try await prepareValidatedRuntime(
+			pin: pin, staging: staging, progress: progress)
+		let prepared = preparedRuntime.root
+		let downloadedBytes = preparedRuntime.totalBytes
 
-		await progress(
-			RuntimeInstallProgress(
-				downloadedBytes: downloadedBytes, totalBytes: downloadedBytes,
-				phase: .validating))
-		try validate(pin.interface, at: prepared)
-		try verifySignatures(pin: pin, at: prepared)
 		try writeManifest(pin, into: prepared)
 
 		await progress(
@@ -170,8 +153,80 @@ package struct RuntimeInstaller: Sendable {
 		return InstalledRuntime(lane: pin.lane, version: pin.version, directory: versionDirectory)
 	}
 
+	/// A complete runtime tree in staging, ready for validation, and the bytes its download took.
+	struct PreparedRuntime: Sendable {
+		let root: URL
+		let totalBytes: Int64
+	}
+
+	/// Builds the pinned runtime in `staging` and checks it. A delta tree that fails the interface or
+	/// signature checks is discarded, and the full archive is installed instead.
+	private func prepareValidatedRuntime(
+		pin: PinnedRuntime,
+		staging: URL,
+		progress: @escaping ProgressHandler
+	) async throws -> PreparedRuntime {
+		if let patched = try await prepareFromDelta(
+			pin: pin, staging: staging, progress: progress)
+		{
+			do {
+				try await checkPreparedRuntime(patched, pin: pin, progress: progress)
+				return patched
+			} catch {
+				try Task.checkCancellation()
+				log?.error(
+					"The runtime delta produced a tree that failed the runtime checks, installing the full archive: \(error)"
+				)
+				discardDeltaStaging(in: staging)
+			}
+		}
+		let archived = try await prepareFromArchive(
+			pin: pin, staging: staging, progress: progress)
+		try await checkPreparedRuntime(archived, pin: pin, progress: progress)
+		return archived
+	}
+
+	/// Reports the validating phase and runs the interface and signature checks of one prepared tree.
+	private func checkPreparedRuntime(
+		_ prepared: PreparedRuntime,
+		pin: PinnedRuntime,
+		progress: @escaping ProgressHandler
+	) async throws {
+		await progress(
+			RuntimeInstallProgress(
+				downloadedBytes: prepared.totalBytes, totalBytes: prepared.totalBytes,
+				phase: .validating))
+		try validate(pin.interface, at: prepared.root)
+		try verifySignatures(pin: pin, at: prepared.root)
+	}
+
+	private func prepareFromArchive(
+		pin: PinnedRuntime,
+		staging: URL,
+		progress: @escaping ProgressHandler
+	) async throws -> PreparedRuntime {
+		guard let asset = pin.archiveAsset else {
+			throw RuntimeInstallError.runtimeUnavailable(pin.lane)
+		}
+		let totalBytes = Int64(asset.sizeBytes)
+		try checkDiskSpace(required: totalBytes * 4)
+
+		let partURL = try await download(asset, lane: pin.lane, progress: progress)
+
+		await progress(
+			RuntimeInstallProgress(
+				downloadedBytes: totalBytes, totalBytes: totalBytes, phase: .extracting))
+		let root = try RuntimeArchive.extract(
+			at: partURL,
+			into: staging.appending(path: "extract", directoryHint: .isDirectory),
+			expectedRoot: RuntimeArchive.runtimeRoot,
+			fileManager: FileManager.default
+		)
+		return PreparedRuntime(root: root, totalBytes: totalBytes)
+	}
+
 	/// Runs cleanup that must not fail an install that already succeeded.
-	private func bestEffort(_ context: String, _ work: () throws -> Void) {
+	func bestEffort(_ context: String, _ work: () throws -> Void) {
 		if let log {
 			log.attempt(context, work)
 		} else {
@@ -204,17 +259,17 @@ package struct RuntimeInstaller: Sendable {
 		paths.runtimeDownloadsDirectory(for: pin.lane).appending(path: "\(pin.sha256).part")
 	}
 
-	private func download(
-		_ pin: PinnedRuntime,
+	/// Downloads and verifies `asset` into the lane's downloads directory, resuming a `.part` file.
+	func download(
+		_ asset: RuntimeAsset,
+		lane: RuntimeLane,
 		progress: @escaping ProgressHandler
 	) async throws -> URL {
-		guard let remoteURL = pin.url else {
-			throw RuntimeInstallError.runtimeUnavailable(pin.lane)
-		}
-		let downloadsDirectory = paths.runtimeDownloadsDirectory(for: pin.lane)
+		let remoteURL = asset.url
+		let downloadsDirectory = paths.runtimeDownloadsDirectory(for: lane)
 		try FileManager.default.createDirectory(
 			at: downloadsDirectory, withIntermediateDirectories: true)
-		let archiveURL = Self.partialArchiveURL(for: pin, paths: paths)
+		let archiveURL = asset.partialFile(in: downloadsDirectory)
 		let handle: FileHandle
 		var existingBytes: Int64
 		do {
@@ -223,14 +278,14 @@ package struct RuntimeInstaller: Sendable {
 			throw RuntimeInstallError.unsafeDownloadFile(url)
 		}
 
-		if existingBytes == Int64(pin.sizeBytes) {
-			if try Self.sha256Hex(at: archiveURL) == pin.sha256 {
+		if existingBytes == Int64(asset.sizeBytes) {
+			if try Self.sha256Hex(at: archiveURL) == asset.sha256 {
 				return archiveURL
 			}
 			// A complete-sized file with the wrong hash restarts from zero.
 			try handle.truncate(atOffset: 0)
 			existingBytes = 0
-		} else if existingBytes > Int64(pin.sizeBytes) {
+		} else if existingBytes > Int64(asset.sizeBytes) {
 			try handle.truncate(atOffset: 0)
 			existingBytes = 0
 		}
@@ -245,7 +300,7 @@ package struct RuntimeInstaller: Sendable {
 		let stream = chunkSession.stream(
 			for: request, redirectValidator: HTTPRedirectPolicy.httpsOnly)
 		defer { stream.cancel() }
-		let total = Int64(pin.sizeBytes)
+		let total = Int64(asset.sizeBytes)
 		let meter = RuntimeDownloadMeter(offset: existingBytes, clock: clock)
 		var offset = existingBytes
 		var receivedResponse = false
@@ -274,7 +329,7 @@ package struct RuntimeInstaller: Sendable {
 									Int64(data.count), to: offset, limit: total)
 							} catch {
 								throw RuntimeInstallError.sizeMismatch(
-									expected: pin.sizeBytes,
+									expected: asset.sizeBytes,
 									actual: Int(clamping: error.attempted))
 							}
 							try handle.write(contentsOf: data)
@@ -297,12 +352,12 @@ package struct RuntimeInstaller: Sendable {
 		guard receivedResponse else {
 			throw RuntimeInstallError.downloadFailed("the server returned no response")
 		}
-		guard offset == Int64(pin.sizeBytes) else {
+		guard offset == Int64(asset.sizeBytes) else {
 			throw RuntimeInstallError.sizeMismatch(
-				expected: pin.sizeBytes, actual: Int(offset))
+				expected: asset.sizeBytes, actual: Int(offset))
 		}
 		try handle.synchronize()
-		guard try Self.sha256Hex(at: archiveURL) == pin.sha256 else {
+		guard try Self.sha256Hex(at: archiveURL) == asset.sha256 else {
 			do {
 				try FileManager.default.removeItem(at: archiveURL)
 			} catch {
@@ -337,11 +392,11 @@ package struct RuntimeInstaller: Sendable {
 
 	// MARK: - Disk space
 
-	private func checkDiskSpace(_ pin: PinnedRuntime, at directory: URL) throws {
-		// Archive plus the uncompressed tree plus the previous version, with headroom.
-		let required = Int64(pin.sizeBytes) * 4
+	/// Fails unless the runtime volume has `required` bytes free. A full archive needs four times
+	/// its size: archive, uncompressed tree, previous version, headroom.
+	func checkDiskSpace(required: Int64) throws {
 		let available = try GameInstaller.availableCapacityBytes(
-			at: directory, fileManager: FileManager.default)
+			at: paths.runtimeRoot, fileManager: FileManager.default)
 		guard available >= required else {
 			throw RuntimeInstallError.insufficientDiskSpace(
 				required: required, available: available)
@@ -349,43 +404,6 @@ package struct RuntimeInstaller: Sendable {
 	}
 
 	// MARK: - Layout and validation
-
-	private func flatten(
-		_ pin: PinnedRuntime,
-		librariesRoot: URL,
-		into staging: URL
-	) throws -> URL {
-		let prepared = staging.appending(path: "runtime", directoryHint: .isDirectory)
-		try FileManager.default.createDirectory(at: prepared, withIntermediateDirectories: true)
-		let wine = librariesRoot.appending(
-			path: pin.interface.archive.wineDirectory, directoryHint: .isDirectory)
-		for child in try FileManager.default.contentsOfDirectory(
-			at: wine, includingPropertiesForKeys: nil)
-		{
-			try FileManager.default.moveItem(
-				at: child, to: prepared.appending(path: child.lastPathComponent))
-		}
-		let dxmt = librariesRoot.appending(
-			path: pin.interface.archive.dxmtDirectory, directoryHint: .isDirectory)
-		try FileManager.default.moveItem(
-			at: dxmt,
-			to: prepared.appending(
-				path: pin.interface.dxmt.payloadDirectory, directoryHint: .isDirectory)
-		)
-		// The archive keeps its notices beside the single top-level runtime directory.
-		for name in ["Licenses", "NOTICE.md"] {
-			for root in [librariesRoot.deletingLastPathComponent(), librariesRoot] {
-				let source = root.appending(path: name)
-				let destination = prepared.appending(path: name)
-				guard FileManager.default.fileExists(atPath: source.path),
-					!FileManager.default.fileExists(atPath: destination.path)
-				else { continue }
-				try FileManager.default.moveItem(at: source, to: destination)
-				break
-			}
-		}
-		return prepared
-	}
 
 	private func validate(
 		_ interface: RuntimeManifest.Interface,

@@ -9,6 +9,24 @@ enum RuntimeConfigurationError: Error, Equatable, Sendable {
 	case invalidPin(lane: RuntimeLane, reason: String)
 }
 
+/// A downloadable runtime file that is verified by size and SHA-256.
+struct RuntimeAsset: Sendable, Equatable {
+	let url: URL
+	let sha256: String
+	let sizeBytes: Int
+
+	/// The resumable download file inside a lane's downloads directory.
+	func partialFile(in directory: URL) -> URL {
+		directory.appending(path: "\(sha256).part")
+	}
+}
+
+/// A pinned delta that upgrades exactly the installed version `from` to the pinned version.
+struct PinnedRuntimeDelta: Sendable, Equatable {
+	let from: String
+	let asset: RuntimeAsset
+}
+
 /// The pinned runtime archive for one lane, taken from `runtime.json`.
 package struct PinnedRuntime: Sendable {
 	package let lane: RuntimeLane
@@ -22,6 +40,7 @@ package struct PinnedRuntime: Sendable {
 	package let interface: RuntimeManifest.Interface
 	package let components: RuntimeManifest.Components?
 	package let provenance: RuntimeManifest.Provenance?
+	let deltas: [PinnedRuntimeDelta]
 
 	package var features: RuntimeFeatures { interface.features }
 
@@ -29,6 +48,12 @@ package struct PinnedRuntime: Sendable {
 	/// release task has not published this lane yet.
 	package var isAvailable: Bool {
 		url != nil && !sha256.isEmpty && sizeBytes > 0
+	}
+
+	/// The full archive, or nil while the lane is unpublished.
+	var archiveAsset: RuntimeAsset? {
+		guard isAvailable, let url else { return nil }
+		return RuntimeAsset(url: url, sha256: sha256, sizeBytes: sizeBytes)
 	}
 
 	/// The manifest written beside the installed runtime tree.
@@ -49,14 +74,36 @@ package struct PinnedRuntime: Sendable {
 	}
 }
 
-/// The schema 3 runtime configuration: one pinned archive and interface per lane.
+/// The schema 4 runtime configuration: one pinned archive, its deltas, and an interface per lane.
 package struct RuntimeConfiguration: Decodable, Sendable {
+	struct Delta: Decodable {
+		let from: String
+		let url: String
+		let sha256: String
+		let sizeBytes: Int
+	}
+
 	struct Archive: Decodable {
 		let name: String
 		let version: String
 		let url: String
 		let sha256: String
 		let sizeBytes: Int
+		let deltas: [Delta]
+
+		private enum CodingKeys: String, CodingKey {
+			case name, version, url, sha256, sizeBytes, deltas
+		}
+
+		init(from decoder: any Decoder) throws {
+			let container = try decoder.container(keyedBy: CodingKeys.self)
+			name = try container.decode(String.self, forKey: .name)
+			version = try container.decode(String.self, forKey: .version)
+			url = try container.decode(String.self, forKey: .url)
+			sha256 = try container.decode(String.self, forKey: .sha256)
+			sizeBytes = try container.decode(Int.self, forKey: .sizeBytes)
+			deltas = try container.decodeIfPresent([Delta].self, forKey: .deltas) ?? []
+		}
 	}
 
 	struct Lane: Decodable {
@@ -80,7 +127,7 @@ package struct RuntimeConfiguration: Decodable, Sendable {
 		}
 	}
 
-	private static let supportedSchemaVersion = 3
+	private static let supportedSchemaVersion = 4
 
 	let schemaVersion: Int
 	let lanes: Lanes
@@ -123,7 +170,8 @@ package struct RuntimeConfiguration: Decodable, Sendable {
 			prefixRevision: lane.prefixRevision,
 			interface: lane.interface,
 			components: lane.components,
-			provenance: lane.provenance
+			provenance: lane.provenance,
+			deltas: try lane.runtime.deltas.map { try Self.pinnedDelta($0, lane: requestedLane) }
 		)
 	}
 
@@ -148,13 +196,26 @@ package struct RuntimeConfiguration: Decodable, Sendable {
 		}
 	}
 
+	private static func pinnedDelta(
+		_ delta: Delta, lane: RuntimeLane
+	) throws -> PinnedRuntimeDelta {
+		guard isSafePathComponent(delta.from), isSHA256(delta.sha256), delta.sizeBytes > 0,
+			let url = httpsURL(delta.url)
+		else {
+			throw RuntimeConfigurationError.invalidPin(
+				lane: lane, reason: "runtime.deltas has an invalid entry for \(delta.from)")
+		}
+		return PinnedRuntimeDelta(
+			from: delta.from,
+			asset: RuntimeAsset(url: url, sha256: delta.sha256, sizeBytes: delta.sizeBytes))
+	}
+
 	private static func validateInterface(
 		_ interface: RuntimeManifest.Interface,
 		lane: RuntimeLane
 	) throws {
 		let paths =
 			[
-				interface.archive.wineDirectory, interface.archive.dxmtDirectory,
 				interface.macDriver, interface.launcher.path,
 				interface.dxmt.payloadDirectory,
 			] + interface.executables + interface.requiredFiles

@@ -69,8 +69,9 @@ Rules:
   and skips the steps that follow the failure.
 - It also deletes pre-release 0.8 leftovers that never shipped: `storage-overview-cache.json`,
   old-shape `Runtimes/<lane>/` directories, `Runtimes/.downloads`,
-  `Runtimes/.staging`, `Caches/<bundle>/Artwork/Downloaded`, and `Caches/<bundle>/PresetGallery`. It
-  clears recorded runtime versions, so a runtime downloads again.
+  `Runtimes/.staging`, and `Caches/<bundle>/PresetGallery`. It moves
+  `Caches/<bundle>/Artwork/Downloaded` into `Artwork/` and clears recorded runtime versions, so a
+  runtime downloads again.
 - The pre-0.5 layout (`Games/Arknights-*` or `Wine/Prefixes/*` directories) is not migrated. Startup
   shows a blocking **Data from an old launcher version** notice with **Delete Data Folder** and
   **Quit**, and nothing else starts. **Delete Data Folder** asks for confirmation, then
@@ -103,7 +104,7 @@ in `RuntimeMigration`.
 
 1. Open `PreferencesMigrator.swift`.
 2. Append a `Step` with the next version to `steps`. Never edit a released step.
-3. Call `removeKeys(withPrefix:keeping:)`, `remove(_:)`, or `rename(_:to:)` in the step body.
+3. Call `removeKeys(withPrefix:keeping:)` or `remove(_:)` in the step body.
 
 ```swift
 Step(version: 2) { $0.remove("lastAppliedDynamicIconHue") },

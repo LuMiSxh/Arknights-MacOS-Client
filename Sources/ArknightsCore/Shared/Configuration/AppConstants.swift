@@ -59,6 +59,10 @@ package enum AppConstants {
 		/// The only persisted runtime choice. It names the lane, not a version.
 		package static let runtimeSelectionFilename = "runtime-selection.json"
 		package static let runtimeSelectionMaximumBytes = 4 * 1_024
+		/// Upper bound for a delta's `delta.json`.
+		package static let deltaManifestMaximumBytes = 16 * 1_024 * 1_024
+		/// Upper bound for one patched or added file; the installer holds its result in memory.
+		package static let deltaFileMaximumBytes = 1_024 * 1_024 * 1_024
 		/// The first macOS release that runs the native ARM64 lane. Earlier releases lack the x18
 		/// register ABI that Wine needs, so wineboot dies there. Lower it after a measurement.
 		package static let armLaneMinimumMacOS = OperatingSystemVersion(

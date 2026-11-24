@@ -15,11 +15,6 @@ package struct RuntimeManifest: Codable, Sendable {
 	}
 
 	package struct Interface: Codable, Sendable, Equatable {
-		package struct Archive: Codable, Sendable, Equatable {
-			package let wineDirectory: String
-			package let dxmtDirectory: String
-		}
-
 		package struct Launcher: Codable, Sendable, Equatable {
 			package let path: String
 			package let target: String
@@ -31,7 +26,6 @@ package struct RuntimeManifest: Codable, Sendable {
 			package let libraries: [String]
 		}
 
-		package let archive: Archive
 		package let executables: [String]
 		package let features: RuntimeFeatures
 		package let requiredFiles: [String]

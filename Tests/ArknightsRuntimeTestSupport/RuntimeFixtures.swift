@@ -14,7 +14,6 @@ package func makeRuntimeInterface(
 	]
 ) -> [String: Any] {
 	[
-		"archive": ["wineDirectory": "Wine", "dxmtDirectory": "DXMT"],
 		"executables": ["bin/wine64", "bin/wineserver"],
 		"features": features,
 		"requiredFiles": ["lib/wine/x86_64-unix/winemac.so"],
@@ -31,23 +30,26 @@ package func makeRuntimeInterface(
 /// One runtime lane pin for runtime configuration tests.
 package func makeRuntimeLane(
 	version: String = "1.0.0",
-	url: String = "https://example.test/runtime.tar.gz",
+	url: String = "https://example.test/runtime.tar.xz",
 	sha256: String = String(repeating: "a", count: 64),
 	sizeBytes: Int = 4,
 	minimumMacOS: String = "15.0",
 	prefixRevision: Int = 2,
-	interface: [String: Any] = makeRuntimeInterface()
+	interface: [String: Any] = makeRuntimeInterface(),
+	deltas: [[String: Any]]? = nil
 ) -> [String: Any] {
-	[
+	var runtime: [String: Any] = [
+		"name": "Test Runtime",
+		"version": version,
+		"url": url,
+		"sha256": sha256,
+		"sizeBytes": sizeBytes,
+	]
+	if let deltas { runtime["deltas"] = deltas }
+	return [
 		"minimumMacOS": minimumMacOS,
 		"prefixRevision": prefixRevision,
-		"runtime": [
-			"name": "Test Runtime",
-			"version": version,
-			"url": url,
-			"sha256": sha256,
-			"sizeBytes": sizeBytes,
-		],
+		"runtime": runtime,
 		"interface": interface,
 		"components": ["wine": "11.17", "dxmt": "0.80"],
 		"provenance": ["wineCommit": "e0aa380780b73e20fabcfe78fd42713b94929a53"],
@@ -56,7 +58,7 @@ package func makeRuntimeLane(
 
 /// A decoded runtime configuration with the published x86 lane and an unpublished ARM lane.
 package func makeRuntimeConfiguration(
-	schemaVersion: Int = 3,
+	schemaVersion: Int = 4,
 	x86: [String: Any]? = makeRuntimeLane(),
 	arm: [String: Any]? = makeRuntimeLane(
 		version: "0.9.0+arm",

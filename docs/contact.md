@@ -36,7 +36,7 @@ The form asks for:
 
 - A topic. Choose the topic that fits your message.
 - Your message.
-- Optional test device details: server, chip, Mac type, macOS version, when you are available, and whether you used Canary before.
+- Optional test device details: server, chip, Mac type, macOS version, and when you are available.
 - A contact handle: your Discord name or your email address.
 - Your consent.
 

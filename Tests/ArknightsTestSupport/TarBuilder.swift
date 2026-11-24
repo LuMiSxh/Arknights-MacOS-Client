@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// Builds a plain, uncompressed tar archive so archive tests do not need gzip fixtures.
+/// Builds a plain, uncompressed tar archive; wrap it with `xzCompressed` for the installer.
 package struct TarBuilder {
 	package private(set) var data = Data()
 

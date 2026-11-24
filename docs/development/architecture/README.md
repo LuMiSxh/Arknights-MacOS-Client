@@ -86,9 +86,9 @@ The state tree has three separate concerns:
 - Do not clear an active lifecycle state because a refresh failed.
 
 First-run setup is the separate `ArknightsOnboarding` feature. It has its own `@Observable` coordinator
-and `UserDefaults` progress store. It never downloads files or persists launcher settings. Each step
-calls the same region, installer, display, artwork, icon, update, and audio actions as the main
-interface.
+and `UserDefaults` progress store. It starts no download of its own and persists no launcher setting
+outside its progress. Each step calls the same region, installer, display, artwork, icon, update, and
+audio actions as the main interface.
 
 A mandatory launcher-update preflight runs before setup. Interrupted setup resumes at its saved step.
 If the game is absent, setup returns to the Server step.
@@ -105,7 +105,7 @@ number. The compiler rejects a cycle.
 | 2   | `ArknightsCore`             | Cross-feature lifecycle state (`Core`), shared domain, configuration, persistence, diagnostics, UI contracts (`Shared`), and SwiftPM resources | 1                      | none               |
 | 3   | `ArknightsCustomization`    | Artwork, icons, preset gallery                                                                                                                 | 1, 2                   | none               |
 | 4   | `ArknightsGameInstallation` | Installation, manifests, game-file compatibility components                                                                                    | 1, 2                   | none               |
-| 5   | `ArknightsGameRuntime`      | Wine runtime, Intel translation, playtime, storage                                                                                             | 1, 2, 4                | `Czlib`            |
+| 5   | `ArknightsGameRuntime`      | Wine runtime, Intel translation, playtime, storage                                                                                             | 1, 2, 4                | none               |
 | 6   | `ArknightsPresence`         | Discord Rich Presence state, local IPC transport adapter                                                                                       | 1, 2                   | none               |
 | 7   | `ArknightsAudio`            | Background playback, Now Playing, settings, HUD controls                                                                                       | 2, 3                   | `YouTubePlayerKit` |
 | 8   | `ArknightsOnboarding`       | Resumable flow, progress persistence, step views                                                                                               | 2, 3, 4, 5             | none               |
@@ -148,7 +148,7 @@ and resource layout), and `runtime.json` (runtime layout) through `scripts/lib/p
 | `app`     | `scripts/build_app.py`          | `Bundle.main`                                                |
 | `package` | `resources:` in `Package.swift` | `AppResourceBundle.bundle` (`Bundle.module` in SwiftPM runs) |
 
-- Load a file with `BundledResource.data(in:)`, `text(in:)`, or `decode(_:in:)`. Do not call
+- Load a file with `BundledResource.data(in:)` or `text(in:)`. Do not call
   `Bundle.url(forResource:)` for a bundled resource.
 - The loader throws `BundledResourceError`: `missing` (no such resource), `unreadable` (file system
   failure), or `corrupt` (invalid deflate data, UTF-8, or JSON). The owning feature maps the error.

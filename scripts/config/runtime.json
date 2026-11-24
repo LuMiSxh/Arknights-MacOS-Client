@@ -1,28 +1,23 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "architecture": "x86",
   "lanes": {
     "x86": {
       "minimumMacOS": "15.0",
       "prefixRevision": 2,
       "runtime": {
-        "name": "Arknights macOS Runtime 1.0.2-rc1",
-        "version": "1.0.2-rc1",
-        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.2-rc1/Arknights-MacOS-Runtime-v1.0.2-rc1-x86_64.tar.gz",
-        "sha256": "21f24d5b3d66b86b0274f48db8c9435efb2ef1b2d94be8ae21b7030400990521",
-        "sizeBytes": 119303076
+        "name": "Arknights macOS Runtime 1.0.2-rc2",
+        "version": "1.0.2-rc2",
+        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.2-rc2/runtime-x86_64.tar.xz",
+        "sha256": "3eedcb30c7ae138ac1f74b3a602ca14c81f7e49debb9b5e73e091e6fab21c979",
+        "sizeBytes": 58071760,
+        "deltas": [
+          {"from": "1.0.1", "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.2-rc2/runtime-x86_64-from-1.0.1.delta.tar.xz", "sha256": "73e83d3e74a636136d40216be2b084eb9ffe5d11e5b82508f346928e293e51f4", "sizeBytes": 169868},
+          {"from": "1.0.0", "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.2-rc2/runtime-x86_64-from-1.0.0.delta.tar.xz", "sha256": "cc73a1bf1ae691df2240e9124257577aec099c7e501045538f602a04ae9abeb0", "sizeBytes": 880004}
+        ]
       },
       "interface": {
-        "archive": {
-          "wineDirectory": "Wine",
-          "dxmtDirectory": "DXMT"
-        },
         "executables": ["bin/wine64", "bin/wineserver"],
-        "features": {
-          "hardwareCursor": true,
-          "metalFXSpatialUpscaling": true,
-          "nativeFullscreenSpace": true
-        },
         "requiredFiles": [
           "lib/wine/x86_64-unix/winecoreaudio.so",
           "lib/wine/x86_64-unix/winemac.so",
@@ -44,6 +39,11 @@
             "dxgi.dll",
             "winemetal.dll"
           ]
+        },
+        "features": {
+          "hardwareCursor": true,
+          "metalFXSpatialUpscaling": true,
+          "nativeFullscreenSpace": true
         }
       },
       "components": {
@@ -53,7 +53,7 @@
       },
       "provenance": {
         "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-        "buildCommit": "8e445771cf06c96419fa96b980514e1d60a36201",
+        "buildCommit": "c925a5470a49952939f7ac021c0f0c99b73ed8a6",
         "wineRepository": "https://github.com/dappermint/winecx",
         "wineCommit": "a54b8240683e92bf4c15cb1ba6bf92a9539bd768",
         "dxmtRepository": "https://github.com/3Shain/dxmt",
@@ -72,23 +72,18 @@
       "minimumMacOS": "26.0",
       "prefixRevision": 2,
       "runtime": {
-        "name": "Arknights macOS Runtime 1.0.2-rc1",
-        "version": "1.0.2-rc1",
-        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.2-rc1/Arknights-MacOS-Runtime-v1.0.2-rc1-arm64.tar.gz",
-        "sha256": "f1be1295b1f13d872e07a91d549cf69d12023fd93c45b558dd72a89496394e43",
-        "sizeBytes": 241874082
+        "name": "Arknights macOS Runtime 1.0.2-rc2",
+        "version": "1.0.2-rc2",
+        "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.2-rc2/runtime-arm64.tar.xz",
+        "sha256": "4889b4f3100f7123a75dbea5ac5c73fc9cefacb041f915665a28b1f46d407e04",
+        "sizeBytes": 116696660,
+        "deltas": [
+          {"from": "1.0.1", "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.2-rc2/runtime-arm64-from-1.0.1.delta.tar.xz", "sha256": "678816432e87ea73cbf8d5010d294495cd956668901a1888e7c1abc705f3a7ff", "sizeBytes": 10441168},
+          {"from": "1.0.0", "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v1.0.2-rc2/runtime-arm64-from-1.0.0.delta.tar.xz", "sha256": "d6aa8f50596547084b2be8f84b45b7fbb78dee9a8966cf38f6beee9eb3ff3ce0", "sizeBytes": 10431036}
+        ]
       },
       "interface": {
-        "archive": {
-          "wineDirectory": "Wine",
-          "dxmtDirectory": "DXMT"
-        },
         "executables": ["bin/wine64", "bin/wineserver"],
-        "features": {
-          "hardwareCursor": true,
-          "metalFXSpatialUpscaling": true,
-          "nativeFullscreenSpace": true
-        },
         "requiredFiles": [
           "lib/wine/aarch64-unix/libarm64ecfex.so",
           "lib/wine/aarch64-unix/libwow64fex.so",
@@ -110,19 +105,24 @@
             "x64": "system32"
           },
           "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll"]
+        },
+        "features": {
+          "hardwareCursor": true,
+          "metalFXSpatialUpscaling": true,
+          "nativeFullscreenSpace": true
         }
       },
       "components": {
-        "wine": "11.18",
+        "wine": "11.22",
         "dxmt": "0.80"
       },
       "provenance": {
         "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-        "buildCommit": "8e445771cf06c96419fa96b980514e1d60a36201",
+        "buildCommit": "c925a5470a49952939f7ac021c0f0c99b73ed8a6",
         "externalBuildRepository": "https://github.com/riverfog7/wine-build-new",
-        "externalBuildCommit": "7b3fff76fa5178f6ce0141b2c776afa2a822f101",
+        "externalBuildCommit": "9f8c4ae4d35c7ff4153267aba9618c026f5f5583",
         "wineRepository": "https://gitlab.winehq.org/wine/wine",
-        "wineCommit": "7b3fff76fa5178f6ce0141b2c776afa2a822f101",
+        "wineCommit": "9f8c4ae4d35c7ff4153267aba9618c026f5f5583",
         "dxmtRepository": "https://github.com/3Shain/dxmt",
         "dxmtCommit": "647b0020ba5764e5593b12407afd76964fa11e20"
       }

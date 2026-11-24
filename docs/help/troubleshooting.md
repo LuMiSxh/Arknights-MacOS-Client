@@ -56,9 +56,9 @@ Sign-in opens in a different place by server:
 - **China (Bilibili):** the login window of Bilibili.
 - **Taiwan:** the default browser of your Mac. Look for a new window or tab.
 
-An in-game window can take up to one minute after first start, an update, or cache clearing.
+An in-game window can take up to 90 seconds after first start, an update, or cache clearing.
 
-1. Wait one minute. Do not press sign-in again.
+1. Wait 90 seconds. Do not press sign-in again.
 2. Check your connection and the Mac date and time.
 3. For Global, Japan, Korea, or China, quit the game. Choose **Settings → Storage → Clear Caches**, then restart.
 4. If the window stays blank, [report the problem](README.md#report-a-problem) with the server.

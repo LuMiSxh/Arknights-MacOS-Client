@@ -11,12 +11,20 @@ import Testing
 struct RuntimeConfigurationTests {
 	@Test
 	func decodesBothLanePins() throws {
-		let configuration = try makeRuntimeConfiguration()
+		let configuration = try makeRuntimeConfiguration(
+			x86: makeRuntimeLane(deltas: [
+				[
+					"from": "0.9.0", "url": "https://example.test/delta.tar.xz",
+					"sha256": String(repeating: "b", count: 64), "sizeBytes": 2,
+				]
+			]))
 
 		let x86 = try configuration.pinnedRuntime(for: .x86)
 		#expect(x86.lane == .x86)
 		#expect(x86.version == "1.0.0")
-		#expect(x86.url?.absoluteString == "https://example.test/runtime.tar.gz")
+		#expect(x86.url?.absoluteString == "https://example.test/runtime.tar.xz")
+		#expect(x86.deltas.map(\.from) == ["0.9.0"])
+		#expect(x86.deltas.first?.asset.sizeBytes == 2)
 		#expect(x86.sizeBytes == 4)
 		#expect(x86.minimumMacOS.majorVersion == 15)
 		#expect(x86.prefixRevision == 2)
@@ -33,6 +41,7 @@ struct RuntimeConfigurationTests {
 		#expect(arm.version == "0.9.0+arm")
 		#expect(arm.minimumMacOS.majorVersion == 26)
 		#expect(!arm.isAvailable)
+		#expect(arm.deltas.isEmpty)
 	}
 
 	@Test
@@ -57,12 +66,13 @@ struct RuntimeConfigurationTests {
 		case nonHTTPSArchiveURL
 		case malformedChecksum
 		case unsafeInterfacePath
+		case nonHTTPSDeltaURL
 
 		func configuration() throws -> RuntimeConfiguration {
 			switch self {
 			case .nonHTTPSArchiveURL:
 				return try makeRuntimeConfiguration(
-					x86: makeRuntimeLane(url: "http://example.test/runtime.tar.gz"))
+					x86: makeRuntimeLane(url: "http://example.test/runtime.tar.xz"))
 			case .malformedChecksum:
 				return try makeRuntimeConfiguration(x86: makeRuntimeLane(sha256: "00"))
 			case .unsafeInterfacePath:
@@ -70,6 +80,14 @@ struct RuntimeConfigurationTests {
 				unsafe["requiredFiles"] = ["C:/evil"]
 				return try makeRuntimeConfiguration(
 					x86: makeRuntimeLane(interface: unsafe))
+			case .nonHTTPSDeltaURL:
+				return try makeRuntimeConfiguration(
+					x86: makeRuntimeLane(deltas: [
+						[
+							"from": "0.9.0", "url": "http://example.test/delta.tar.xz",
+							"sha256": String(repeating: "b", count: 64), "sizeBytes": 2,
+						]
+					]))
 			}
 		}
 	}

@@ -11,99 +11,24 @@ import Testing
 
 private func runtimeArchive() -> Data {
 	var builder = TarBuilder()
-	builder.directory("Libraries")
-	builder.directory("Libraries/Wine")
-	builder.directory("Libraries/Wine/bin")
+	builder.directory("Runtime")
+	builder.directory("Runtime/bin")
+	builder.append(name: "Runtime/bin/wine64", mode: 0o755, content: Data("wine64".utf8))
 	builder.append(
-		name: "Libraries/Wine/bin/wine64", mode: 0o755, content: Data("wine64".utf8))
+		name: "Runtime/bin/wineserver", mode: 0o755, content: Data("wineserver".utf8))
+	builder.append(name: "Runtime/bin/Arknights", typeFlag: 0x32, linkName: "wine64")
+	builder.directory("Runtime/lib/wine/x86_64-unix")
 	builder.append(
-		name: "Libraries/Wine/bin/wineserver", mode: 0o755, content: Data("wineserver".utf8))
+		name: "Runtime/lib/wine/x86_64-unix/winemac.so", content: Data("winemac".utf8))
 	builder.append(
-		name: "Libraries/Wine/bin/Arknights", typeFlag: 0x32, linkName: "wine64")
-	builder.directory("Libraries/Wine/lib/wine/x86_64-unix")
+		name: "Runtime/lib/wine/x86_64-unix/winecoreaudio.so", content: Data("audio".utf8))
 	builder.append(
-		name: "Libraries/Wine/lib/wine/x86_64-unix/winemac.so",
-		content: Data("winemac".utf8))
-	builder.append(
-		name: "Libraries/Wine/lib/wine/x86_64-unix/winecoreaudio.so",
-		content: Data("audio".utf8))
-	builder.append(
-		name: "Libraries/Wine/lib/wine/x86_64-windows/winemetal.dll",
-		content: Data("winemetal".utf8))
-	builder.append(
-		name: "Libraries/DXMT/x64/d3d11.dll", content: Data("dxmt".utf8))
-	builder.append(name: "NOTICE.md", content: Data("notice".utf8))
-	builder.append(name: "Licenses/MIT.txt", content: Data("mit".utf8))
+		name: "Runtime/lib/wine/x86_64-windows/winemetal.dll", content: Data("winemetal".utf8))
+	builder.append(name: "Runtime/DXMT/x64/d3d11.dll", content: Data("dxmt".utf8))
+	builder.append(name: "Runtime/NOTICE.md", content: Data("notice".utf8))
+	builder.append(name: "Runtime/Licenses/MIT.txt", content: Data("mit".utf8))
 	builder.finish()
-	return builder.data
-}
-
-private func sha256Hex(_ data: Data) -> String {
-	SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-}
-
-private func makePin(
-	archive: Data,
-	sha256: String? = nil,
-	version: String = "1.0.0",
-	name: String = "Test Runtime"
-) -> PinnedRuntime {
-	PinnedRuntime(
-		lane: .x86,
-		name: name,
-		version: version,
-		url: URL(string: "https://download.test/runtime.tar"),
-		sha256: sha256 ?? sha256Hex(archive),
-		sizeBytes: archive.count,
-		minimumMacOS: OperatingSystemVersion(majorVersion: 15, minorVersion: 0, patchVersion: 0),
-		prefixRevision: 2,
-		interface: RuntimeManifest.Interface(
-			archive: .init(wineDirectory: "Wine", dxmtDirectory: "DXMT"),
-			executables: ["bin/wine64", "bin/wineserver"],
-			features: RuntimeFeatures(
-				hardwareCursor: true,
-				metalFXSpatialUpscaling: false,
-				nativeFullscreenSpace: false
-			),
-			requiredFiles: [
-				"lib/wine/x86_64-unix/winemac.so",
-				"lib/wine/x86_64-unix/winecoreaudio.so",
-				"lib/wine/x86_64-windows/winemetal.dll",
-			],
-			macDriver: "lib/wine/x86_64-unix/winemac.so",
-			launcher: .init(path: "bin/Arknights", target: "wine64"),
-			dxmt: .init(
-				payloadDirectory: "DXMT",
-				destinations: ["x64": "system32"],
-				libraries: ["d3d11.dll"]
-			)
-		),
-		components: RuntimeManifest.Components(wine: "11.17", dxmt: "0.80", moltenvk: nil),
-		provenance: nil
-	)
-}
-
-private func makePaths(_ temporary: TemporaryDirectory) -> AppPaths {
-	AppPaths(
-		applicationSupportDirectory: temporary.url,
-		runtimeSelection: RuntimeSelection(override: .x86)
-	)
-}
-
-private func makeInstaller(
-	paths: AppPaths,
-	route: StubURLProtocol.Route,
-	clock: any Clock<Duration> = ContinuousClock()
-) -> RuntimeInstaller {
-	RuntimeInstaller(
-		paths: paths,
-		selectionStore: RuntimeSelectionStore(fileURL: paths.runtimeSelectionFile),
-		access: RuntimeAccess(
-			macOSVersion: OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)
-		),
-		session: route.session,
-		clock: clock
-	)
+	return xzCompressed(builder.data)
 }
 
 struct RuntimeInstallerTests {
@@ -116,7 +41,7 @@ struct RuntimeInstallerTests {
 		route.handler = { request in
 			(makeHTTPResponse(url: request.url!, status: 200), archive)
 		}
-		let paths = makePaths(temporary)
+		let paths = makeInstallerPaths(temporary)
 		let installer = makeInstaller(paths: paths, route: route)
 		let oldVersion = paths.runtimeVersionDirectory(for: .x86, version: "0.9.0")
 		try FileManager.default.createDirectory(at: oldVersion, withIntermediateDirectories: true)
@@ -171,7 +96,7 @@ struct RuntimeInstallerTests {
 		route.handler = { request in
 			(makeHTTPResponse(url: request.url!, status: 200), archive)
 		}
-		let paths = makePaths(temporary)
+		let paths = makeInstallerPaths(temporary)
 		let installer = makeInstaller(paths: paths, route: route)
 		let pin = makePin(archive: archive, sha256: String(repeating: "0", count: 64))
 
@@ -204,7 +129,7 @@ struct RuntimeInstallerTests {
 				Data(suffix)
 			)
 		}
-		let paths = makePaths(temporary)
+		let paths = makeInstallerPaths(temporary)
 		try FileManager.default.createDirectory(
 			at: paths.runtimeDownloadsDirectory(for: .x86), withIntermediateDirectories: true)
 		try Data(prefix).write(
@@ -223,11 +148,11 @@ struct RuntimeInstallerTests {
 		defer { temporary.remove() }
 		let archive = runtimeArchive()
 		let route = StubURLProtocol.Route()
-		route.redirectURL = URL(string: "http://download.test/runtime.tar")!
+		route.redirectURL = URL(string: "http://download.test/runtime.tar.xz")!
 		route.handler = { request in
 			(makeHTTPResponse(url: request.url!, status: 200), archive)
 		}
-		let installer = makeInstaller(paths: makePaths(temporary), route: route)
+		let installer = makeInstaller(paths: makeInstallerPaths(temporary), route: route)
 
 		var failure: RuntimeInstallError?
 		do {
@@ -260,7 +185,7 @@ struct RuntimeInstallerTests {
 		// The recording clock advances by each requested sleep, so the ticker ages the download
 		// without real waiting.
 		let installer = makeInstaller(
-			paths: makePaths(temporary), route: route, clock: RecordingClock())
+			paths: makeInstallerPaths(temporary), route: route, clock: RecordingClock())
 
 		let sawStall = Mutex(false)
 		_ = try await installer.install(pin: makePin(archive: archive)) { progress in
@@ -281,7 +206,7 @@ struct RuntimeInstallerTests {
 		route.handler = { request in
 			(makeHTTPResponse(url: request.url!, status: 200), archive)
 		}
-		let paths = makePaths(temporary)
+		let paths = makeInstallerPaths(temporary)
 		let installer = makeInstaller(paths: paths, route: route)
 		let oldVersion = paths.runtimeVersionDirectory(for: .x86, version: "0.9.0")
 		try FileManager.default.createDirectory(at: oldVersion, withIntermediateDirectories: true)

@@ -18,10 +18,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Added the **Rounded Dock icon** runtime patch. This was a client side change and moved into the runtime patch system.
+- Added incremental runtime updates. When the installed runtime is the release a delta starts from, the launcher downloads the smaller delta instead of the full runtime archive.
 
 ### Changed
 
-- Updated the bundled runtime to v1.0.2-rc1. On Apple silicon, the game environment now uses Wine 11.22.
+- Updated the bundled runtime to v1.0.2-rc2.
+- Runtime archives use xz compression, so runtime downloads are smaller.
 
 ## [1.0.1] - 2026-11-20
 

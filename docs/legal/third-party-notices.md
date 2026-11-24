@@ -21,11 +21,11 @@ The app bundles one compact file with the notices of its own components. This we
 | x86 | WineCX / Wine | 11.17, `a54b8240683e92bf4c15cb1ba6bf92a9539bd768` | LGPL-2.1-or-later | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/a54b8240683e92bf4c15cb1ba6bf92a9539bd768) |
 | x86 | DXMT | 0.80-408-g0df8610, `0df86108348bab2aaa5c4610a5eb63a9de9047ac` | LGPL-2.1-or-later | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/0df86108348bab2aaa5c4610a5eb63a9de9047ac) |
 | x86 | MoltenVK | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf` | Apache-2.0 | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
-| arm | WineCX / Wine | 11.18, `7b3fff76fa5178f6ce0141b2c776afa2a822f101` | LGPL-2.1-or-later | [wine/wine commit](https://gitlab.winehq.org/wine/wine/-/tree/7b3fff76fa5178f6ce0141b2c776afa2a822f101) |
+| arm | WineCX / Wine | 11.22, `9f8c4ae4d35c7ff4153267aba9618c026f5f5583` | LGPL-2.1-or-later | [wine/wine commit](https://gitlab.winehq.org/wine/wine/-/tree/9f8c4ae4d35c7ff4153267aba9618c026f5f5583) |
 | arm | DXMT | 0.80, `647b0020ba5764e5593b12407afd76964fa11e20` | LGPL-2.1-or-later | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/647b0020ba5764e5593b12407afd76964fa11e20) |
 <!-- runtime:end components -->
 
-The x86_64 runtime contains WineCX, DXMT, and MoltenVK. The ARM64 runtime contains Wine, FEX, Mesa, and DXMT. Each runtime archive carries its own license index, license texts, and `NOTICE.md`. The launcher shows those notices for the installed runtime under **Settings → About**.
+The x86_64 runtime contains WineCX, DXMT, and MoltenVK. The ARM64 runtime contains Wine, FEX, Mesa, and DXMT. Each runtime archive carries its own license index, license texts, and `NOTICE.md`, which stay with the installed runtime.
 
 The client does not generate a runtime closure inventory. The runtime archive is the authoritative record of its own components, build inputs, and notices.
 
@@ -36,8 +36,8 @@ The client pins one runtime archive per architecture. The launcher downloads the
 
 | Runtime | Release | Archive SHA-256 | Archive size |
 | --- | --- | --- | --- |
-| x86 | [v1.0.2-rc1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc1) | `21f24d5b3d66b86b0274f48db8c9435efb2ef1b2d94be8ae21b7030400990521` | 119303076 bytes |
-| arm | [v1.0.2-rc1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc1) | `f1be1295b1f13d872e07a91d549cf69d12023fd93c45b558dd72a89496394e43` | 241874082 bytes |
+| x86 | [v1.0.2-rc2](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc2) | `3eedcb30c7ae138ac1f74b3a602ca14c81f7e49debb9b5e73e091e6fab21c979` | 58071760 bytes |
+| arm | [v1.0.2-rc2](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc2) | `4889b4f3100f7123a75dbea5ac5c73fc9cefacb041f915665a28b1f46d407e04` | 116696660 bytes |
 <!-- runtime:end build -->
 
 > [!IMPORTANT]
@@ -83,7 +83,7 @@ The documentation website embeds these packages. They are not part of the app. T
 <!-- licenses:begin runtime -->
 ## Runtime components
 
-The launcher downloads one runtime archive for the architecture that you choose. The app bundle does not contain a runtime. Each archive lists its components and licenses in `Licenses/index.json` and carries its own `NOTICE.md`. The launcher shows those notices for the installed runtime under **Settings → About**. The client does not generate a runtime closure inventory.
+The launcher downloads one runtime archive for the architecture that you choose. The app bundle does not contain a runtime. Each archive lists its components and licenses in `Licenses/index.json` and carries its own `NOTICE.md`, which stay with the installed runtime. The client does not generate a runtime closure inventory.
 <!-- licenses:end runtime -->
 
 A runtime dependency can carry an additional notice. The release artifact and upstream source distributions remain authoritative for the complete notice set.

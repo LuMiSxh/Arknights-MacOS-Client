@@ -2,30 +2,28 @@
 
 """Pin the Arknights macOS Runtime release and keep every mention current.
 
-A release publishes one `provenance.json` with a fragment per lane, plus two `.sha256`
-files per lane. `update` reads them over HTTPS, checks that they agree, and rewrites the
-runtime pins of the lanes in `runtime.json`. `render_documents` fills the generated
+A release publishes one `runtime-<arch>.json` manifest per lane and a `SHA256SUMS` file.
+`update` reads them over HTTPS, checks them against `SHA256SUMS`, and rewrites the runtime
+pins of the lanes in `runtime.json`. `render_documents` fills the generated
 `runtime` blocks of the documents from `runtime.json` alone, so `check` runs offline. The
 blocks use the marker syntax of the license generator: `<!-- runtime:begin NAME -->` and
 `<!-- runtime:end NAME -->`.
 """
 
+import hashlib
 import json
 import re
 import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from runtime_config import (
-    COMMIT_PATTERN,
-    MINIMUM_MACOS_PATTERN,
+    RELEASE_VERSION_PATTERN,
     RUNTIME_ARCHITECTURES,
     SHA256_PATTERN,
-    RuntimeLaneConfiguration,
     load_runtime_config,
 )
 
@@ -44,19 +42,20 @@ from lib.project_config import RUNTIME_CONFIG
 REPOSITORY = "LuMiSxh/Arknights-MacOS-Runtime"
 REPOSITORY_URL = f"https://github.com/{REPOSITORY}"
 RELEASES_API = f"https://api.github.com/repos/{REPOSITORY}/releases?per_page=100"
-RELEASE_API = f"https://api.github.com/repos/{REPOSITORY}/releases/tags/"
 NOTICES_DOCUMENT = Path("docs/legal/third-party-notices.md")
 BLOCK_NAMESPACE = "runtime"
 TAG_PATTERN = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.]+)?$")
 MAXIMUM_ASSET_BYTES = 8 * 1_024 * 1_024
 PRETTIER_WIDTH = 80
-PROVENANCE_SCHEMA_VERSION = 2
-# The archive name part and the provenance target of each lane of a release.
+MANIFEST_SCHEMA_VERSION = 1
+CHECKSUMS_ASSET = "SHA256SUMS"
+# The architecture that names each lane's manifest and archive.
 RELEASE_ARCHITECTURES = {"x86": "x86_64", "arm": "arm64"}
-LANE_TARGETS = {"x86": "rosetta-x86_64", "arm": "native-arm64"}
-# Wine and DXMT are the components a lane can carry; their sources are fields of the
-# lane fragment. MoltenVK comes only from `runtimeLock.contents.baseProvenance`.
-RUNTIME_COMPONENTS = ("wine", "dxmt")
+# The keys that a runtime manifest must have, and the keys of its archive and delta entries.
+MANIFEST_KEYS = frozenset(
+    {"minimumMacOS", "archive", "deltas", "interface", "components", "provenance"}
+)
+ASSET_KEYS = frozenset({"name", "sha256", "sizeBytes"})
 ASSET_URL_PATTERN = re.compile(
     rf"^{re.escape(REPOSITORY_URL)}/releases/download/(?P<tag>[^/]+)/(?P<name>[^/]+)$"
 )
@@ -113,284 +112,136 @@ def latest_tag(fetch: Fetch, include_prerelease: bool) -> str:
     return max(published, key=lambda release: release["published_at"])["tag_name"]
 
 
-def asset_names(tag: str, architecture: str) -> tuple[str, str]:
-    """Return the archive and source archive names of one lane of a release."""
-    stem = f"Arknights-MacOS-Runtime-{tag}-{RELEASE_ARCHITECTURES[architecture]}"
-    return f"{stem}.tar.gz", f"{stem}-source.tar.gz"
-
-
 def asset_url(tag: str, name: str) -> str:
     return f"{REPOSITORY_URL}/releases/download/{tag}/{name}"
 
 
-def release_asset_sizes(fetch: Fetch, tag: str) -> dict[str, int]:
-    """Read the asset sizes from the GitHub release metadata."""
-    try:
-        document = json.loads(fetch(f"{RELEASE_API}{tag}"))
-    except json.JSONDecodeError:
-        fail(f"GitHub returned invalid metadata for {tag}")
-    if not isinstance(document, dict):
-        fail(f"GitHub returned invalid metadata for {tag}")
-    return {
-        asset["name"]: asset["size"]
-        for asset in document.get("assets") or []
-        if isinstance(asset, dict)
-        and isinstance(asset.get("name"), str)
-        and isinstance(asset.get("size"), int)
-        and asset["size"] > 0
-    }
+def parse_checksums(text: bytes) -> dict[str, str]:
+    """Return the digest that `SHA256SUMS` lists for each asset."""
+    digests: dict[str, str] = {}
+    for line in text.decode("utf-8").splitlines():
+        digest, _, name = line.partition("  ")
+        if SHA256_PATTERN.fullmatch(digest) is None or not name or name in digests:
+            fail(f"SHA256SUMS has an invalid or repeated line: {line!r}")
+        digests[name] = digest
+    return digests
 
 
-def _checksum(fetch: Fetch, tag: str, name: str, expected: Mapping[str, Any]) -> str:
-    line = fetch(asset_url(tag, f"{name}.sha256")).decode("utf-8").split()
-    digest = expected.get("sha256")
-    if expected.get("name") != name:
-        fail(f"provenance.json names {expected.get('name')!r}, expected {name!r}")
-    if len(line) != 2 or line[1].lstrip("*") != name:
-        fail(f"{name}.sha256 does not describe {name}")
-    if SHA256_PATTERN.fullmatch(line[0]) is None or line[0] != digest:
-        fail(f"{name}.sha256 ({line[0]}) differs from provenance.json ({digest})")
-    return line[0]
-
-
-def fetch_provenance(fetch: Fetch, tag: str) -> dict[str, Any]:
-    """Download the release `provenance.json` and check that it describes this tag."""
-    provenance = json.loads(fetch(asset_url(tag, "provenance.json")))
-    if (
-        not isinstance(provenance, dict)
-        or provenance.get("schemaVersion") != PROVENANCE_SCHEMA_VERSION
-        or provenance.get("releaseTag") != tag
-    ):
-        fail(f"provenance.json is not schema {PROVENANCE_SCHEMA_VERSION} for {tag}")
-    return provenance
-
-
-@dataclass(frozen=True, slots=True)
-class LaneRelease:
-    """The runtime fragment and the verified assets of one lane of a release."""
-
-    architecture: str
-    fragment: Mapping[str, Any]
-    archive: str
-    sha256: str
-    size_bytes: int
-
-
-def lane_fragment(
-    provenance: Mapping[str, Any], tag: str, architecture: str
-) -> Mapping[str, Any]:
-    """Return the one runtime fragment of a lane; it must describe this release."""
-    runtimes = provenance.get("runtimes")
-    matches = [
-        fragment
-        for fragment in runtimes or []
-        if isinstance(fragment, dict)
-        and fragment.get("target") == LANE_TARGETS[architecture]
-    ]
-    if len(matches) != 1:
-        fail(
-            f"provenance.json needs one {architecture} runtime for {tag}, "
-            f"found {len(matches)}"
-        )
-    fragment = matches[0]
-    if fragment.get("arch") != RELEASE_ARCHITECTURES[architecture] or fragment.get(
-        "version"
-    ) != tag.removeprefix("v"):
-        fail(f"the {architecture} runtime in provenance.json does not describe {tag}")
-    return fragment
+def _verify_listed(checksums: Mapping[str, str], name: str, digest: object) -> None:
+    listed = checksums.get(name)
+    if listed is None:
+        fail(f"SHA256SUMS does not list {name}")
+    if listed != digest:
+        fail(f"SHA256SUMS lists {listed} for {name}, expected {digest}")
 
 
 def fetch_lane(
-    fetch: Fetch,
-    tag: str,
-    provenance: Mapping[str, Any],
-    architecture: str,
-    listed_sizes: Mapping[str, int],
-) -> LaneRelease:
-    """Verify the checksums and the size of one lane against its release assets."""
-    fragment = lane_fragment(provenance, tag, architecture)
-    archive, source = asset_names(tag, architecture)
-    published = fragment.get("runtimeArchive") or {}
-    digest = _checksum(fetch, tag, archive, published)
-    _checksum(fetch, tag, source, fragment.get("correspondingSourceArchive") or {})
-    size = published.get("sizeBytes")
-    listed = listed_sizes.get(archive)
-    if size is not None and listed is not None and size != listed:
-        fail(
-            f"the release lists {listed} bytes for {archive}; "
-            f"provenance.json has {size}"
-        )
-    size = size if size is not None else listed
-    if not isinstance(size, int) or isinstance(size, bool) or size < 1:
-        fail(f"the runtime archive size of the {architecture} lane is unknown")
-    return LaneRelease(architecture, fragment, archive, digest, size)
+    fetch: Fetch, tag: str, checksums: Mapping[str, str], lane: str
+) -> dict[str, Any]:
+    """Download the runtime manifest of one lane and check it and its assets.
 
-
-def _published_interface(
-    architecture: str, provenance: Mapping[str, Any]
-) -> Mapping[str, Any]:
-    """Return the release interface of one lane, with the lane's runtime features.
-
-    The fragment's `runtimeLock.contents` is the lock already resolved for that lane.
+    The manifest gives the archive and delta digests, so `SHA256SUMS` must list the same ones.
     """
-    lock = provenance.get("runtimeLock")
-    contents = lock.get("contents") if isinstance(lock, dict) else None
-    interface = contents.get("interface") if isinstance(contents, dict) else None
-    if not isinstance(interface, dict):
-        fail(f"provenance.json has no {architecture} runtime interface")
-    features = contents.get("features")
-    return (
-        {**interface, "features": features} if isinstance(features, dict) else interface
-    )
-
-
-def check_interface(
-    lane: RuntimeLaneConfiguration, provenance: Mapping[str, Any]
-) -> None:
-    """Fail when the release interface differs from the lane in `runtime.json`."""
-    published = _published_interface(lane.name, provenance)
-    wine, dxmt = lane.layout.archive_wine_directory, lane.layout.archive_dxmt_directory
-    expected: dict[str, Any] = {
-        "wineDirectory": str(wine),
-        "dxmtDirectory": str(dxmt),
-        "features": lane.layout.features.mapping(),
-        "minimumMacOS": lane.minimum_macos,
-        "executables": sorted(
-            str(wine / path)
-            for path in (*lane.layout.executables, lane.layout.launcher.path)
-        ),
-        "requiredFiles": sorted(
-            {
-                str(wine / path)
-                for path in (*lane.layout.required_files, lane.layout.mac_driver)
-            }
-            | {
-                str(dxmt / architecture / library)
-                for architecture, _ in lane.layout.dxmt.destinations
-                for library in lane.layout.dxmt.libraries
-            }
-        ),
-    }
-    actual = dict(published)
-    if "executables" in actual:
-        actual["executables"] = sorted(actual["executables"])
-    if "requiredFiles" in actual:
-        actual["requiredFiles"] = sorted(actual["requiredFiles"])
-    drift = [
-        key for key in expected if key in actual and expected[key] != actual.get(key)
-    ]
-    if drift:
-        fail(
-            f"the release interface differs from the {lane.name} lane in runtime.json ("
-            + ", ".join(drift)
-            + "); update the interface by hand and review the Swift runtime code"
-        )
-
-
-def _field(source: Mapping[str, Any], *keys: str) -> str | None:
-    """Return the first non-empty string under one of `keys`."""
-    for key in keys:
-        value = source.get(key)
-        if isinstance(value, str) and value:
-            return value
-    return None
-
-
-def _repository(value: str) -> str:
-    return value.removesuffix(".git")
-
-
-def _commit(value: object, label: str) -> str:
-    if not isinstance(value, str) or COMMIT_PATTERN.fullmatch(value) is None:
-        fail(f"provenance.json has an invalid Git commit for {label}: {value!r}")
-    return value
-
-
-def _update_provenance(
-    lane: Mapping[str, Any],
-    provenance: Mapping[str, Any],
-    moltenvk_version: str | None,
-) -> None:
-    """Update the component versions and sources that the release names."""
-    lock = provenance.get("runtimeLock")
-    contents = lock.get("contents") if isinstance(lock, dict) else None
-    # `baseProvenance` describes the base archive; a lane built without one (the external
-    # ARM64 tree) inherits the lock's top-level entry but does not ship that MoltenVK.
-    base = (
-        contents.get("baseProvenance")
-        if isinstance(contents, dict) and contents.get("baseArtifact") is not None
-        else None
-    )
-    previous = lane["provenance"]
-    previous["buildRepository"] = REPOSITORY_URL
-    if isinstance(provenance.get("buildCommit"), str):
-        previous["buildCommit"] = _commit(provenance["buildCommit"], "build")
-    wine = provenance.get("wine")
-    external = wine.get("externalBuild") if isinstance(wine, dict) else None
-    if isinstance(external, dict):
-        repository = _field(external, "repository")
-        commit = _field(external, "commit")
-        if repository is not None:
-            previous["externalBuildRepository"] = repository
-        if commit is not None:
-            previous["externalBuildCommit"] = _commit(commit, "external build")
-    names = list(lane["components"]) or [
-        name for name in RUNTIME_COMPONENTS if isinstance(provenance.get(name), dict)
-    ]
-    for name in names:
-        source = provenance.get(name)
-        if not isinstance(source, dict):
-            continue
-        version = _field(source, "version")
-        if version is not None:
-            lane["components"][name] = version
-        repository = _field(source, "repository")
-        commit = _field(source, "commit")
-        if repository is None or commit is None:
-            fail(f"provenance.json has no repository or commit for {name}")
-        previous[f"{name}Repository"] = _repository(repository)
-        previous[f"{name}Commit"] = _commit(commit, name)
-    moltenvk = base.get("moltenvk") if isinstance(base, dict) else None
-    if isinstance(moltenvk, dict):
-        commit = _commit(moltenvk["commit"], "moltenvk")
-        if previous.get("moltenvkCommit") != commit and moltenvk_version is None:
-            fail(
-                "the MoltenVK commit changed and provenance.json has no MoltenVK "
-                "version; pass --moltenvk-version"
-            )
-        if moltenvk_version is not None:
-            lane["components"]["moltenvk"] = moltenvk_version
-        previous["moltenvkRepository"] = _repository(str(moltenvk["repository"]))
-        previous["moltenvkCommit"] = commit
+    architecture = RELEASE_ARCHITECTURES[lane]
+    name = f"runtime-{architecture}.json"
+    raw = fetch(asset_url(tag, name))
+    _verify_listed(checksums, name, hashlib.sha256(raw).hexdigest())
+    try:
+        manifest = json.loads(raw)
+    except ValueError:
+        fail(f"{name} is not valid JSON")
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("schemaVersion") != MANIFEST_SCHEMA_VERSION
+    ):
+        fail(f"{name} is not runtime manifest schema {MANIFEST_SCHEMA_VERSION}")
+    if manifest.get("arch") != architecture or manifest.get("version") != (
+        tag.removeprefix("v")
+    ):
+        fail(f"{name} does not describe {architecture} {tag}")
+    missing = sorted(MANIFEST_KEYS - set(manifest))
+    if missing:
+        fail(f"{name} lacks {', '.join(missing)}")
+    archive = manifest["archive"]
+    if (
+        not isinstance(archive, dict)
+        or set(archive) != ASSET_KEYS
+        or archive["name"] != f"runtime-{architecture}.tar.xz"
+    ):
+        fail(f"{name} does not name the {architecture} archive")
+    _verify_listed(checksums, archive["name"], archive["sha256"])
+    if not isinstance(manifest["deltas"], list):
+        fail(f"{name} has no delta list")
+    for delta in manifest["deltas"]:
+        if (
+            not isinstance(delta, dict)
+            or set(delta) != {*ASSET_KEYS, "from"}
+            or not isinstance(delta["from"], str)
+            or RELEASE_VERSION_PATTERN.fullmatch(delta["from"]) is None
+            or delta["name"]
+            != f"runtime-{architecture}-from-{delta['from']}.delta.tar.xz"
+        ):
+            fail(f"{name} has an invalid delta: {delta!r}")
+        _verify_listed(checksums, delta["name"], delta["sha256"])
+    return manifest
 
 
 def updated_manifest(
     manifest: Mapping[str, Any],
     tag: str,
-    releases: Sequence[LaneRelease],
+    releases: Mapping[str, Mapping[str, Any]],
     moltenvk_version: str | None = None,
 ) -> dict[str, Any]:
-    """Return `manifest` with each released lane pinned to the release."""
+    """Return `manifest` with each released lane pinned to its runtime manifest.
+
+    The release manifest has no MoltenVK version, so the pinned one stays unless its commit changes.
+    """
     result = json.loads(json.dumps(manifest))
     version = tag.removeprefix("v")
-    for release in releases:
-        lane = result["lanes"].get(release.architecture)
+    for architecture, release in releases.items():
+        lane = result["lanes"].get(architecture)
         if not isinstance(lane, dict):
-            fail(f"runtime.json has no {release.architecture} lane")
+            fail(f"runtime.json has no {architecture} lane")
+        provenance = release["provenance"]
+        components = dict(release["components"])
+        if "moltenvkCommit" in provenance:
+            commit_changed = provenance["moltenvkCommit"] != lane["provenance"].get(
+                "moltenvkCommit"
+            )
+            if commit_changed and moltenvk_version is None:
+                fail(
+                    "the MoltenVK commit changed and the release has no MoltenVK "
+                    "version; pass --moltenvk-version"
+                )
+            components["moltenvk"] = moltenvk_version or lane["components"].get(
+                "moltenvk"
+            )
+        archive = release["archive"]
+        deltas = sorted(
+            release["deltas"],
+            key=lambda delta: tuple(map(int, delta["from"].split("."))),
+            reverse=True,
+        )
         lane["runtime"] = {
             "name": f"Arknights macOS Runtime {version}",
             "version": version,
-            "url": asset_url(tag, release.archive),
-            "sha256": release.sha256,
-            "sizeBytes": release.size_bytes,
+            "url": asset_url(tag, archive["name"]),
+            "sha256": archive["sha256"],
+            "sizeBytes": archive["sizeBytes"],
+            "deltas": [
+                {
+                    "from": delta["from"],
+                    "url": asset_url(tag, delta["name"]),
+                    "sha256": delta["sha256"],
+                    "sizeBytes": delta["sizeBytes"],
+                }
+                for delta in deltas
+            ],
         }
-        interface = _published_interface(release.architecture, release.fragment)
-        minimum_macos = interface.get("minimumMacOS")
-        if isinstance(minimum_macos, str) and MINIMUM_MACOS_PATTERN.fullmatch(
-            minimum_macos
-        ):
-            lane["minimumMacOS"] = minimum_macos
-        _update_provenance(lane, release.fragment, moltenvk_version)
+        lane["minimumMacOS"] = release["minimumMacOS"]
+        lane["interface"] = release["interface"]
+        lane["components"] = components
+        lane["provenance"] = provenance
     return result
 
 
@@ -564,11 +415,8 @@ def manifest_problems(manifest: Mapping[str, Any]) -> list[str]:
             for key, (actual, wanted) in expected.items()
             if actual != wanted
         )
-        # Older pins name the asset without its lane; new pins add the architecture.
         name = match["name"]
-        if not name.startswith(f"Arknights-MacOS-Runtime-{tag}") or not name.endswith(
-            ".tar.gz"
-        ):
+        if name != f"runtime-{RELEASE_ARCHITECTURES[architecture]}.tar.xz":
             problems.append(
                 f"runtime.json: {architecture} runtime.url is not an archive of {tag}"
             )
@@ -615,15 +463,12 @@ def update(
     for architecture in architectures:
         if architecture not in RUNTIME_ARCHITECTURES:
             fail(f"unknown runtime architecture: {architecture}")
-    provenance = fetch_provenance(fetch, tag)
-    listed_sizes = release_asset_sizes(fetch, tag)
-    releases = [
-        fetch_lane(fetch, tag, provenance, architecture, listed_sizes)
+    checksums = parse_checksums(fetch(asset_url(tag, CHECKSUMS_ASSET)))
+    releases = {
+        architecture: fetch_lane(fetch, tag, checksums, architecture)
         for architecture in architectures
-    ]
+    }
     current = load_runtime_config(target)
-    for release in releases:
-        check_interface(current.lane(release.architecture), release.fragment)
     text = format_manifest(
         updated_manifest(current.raw, tag, releases, moltenvk_version)
     )

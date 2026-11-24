@@ -23,10 +23,6 @@ let package = Package(
 		.package(url: "https://github.com/SvenTiigi/YouTubePlayerKit.git", from: "2.0.0"),
 	],
 	targets: [
-		.systemLibrary(
-			name: "Czlib",
-			path: "RuntimeSupport/zlib"
-		),
 		.target(
 			name: "ArknightsInfrastructure",
 			path: "Sources/ArknightsInfrastructure"
@@ -56,7 +52,6 @@ let package = Package(
 				"ArknightsInfrastructure",
 				"ArknightsCore",
 				"ArknightsGameInstallation",
-				"Czlib",
 			],
 			path: "Sources/ArknightsGameRuntime"
 		),
