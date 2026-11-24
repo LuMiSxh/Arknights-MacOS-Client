@@ -416,12 +416,7 @@ def manifest_problems(manifest: Mapping[str, Any]) -> list[str]:
             if actual != wanted
         )
         name = match["name"]
-        archive = f"runtime-{RELEASE_ARCHITECTURES[architecture]}.tar.xz"
-        # v1.0.2-rc1 is the last pin with a legacy archive name; drop that case with the next pin.
-        legacy = name.startswith(f"Arknights-MacOS-Runtime-{tag}") and name.endswith(
-            (".tar.xz", ".tar.gz")
-        )
-        if name != archive and not legacy:
+        if name != f"runtime-{RELEASE_ARCHITECTURES[architecture]}.tar.xz":
             problems.append(
                 f"runtime.json: {architecture} runtime.url is not an archive of {tag}"
             )

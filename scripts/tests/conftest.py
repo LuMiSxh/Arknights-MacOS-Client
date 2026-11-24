@@ -41,7 +41,7 @@ def runtime_manifest() -> dict[str, Any]:
                     "version": "0.8.0",
                     "url": (
                         "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/"
-                        "download/v0.8.0/Arknights-MacOS-Runtime-v0.8.0-x86_64.tar.xz"
+                        "download/v0.8.0/runtime-x86_64.tar.xz"
                     ),
                     "sha256": "a" * 64,
                     "sizeBytes": 400_000_000,
@@ -77,7 +77,7 @@ def runtime_manifest() -> dict[str, Any]:
                     "version": "0.8.0",
                     "url": (
                         "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/"
-                        "download/v0.8.0/Arknights-MacOS-Runtime-v0.8.0-arm64.tar.xz"
+                        "download/v0.8.0/runtime-arm64.tar.xz"
                     ),
                     "sha256": "b" * 64,
                     "sizeBytes": 380_000_000,
