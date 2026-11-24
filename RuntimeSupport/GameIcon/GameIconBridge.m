@@ -41,7 +41,6 @@
  * the method hook.
  */
 
-
 typedef void (*SetApplicationIconImageIMP)(id, SEL, id);
 typedef signed char (*SetActivationPolicyIMP)(id, SEL, long);
 
