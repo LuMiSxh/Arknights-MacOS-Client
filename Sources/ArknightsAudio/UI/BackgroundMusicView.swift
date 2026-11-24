@@ -18,7 +18,9 @@ package struct BackgroundMusicView: View {
 	}
 
 	package var body: some View {
-		Group {
+		// A ZStack, not a Group: while there is no player the content is empty, and `.task` and
+		// `.onDisappear` never run on an empty Group, so the controller would never start.
+		ZStack {
 			// Keep the WebKit view mounted as long as music is enabled in preferences,
 			// even when the game is running. Unmounting it would dismantle the WKWebView
 			// and lose playlist position/timestamp when resuming after gameplay.
