@@ -210,6 +210,7 @@ private func snapshot(of root: URL) throws -> [String: String] {
 private enum DeltaFailure: CaseIterable, CustomTestStringConvertible {
 	case tamperedInstalledFile
 	case wrongResultHash
+	case missingRequiredFile
 	case escapingPath
 	case absolutePath
 	case symlinkedParentEntry
@@ -249,6 +250,11 @@ struct RuntimeInstallerDeltaTests {
 		case .wrongResultHash:
 			let index = entries.firstIndex { $0["path"] as? String == "bin/wineserver" }!
 			entries[index]["sha256"] = String(repeating: "0", count: 64)
+		case .missingRequiredFile:
+			// The delta applies, but its tree lacks a file the pinned interface requires.
+			entries.removeAll {
+				$0["path"] as? String == "lib/wine/x86_64-windows/winemetal.dll"
+			}
 		case .escapingPath, .absolutePath:
 			data["data/99"] = Data("x".utf8)
 			entries.append(

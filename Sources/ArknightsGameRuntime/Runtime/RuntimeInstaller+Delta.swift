@@ -16,8 +16,8 @@ extension RuntimeInstaller {
 		else { return nil }
 
 		let source = paths.runtimeVersionDirectory(for: pin.lane, version: installed)
-		let extractedDelta = staging.appending(path: "delta", directoryHint: .isDirectory)
-		let target = staging.appending(path: "runtime", directoryHint: .isDirectory)
+		let extractedDelta = Self.extractedDelta(in: staging)
+		let target = Self.deltaTarget(in: staging)
 		let totalBytes = Int64(delta.asset.sizeBytes)
 		do {
 			// The clone is nearly free; the budget covers the delta, its extracted copy, and the temporary tar.
@@ -40,13 +40,26 @@ extension RuntimeInstaller {
 			try Task.checkCancellation()
 			log?.error(
 				"Runtime delta from \(installed) failed, installing the full archive: \(error)")
-			bestEffort("Could not discard the failed runtime delta staging") {
-				for url in [extractedDelta, target]
-				where FileManager.default.fileExists(atPath: url.path) {
-					try FileManager.default.removeItem(at: url)
-				}
-			}
+			discardDeltaStaging(in: staging)
 			return nil
 		}
+	}
+
+	/// Removes the trees of a delta attempt that will not be installed.
+	func discardDeltaStaging(in staging: URL) {
+		bestEffort("Could not discard the failed runtime delta staging") {
+			for url in [Self.extractedDelta(in: staging), Self.deltaTarget(in: staging)]
+			where FileManager.default.fileExists(atPath: url.path) {
+				try FileManager.default.removeItem(at: url)
+			}
+		}
+	}
+
+	private static func extractedDelta(in staging: URL) -> URL {
+		staging.appending(path: "delta", directoryHint: .isDirectory)
+	}
+
+	private static func deltaTarget(in staging: URL) -> URL {
+		staging.appending(path: "runtime", directoryHint: .isDirectory)
 	}
 }

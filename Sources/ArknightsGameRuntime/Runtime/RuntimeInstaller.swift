@@ -121,24 +121,11 @@ package struct RuntimeInstaller: Sendable {
 		}
 
 		// A failed delta never fails the install: the full archive is the fallback.
-		let preparedRuntime: PreparedRuntime
-		if let patched = try await prepareFromDelta(
+		let preparedRuntime = try await prepareValidatedRuntime(
 			pin: pin, staging: staging, progress: progress)
-		{
-			preparedRuntime = patched
-		} else {
-			preparedRuntime = try await prepareFromArchive(
-				pin: pin, staging: staging, progress: progress)
-		}
 		let prepared = preparedRuntime.root
 		let downloadedBytes = preparedRuntime.totalBytes
 
-		await progress(
-			RuntimeInstallProgress(
-				downloadedBytes: downloadedBytes, totalBytes: downloadedBytes,
-				phase: .validating))
-		try validate(pin.interface, at: prepared)
-		try verifySignatures(pin: pin, at: prepared)
 		try writeManifest(pin, into: prepared)
 
 		await progress(
@@ -170,6 +157,47 @@ package struct RuntimeInstaller: Sendable {
 	struct PreparedRuntime: Sendable {
 		let root: URL
 		let totalBytes: Int64
+	}
+
+	/// Builds the pinned runtime in `staging` and checks it. A delta tree that fails the interface or
+	/// signature checks is discarded, and the full archive is installed instead.
+	private func prepareValidatedRuntime(
+		pin: PinnedRuntime,
+		staging: URL,
+		progress: @escaping ProgressHandler
+	) async throws -> PreparedRuntime {
+		if let patched = try await prepareFromDelta(
+			pin: pin, staging: staging, progress: progress)
+		{
+			do {
+				try await checkPreparedRuntime(patched, pin: pin, progress: progress)
+				return patched
+			} catch {
+				try Task.checkCancellation()
+				log?.error(
+					"The runtime delta produced a tree that failed the runtime checks, installing the full archive: \(error)"
+				)
+				discardDeltaStaging(in: staging)
+			}
+		}
+		let archived = try await prepareFromArchive(
+			pin: pin, staging: staging, progress: progress)
+		try await checkPreparedRuntime(archived, pin: pin, progress: progress)
+		return archived
+	}
+
+	/// Reports the validating phase and runs the interface and signature checks of one prepared tree.
+	private func checkPreparedRuntime(
+		_ prepared: PreparedRuntime,
+		pin: PinnedRuntime,
+		progress: @escaping ProgressHandler
+	) async throws {
+		await progress(
+			RuntimeInstallProgress(
+				downloadedBytes: prepared.totalBytes, totalBytes: prepared.totalBytes,
+				phase: .validating))
+		try validate(pin.interface, at: prepared.root)
+		try verifySignatures(pin: pin, at: prepared.root)
 	}
 
 	private func prepareFromArchive(
