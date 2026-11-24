@@ -15,21 +15,21 @@ def add_file(archive: tarfile.TarFile, name: str, contents: bytes = b"") -> None
 
 
 def test_extracts_single_runtime_root(tmp_path: Path) -> None:
-    archive_path = tmp_path / "runtime.tar.gz"
-    with tarfile.open(archive_path, "w:gz") as archive:
-        add_file(archive, "runtime/bin/wine64", b"runtime")
+    archive_path = tmp_path / "runtime.tar.xz"
+    with tarfile.open(archive_path, "w:xz") as archive:
+        add_file(archive, "Runtime/bin/wine64", b"runtime")
 
     extracted = extract_runtime.extract(archive_path, tmp_path / "output")
 
-    assert extracted.name == "runtime"
+    assert extracted.name == "Runtime"
     assert (extracted / "bin/wine64").read_bytes() == b"runtime"
 
 
 def test_ignores_appledouble_metadata(tmp_path: Path) -> None:
-    archive_path = tmp_path / "runtime.tar.gz"
-    with tarfile.open(archive_path, "w:gz") as archive:
+    archive_path = tmp_path / "runtime.tar.xz"
+    with tarfile.open(archive_path, "w:xz") as archive:
         add_file(archive, "._runtime", b"metadata")
-        add_file(archive, "runtime/bin/wine64", b"runtime")
+        add_file(archive, "Runtime/bin/wine64", b"runtime")
 
     extracted = extract_runtime.extract(archive_path, tmp_path / "output")
 
@@ -37,23 +37,10 @@ def test_ignores_appledouble_metadata(tmp_path: Path) -> None:
     assert (extracted / "bin/wine64").is_file()
 
 
-def test_license_companions_do_not_count_as_runtime_roots(tmp_path: Path) -> None:
-    archive_path = tmp_path / "runtime.tar.gz"
-    with tarfile.open(archive_path, "w:gz") as archive:
-        add_file(archive, "Libraries/Wine/bin/wine64", b"runtime")
-        add_file(archive, "Licenses/index.json", b"{}")
-        add_file(archive, "NOTICE.md", b"notice")
-
-    extracted = extract_runtime.extract(archive_path, tmp_path / "output")
-
-    assert extracted.name == "Libraries"
-    assert (extracted / "Wine/bin/wine64").read_bytes() == b"runtime"
-
-
 def test_rejects_unknown_second_top_level_entry(tmp_path: Path) -> None:
-    archive_path = tmp_path / "runtime.tar.gz"
-    with tarfile.open(archive_path, "w:gz") as archive:
-        add_file(archive, "Libraries/Wine/bin/wine64", b"runtime")
+    archive_path = tmp_path / "runtime.tar.xz"
+    with tarfile.open(archive_path, "w:xz") as archive:
+        add_file(archive, "Runtime/bin/wine64", b"runtime")
         add_file(archive, "Extra/file", b"extra")
 
     with pytest.raises(RuntimeError):
@@ -61,8 +48,8 @@ def test_rejects_unknown_second_top_level_entry(tmp_path: Path) -> None:
 
 
 def test_rejects_parent_path(tmp_path: Path) -> None:
-    archive_path = tmp_path / "runtime.tar.gz"
-    with tarfile.open(archive_path, "w:gz") as archive:
+    archive_path = tmp_path / "runtime.tar.xz"
+    with tarfile.open(archive_path, "w:xz") as archive:
         add_file(archive, "../escape", b"unsafe")
 
     with pytest.raises(RuntimeError):
@@ -70,10 +57,10 @@ def test_rejects_parent_path(tmp_path: Path) -> None:
 
 
 def test_rejects_escaping_symbolic_link(tmp_path: Path) -> None:
-    archive_path = tmp_path / "runtime.tar.gz"
-    with tarfile.open(archive_path, "w:gz") as archive:
-        add_file(archive, "runtime/bin/wine64", b"runtime")
-        link = tarfile.TarInfo("runtime/bin/escape")
+    archive_path = tmp_path / "runtime.tar.xz"
+    with tarfile.open(archive_path, "w:xz") as archive:
+        add_file(archive, "Runtime/bin/wine64", b"runtime")
+        link = tarfile.TarInfo("Runtime/bin/escape")
         link.type = tarfile.SYMTYPE
         link.linkname = "../../../outside"
         archive.addfile(link)
@@ -83,13 +70,13 @@ def test_rejects_escaping_symbolic_link(tmp_path: Path) -> None:
 
 
 def test_failed_extraction_removes_partial_destination(tmp_path: Path) -> None:
-    archive_path = tmp_path / "runtime.tar.gz"
+    archive_path = tmp_path / "runtime.tar.xz"
     destination = tmp_path / "output"
-    with tarfile.open(archive_path, "w:gz") as archive:
-        add_file(archive, "runtime/bin/wine64", b"runtime")
-        link = tarfile.TarInfo("runtime/bin/missing-link")
+    with tarfile.open(archive_path, "w:xz") as archive:
+        add_file(archive, "Runtime/bin/wine64", b"runtime")
+        link = tarfile.TarInfo("Runtime/bin/missing-link")
         link.type = tarfile.LNKTYPE
-        link.linkname = "runtime/bin/missing-target"
+        link.linkname = "Runtime/bin/missing-target"
         archive.addfile(link)
 
     with pytest.raises((KeyError, tarfile.ExtractError)):

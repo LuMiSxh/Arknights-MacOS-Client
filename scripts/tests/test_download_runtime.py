@@ -22,8 +22,6 @@ def digest(value: bytes) -> str:
 
 def layout() -> RuntimeLayout:
     return RuntimeLayout(
-        archive_wine_directory=PurePosixPath("Wine"),
-        archive_dxmt_directory=PurePosixPath("DXMT"),
         features=RuntimeFeatures(True, True, True),
         executables=(PurePosixPath("bin/wine64"), PurePosixPath("bin/wineserver")),
         required_files=(
@@ -230,32 +228,32 @@ def test_rejects_every_missing_declared_runtime_path(
 def archive_bytes() -> bytes:
     files = layout()
     buffer = io.BytesIO()
-    with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
+    with tarfile.open(fileobj=buffer, mode="w:xz") as archive:
         for relative in files.required_paths:
             if relative == files.launcher.path or relative.is_relative_to(
                 files.dxmt.payload_directory
             ):
                 continue
             data = b"#!/bin/sh\n" if relative in files.executables else b""
-            info = tarfile.TarInfo(f"Libraries/Wine/{relative}")
+            info = tarfile.TarInfo(f"Runtime/{relative}")
             info.size = len(data)
             info.mode = 0o755 if relative in files.executables else 0o644
             archive.addfile(info, io.BytesIO(data))
-        launcher = tarfile.TarInfo(f"Libraries/Wine/{files.launcher.path}")
+        launcher = tarfile.TarInfo(f"Runtime/{files.launcher.path}")
         launcher.type = tarfile.SYMTYPE
         launcher.linkname = str(files.launcher.target)
         archive.addfile(launcher)
         for library in files.dxmt.libraries:
             data = b""
-            info = tarfile.TarInfo(f"Libraries/DXMT/x64/{library}")
+            info = tarfile.TarInfo(f"Runtime/DXMT/x64/{library}")
             info.size = 0
             archive.addfile(info, io.BytesIO(data))
         notice = b"notice"
-        info = tarfile.TarInfo("NOTICE.md")
+        info = tarfile.TarInfo("Runtime/NOTICE.md")
         info.size = len(notice)
         archive.addfile(info, io.BytesIO(notice))
         license_text = b"MIT"
-        info = tarfile.TarInfo("Licenses/index.json")
+        info = tarfile.TarInfo("Runtime/Licenses/index.json")
         info.size = len(license_text)
         archive.addfile(info, io.BytesIO(license_text))
     return buffer.getvalue()

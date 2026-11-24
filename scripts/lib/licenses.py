@@ -14,7 +14,6 @@ file; the repository does not commit it.
 
 import json
 import re
-import shutil
 import zlib
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -772,18 +771,3 @@ def _unverified_warnings(components: Iterable[Component]) -> list[str]:
         f"{component.name} {component.version}: license not yet verified"
         for component in unverified(components)
     ]
-
-
-def stage_runtime_legal(archive_root: Path, runtime: Path) -> bool:
-    """Copy the archive's `Licenses/` and `NOTICE.md` into the prepared runtime."""
-    licenses = archive_root / RUNTIME_LICENSE_DIRECTORY
-    if not licenses.is_dir():
-        return False
-    for path in licenses.rglob("*"):
-        if path.is_symlink() or not (path.is_file() or path.is_dir()):
-            fail(f"runtime license path must be a regular file or directory: {path}")
-    shutil.copytree(licenses, runtime / RUNTIME_LICENSE_DIRECTORY)
-    notice = archive_root / RUNTIME_NOTICE_FILE
-    if notice.is_file() and not notice.is_symlink():
-        shutil.copyfile(notice, runtime / RUNTIME_NOTICE_FILE)
-    return True

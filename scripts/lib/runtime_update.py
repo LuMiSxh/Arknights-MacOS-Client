@@ -2,8 +2,9 @@
 
 """Pin the Arknights macOS Runtime release and keep every mention current.
 
-A release publishes one `provenance.json` with a fragment per lane, plus two `.sha256`
-files per lane. `update` reads them over HTTPS, checks that they agree, and rewrites the
+A release publishes one `provenance.json` with a fragment per lane, plus `.sha256` files
+for the archives and deltas of each lane. `update` reads them over HTTPS, checks that they
+agree, and rewrites the
 runtime pins of the lanes in `runtime.json`. `render_documents` fills the generated
 `runtime` blocks of the documents from `runtime.json` alone, so `check` runs offline. The
 blocks use the marker syntax of the license generator: `<!-- runtime:begin NAME -->` and
@@ -23,6 +24,7 @@ from typing import Any
 from runtime_config import (
     COMMIT_PATTERN,
     MINIMUM_MACOS_PATTERN,
+    RELEASE_VERSION_PATTERN,
     RUNTIME_ARCHITECTURES,
     SHA256_PATTERN,
     RuntimeLaneConfiguration,
@@ -116,7 +118,47 @@ def latest_tag(fetch: Fetch, include_prerelease: bool) -> str:
 def asset_names(tag: str, architecture: str) -> tuple[str, str]:
     """Return the archive and source archive names of one lane of a release."""
     stem = f"Arknights-MacOS-Runtime-{tag}-{RELEASE_ARCHITECTURES[architecture]}"
-    return f"{stem}.tar.gz", f"{stem}-source.tar.gz"
+    return f"{stem}.tar.xz", f"{stem}-source.tar.xz"
+
+
+def delta_names(
+    tag: str, architecture: str, listed_sizes: Mapping[str, int]
+) -> list[tuple[str, str]]:
+    """Return (from version, asset name) of each delta of one lane, newest source first.
+
+    Deltas exist only for releases, so a prerelease tag has none. A delta counts only when
+    its `.sha256` sidecar is listed too.
+    """
+    if RELEASE_VERSION_PATTERN.fullmatch(tag.removeprefix("v")) is None:
+        return []
+    pattern = re.compile(
+        re.escape(f"Arknights-MacOS-Runtime-{tag}-from-v")
+        + r"(?P<from>[0-9]+\.[0-9]+\.[0-9]+)-"
+        + re.escape(RELEASE_ARCHITECTURES[architecture])
+        + r"\.delta\.tar\.xz"
+    )
+    found = []
+    for name in listed_sizes:
+        match = pattern.fullmatch(name)
+        if match is not None and f"{name}.sha256" in listed_sizes:
+            found.append((match["from"], name))
+    return sorted(
+        found, key=lambda item: tuple(map(int, item[0].split("."))), reverse=True
+    )
+
+
+def _delta_pins(
+    fetch: Fetch, tag: str, architecture: str, listed_sizes: Mapping[str, int]
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "from": source,
+            "url": asset_url(tag, name),
+            "sha256": _sidecar_digest(fetch, tag, name),
+            "sizeBytes": listed_sizes[name],
+        }
+        for source, name in delta_names(tag, architecture, listed_sizes)
+    ]
 
 
 def asset_url(tag: str, name: str) -> str:
@@ -141,16 +183,24 @@ def release_asset_sizes(fetch: Fetch, tag: str) -> dict[str, int]:
     }
 
 
-def _checksum(fetch: Fetch, tag: str, name: str, expected: Mapping[str, Any]) -> str:
+def _sidecar_digest(fetch: Fetch, tag: str, name: str) -> str:
+    """Return the digest in the `.sha256` sidecar of one asset that must name it."""
     line = fetch(asset_url(tag, f"{name}.sha256")).decode("utf-8").split()
+    if len(line) != 2 or line[1].lstrip("*") != name:
+        fail(f"{name}.sha256 does not describe {name}")
+    if SHA256_PATTERN.fullmatch(line[0]) is None:
+        fail(f"{name}.sha256 does not contain a SHA-256 digest")
+    return line[0]
+
+
+def _checksum(fetch: Fetch, tag: str, name: str, expected: Mapping[str, Any]) -> str:
+    checksum = _sidecar_digest(fetch, tag, name)
     digest = expected.get("sha256")
     if expected.get("name") != name:
         fail(f"provenance.json names {expected.get('name')!r}, expected {name!r}")
-    if len(line) != 2 or line[1].lstrip("*") != name:
-        fail(f"{name}.sha256 does not describe {name}")
-    if SHA256_PATTERN.fullmatch(line[0]) is None or line[0] != digest:
-        fail(f"{name}.sha256 ({line[0]}) differs from provenance.json ({digest})")
-    return line[0]
+    if checksum != digest:
+        fail(f"{name}.sha256 ({checksum}) differs from provenance.json ({digest})")
+    return checksum
 
 
 def fetch_provenance(fetch: Fetch, tag: str) -> dict[str, Any]:
@@ -174,6 +224,7 @@ class LaneRelease:
     archive: str
     sha256: str
     size_bytes: int
+    deltas: list[dict[str, Any]]
 
 
 def lane_fragment(
@@ -223,7 +274,8 @@ def fetch_lane(
     size = size if size is not None else listed
     if not isinstance(size, int) or isinstance(size, bool) or size < 1:
         fail(f"the runtime archive size of the {architecture} lane is unknown")
-    return LaneRelease(architecture, fragment, archive, digest, size)
+    deltas = _delta_pins(fetch, tag, architecture, listed_sizes)
+    return LaneRelease(architecture, fragment, archive, digest, size, deltas)
 
 
 def _published_interface(
@@ -249,25 +301,20 @@ def check_interface(
 ) -> None:
     """Fail when the release interface differs from the lane in `runtime.json`."""
     published = _published_interface(lane.name, provenance)
-    wine, dxmt = lane.layout.archive_wine_directory, lane.layout.archive_dxmt_directory
+    layout = lane.layout
+    dxmt = layout.dxmt.payload_directory
     expected: dict[str, Any] = {
-        "wineDirectory": str(wine),
-        "dxmtDirectory": str(dxmt),
-        "features": lane.layout.features.mapping(),
+        "features": layout.features.mapping(),
         "minimumMacOS": lane.minimum_macos,
         "executables": sorted(
-            str(wine / path)
-            for path in (*lane.layout.executables, lane.layout.launcher.path)
+            str(path) for path in (*layout.executables, layout.launcher.path)
         ),
         "requiredFiles": sorted(
-            {
-                str(wine / path)
-                for path in (*lane.layout.required_files, lane.layout.mac_driver)
-            }
+            {str(path) for path in (*layout.required_files, layout.mac_driver)}
             | {
                 str(dxmt / architecture / library)
-                for architecture, _ in lane.layout.dxmt.destinations
-                for library in lane.layout.dxmt.libraries
+                for architecture, _ in layout.dxmt.destinations
+                for library in layout.dxmt.libraries
             }
         ),
     }
@@ -383,6 +430,7 @@ def updated_manifest(
             "url": asset_url(tag, release.archive),
             "sha256": release.sha256,
             "sizeBytes": release.size_bytes,
+            "deltas": release.deltas,
         }
         interface = _published_interface(release.architecture, release.fragment)
         minimum_macos = interface.get("minimumMacOS")
@@ -566,8 +614,9 @@ def manifest_problems(manifest: Mapping[str, Any]) -> list[str]:
         )
         # Older pins name the asset without its lane; new pins add the architecture.
         name = match["name"]
+        # v1.0.2-rc1 is the last `.tar.gz` pin; drop the legacy suffix with the next pin.
         if not name.startswith(f"Arknights-MacOS-Runtime-{tag}") or not name.endswith(
-            ".tar.gz"
+            (".tar.xz", ".tar.gz")
         ):
             problems.append(
                 f"runtime.json: {architecture} runtime.url is not an archive of {tag}"

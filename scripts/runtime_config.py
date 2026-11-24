@@ -14,8 +14,10 @@ from lib.common import BUILD_DIR, PROJECT_DIR, fail, is_safe_relative_path
 from lib.console import warning
 from lib.project_config import RUNTIME_CONFIG
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+# A release version without a prerelease suffix; deltas start only from these.
+RELEASE_VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 MINIMUM_MACOS_PATTERN = re.compile(r"^[0-9]+\.[0-9]+(?:\.[0-9]+)?$")
 # Release architectures and the Wine module directory each one uses.
@@ -53,8 +55,6 @@ class RuntimeFeatures:
 
 @dataclass(frozen=True, slots=True)
 class RuntimeLayout:
-    archive_wine_directory: PurePosixPath
-    archive_dxmt_directory: PurePosixPath
     features: RuntimeFeatures
     executables: tuple[PurePosixPath, ...]
     required_files: tuple[PurePosixPath, ...]
@@ -77,12 +77,22 @@ class RuntimeLayout:
 
 
 @dataclass(frozen=True, slots=True)
+class RuntimeDelta:
+    """An archive that updates the release `from_version` to the pinned runtime."""
+
+    from_version: str
+    url: str
+    sha256: str
+    size_bytes: int
+
+
+@dataclass(frozen=True, slots=True)
 class PinnedRuntime:
     """One runtime archive pinned for one lane.
 
     A lane that the release task has not published yet has an empty URL, an empty
     checksum, and a zero size. The launcher hides that lane until a client release
-    pins it.
+    pins it. `deltas` lists the updates from older releases, newest source first.
     """
 
     name: str
@@ -90,6 +100,7 @@ class PinnedRuntime:
     url: str
     sha256: str
     size_bytes: int
+    deltas: tuple[RuntimeDelta, ...]
 
     @property
     def is_available(self) -> bool:
@@ -292,9 +303,57 @@ def _read_pin(config: dict[str, Any], key: str) -> PinnedRuntime:
         fail(f"runtime configuration archive is larger than the download limit: {key}")
     if (url or checksum or size_bytes) and not (url and checksum and size_bytes > 0):
         fail(f"runtime configuration pin must be complete or empty: {key}")
+    deltas = tuple(
+        _read_delta(entry, f"{key}.deltas[{index}]")
+        for index, entry in enumerate(_list(config, f"{key}.deltas"))
+    )
     return PinnedRuntime(
         name=name,
         version=version,
+        url=url,
+        sha256=checksum,
+        size_bytes=size_bytes,
+        deltas=deltas,
+    )
+
+
+def _list(config: dict[str, Any], key: str) -> list[Any]:
+    value = nested_value(config, key)
+    if not isinstance(value, list):
+        fail(f"runtime configuration value must be an array: {key}")
+    return value
+
+
+def _read_delta(entry: object, key: str) -> RuntimeDelta:
+    if not isinstance(entry, dict) or set(entry) != {
+        "from",
+        "url",
+        "sha256",
+        "sizeBytes",
+    }:
+        fail(
+            f"runtime configuration delta must name from, url, sha256, sizeBytes: {key}"
+        )
+    from_version = entry["from"]
+    url = entry["url"]
+    checksum = entry["sha256"]
+    size_bytes = entry["sizeBytes"]
+    if not isinstance(from_version, str) or not RELEASE_VERSION_PATTERN.fullmatch(
+        from_version
+    ):
+        fail(f"runtime configuration delta must start from a release: {key}")
+    if not isinstance(url, str) or not url.startswith("https://"):
+        fail(f"runtime configuration URL must use HTTPS: {key}")
+    if not isinstance(checksum, str) or not SHA256_PATTERN.fullmatch(checksum):
+        fail(f"runtime configuration checksum must be lowercase SHA-256: {key}")
+    if (
+        not isinstance(size_bytes, int)
+        or isinstance(size_bytes, bool)
+        or not 0 < size_bytes <= MAXIMUM_RUNTIME_ARCHIVE_BYTES
+    ):
+        fail(f"runtime configuration delta size is outside the download limit: {key}")
+    return RuntimeDelta(
+        from_version=from_version,
         url=url,
         sha256=checksum,
         size_bytes=size_bytes,
@@ -363,12 +422,6 @@ def _read_layout(config: dict[str, Any], prefix: str = "interface") -> RuntimeLa
     if len(launcher_target.parts) != 1:
         fail("runtime launcher target must be relative to its containing directory")
     return RuntimeLayout(
-        archive_wine_directory=_relative_path(
-            config, f"{prefix}.archive.wineDirectory"
-        ),
-        archive_dxmt_directory=_relative_path(
-            config, f"{prefix}.archive.dxmtDirectory"
-        ),
         features=_features(config, f"{prefix}.features"),
         executables=executables,
         required_files=required_files,

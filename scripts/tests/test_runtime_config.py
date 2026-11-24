@@ -10,7 +10,6 @@ from lib.project_config import RUNTIME_CONFIG
 
 def interface(architecture: str, dxmt_libraries: list[str]) -> dict[str, object]:
     return {
-        "archive": {"wineDirectory": "Wine", "dxmtDirectory": "DXMT"},
         "executables": ["bin/wine64", "bin/wineserver"],
         "features": {
             "hardwareCursor": True,
@@ -58,10 +57,11 @@ def lane(
             "version": version,
             "url": (
                 "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/"
-                f"v{version}/Arknights-MacOS-Runtime-v{version}.tar.gz"
+                f"v{version}/Arknights-MacOS-Runtime-v{version}.tar.xz"
             ),
             "sha256": "a" * 64,
             "sizeBytes": 400_000_000,
+            "deltas": [],
         },
         "interface": interface(architecture, dxmt_libraries),
         "components": components,
@@ -71,7 +71,7 @@ def lane(
 
 def valid_config() -> dict[str, object]:
     return {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
         "architecture": "x86",
         "lanes": {
             "x86": lane(
@@ -101,7 +101,7 @@ def write_config(path: Path, value: dict[str, object]) -> None:
 @pytest.mark.parametrize(
     ("mutate", "message"),
     [
-        (lambda value: value.update(schemaVersion=2), "schemaVersion must be 3"),
+        (lambda value: value.update(schemaVersion=2), "schemaVersion must be 4"),
         (
             lambda value: value["lanes"].update(arm64=value["lanes"]["arm"]),
             "unknown lanes: arm64",
@@ -170,6 +170,7 @@ def test_accepts_an_unpublished_lane(tmp_path: Path) -> None:
         "url": "",
         "sha256": "",
         "sizeBytes": 0,
+        "deltas": [],
     }
     value["lanes"]["arm"]["components"] = {}
     value["lanes"]["arm"]["provenance"] = {}

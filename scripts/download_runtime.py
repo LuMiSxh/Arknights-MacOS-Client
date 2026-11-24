@@ -5,7 +5,6 @@
 
 import argparse
 import hashlib
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -20,7 +19,6 @@ from lib.common import (
 )
 from lib.console import info, success, warning
 from lib.extract_runtime import extract
-from lib.licenses import stage_runtime_legal
 from lib.project_config import RUNTIME_CONFIG, load_project_configuration
 from runtime_config import (
     MAXIMUM_RUNTIME_ARCHIVE_BYTES,
@@ -125,7 +123,7 @@ def prepare_runtime(
 
     cache_dir = BUILD_DIR / "runtime-downloads"
     cache_dir.mkdir(parents=True, exist_ok=True)
-    archive = cache_dir / f"{checksum}.tar.gz"
+    archive = cache_dir / f"{checksum}.tar.xz"
     download(url, archive, checksum, user_agent, size_bytes)
 
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
@@ -134,19 +132,7 @@ def prepare_runtime(
     ) as name:
         staging = Path(name)
         info("Extracting the verified runtime")
-        libraries = extract(archive, staging / "runtime-archive")
-        wine = libraries / layout.archive_wine_directory
-        dxmt = libraries / layout.archive_dxmt_directory
-        if not wine.is_dir() or not dxmt.is_dir():
-            fail("runtime archive does not contain Wine and DXMT")
-
-        runtime = staging / "runtime"
-        wine.replace(runtime)
-        dxmt_destination = runtime / layout.dxmt.payload_directory
-        dxmt_destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(dxmt, dxmt_destination)
-        if not stage_runtime_legal(libraries.parent, runtime):
-            warning("Runtime archive has no Licenses/ directory")
+        runtime = extract(archive, staging / "runtime-archive")
         launcher = runtime / layout.launcher.path
         launcher.parent.mkdir(parents=True, exist_ok=True)
         if not launcher.exists() and not launcher.is_symlink():

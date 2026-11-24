@@ -36,24 +36,16 @@ def current_tag(root: Path, architecture: str = "x86") -> str:
 
 
 def release_interface(architecture: str) -> dict[str, Any]:
-    """Render one lane interface in the archive layout that provenance.json uses."""
+    """Render one lane interface in the root-relative layout that provenance.json uses."""
     manifest = runtime_manifest()
     interface = manifest["lanes"][architecture]["interface"]
-    wine = interface["archive"]["wineDirectory"]
-    dxmt = interface["archive"]["dxmtDirectory"]
+    dxmt = interface["dxmt"]["payloadDirectory"]
     return {
-        "dxmtDirectory": dxmt,
         "executables": sorted(
-            [
-                f"{wine}/{path}"
-                for path in (*interface["executables"], interface["launcher"]["path"])
-            ]
+            [*interface["executables"], interface["launcher"]["path"]]
         ),
         "requiredFiles": sorted(
-            [
-                f"{wine}/{path}"
-                for path in (*interface["requiredFiles"], interface["macDriver"])
-            ]
+            [*interface["requiredFiles"], interface["macDriver"]]
             + [
                 f"{dxmt}/{target}/{library}"
                 for target in interface["dxmt"]["destinations"]
@@ -62,7 +54,6 @@ def release_interface(architecture: str) -> dict[str, Any]:
         ),
         "features": interface["features"],
         "minimumMacOS": manifest["lanes"][architecture]["minimumMacOS"],
-        "wineDirectory": wine,
     }
 
 
@@ -192,6 +183,7 @@ def test_update_pins_both_lanes_from_one_release(project: Path) -> None:
             "url": runtime_update.asset_url(NEW_TAG, archive),
             "sha256": ARCHIVE_DIGESTS[architecture],
             "sizeBytes": ARCHIVE_SIZES[architecture],
+            "deltas": [],
         }
     assert manifest["lanes"]["x86"]["components"]["wine"] == "11.18"
     assert manifest["lanes"]["x86"]["provenance"]["buildCommit"] == NEW_SOURCE_COMMIT
@@ -384,6 +376,56 @@ def test_changed_moltenvk_commit_needs_a_version(project: Path) -> None:
         project, NEW_TAG, release_fetch(provenance=provenance), "1.4.3"
     )
     assert manifest_of(project)["lanes"]["x86"]["components"]["moltenvk"] == "1.4.3"
+
+
+@pytest.mark.parametrize(
+    ("tag", "listed", "expected"),
+    [
+        pytest.param(
+            "v99.0.0",
+            {
+                "Arknights-MacOS-Runtime-v99.0.0-arm64.tar.xz": 234_567,
+                "Arknights-MacOS-Runtime-v99.0.0-arm64-source.tar.gz": 1_000,
+                "Arknights-MacOS-Runtime-v99.0.0-from-v9.1.0-arm64.delta.tar.xz": 2_000,
+                "Arknights-MacOS-Runtime-v99.0.0-from-v9.1.0-arm64.delta.tar.xz.sha256": 90,
+                "Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-arm64.delta.tar.xz": 1_000,
+                "Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-arm64.delta.tar.xz.sha256": 90,
+                "Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-x86_64.delta.tar.xz": 3_000,
+                "Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-x86_64.delta.tar.xz.sha256": 90,
+            },
+            [
+                (
+                    "98.0.0",
+                    "Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-arm64.delta.tar.xz",
+                ),
+                (
+                    "9.1.0",
+                    "Arknights-MacOS-Runtime-v99.0.0-from-v9.1.0-arm64.delta.tar.xz",
+                ),
+            ],
+            id="arm-deltas-with-sidecars-newest-first",
+        ),
+        pytest.param(
+            "v99.0.0",
+            {"Arknights-MacOS-Runtime-v99.0.0-from-v98.0.0-arm64.delta.tar.xz": 1_000},
+            [],
+            id="delta-without-sidecar",
+        ),
+        pytest.param(
+            "v99.0.0-rc1",
+            {
+                "Arknights-MacOS-Runtime-v99.0.0-rc1-from-v98.0.0-arm64.delta.tar.xz": 1_000,
+                "Arknights-MacOS-Runtime-v99.0.0-rc1-from-v98.0.0-arm64.delta.tar.xz.sha256": 90,
+            },
+            [],
+            id="prerelease-has-no-deltas",
+        ),
+    ],
+)
+def test_delta_names_select_each_lane_delta_with_its_sidecar(
+    tag: str, listed: dict[str, int], expected: list[tuple[str, str]]
+) -> None:
+    assert runtime_update.delta_names(tag, "arm", listed) == expected
 
 
 def releases_fetch(releases: list[dict[str, object]]) -> Callable[[str], bytes]:

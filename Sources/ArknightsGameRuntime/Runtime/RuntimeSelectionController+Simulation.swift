@@ -94,7 +94,6 @@ import Foundation
 					majorVersion: lane == .arm ? 26 : 15, minorVersion: 0, patchVersion: 0),
 				prefixRevision: 1,
 				interface: RuntimeManifest.Interface(
-					archive: .init(wineDirectory: "wine", dxmtDirectory: "dxmt"),
 					executables: ["Arknights.exe"],
 					features: .conservative,
 					requiredFiles: [],
@@ -107,7 +106,8 @@ import Foundation
 					)
 				),
 				components: nil,
-				provenance: nil
+				provenance: nil,
+				deltas: []
 			)
 		}
 	}

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Czlib
 import Darwin
 import Foundation
 
@@ -15,131 +14,42 @@ enum RuntimeArchiveError: Error, Equatable, Sendable {
 	case decompressionFailed(String)
 }
 
-/// Extracts a verified runtime archive into a fresh staging directory and returns the single
-/// runtime directory inside it. The archive may be a gzip-compressed or plain tar.
+/// Extracts a verified `.tar.xz` runtime archive or delta into a fresh staging directory and
+/// returns the single top-level directory inside it. A runtime archive has one `Runtime/`
+/// directory whose contents are the installed root; a delta has one `Delta/` directory.
 ///
 /// Path safety mirrors `scripts/lib/extract_runtime.py`: absolute paths, `..`, Windows drive
-/// prefixes, `__MACOSX`, `._*`, and symlinks or hard links that leave the archive are rejected
-/// before anything is written.
+/// prefixes, `__MACOSX`, `._*`, hard links, and symlinks that leave the root are rejected before
+/// anything is written.
 enum RuntimeArchive {
-	private static let companions = Set(["Licenses", "NOTICE.md"])
+	static let runtimeRoot = "Runtime"
+	static let deltaRoot = "Delta"
 
 	static func extract(
 		at archiveURL: URL,
 		into destination: URL,
+		expectedRoot: String = runtimeRoot,
 		fileManager: FileManager = .default
 	) throws -> URL {
-		let tarURL: URL
-		var temporaryTarURL: URL?
-		if try isGzip(at: archiveURL) {
-			let temporary = destination.deletingLastPathComponent()
-				.appending(path: "\(UUID().uuidString).tar")
-			try fileManager.createDirectory(
-				at: temporary.deletingLastPathComponent(), withIntermediateDirectories: true)
-			try decompressGzip(at: archiveURL, to: temporary)
-			temporaryTarURL = temporary
-			tarURL = temporary
-		} else {
-			tarURL = archiveURL
-		}
+		let temporary = destination.deletingLastPathComponent()
+			.appending(path: "\(UUID().uuidString).tar")
+		try fileManager.createDirectory(
+			at: temporary.deletingLastPathComponent(), withIntermediateDirectories: true)
 		defer {
-			if let temporaryTarURL {
-				// best effort: a leftover decompressed tar is never authoritative.
-				try? fileManager.removeItem(at: temporaryTarURL)
-			}
+			// best effort: a leftover decompressed tar is never authoritative.
+			try? fileManager.removeItem(at: temporary)
 		}
+		try decompressXZ(at: archiveURL, to: temporary)
 
 		try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
-		return try extractTar(at: tarURL, into: destination)
-	}
-
-	// MARK: - Gzip
-
-	private static func isGzip(at url: URL) throws -> Bool {
-		let handle = try FileHandle(forReadingFrom: url)
-		return try handle.read(upToCount: 2) == Data([0x1F, 0x8B])
-	}
-
-	private static func decompressGzip(at source: URL, to destination: URL) throws {
-		let input = try FileHandle(forReadingFrom: source)
-		guard FileManager.default.createFile(atPath: destination.path, contents: nil) else {
-			throw RuntimeArchiveError.decompressionFailed(
-				"could not create \(destination.path)")
-		}
-		let output = try FileHandle(forWritingTo: destination)
-
-		var stream = z_stream()
-		// 15 + 32 accepts both gzip and zlib wrappers.
-		guard
-			inflateInit2_(&stream, 15 + 32, ZLIB_VERSION, Int32(MemoryLayout<z_stream>.size))
-				== Z_OK
-		else {
-			throw RuntimeArchiveError.decompressionFailed("could not initialize decompression")
-		}
-		defer { inflateEnd(&stream) }
-
-		var inputBuffer = [UInt8](repeating: 0, count: 256 * 1_024)
-		var outputBuffer = [UInt8](repeating: 0, count: 256 * 1_024)
-		var inputRemaining = 0
-		var inputOffset = 0
-		var reachedEnd = false
-
-		while true {
-			if inputOffset >= inputRemaining, !reachedEnd {
-				let descriptor = input.fileDescriptor
-				let count = try inputBuffer.withUnsafeMutableBytes { raw -> Int in
-					while true {
-						let count = Darwin.read(descriptor, raw.baseAddress, raw.count)
-						if count >= 0 { return count }
-						if errno == EINTR { continue }
-						throw POSIXError(.init(rawValue: errno) ?? .EIO)
-					}
-				}
-				if count > 0 {
-					inputRemaining = count
-					inputOffset = 0
-				} else {
-					reachedEnd = true
-				}
-			}
-
-			let flush: Int32 = reachedEnd ? Z_FINISH : Z_NO_FLUSH
-			let status: Int32 = inputBuffer.withUnsafeMutableBytes { inputBytes in
-				outputBuffer.withUnsafeMutableBytes { outputBytes in
-					stream.next_in = inputBytes.baseAddress?.assumingMemoryBound(to: UInt8.self)
-						.advanced(by: inputOffset)
-					stream.avail_in = uInt(inputRemaining - inputOffset)
-					stream.next_out = outputBytes.baseAddress?.assumingMemoryBound(to: UInt8.self)
-					stream.avail_out = uInt(outputBytes.count)
-					return inflate(&stream, flush)
-				}
-			}
-			let produced = outputBuffer.count - Int(stream.avail_out)
-			inputOffset = inputRemaining - Int(stream.avail_in)
-
-			if produced > 0 {
-				try outputBuffer.withUnsafeBytes { bytes in
-					try writeAll(
-						UnsafeRawBufferPointer(rebasing: bytes[0..<produced]),
-						to: output.fileDescriptor
-					)
-				}
-			}
-			if status == Z_STREAM_END { break }
-			if status == Z_OK || status == Z_BUF_ERROR {
-				if produced == 0, reachedEnd, stream.avail_in == 0 {
-					throw RuntimeArchiveError.decompressionFailed("truncated gzip stream")
-				}
-				continue
-			}
-			throw RuntimeArchiveError.decompressionFailed(
-				"decompression failed with status \(status)")
-		}
+		return try extractTar(at: temporary, into: destination, expectedRoot: expectedRoot)
 	}
 
 	// MARK: - Tar
 
-	private static func extractTar(at tarURL: URL, into destination: URL) throws -> URL {
+	private static func extractTar(
+		at tarURL: URL, into destination: URL, expectedRoot: String
+	) throws -> URL {
 		let handle = try FileHandle(forReadingFrom: tarURL)
 
 		var topLevels = Set<String>()
@@ -201,31 +111,21 @@ enum RuntimeArchive {
 				try createDirectory(components: components, under: destination)
 			case 0x32:  // '2' symlink
 				try validateLinkTarget(
-					resolvedLink, sourceDirectory: components.dropLast(), isSymlink: true)
+					resolvedLink, sourceDirectory: components.dropFirst().dropLast())
 				try createParents(components.dropLast(), under: destination)
 				let target = destinationPath(for: components, under: destination)
 				guard Darwin.symlink(resolvedLink, target) == 0 else {
 					throw POSIXError(.init(rawValue: errno) ?? .EIO)
 				}
-			case 0x31:  // '1' hard link
-				try validateLinkTarget(resolvedLink, sourceDirectory: [], isSymlink: false)
-				try createParents(components.dropLast(), under: destination)
-				let target = destinationPath(for: components, under: destination)
-				let linkTarget = destinationPath(
-					for: pathComponents(of: resolvedLink), under: destination)
-				guard Darwin.link(linkTarget, target) == 0 else {
-					throw POSIXError(.init(rawValue: errno) ?? .EIO)
-				}
-			default:
+			default:  // Hard links, devices, and FIFOs never appear in a runtime archive.
 				throw RuntimeArchiveError.unsupportedEntry(resolvedName)
 			}
 		}
 
-		let roots = topLevels.subtracting(companions)
-		guard roots.count == 1, let root = roots.first else {
+		guard topLevels == [expectedRoot] else {
 			throw RuntimeArchiveError.notSingleTopLevelDirectory
 		}
-		let rootURL = destination.appending(path: root, directoryHint: .isDirectory)
+		let rootURL = destination.appending(path: expectedRoot, directoryHint: .isDirectory)
 		var status = stat()
 		guard lstat(rootURL.path, &status) == 0, status.st_mode & S_IFMT == S_IFDIR else {
 			throw RuntimeArchiveError.notSingleTopLevelDirectory
@@ -370,7 +270,7 @@ enum RuntimeArchive {
 	}
 
 	// Writes the whole buffer, retrying short writes and EINTR.
-	private static func writeAll(_ bytes: UnsafeRawBufferPointer, to descriptor: Int32) throws {
+	static func writeAll(_ bytes: UnsafeRawBufferPointer, to descriptor: Int32) throws {
 		guard let baseAddress = bytes.baseAddress else { return }
 		var written = 0
 		while written < bytes.count {
@@ -429,10 +329,11 @@ enum RuntimeArchive {
 		}
 	}
 
-	private static func validateLinkTarget(
+	/// Rejects a symlink target that is absolute, Windows-style, or resolves above the root.
+	/// `sourceDirectory` is the link's parent directory relative to that root.
+	static func validateLinkTarget(
 		_ target: String,
-		sourceDirectory: ArraySlice<String>,
-		isSymlink: Bool
+		sourceDirectory: ArraySlice<String>
 	) throws {
 		guard !target.hasPrefix("/") else { throw RuntimeArchiveError.escapingLink(target) }
 		guard !target.contains("\\") else { throw RuntimeArchiveError.escapingLink(target) }
@@ -441,10 +342,8 @@ enum RuntimeArchive {
 		{
 			throw RuntimeArchiveError.escapingLink(target)
 		}
-		let base = isSymlink ? sourceDirectory.joined(separator: "/") : ""
-		let joined = base.isEmpty ? target : "\(base)/\(target)"
-		var stack: [String] = []
-		for component in joined.split(separator: "/", omittingEmptySubsequences: false) {
+		var stack = Array(sourceDirectory)
+		for component in target.split(separator: "/", omittingEmptySubsequences: false) {
 			if component.isEmpty || component == "." { continue }
 			if component == ".." {
 				guard !stack.isEmpty else { throw RuntimeArchiveError.escapingLink(target) }

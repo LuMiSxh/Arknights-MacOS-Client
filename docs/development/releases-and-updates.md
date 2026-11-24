@@ -85,7 +85,7 @@ If an artifact lacks a notice, has another runtime checksum, or points to the wr
 
 ## Runtime updates
 
-[`runtime.json`](../../scripts/config/runtime.json) is the single source of truth for the pinned runtimes. It has schema 3 and two lanes: `x86` and `arm`. Each lane carries the archive name, version, URL, SHA-256, size, interface, component versions, provenance, `minimumMacOS`, and `prefixRevision`.
+[`runtime.json`](../../scripts/config/runtime.json) is the single source of truth for the pinned runtimes. It has schema 4 and two lanes: `x86` and `arm`. Each lane carries the runtime name, version, archive URL, SHA-256, size, deltas, interface, component versions, provenance, `minimumMacOS`, and `prefixRevision`.
 
 One launcher release serves both architectures. The launcher chooses the lane by macOS version, not by a separate app build or Sparkle channel. It picks `arm` from `AppConstants.Runtime.armLaneMinimumMacOS` (27.0) and `x86` below. **Settings** → **Runtime** → **Danger zone** → **Runtime choice** overrides the automatic choice. The launcher downloads the runtime for the chosen lane on first use or after a switch.
 
@@ -105,6 +105,14 @@ Each runtime release compiles all compatibility patches into one build. The clie
 The ARM64 runtime is built in the [wine-build-new](https://github.com/riverfog7/wine-build-new) repository.
 
 There is no runtime feed, no runtime update check, and no previous-runtime rollback. A runtime change ships with a new client version. The app update replaces a stale pinned runtime for each lane that it uses.
+
+### Runtime deltas
+
+Each archive is a `.tar.xz` with one top-level `Runtime/` directory. That directory is the installed runtime root. The format is in the runtime repository at `docs/runtime-format.md`.
+
+A lane's `deltas` list names archives that update an older release to the pinned runtime. Each entry has `from`, `url`, `sha256`, and `sizeBytes`. The client uses a delta only when the installed runtime version equals `from`. It falls back to the full archive on any delta failure.
+
+The update script lists deltas only from releases. A prerelease pin has no deltas. The script sorts the deltas newest source first. A release without deltas pins an empty list.
 
 ### Update the pin
 
@@ -137,10 +145,11 @@ The script reads these assets of the release over HTTPS. It does not download a 
 | Asset                                                   | Use                                                            |
 | ------------------------------------------------------- | -------------------------------------------------------------- |
 | `provenance.json`                                       | The schema 2 document. Each lane has one runtime fragment.     |
-| `Arknights-MacOS-Runtime-TAG-ARCH.tar.gz.sha256`        | The archive checksum of a lane. `ARCH` is `x86_64` or `arm64`. |
+| `Arknights-MacOS-Runtime-TAG-ARCH.tar.xz.sha256`        | The archive checksum of a lane. `ARCH` is `x86_64` or `arm64`. |
 | `Arknights-MacOS-Runtime-TAG-ARCH-source.tar.gz.sha256` | The source archive checksum of a lane.                         |
+| `Arknights-MacOS-Runtime-TAG-from-vFROM-ARCH.delta.tar.xz.sha256` | The checksum of a delta from release `FROM`. Optional. |
 
-The release metadata lists the archive sizes. The script checks them against the fragments.
+The release metadata lists the archive and delta sizes. The script checks the archive sizes against the fragments.
 
 The script fails and writes nothing in these cases:
 
