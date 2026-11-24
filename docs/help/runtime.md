@@ -84,19 +84,18 @@ Override the runtime only to work around a problem. The **Active runtime** panel
 2. In the **Danger zone**, open **Runtime choice**.
 3. Choose **Automatic** or a runtime. The menu lists only the runtimes your macOS allows.
 4. Read the warning about the separate game environment.
-5. Choose **Switch and Download** or **Switch**.
+5. Choose **Switch**.
 
 The warning title names the target, such as **Switch to x86_64?**.
 
-- **Switch and Download** selects the runtime at once and downloads it. Home shows the runtime setup state, not **Play**, until the download finishes.
-- **Switch** uses an installed runtime.
-- **Automatic** returns to the runtime the launcher picks.
+- **Switch** selects the runtime at once. If the runtime is not installed, Home shows **Runtime setup required** instead of **Play**. Choose **Set Up Runtime** to download it.
+- **Automatic** returns to the runtime the launcher picks. Home offers its setup when that runtime is missing.
 
 The next game launch uses the new runtime. If a macOS update no longer allows your override, the launcher ignores it. While the game or a download is running, the menu is disabled. The panel shows the reason.
 
 ## What a switch changes
 
-- The launcher downloads the new runtime. The **Active runtime** panel shows its download size while the runtime is not installed.
+- A switch does not download the runtime. If the new runtime is not installed, Home offers its setup and the **Active runtime** panel shows its download size.
 - The other runtime stays on disk.
 - **Remove Other Runtime…** in the **Danger zone** deletes the runtime you are not using. Its game environment stays on disk.
 - **Remove Runtime…** in the **Danger zone** deletes the runtime you are using. Its game environment stays on disk. Set up the runtime again before you play.
