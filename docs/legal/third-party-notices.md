@@ -36,8 +36,8 @@ The client pins one runtime archive per architecture. The launcher downloads the
 
 | Runtime | Release | Archive SHA-256 | Archive size |
 | --- | --- | --- | --- |
-| x86 | [v1.0.1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.1) | `86b9d3969d8099d5b4a8de63be034f82ad02dfa07f3828851f0e266ed9898b27` | 119317122 bytes |
-| arm | [v1.0.1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.1) | `90c30e949bcca283eadde90de44c998f9f61b1347809a2319f5391f0f4aa67db` | 237494553 bytes |
+| x86 | [v1.0.2-rc1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc1) | `21f24d5b3d66b86b0274f48db8c9435efb2ef1b2d94be8ae21b7030400990521` | 119303076 bytes |
+| arm | [v1.0.2-rc1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v1.0.2-rc1) | `f1be1295b1f13d872e07a91d549cf69d12023fd93c45b558dd72a89496394e43` | 241874082 bytes |
 <!-- runtime:end build -->
 
 > [!IMPORTANT]
