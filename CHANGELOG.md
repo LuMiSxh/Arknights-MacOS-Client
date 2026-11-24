@@ -9,24 +9,27 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.2] - 2026-11-25
 
-### Fixed
-
-- Fixed the launcher music never starting. With **Launcher music** on, Home showed no music and no music pill.
+> [!IMPORTANT]
+> Huge thanks to @riverfog7 for providing this client with an [ARM runtime](https://github.com/riverfog7/wine-build-new)!
 
 ### Added
 
-- Added the **Rounded Dock icon** runtime patch. This was a client side change and moved into the runtime patch system.
+- Added the **Rounded Dock icon** runtime patch. This was a client behavior that moved into the runtime patch system.
 - Added incremental runtime updates. When the installed runtime is the release a delta starts from, the launcher downloads the smaller delta instead of the full runtime archive.
 
 ### Changed
 
-- Updated the bundled runtime to v1.0.2-rc2. On Apple silicon, the game environment now uses Wine 11.22.
+- Updated the bundled runtime to v1.0.2.
 - Runtime archives use xz compression, so runtime downloads are smaller.
 - Switching the runtime no longer downloads it. A runtime that is not installed stays selected, and Home offers its setup.
 - You can switch servers while the launcher updates game environments in the background.
 - The runtime switch confirmation uses the destructive style.
+
+### Fixed
+
+- Fixed the launcher music never starting. With **Launcher music** on, Home showed no music and no music pill.
 
 ## [1.0.1] - 2026-11-20
 
