@@ -55,7 +55,7 @@ private func makeInstallOperation(paths: AppPaths) -> RuntimeSelectionController
 }
 
 /// A `select` refusal: the lane holds no runtime, or it holds one that is not the pinned version.
-private struct SelectRefusalCase: CustomTestStringConvertible, Sendable {
+private struct SelectLaneCase: CustomTestStringConvertible, Sendable {
 	let installedVersion: String?
 	let state: RuntimeLaneState
 
@@ -209,10 +209,10 @@ struct RuntimeSelectionControllerTests {
 	}
 
 	@Test(arguments: [
-		SelectRefusalCase(installedVersion: nil, state: .notInstalled),
-		SelectRefusalCase(installedVersion: "0.8.0", state: .outdated(installed: "0.8.0")),
+		SelectLaneCase(installedVersion: nil, state: .notInstalled),
+		SelectLaneCase(installedVersion: "0.8.0", state: .outdated(installed: "0.8.0")),
 	])
-	private func selectingALaneThatIsNotCurrentIsRefused(_ testCase: SelectRefusalCase) throws {
+	private func selectingALaneThatIsNotCurrentKeepsItSelected(_ testCase: SelectLaneCase) throws {
 		let temporary = try TemporaryDirectory("RuntimeSelectionTests")
 		defer { temporary.remove() }
 		let paths = makePaths(temporary)
@@ -228,8 +228,10 @@ struct RuntimeSelectionControllerTests {
 		)
 
 		#expect(controller.state(for: .arm) == testCase.state)
-		#expect(throws: RuntimeSelectionError.notInstalled(.arm)) {
-			try controller.select(override: .arm)
-		}
+
+		try controller.select(override: .arm)
+
+		#expect(controller.selectedLane == .arm)
+		#expect(controller.laneOverride == .arm)
 	}
 }

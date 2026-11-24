@@ -87,7 +87,7 @@ If an artifact lacks a notice, has another runtime checksum, or points to the wr
 
 [`runtime.json`](../../scripts/config/runtime.json) is the single source of truth for the pinned runtimes. It has schema 4 and two lanes: `x86` and `arm`. Each lane carries the runtime name, version, archive URL, SHA-256, size, deltas, interface, component versions, provenance, `minimumMacOS`, and `prefixRevision`.
 
-One launcher release serves both architectures. The launcher chooses the lane by macOS version, not by a separate app build or Sparkle channel. It picks `arm` from `AppConstants.Runtime.armLaneMinimumMacOS` (27.0) and `x86` below. **Settings** → **Runtime** → **Danger zone** → **Runtime choice** overrides the automatic choice. The launcher downloads the runtime for the chosen lane on first use or after a switch.
+One launcher release serves both architectures. The launcher chooses the lane by macOS version, not by a separate app build or Sparkle channel. It picks `arm` from `AppConstants.Runtime.armLaneMinimumMacOS` (27.0) and `x86` below. **Settings** → **Runtime** → **Danger zone** → **Runtime choice** overrides the automatic choice. The launcher downloads the runtime for the chosen lane on first use, and a switch never starts a download.
 
 ### Runtime lanes
 

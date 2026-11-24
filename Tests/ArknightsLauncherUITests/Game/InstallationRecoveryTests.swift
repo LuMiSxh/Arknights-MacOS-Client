@@ -38,6 +38,22 @@ struct InstallationRecoveryTests {
 	}
 
 	@Test
+	func aRegionSwitchWaitsOnlyForAGameDownloadOrLaunch() throws {
+		let fixture = try makeInstallationFixture(region: .global)
+		defer { fixture.storage.remove() }
+
+		fixture.controller.lifecycle.simulateActivity(
+			.maintaining(.updatingGameEnvironments))
+		#expect(fixture.controller.selectRegion(.japan))
+		#expect(fixture.controller.region == .japan)
+
+		fixture.controller.lifecycle.simulateActivity(
+			.installing(id: UUID(), stage: .downloading))
+		#expect(!fixture.controller.selectRegion(.global))
+		#expect(fixture.controller.region == .japan)
+	}
+
+	@Test
 	func staleStateRefreshIsNotPublishedAfterRegionChange() async throws {
 		let gate = StateLoaderGate()
 		let fixture = try makeInstallationFixture(

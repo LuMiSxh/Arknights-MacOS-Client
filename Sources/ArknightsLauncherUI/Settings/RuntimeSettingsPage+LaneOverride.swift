@@ -57,20 +57,10 @@ extension RuntimeSettingsPage {
 		choice.override ?? runtimeSelection.access.defaultLane
 	}
 
-	/// An installed lane switches at once. A missing lane downloads first, which makes it the
-	/// override. Clearing the override may leave the launcher's lane missing: it downloads too.
+	/// Switches the selected lane at once. A lane that is not installed stays selected, and Home
+	/// offers its setup; nothing downloads until the user asks for it.
 	private func applyRuntimeChoice(_ choice: RuntimeLaneChoice) {
-		let override = choice.override
-		let lane = effectiveLane(of: choice)
-		let isInstalled = runtimeSelection.state(for: lane) == .current
-		Task {
-			if let override, !isInstalled {
-				_ = await actions.installRuntime(override)
-				return
-			}
-			guard actions.selectRuntimeOverride(override) else { return }
-			if !isInstalled { _ = await actions.installRuntime(lane) }
-		}
+		_ = actions.selectRuntimeOverride(choice.override)
 	}
 
 	// MARK: - Switch confirmation
@@ -84,19 +74,12 @@ extension RuntimeSettingsPage {
 		return lane == .arm ? "Switch to ARM64?" : "Switch to x86_64?"
 	}
 
-	var runtimeSwitchButtonTitle: String {
-		guard let lane = pendingRuntimeLane else { return "Switch" }
-		return runtimeSelection.state(for: lane) == .current
-			? "Switch" : "Switch and Download"
-	}
+	var runtimeSwitchButtonTitle: String { "Switch" }
 
 	var runtimeSwitchMessage: String {
 		guard let lane = pendingRuntimeLane, let pin = runtimeSelection.pinnedRuntime(for: lane)
 		else { return RuntimeSwitchWarning.message }
-		return RuntimeSwitchWarning.message(
-			for: pin,
-			isInstalled: runtimeSelection.state(for: lane) == .current
-		)
+		return RuntimeSwitchWarning.message(for: pin)
 	}
 
 	func confirmRuntimeSwitch() {

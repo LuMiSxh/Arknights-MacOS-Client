@@ -52,6 +52,12 @@ package enum LauncherActivity: Equatable, Sendable {
 		if case .installing = self { return true }
 		return false
 	}
+
+	/// A region switch may run while the background game-environment pass holds the launcher:
+	/// that pass covers every installed server and does not read the current region.
+	package var allowsRegionSwitch: Bool {
+		self == .idle || self == .maintaining(.updatingGameEnvironments)
+	}
 }
 
 package enum InstallationStage: Equatable, Sendable {

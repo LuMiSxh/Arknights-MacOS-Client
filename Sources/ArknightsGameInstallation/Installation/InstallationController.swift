@@ -92,7 +92,7 @@ package final class InstallationController {
 	}
 
 	package func selectRegion(_ newRegion: GameRegion) -> Bool {
-		guard newRegion != region, lifecycle.activity == .idle else { return false }
+		guard newRegion != region, lifecycle.activity.allowsRegionSwitch else { return false }
 
 		cancelInstalledStateRefresh()
 		pendingInstallDirectory = nil

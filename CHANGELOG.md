@@ -22,8 +22,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Updated the bundled runtime to v1.0.2-rc2.
+- Updated the bundled runtime to v1.0.2-rc2. On Apple silicon, the game environment now uses Wine 11.22.
 - Runtime archives use xz compression, so runtime downloads are smaller.
+- Switching the runtime no longer downloads it. A runtime that is not installed stays selected, and Home offers its setup.
+- You can switch servers while the launcher updates game environments in the background.
+- The runtime switch confirmation uses the destructive style.
 
 ## [1.0.1] - 2026-11-20
 

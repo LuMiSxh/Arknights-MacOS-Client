@@ -49,7 +49,7 @@ struct RuntimeSettingsPage: View {
 			),
 			titleVisibility: .visible
 		) {
-			Button(runtimeSwitchButtonTitle, action: confirmRuntimeSwitch)
+			Button(runtimeSwitchButtonTitle, role: .destructive, action: confirmRuntimeSwitch)
 			Button("Cancel", role: .cancel) { pendingRuntimeChoice = nil }
 		} message: {
 			Text(runtimeSwitchMessage)

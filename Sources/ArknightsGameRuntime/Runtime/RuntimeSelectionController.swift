@@ -32,7 +32,6 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 	case busy
 	case laneNotAvailable(RuntimeLane)
 	case unavailablePin(RuntimeLane)
-	case notInstalled(RuntimeLane)
 	case configurationUnavailable(String)
 	case verificationFailed(RuntimeLane)
 	case installFailed(RuntimeLane, String)
@@ -46,8 +45,6 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 			"This Mac cannot run the selected runtime."
 		case .unavailablePin:
 			"This launcher release does not include a download for the selected runtime."
-		case .notInstalled:
-			"The selected runtime is not installed. Download it first."
 		case .configurationUnavailable:
 			"The launcher cannot read its runtime information. Reinstall the launcher."
 		case .verificationFailed:
@@ -67,8 +64,6 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 			"Runtime lane \(lane.rawValue) is not allowed on this macOS version."
 		case .unavailablePin(let lane):
 			"Runtime lane \(lane.rawValue) has no published pin."
-		case .notInstalled(let lane):
-			"Runtime lane \(lane.rawValue) is not installed."
 		case .configurationUnavailable(let detail):
 			"Runtime configuration is unavailable: \(detail)"
 		case .verificationFailed(let lane):
@@ -84,7 +79,7 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 		switch self {
 		case .busy, .laneNotAvailable:
 			nil
-		case .unavailablePin, .notInstalled:
+		case .unavailablePin:
 			.runtimeNotInstalled
 		case .configurationUnavailable:
 			.bundledRuntimeDamaged
@@ -102,7 +97,7 @@ package enum RuntimeSelectionError: LocalizedError, LauncherDiagnosticError,
 		switch self {
 		case .installFailed, .verificationFailed:
 			true
-		case .busy, .laneNotAvailable, .unavailablePin, .notInstalled, .configurationUnavailable,
+		case .busy, .laneNotAvailable, .unavailablePin, .configurationUnavailable,
 			.removeFailed:
 			false
 		}
@@ -133,15 +128,8 @@ package enum RuntimeSwitchWarning {
 	package static let message =
 		"Switching runtimes uses a separate game environment. The game may treat this as a fresh install and ask you to sign in and download resources again. You can switch back later; both game environments stay on disk."
 
-	package static func message(for pin: PinnedRuntime, isInstalled: Bool) -> String {
-		var parts = [message]
-		if !isInstalled {
-			parts.append(
-				"The runtime download is about \(DownloadProgressFormatting.byteCount(Int64(pin.sizeBytes)))."
-			)
-		}
-		parts.append("Requires \(pin.minimumMacOS.macOSDisplayName) or later.")
-		return parts.joined(separator: " ")
+	package static func message(for pin: PinnedRuntime) -> String {
+		"\(message) Requires \(pin.minimumMacOS.macOSDisplayName) or later."
 	}
 }
 
@@ -458,8 +446,8 @@ package final class RuntimeSelectionController {
 		task.cancel()
 	}
 
-	/// Sets the lane override, or clears it with nil so the launcher chooses again. A lane must be
-	/// installed. The automatic lane may not be: Home then offers its setup.
+	/// Sets the lane override, or clears it with nil so the launcher chooses again. A lane that is
+	/// not installed stays selected, and Home offers its setup instead of launching.
 	package func select(override lane: RuntimeLane?) throws {
 		guard lifecycle.activity == .idle, !isLaunchInProgress() else {
 			throw RuntimeSelectionError.busy
@@ -470,11 +458,7 @@ package final class RuntimeSelectionController {
 				present(error)
 				throw error
 			}
-			guard state(for: lane) == .current else {
-				let error = RuntimeSelectionError.notInstalled(lane)
-				present(error)
-				throw error
-			}
+
 		}
 		// Leaving a lane mid-download abandons that download. Its partial archive stays on disk.
 		if installingLane != nil {

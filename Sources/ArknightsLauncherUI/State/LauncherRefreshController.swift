@@ -11,7 +11,7 @@ import Observation
 @Observable
 final class LauncherRefreshController {
 	var branding: LauncherBranding?
-	var canSwitchRegion: Bool { lifecycle.activity == .idle }
+	var canSwitchRegion: Bool { lifecycle.activity.allowsRegionSwitch }
 
 	private let lifecycle: LauncherLifecycleStore
 	private let installation: InstallationController
