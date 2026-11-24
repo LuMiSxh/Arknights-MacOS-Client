@@ -22,8 +22,8 @@ Paths start with `~/Library/Application Support/com.lumisxh.arknights-client/` u
 | Game environments    | `Environments/yostar-x86`, `Environments/yostar-arm`, `Environments/gryphline-x86`, `Environments/gryphline-arm`, `Environments/hypergryph-x86`, `Environments/hypergryph-arm` |
 | Custom icons and artwork | `Artwork/`                                                                                 |
 | Playtime statistics  | `playtime.json` (local only, never uploaded)                                                   |
-| Runtimes             | `Runtimes/<lane>-<version>`, for example `Runtimes/x86-1.0.0`                                  |
-| Runtime downloads    | `Downloads/<lane>`                                                                             |
+| Runtimes             | `Runtimes/x86-<version>` and `Runtimes/arm-<version>`                                          |
+| Runtime downloads    | `Downloads/x86` and `Downloads/arm`                                                            |
 | Folder layout record | `layout.json` (do not edit)                                                                    |
 | Caches               | `~/Library/Caches/com.lumisxh.arknights-client/`                                               |
 | Logs                 | `~/Library/Logs/com.lumisxh.arknights-client/`                                                 |

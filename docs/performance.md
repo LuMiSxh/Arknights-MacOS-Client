@@ -33,7 +33,7 @@ A 10-core Mac can show up to 1000 %. Lower is better for CPU and GPU.
 
 Measured on an Apple M4 with 16 GB of memory. The x86_64 and PlayCover runs are from 23 October
 2026 on macOS 27.0.1. The ARM64 run is from 12 November 2026 on macOS 27.2.1.
-Every client played LS-5 with auto-deploy in a 1280 × 800 window.
+The two launcher clients played LS-5 with auto-deploy in a 1280 × 800 window. PlayCover used a 1080p 16:10 window at 1330 × 831 points.
 Each LS-5 run lasted about 60 seconds. Every run used 60 FPS, except the MetalFX run, which used a 120 FPS cap.
 
 ```chart
@@ -108,7 +108,7 @@ Measured on the same Mac, each client stood in the main menu for 30 seconds.
 ```
 
 > [!NOTE]
-> These numbers come from one controlled setup. The 1280 × 800 window is one fixed size.
+> These numbers come from one controlled setup. Each client used one fixed window size.
 > Most players use fullscreen or a different size. The test Mac also drives a 6K display.
 > macOS composites that desktop while the game runs in a window. Part of the measured load is
 > therefore not the game. Your own numbers will differ.

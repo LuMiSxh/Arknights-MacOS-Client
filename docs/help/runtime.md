@@ -31,7 +31,7 @@ Apple says macOS 27 is the last release with general Rosetta support. From macOS
 
 The launcher does not rely on Rosetta for ARM64. See Apple's [Rosetta details](https://support.apple.com/en-au/102527) and [developer notice](https://developer.apple.com/news/?id=w5ngl9k2).
 
-The launcher decides again after every macOS or launcher update. If the runtime it needs is missing, Home shows **Runtime setup required**. Choose **Set Up Runtime** to download it. Your game environment for the other runtime stays on disk.
+The launcher decides again after every macOS or launcher update. If the runtime it needs is missing, Home shows **Runtime setup required**. Choose **Set Up Runtime** to download it. Your game environment (Wine prefix) for the other runtime stays on disk.
 
 ## Rosetta 2
 
@@ -72,7 +72,7 @@ The **Install** step shows the runtime the launcher picked. It offers no choice.
 - **Download and Continue** downloads and installs the runtime.
 - **Continue** uses the runtime that is already installed.
 
-While the runtime downloads, the progress line shows the percentage, download size, and speed. Choose **Pause** to stop the download in setup or in the **Active runtime** panel. Choose **Resume** to continue from the partial file. Pause works only while the runtime downloads, not while it installs.
+While the runtime downloads, setup and the **Active runtime** panel show a progress bar and the downloaded size. Home also shows the percentage and speed. Choose **Pause** to stop the download in setup or in the **Active runtime** panel. Choose **Resume** to continue from the partial file. Pause works only while the runtime downloads, not while it installs.
 
 If the game is installed but the runtime is missing, Home shows **Runtime setup required**. Choose **Set Up Runtime** on Home to download it.
 
@@ -83,7 +83,7 @@ Override the runtime only to work around a problem. The **Active runtime** panel
 1. Open **Settings → Runtime**.
 2. In the **Danger zone**, open **Runtime choice**.
 3. Choose **Automatic** or a runtime. The menu lists only the runtimes your macOS allows.
-4. Read the warning about the separate game environment (Wine prefix).
+4. Read the warning about the separate game environment.
 5. Choose **Switch and Download** or **Switch**.
 
 The warning title names the target, such as **Switch to x86_64?**.

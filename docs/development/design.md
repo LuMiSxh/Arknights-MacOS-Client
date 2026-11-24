@@ -94,10 +94,10 @@ The launcher must feel like a current macOS app first, and an Arknights launcher
 - Get every color from a `LauncherTheme` role, read with `@Environment(\.launcherTheme)`. Do not write a color literal or `Color(red:` in a view.
 - Role groups:
   - Text: `textPrimary`, `textSecondary`, `textTertiary`.
-  - Surfaces: `groupFill`, `controlFill`, `fieldFill`, `footerFill`.
+  - Surfaces: `groupFill`, `controlFill`, `trackFill`, `footerFill`.
   - Edges: `hairline`, `dialogHairline`, `controlStroke`, `rowDivider`.
-  - Accent: `accentFill` for solid fills, `accentInk` for text and icons on a surface, `onAccent` for text on `accentFill`.
-  - Danger: `danger` for solid fills, `dangerInk` for text, `dangerGlassTint` for glass.
+  - Accent: `accentFill` for solid fills, `accentInk` for text and icons on a surface.
+  - Danger: `danger` for solid fills, `dangerText` for text, `dangerInk` for a label on a danger button, `dangerGlassTint` for glass.
 
 ### Accent
 
@@ -242,8 +242,8 @@ For a UI change, use the debug simulator and check an empty region, an installed
   - Danger zone holds **Runtime choice**, **Remove Runtime…**, and **Remove Other Runtime…**. **Runtime choice** is a menu with **Automatic** (default) and each runtime this macOS allows, by its display name. It is the only place that writes a lane override. Removals ask for confirmation, keep the game environment, and show a failure inline with a support code.
   - A change of runtime uses the runtime switch warning, but only when a game environment exists, and the new runtime applies at the next game launch. Choosing a runtime that is not installed downloads it. The page links to **Game runtime** with **About game runtimes**.
 - Installation shows a page banner while the launcher is busy, with **Server**, **Location**, **Maintenance**, and a **Danger zone**. Location holds **Game files**, whose detail shows the install folder and status such as **Installed**, plus **Show in Finder** and the **Change…** menu. Maintenance offers **Repair**. The Danger zone holds **Uninstall Game…**, which names the server in its confirmation.
-- Appearance panels appear as Artwork, Dynamic Theme, Appearance, Launcher shows, and Dock icons. Dynamic Theme holds Follow the artwork, Home controls, and Branding.
-- The Look step of setup asks for Artwork and Dynamic Theme. Its **More options** section asks for Home controls, Branding, Appearance, Launcher shows, and Dock icons, in that order.
+- Appearance panels appear as Artwork, Theme, Home screen, and Dock icons. Theme holds Dynamic Theme, Appearance, Home controls, and Branding colors. Home screen holds Branding, Game version, and Server time and reset countdown.
+- The Look step of setup asks for the artwork and Dynamic Theme. Its **More options** section asks for Home controls, Branding colors, Appearance, what the launcher shows, and the Dock operator, in that order.
 - Storage panels appear as Game installations, Shared runtime data, Recreatable caches, Logs and data, and Measurements, with no Danger zone. **Clear Caches** and **Clear Gallery Cache** are neutral. Logs and data holds **Show Logs** and **App Data Folder** with **Show in Finder**; Measurements holds **Refresh sizes**.
 - Game's Performance panel holds **Frame rate limit** as a segmented control. Battery Saver holds **Battery Saver mode** and, while it is on, **Battery Saver frame rate limit**. Battery Saver applies whenever it is on. While **Override in-game display settings** is off, the affected rows say so in their detail.
 - Updates holds Automatic checks (**Launcher updates** and **Game updates**) and Project news (**Announcements**). About shows **Show in Finder**, **View on GitHub**, and **Donate**. The Runtime page's **Details** panel shows the runtime version. Its **Technical details** row expands to show the Wine, DXMT, and capability rows.
@@ -276,11 +276,11 @@ For a UI change, use the debug simulator and check an empty region, an installed
 - Runtime setup failures follow the game failure rule: Home shows **Needs attention** under the primary action, and the failure dialog opens once with details and **Retry** when a retry can help. A failed game download shows "Download failed" in the rail, with the support code and **Retry**.
 - The page title equals the rail label. A step change enters from the side of travel and the old page fades; Reduce Motion fades only.
 - The Server step starts no download. It notes that each server has its own publisher and that anti-cheat may block or flag the game on a Mac. Global stays preselected.
-- The Install step opens with "Installs <server> from <publisher>." Its footer is **Download and Continue** when the game or runtime is missing, otherwise **Continue**. Game downloads and runtime installs start only there.
+- The Install step subtitle reads "Set up the runtime and game files for <server> from <publisher>". Its footer is **Download and Continue** when the game or runtime is missing, otherwise **Continue**. Game downloads and runtime installs start only there.
 - The Install step shows the runtime the launcher chose, with its installed version, download size, and macOS requirement. It offers no runtime choice. **Download and Continue** installs that runtime. The step links to **Game runtime** with **About game runtimes**.
 - Before a lane change in Settings, show the runtime switch warning, but only when a game environment exists. It states that the runtimes use separate game environments, that the game may treat the switch as a fresh install and ask for sign-in and resources again, and that the switch can add a download. Apply it in both directions.
 - Apply each choice at once, with the same actions as Settings. The user reopens the assistant from Settings → Help → Troubleshooting.
-- When a release requires a rerun, open with a "Something important changed" briefing that explains why. The rerun reuses the current server, runtime, location, and preferences, and downloads nothing unless one of them changes. Hide Skip Setup until the user finishes; first runs stay skippable.
+- When a release requires a rerun, open with a **Why setup is required** panel that explains why. The rerun reuses the current server, runtime, location, and preferences, and downloads nothing unless one of them changes. Hide Skip Setup until the user finishes; first runs stay skippable.
 - End with a plain statement that the launcher is an unofficial community project. Route launcher, game compatibility, and embedded-browser reports to the pre-filled GitHub form. Route account, payment, and game-service issues through the [publisher support routing table](../help/README.md#publisher-support-routing).
 
 ## Artwork

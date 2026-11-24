@@ -19,7 +19,7 @@ Check these inputs first:
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CHANGELOG.md`          | Non-empty `## [X.Y.Z]` section; it becomes the GitHub and Sparkle release notes                                                                                                                                   |
 | `Resources/Info.plist`  | `CFBundleShortVersionString` exactly matches `X.Y.Z`; `SUPublicEDKey` stays the tracked release public key                                                                                                        |
-| `runtime.json`          | Schema 3 with `lanes.x86` and `lanes.arm`; each lane has an HTTPS URL, lowercase SHA-256, byte size, `minimumMacOS`, lane `prefixRevision`, interface, components, and paired provenance repositories and commits |
+| `runtime.json`          | Schema 4 with `lanes.x86` and `lanes.arm`; each lane has a runtime name and version, an HTTPS URL, lowercase SHA-256, byte size, pinned deltas, `minimumMacOS`, lane `prefixRevision`, interface, components, and provenance |
 | Working tree and `main` | Clean, on `main`, equal to upstream. `just release` checks all three                                                                                                                                              |
 
 The `pages` and `package` jobs run independently from the same commit. Pages requires `main`, runs `pnpm check`, and builds with `BASE_PATH=/Arknights-MacOS-Client`. A Pages failure does not stop the draft but keeps the workflow red.
@@ -47,7 +47,7 @@ Run `just dev` to build the app. Run `just dev dmg` to continue to the installab
 To inspect the license list with a prepared runtime, download one lane with `uv run --locked scripts/download_runtime.py --architecture x86` or `--architecture arm`. The script verifies the SHA-256 and size, extracts the archive safely, validates the lane interface, and writes `.build/runtime-x86` or `.build/runtime-arm`.
 
 
-Packaging compiles only the Swift launcher and the x86-64 components in `RuntimeSupport`. It writes one compact `ThirdPartyNotices.deflate` file with the launcher notices into the app. Each runtime archive carries its own notices. See [License automation](license-automation.md).
+Packaging compiles the Swift launcher, the universal macOS shims in `RuntimeSupport`, and its x86-64 Windows libraries. It writes one compact `ThirdPartyNotices.deflate` file with the launcher notices into the app. Each runtime archive carries its own notices. See [License automation](license-automation.md).
 
 
 The draft contains:

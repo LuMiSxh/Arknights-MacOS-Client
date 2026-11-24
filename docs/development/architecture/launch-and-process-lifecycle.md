@@ -375,10 +375,10 @@ state that a newer launch owns. See [Troubleshooting](../../help/troubleshooting
 - **Compatibility profiles:** `RuntimePatchEnvironment` builds the `LMISXH_AKMOCL_*` environment
   for every launch. Each compatibility patch has one gate: `_ACE_IMPORTS`, `_APPCONTAINER`,
   `_WINSOCK`, `_CEF`, `_CN`, `_FULLSCREEN`, `_CURSOR`, `_MENU`, `_AUDIO`, `_ACE_TIMING`,
-  `_ACE_DISPATCHER`, `_ACE_ROSETTA`, and `_SQUIRCLE_ICON`. The launch sends every
+  `_ACE_DISPATCHER`, `_ACE_ROSETTA`, `_LOADER_LINK`, and `_SQUIRCLE_ICON`. The launch sends every
   gate as `1` or `0`; there is no master switch. A lane receives only the gates its build contains:
-  `_AUDIO`, `_ACE_TIMING`, `_ACE_DISPATCHER`, and `_ACE_ROSETTA` are x86 only, and `_EFLAGS` and
-  `_HYBRID_THREAD` are ARM
+  `_AUDIO`, `_ACE_TIMING`, `_ACE_DISPATCHER`, and `_ACE_ROSETTA` are x86 only, and `_EFLAGS`,
+  `_HYBRID_THREAD`, and `_LOADER_LINK` are ARM
   only. Settings → Runtime → Runtime patches can set any default-on gate to `0` through
   `RuntimePatch`. The runtime is built once with all patches compiled in, so the gates only choose
   behavior at launch.

@@ -111,11 +111,11 @@ just announcement set \
 	feedback-2026-08 \
 	"Help improve Arknights Client" \
 	/tmp/feedback.md \
-	"Open GitHub Issues" \
-	https://github.com/LuMiSxh/Arknights-MacOS-Client/issues
+	--action-title "Open GitHub Issues" \
+	--action-url https://github.com/LuMiSxh/Arknights-MacOS-Client/issues
 ```
 
-The recipe takes snake-case arguments and writes camel-case JSON. `action_title` and `action_url` can be `""`. Four more optional arguments set a version range and display window: `min_version`, `max_version`, `starts_at`, and `ends_at`. The command validates the entry and writes all fields, with `null` for unused optional values.
+The recipe takes kebab-case flags and writes camel-case JSON. `--action-title` and `--action-url` can be `""`. Four more optional flags set a version range and display window: `--min-version`, `--max-version`, `--starts-at`, and `--ends-at`. The command validates the entry and writes all fields, with `null` for unused optional values.
 
 Review `announcements.json`, run `just check`, commit it to `main`, and push. Publishing needs repository write access. GitHub can briefly cache the response, so changes may not reach every client immediately. To hide an entry from installations that have not fetched it yet, run `just announcement remove ID`.
 
@@ -179,7 +179,7 @@ flowchart LR
 - Manifest paths cannot escape the selected game directory. See
   [Installation architecture](installation.md#manifest-and-path-safety).
 - The launcher never handles credentials or intercepts Vuplex pages. Remote action links must use HTTPS.
-- [`RUNTIME.json`](../../../scripts/config/runtime.json) pins the runtime lane, versions, and source revisions.
+- [`runtime.json`](../../../scripts/config/runtime.json) pins the runtime lanes, versions, and source revisions.
 
 > [!WARNING]
 > A popup or notice is not an authorization boundary. Keep remote content out of process execution,

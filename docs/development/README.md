@@ -51,7 +51,7 @@ toc: true
 | `code`                   | Optional. A code in the form `XX-XXX`. Requires a non-empty `domain`.                      |
 
 - Public error codes come from `scripts/config/support-codes.json`. Do not edit the generated code pages, the generated tables in `docs/help/errors/README.md`, or `docs/help/errors/registry.json`. Each active code has one page at `/help/errors/<lowercase-code>/`.
-- A top-level section with `audience: developers` appears under **Contributors** in the sidebar.
+- The site validates `audience` but does not group pages by it. The footer links the Development section under **Contributors**.
 - A `draft: true` file fails the production build.
 - Use `README.md` for a directory landing page. It maps to the directory route. Do not add `index.md`. Without a README, the build lists the visible children.
 - Use relative Markdown links with the `.md` suffix. The build validates local targets and heading anchors. Update link fragments when you rename a heading. External links use only `https:` or `mailto:`.

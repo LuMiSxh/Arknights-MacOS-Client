@@ -215,9 +215,8 @@ installed only when `Arknights.exe` and this state file both exist and decode. A
 `.part` file is not installed.
 
 Each region has an independent install directory, installed-state file, and persisted path, so regions
-install and update independently. Regions share a Wine prefix only within their publisher family:
-Global, Japan, and Korea share the Yostar prefix; Taiwan uses the Gryphline prefix; China and China
-(Bilibili) share the Hypergryph prefix.
+install and update independently. Regions share a Wine prefix only within their publisher family. See
+[Wine prefix](wine-prefix.md#prefix-topology) for the mapping.
 
 This diagram shows how each region maps to a prefix:
 
@@ -248,9 +247,9 @@ another region's files. At launch, after the selected directory passes the readi
 
 ## Signposts and profiling
 
-`InstallerSignposts` emits `OSSignposter` intervals with the subsystem `com.lumisxh.arknights-client`
-and the category `Installer` (both from `AppConstants.Logging`): `Check pass`, `Clone`, `Hash`,
-`Receive`, and `First byte`.
+`InstallerSignposts` emits `OSSignposter` intervals with the subsystem `AppPaths.bundleIdentifier`
+(`com.lumisxh.arknights-client`) and the category `Installer` from `AppConstants.Logging`:
+`Check pass`, `Clone`, `Hash`, `Receive`, and `First byte`.
 
 To record the intervals with Instruments, run this command. Replace the path with the app executable:
 

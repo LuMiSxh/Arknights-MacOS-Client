@@ -12,7 +12,7 @@ No. It is a community project. It is not affiliated with Yostar, Gryphline, Hype
 
 ## Does the download include the game?
 
-No. The DMG contains only the launcher and Wine. The launcher downloads the game after you choose a server.
+No. The DMG contains only the launcher and an Applications shortcut. The launcher downloads the runtime and the game after you choose a server.
 
 ## Which servers can I play?
 
@@ -46,7 +46,7 @@ No. Quitting the launcher quits the game. Closing its window does not.
 
 ## Why does the Bilibili login return to the start?
 
-On the first start of a new game environment, the security check of China (Bilibili) can close. The login then shows its first page again.
+On the first start of a new game environment (Wine prefix), the security check of China (Bilibili) can close. The login then shows its first page again.
 
 1. Quit the game.
 2. Start it again and sign in.
