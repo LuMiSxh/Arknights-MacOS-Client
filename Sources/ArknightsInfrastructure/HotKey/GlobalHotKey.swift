@@ -17,7 +17,6 @@ package struct HotKeyCombination: Hashable, Sendable {
 	}
 
 	package static let keyCodeS = UInt32(kVK_ANSI_S)
-	static let keyCodeF13 = UInt32(kVK_F13)
 
 	package let keyCode: UInt32
 	package let modifiers: Modifiers
@@ -106,7 +105,7 @@ private final class HotKeyBox: Sendable {
 // Every registered hot key adds a handler to the application target, so each handler sees every
 // press and answers only its own ID.
 private func hotKeyPressed(
-	_ call: EventHandlerCallRef?,
+	_: EventHandlerCallRef?,
 	_ event: EventRef?,
 	_ userData: UnsafeMutableRawPointer?
 ) -> OSStatus {

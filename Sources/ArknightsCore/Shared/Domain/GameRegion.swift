@@ -43,8 +43,6 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 	case china
 	case chinaBilibili
 
-	package static let yostarCases: [GameRegion] = [.global, .japan, .korea]
-
 	package var id: String { rawValue }
 
 	package var displayName: String {

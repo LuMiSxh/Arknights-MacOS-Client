@@ -8,7 +8,7 @@ import Testing
 
 @testable import ArknightsGameInstallation
 
-@Suite(.serialized)
+@Suite
 struct GameInstallerReuseTests {
 	private static let body = Data((0..<4_096).map { UInt8($0 % 251) })
 

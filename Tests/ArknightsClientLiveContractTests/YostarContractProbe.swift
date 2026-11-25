@@ -26,7 +26,7 @@ struct YostarContractProbe {
 
 	func run(environment: [String: String]) async -> LiveContractReport {
 		var checks: [LiveContractCheck] = []
-		for region in GameRegion.yostarCases {
+		for region in [GameRegion.global, .japan, .korea] {
 			checks.append(await brandingCheck(region))
 			let configuration = await configurationCheck(region)
 			checks.append(configuration.check)

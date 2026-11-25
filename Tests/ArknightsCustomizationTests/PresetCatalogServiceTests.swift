@@ -9,7 +9,7 @@ import Testing
 @testable import ArknightsCustomization
 @testable import ArknightsInfrastructure
 
-@Suite(.serialized)
+@Suite
 struct PresetCatalogServiceTests {
 	@Test
 	func remoteAssetsRequireApprovedHTTPSHosts() async {

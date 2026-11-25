@@ -21,11 +21,6 @@ def _block_pattern(namespace: str) -> re.Pattern[str]:
     )
 
 
-def read_blocks(text: str, namespace: str) -> dict[str, str]:
-    """Return the body of each block in the document."""
-    return {m["name"]: m["body"] for m in _block_pattern(namespace).finditer(text)}
-
-
 def apply_blocks(text: str, blocks: Mapping[str, str], namespace: str) -> str:
     """Replace the body of each block; fail on a missing or unknown block."""
     pattern = _block_pattern(namespace)

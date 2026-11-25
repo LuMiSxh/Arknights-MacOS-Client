@@ -11,7 +11,6 @@ actor ProgressCounter {
 	private var completedFiles = 0
 	private var sequence: UInt64 = 0
 	private var estimator: TransferRateEstimator
-	private(set) var lastActiveFile: String?
 	// Chunk callbacks can fire far faster than SwiftUI needs to redraw a progress bar;
 	// throttling emissions to 10/s keeps updates smooth without flooding the UI.
 	private var emission: ProgressEmissionGate
@@ -33,30 +32,28 @@ actor ProgressCounter {
 
 	func remove(
 		bytes: Int64,
-		networkBytes: Int64 = 0,
-		file: String
+		networkBytes: Int64 = 0
 	) -> DownloadProgress {
 		downloadedBytes = max(0, downloadedBytes - bytes)
 		networkDownloadedBytes = max(0, networkDownloadedBytes - networkBytes)
 		estimator.reset()
 		emission.restart()
-		return current(file: file)
+		return current()
 	}
 
 	// The bytes advance progress and the completed-file count, not the rate or network total,
 	// so the rate and ETA keep describing real downloads.
-	func addReused(bytes: Int64, file: String) -> DownloadProgress {
+	func addReused(bytes: Int64) -> DownloadProgress {
 		downloadedBytes += bytes
 		completedFiles += 1
 		emission.restart()
-		return current(file: file)
+		return current()
 	}
 
-	func add(bytes: Int64, file: String, force: Bool = false) -> DownloadProgress? {
+	func add(bytes: Int64, force: Bool = false) -> DownloadProgress? {
 		downloadedBytes += bytes
 		if bytes > 0 {
 			networkDownloadedBytes += bytes
-			lastActiveFile = file
 			estimator.add(bytes: bytes)
 		}
 		if force {
@@ -64,17 +61,17 @@ actor ProgressCounter {
 		}
 
 		guard emission.admit(force: force) else { return nil }
-		return current(file: file)
+		return current()
 	}
 
 	// Byte progress stays accurate. Only the rate restarts, on a CDN retry or a stalled stream.
-	func resetRate(file: String) -> DownloadProgress {
+	func resetRate() -> DownloadProgress {
 		estimator.reset()
 		emission.restart()
-		return current(file: file)
+		return current()
 	}
 
-	func current(file: String) -> DownloadProgress {
+	func current() -> DownloadProgress {
 		sequence &+= 1
 		let snapshot = estimator.snapshot()
 		return DownloadProgress(
@@ -94,15 +91,13 @@ actor ProgressCounter {
 extension InstallProgressMonitor {
 	static func run<Result>(
 		counter: ProgressCounter,
-		fallbackFile: String,
 		interval: Duration = AppConstants.Network.transferRateMonitorInterval,
 		clock: any Clock<Duration> = ContinuousClock(),
 		progress: @escaping GameInstaller.ProgressHandler,
 		operation: () async throws -> Result
 	) async rethrows -> Result {
 		try await run(interval: interval, clock: clock) {
-			let file = await counter.lastActiveFile ?? fallbackFile
-			await progress(await counter.current(file: file))
+			await progress(await counter.current())
 		} operation: {
 			try await operation()
 		}

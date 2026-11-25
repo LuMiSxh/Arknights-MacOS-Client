@@ -7,7 +7,7 @@ import Testing
 
 @testable import ArknightsGameInstallation
 
-@Suite(.serialized)
+@Suite
 struct GameInstallerResourceTests {
 	private static let childEnvironmentKey = "ARKNIGHTS_RESOURCE_TEST_CHILD"
 	private static let resultPathEnvironmentKey = "ARKNIGHTS_RESOURCE_TEST_RESULT"

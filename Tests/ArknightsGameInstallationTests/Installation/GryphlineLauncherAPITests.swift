@@ -7,7 +7,7 @@ import Testing
 @testable import ArknightsCore
 @testable import ArknightsGameInstallation
 
-@Suite(.serialized)
+@Suite
 struct GryphlineLauncherAPITests {
 	private static let profile = GameRegion.taiwan.hypergryphProfile!
 

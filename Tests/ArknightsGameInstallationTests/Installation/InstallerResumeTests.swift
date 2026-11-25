@@ -7,7 +7,7 @@ import Testing
 
 @testable import ArknightsGameInstallation
 
-@Suite(.serialized)
+@Suite
 struct InstallerResumeTests {
 	@Test(arguments: [
 		(

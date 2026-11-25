@@ -6,7 +6,7 @@ import Testing
 
 @testable import ArknightsInfrastructure
 
-@Suite(.serialized)
+@Suite
 struct HTTPChunkSessionTests {
 	/// Reaching the ceiling must delay bytes, never drop them.
 	@Test

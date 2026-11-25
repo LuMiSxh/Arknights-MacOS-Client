@@ -9,7 +9,7 @@ import Testing
 
 /// Pins how a single download attempt reconciles its `.part` file and progress with the
 /// server's answer, independent of how `GameInstaller.download` is structured internally.
-@Suite(.serialized)
+@Suite
 struct GameInstallerRollbackTests {
 	@Test
 	func checksumMismatchEmptiesThePartialAndRemovesItsCountedBytes() async throws {

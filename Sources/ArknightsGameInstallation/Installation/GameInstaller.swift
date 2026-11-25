@@ -99,11 +99,7 @@ package struct GameInstaller: Sendable {
 			progress: download.progress
 		)
 		try download.close()
-		if let update = await download.counter.add(
-			bytes: 0,
-			file: download.item.path,
-			force: true
-		) {
+		if let update = await download.counter.add(bytes: 0, force: true) {
 			await download.progress(update)
 		}
 	}

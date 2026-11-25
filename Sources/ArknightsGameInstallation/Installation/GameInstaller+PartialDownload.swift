@@ -117,7 +117,7 @@ extension GameInstaller {
 		if rewinds { try handle.seek(toOffset: offset) }
 		if synchronizes { try handle.synchronize() }
 		guard reportsProgress else { return }
-		await progress(await counter.remove(bytes: counted, networkBytes: network, file: item.path))
+		await progress(await counter.remove(bytes: counted, networkBytes: network))
 	}
 }
 

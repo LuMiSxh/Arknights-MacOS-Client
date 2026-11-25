@@ -230,13 +230,6 @@ def select_processes(
     return sorted(selected, key=lambda row: row.pid)
 
 
-def cpu_seconds_delta(previous: dict[int, float], current: dict[int, float]) -> float:
-    return sum(
-        max(0.0, current[pid] - previous[pid])
-        for pid in current.keys() & previous.keys()
-    )
-
-
 def parse_gpu_utilization(text: str) -> dict[str, int]:
     values: dict[str, int] = {}
     for name, key in GPU_KEYS.items():
