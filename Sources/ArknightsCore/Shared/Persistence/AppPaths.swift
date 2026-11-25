@@ -222,10 +222,6 @@ package struct AppPaths: Sendable {
 		)
 	}
 
-	package func winePrefix(for region: GameRegion) -> URL {
-		winePrefix(for: region.publisher)
-	}
-
 	package func winePrefix(for publisher: GamePublisher) -> URL {
 		winePrefix(for: publisher, lane: runtimeLane)
 	}

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsTestSupport
+import Carbon.HIToolbox
 import Foundation
 import Testing
 
@@ -42,7 +43,7 @@ struct LauncherPreferencesStoreTests {
 			StoredShortcutCase(shortcut: .standard, stored: "standard"),
 			StoredShortcutCase(
 				shortcut: .custom(
-					HotKeyCombination(keyCode: HotKeyCombination.keyCodeF13), label: "F13"),
+					HotKeyCombination(keyCode: UInt32(kVK_F13)), label: "F13"),
 				stored: "custom:105:0:F13"),
 			StoredShortcutCase(
 				shortcut: .custom(

@@ -20,7 +20,6 @@ extension GameInstaller {
 				return try await installHoldingLease(
 					configuration: configuration,
 					region: region,
-					into: installDirectory,
 					installationRoot: lease.directory,
 					verifyAllExistingFiles: verifyAllExistingFiles,
 					progress: progress
@@ -34,7 +33,6 @@ extension GameInstaller {
 	private func installHoldingLease(
 		configuration: GameConfiguration,
 		region: GameRegion,
-		into installDirectory: URL,
 		installationRoot: InstallerDirectory,
 		verifyAllExistingFiles: Bool,
 		progress: @escaping ProgressHandler
@@ -104,12 +102,11 @@ extension GameInstaller {
 			try saveState(configuration: configuration, manifest: manifest, to: installationRoot)
 			return InstallResult(downloadedFiles: 0, downloadedBytes: 0)
 		}
-		await progress(await counter.current(file: pendingFiles[0].path))
+		await progress(await counter.current())
 		let reuse = try await reuseSession(for: region, target: installationRoot)
 		try Task.checkCancellation()
 		try await InstallProgressMonitor.run(
 			counter: counter,
-			fallbackFile: pendingFiles[0].path,
 			progress: progress
 		) {
 			try await withWindowedTaskGroup(

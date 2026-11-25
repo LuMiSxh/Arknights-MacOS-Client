@@ -76,6 +76,58 @@ struct DiscordPresenceSessionTests {
 		#expect(finalState == .idle)
 		#expect(clearedActivities.last?.activity == nil)
 	}
+
+	@Test
+	func staleClearDoesNotOverrideNewerPresence() async throws {
+		let directory = try TemporaryDirectory("DiscordPresenceSessionTests")
+		defer { directory.remove() }
+		let log = LauncherLog(fileURL: directory.url.appending(path: "launcher.log"))
+
+		let disconnectStarted = Signal()
+		let disconnectRelease = Signal()
+		let first = FakeTransport(
+			disconnectStarted: disconnectStarted,
+			disconnectRelease: disconnectRelease
+		)
+		let second = FakeTransport()
+		let transports = [first, second]
+		let nextTransport = Mutex(0)
+
+		let session = DiscordPresenceSession(
+			clientID: "1539589207381770261",
+			processIdentifier: 42,
+			log: log,
+			clock: ImmediateClock(),
+			makeTransport: {
+				let index = nextTransport.withLock { index in
+					defer { index += 1 }
+					return min(index, transports.count - 1)
+				}
+				return transports[index]
+			}
+		)
+
+		let firstRequest = DiscordPresenceRequest(
+			sessionID: UUID(),
+			regionName: "Global",
+			startedAt: Date(timeIntervalSince1970: 1_000)
+		)
+		let secondRequest = DiscordPresenceRequest(
+			sessionID: UUID(),
+			regionName: "Japan",
+			startedAt: Date(timeIntervalSince1970: 2_000)
+		)
+
+		await session.apply(.playing(firstRequest))
+		let clearing = Task { await session.apply(.idle) }
+		await disconnectStarted.wait()
+		await session.apply(.playing(secondRequest))
+		disconnectRelease.fire()
+		await clearing.value
+
+		let state = await session.state
+		#expect(state == .active(sessionID: secondRequest.sessionID))
+	}
 }
 
 private struct ImmediateClock: Clock {
@@ -100,11 +152,20 @@ private actor FakeTransport: DiscordIPCTransport {
 
 	private let connectStarted: Signal?
 	private let connectRelease: Signal?
+	private let disconnectStarted: Signal?
+	private let disconnectRelease: Signal?
 	private let closed = Signal()
 
-	init(connectStarted: Signal? = nil, connectRelease: Signal? = nil) {
+	init(
+		connectStarted: Signal? = nil,
+		connectRelease: Signal? = nil,
+		disconnectStarted: Signal? = nil,
+		disconnectRelease: Signal? = nil
+	) {
 		self.connectStarted = connectStarted
 		self.connectRelease = connectRelease
+		self.disconnectStarted = disconnectStarted
+		self.disconnectRelease = disconnectRelease
 	}
 
 	func connect(clientID: String) async throws {
@@ -124,5 +185,7 @@ private actor FakeTransport: DiscordIPCTransport {
 	func disconnect() async {
 		disconnectCount += 1
 		closed.fire()
+		disconnectStarted?.fire()
+		await disconnectRelease?.wait()
 	}
 }

@@ -7,7 +7,7 @@ import Testing
 
 @testable import ArknightsGameInstallation
 
-@Suite(.serialized)
+@Suite
 struct GameInstallerStreamingTests {
 	/// The server honors the range: only the missing tail is transferred.
 	@Test

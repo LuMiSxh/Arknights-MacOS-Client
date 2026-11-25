@@ -65,7 +65,6 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 		(720, 480), (640, 480),
 	].map { GameDisplaySize(width: $0.0, height: $0.1) }
 	package static let ultraHD = GameDisplaySize(width: 3840, height: 2160)
-	static let quadHD = GameDisplaySize(width: 2560, height: 1440)
 	package static let fullHD = GameDisplaySize(width: 1920, height: 1080)
 	package static let hd = GameDisplaySize(width: 1280, height: 720)
 

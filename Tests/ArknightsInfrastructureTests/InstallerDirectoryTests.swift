@@ -7,7 +7,7 @@ import Testing
 
 @testable import ArknightsInfrastructure
 
-@Suite(.serialized)
+@Suite
 struct InstallerDirectoryTests {
 	/// A held lease excludes other processes, and a process that dies while holding it releases it.
 	@Test

@@ -179,7 +179,7 @@ extension GameInstaller {
 			counter: counter,
 			progress: progress
 		)
-		await progress(await counter.addReused(bytes: item.byteCount, file: item.path))
+		await progress(await counter.addReused(bytes: item.byteCount))
 		log?.debug("Reused \(item.path) (\(item.byteCount) bytes) from \(source.directory.path)")
 		return true
 	}

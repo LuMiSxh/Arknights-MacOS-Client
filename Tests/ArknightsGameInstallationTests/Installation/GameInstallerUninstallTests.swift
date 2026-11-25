@@ -8,7 +8,7 @@ import Testing
 @testable import ArknightsGameInstallation
 
 /// A folder the user chose may hold their own files, so uninstalling removes only game files.
-@Suite(.serialized)
+@Suite
 struct GameInstallerUninstallTests {
 	private let fileManager = FileManager.default
 

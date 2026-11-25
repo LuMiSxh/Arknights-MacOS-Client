@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsTestSupport
+import Carbon.HIToolbox
 import CoreGraphics
 import Foundation
 import Synchronization
@@ -12,7 +13,7 @@ import Testing
 
 /// The shortcut the controller tests record: the F13 key on its own.
 private let f13Shortcut = ScreenshotShortcut.custom(
-	HotKeyCombination(keyCode: HotKeyCombination.keyCodeF13), label: "F13")
+	HotKeyCombination(keyCode: UInt32(kVK_F13)), label: "F13")
 
 private final class FakeHotKey: HotKeyRegistration, Sendable {
 	let isCancelled = Mutex(false)

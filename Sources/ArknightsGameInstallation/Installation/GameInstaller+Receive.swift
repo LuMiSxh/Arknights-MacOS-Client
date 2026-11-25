@@ -174,7 +174,7 @@ extension GameInstaller {
 		stream.acknowledge(data.count)
 		transfer.newlyDownloaded += incomingBytes
 		transfer.responseBodyBytes = newResponseBodyBytes
-		if let update = await download.counter.add(bytes: incomingBytes, file: item.path) {
+		if let update = await download.counter.add(bytes: incomingBytes) {
 			await download.progress(update)
 		}
 	}
