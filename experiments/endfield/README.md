@@ -11,7 +11,7 @@ This lab tests Arknights: Endfield on the app's ARM Wine runtime.
 ## Current state
 
 - **Runtime changed.** The lab runs the app's installed ARM runtime, `Runtimes/arm-1.0.2`: Wine 11.22, DXMT 0.80, a builtin `winemetal`, and a KosmicKrisp build newer than the catalog runtime's. Pass it with `--runtime`.
-- **DXMT works.** A `dxmt-d3d11` run on that runtime starts the game and renders (device utilization 20–52%, `recoveryCount` 0). The run ended after 116 s. The same backend failed on the catalog runtime because that runtime has no DXMT or `winemetal`.
+- **DXMT works, and the intro plays.** A `dxmt-d3d11` run on that runtime reaches the game, renders (device utilization up to 100%, `recoveryCount` 0), and plays the intro. The first launch spends most of its time compiling shaders. The same backend failed on the catalog runtime because that runtime has no DXMT or `winemetal`.
 - **Vulkan stalls after the first in-game frame.** On the newer KosmicKrisp the game starts, plays music and dialogue, and the window stays on the first in-game frame. The log ends with `AGX: exceeded compiled variants footprint limit`, the render thread is stuck in `CAMetalLayer nextDrawable`, and `Alloc system memory` grows from 3 GB to 65 GB. See the findings below.
 - **Still open.** The intro result on DXMT is not recorded yet. Two Vulkan runs froze WindowServer; the recorder and `collect` now keep the evidence.
 
@@ -36,6 +36,7 @@ Each finding lists its source. Verify a finding before you rely on it.
 - **UnityPlayer 1114.** A native DXMT `d3d11.dll` loaded against a missing or different `winemetal` fails its DLL initialization. Unity reports that as error 1114, "unityplayer.dll fehlt oder ist beschädigt". Use a runtime that bundles `winemetal`, and refresh the prefix DLLs after a runtime change.
 - **Freeze evidence.** `collect` on the 23:01 `vulkan-mvk` run found kernel `IOGPUCommandDescriptor::prepare` faults for `Endfield.exe` from 23:01:26 to 23:15:27, with negative `remainingBytes` and `maxWired` 12,713,115,648. WindowServer froze at 23:16. A process RSS guard alone may not catch GPU-side memory.
 - **KosmicKrisp frame stall.** The 23:40 `vulkan-kk` run on `arm-1.0.2` rendered the first in-game frame and then stalled. The last log line was `AGX: exceeded compiled variants footprint limit`. A `sample` of the game process shows the render thread in `libvulkan_kosmickrisp` → `-[CAMetalLayer nextDrawable]` → `allocate_drawable_texture` → `-[AGXG16GFamilyDevice newTextureWithDescriptor:iosurface:plane:]`. `Alloc system memory` rose from 3 GB to 65 GB while `In use` stayed near 1 GB. The collected log also has `IOGPUCommandDescriptor::prepare` faults at 23:46:50 to 23:47:28, including an unsigned underflow in `wiring delta`. The sample is saved beside the run record as `<run>-sample.txt`.
+- **Intro video.** The intro plays on DXMT. It stays black on both Vulkan drivers. The video path is therefore not the bug; the Vulkan present path is.
 - **Platform.** Endfield ships only on the ARM runtime. It needs macOS 27 or later.
 - **Anti-cheat.** ACE runs as a kernel-level driver. The community project [Endfield_FineWine](https://github.com/stoicswe/Endfield_FineWine) documents its work in `docs/technical.md`. Most of its fixes target Rosetta.
 - **ACE lead.** The relevant patches for us are `ARM/stage1-macos` patches 0010 to 0013. They cover `ntoskrnl` and `wdfldr.sys` for ACE's ARM64 drivers. No report yet confirms ACE under FEX. ACE patches belong in the private ARM Wine repository.
@@ -95,8 +96,8 @@ Start lab runs from your own terminal. Runs started from an agent's shell hang: 
 
 Open work:
 
-- **Shader cache.** The first start on a backend compiles shaders. On Vulkan this can take several minutes, so a slow start is not a hang. The record's `elapsedSeconds` and `gpu` counters show activity. Check that the next start reuses the cache.
-- **Intro video.** After you start the game on a fresh account, the screen stays black where the intro video should play. The DXMT run on `arm-1.0.2` reached the game; its intro result is not recorded yet.
+- **Shader cache.** The first start on a backend compiles shaders. The first DXMT launch spent most of its session compiling; the first Vulkan start can take several minutes and is not a hang. The record's `elapsedSeconds` and `gpu` counters show activity. A second launch must show that the cache is reused.
+- **Intro video.** The intro plays on DXMT. It stays black on both Vulkan drivers, so the remaining work is the Vulkan present path, not the video decoder.
   - Media Foundation DLLs (`mf`, `mfplat`, `mfreadwrite`, `winegstreamer`) load, but `GST_DEBUG=2` shows no pipeline activity.
   - `GST_PLUGIN_FEATURE_RANK=atdec:MAX,avdec_h264:MAX` (Yaagl's setting for Endfield) did not help.
   - Next, trace with `--wine-debug "err+all,+mfplat,+loaddll"`.
@@ -313,7 +314,7 @@ A report that needs root privileges stays in place. `collect` prints the `sudo c
 
 In order:
 
-1. **DXMT baseline.** Repeat `dxmt-d3d11` on `arm-1.0.2` and record the intro. DXMT avoids the KosmicKrisp present path.
+1. **Second DXMT launch.** Confirm that the shader cache is reused, so the long first compile does not repeat. Then run 30 minutes of gameplay to meet the exit criterion.
 2. **Lower shader load on Vulkan.** Set the game's lowest graphics quality and start `vulkan-kk` again. If the frame advances, the AGX compiled-variants limit is the trigger.
 3. **Add a GPU allocation guard.** The memory guard sums Wine RSS only; this run grew `gpu.Alloc system memory` without moving RSS. Kill above about 10 GB, below the 12.7 GB wired limit.
 4. **Retest MoltenVK.** `vulkan-mvk` on `arm-1.0.2` shows whether the stall is KosmicKrisp-specific or shared by both Vulkan drivers.
@@ -360,3 +361,4 @@ The lab moves into the client only when all of these pass:
 | 2026-11-26 | wine-11-22-arm64-v0-7-2-alpha-2 | dxmt-d3d11 | stepministrator | No game: UnityPlayer 1114 | The catalog runtime has no DXMT or `winemetal`, and the prefix held stale DXMT DLLs. |
 | 2026-11-26 | arm-1.0.2 | dxmt-d3d11 | stepministrator | In-game; the run lasted 116 s | The launch refreshed DXMT from the runtime. Device utilization 20–52%, `recoveryCount` 0, guard saw about 4.4 GB of Wine memory. Intro result not recorded. |
 | 2026-11-26 | arm-1.0.2 | vulkan-kk | stepministrator | In-game audio; window frozen on the first in-game frame | `AGX: exceeded compiled variants footprint limit` was the last log line. The render thread stuck in `CAMetalLayer nextDrawable`; GPU allocation 3 → 65 GB while in-use stayed near 1 GB. The guard did not fire because Wine RSS stayed near 3 GB. |
+| 2026-11-26 | arm-1.0.2 | dxmt-d3d11 | stepministrator | In-game; the intro plays | The saved record covers 308 s. Device utilization up to 100%, Wine 7.7 GB peak, GPU allocation 4.9 GB peak, `recoveryCount` 0, guard silent. The first session spent most of its time compiling shaders. |
