@@ -16,6 +16,8 @@ package final class InstallationController {
 	/// A folder the user picked that the launcher refuses or asks about before using.
 	package private(set) var pendingInstallDirectory: PendingInstallDirectory?
 	package var progress: DownloadProgress?
+	/// The last Verify Files result. Any install, server change, or folder change clears it.
+	package var fileVerification: GameFileVerification?
 	package private(set) var installedRegions: [GameRegion] = [] {
 		didSet {
 			if installedRegions != oldValue { onInstalledRegionsChanged?() }
@@ -104,6 +106,7 @@ package final class InstallationController {
 		isGameUpdateAvailable = false
 		progress = nil
 		progressSequence = 0
+		fileVerification = nil
 		installDirectory = preferences.installDirectory(
 			for: newRegion,
 			default: paths.gameInstall(for: newRegion)
@@ -242,6 +245,7 @@ package final class InstallationController {
 
 	private func applyInstallDirectory(_ url: URL) {
 		installDirectory = url
+		fileVerification = nil
 		preferences.setInstallDirectory(url, for: region)
 		updateInstalledState()
 	}

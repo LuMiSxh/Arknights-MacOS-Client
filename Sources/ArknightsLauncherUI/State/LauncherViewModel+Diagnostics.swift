@@ -41,7 +41,7 @@ extension LauncherViewModel {
 					homeDirectory: NSHomeDirectory(), userName: NSUserName()),
 				log: log,
 				applicationSupportRoot: paths.applicationSupportRoot,
-				runtimeConfigurationURL: paths.activeRuntimeConfigurationURL(
+				runtimeConfigurationURL: paths.installedRuntimeConfigurationURL(
 					for: runtimeSelection.selectedLane)
 			).write()
 			log.info(.diagnostics, "archive-written", ["file": archive.lastPathComponent])

@@ -11,6 +11,7 @@ package enum LauncherStatus: Equatable, Sendable {
 	case verifyingInstallation
 	case downloading
 	case pausing
+	case cancellingVerification
 	case paused
 	case updated
 	case preparingWine
@@ -46,6 +47,7 @@ package enum LauncherStatus: Equatable, Sendable {
 		case .verifyingInstallation: "Verifying…"
 		case .downloading: "Downloading…"
 		case .pausing: "Pausing…"
+		case .cancellingVerification: "Cancelling…"
 		case .paused: "Paused"
 		case .updated: "Updated"
 		case .preparingWine: "Preparing Wine setup…"

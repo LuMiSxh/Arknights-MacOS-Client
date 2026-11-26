@@ -24,6 +24,7 @@ package protocol LauncherInstallationActions {
 
 	func installOrUpdate()
 	func repairGame()
+	func verifyGameFiles()
 	func cancelDownload()
 
 	func chooseInstallDirectory()

@@ -28,6 +28,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	private(set) var releaseNotesFormat: String?
 	private(set) var updateStage: SPUUserUpdateStage?
 	private(set) var informationOnly = false
+	private(set) var isCritical = false
 	private(set) var informationURL: URL?
 	private(set) var expectedBytes: UInt64 = 0
 	private(set) var receivedBytes: UInt64 = 0
@@ -249,6 +250,8 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 			return
 		}
 		if case .choice(let reply)? = pendingReply {
+			// A critical update cannot be postponed, so Escape must not act as Later.
+			guard !isCritical else { return }
 			hide()
 			reply(.dismiss)
 		} else if let cancellation = takeAction(&checkCancellation) {
@@ -286,6 +289,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		releaseNotes = item.itemDescription
 		releaseNotesFormat = item.itemDescriptionFormat
 		informationOnly = item.isInformationOnlyUpdate
+		isCritical = item.isCriticalUpdate
 		informationURL = item.infoURL
 	}
 	private func refreshTerminationContext() {

@@ -27,6 +27,12 @@ Setup also asks this question. The first reminder uses the server you selected o
 
 Open the launcher at least once a week to keep the reminders going.
 
+## Start the game from a reminder
+
+Each reminder notification has a **Play** button. Choose **Play**, or click the notification, to start the game for that reminder's server.
+
+This works even when the launcher is closed. If the game cannot start, for example because it is not installed or an update is waiting, the launcher opens instead.
+
 ## Notifications are off
 
 If macOS blocks notifications, **Settings → Integration** shows **Notifications are off for Arknights Client**. The reminder turns off.

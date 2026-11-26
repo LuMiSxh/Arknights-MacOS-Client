@@ -75,6 +75,10 @@ extension LauncherViewModel: LauncherActions {
 		installation.repairGame()
 	}
 
+	package func verifyGameFiles() {
+		installation.verifyGameFiles()
+	}
+
 	package func cancelDownload() {
 		installation.cancelDownload()
 	}
@@ -148,6 +152,9 @@ extension LauncherViewModel: LauncherActions {
 	}
 
 	package func launchFromDock(region: GameRegion) async -> Bool {
+		// A reminder can open the launcher cold, before startup and its first refresh finish.
+		guard await waitForStartup() else { return false }
+		await refreshController.waitForCurrentRefresh()
 		guard canRequestDockLaunch else { return false }
 		await installation.updateInstalledState().value
 		guard canRequestDockLaunch, installation.isRegionInstalled(region) else { return false }

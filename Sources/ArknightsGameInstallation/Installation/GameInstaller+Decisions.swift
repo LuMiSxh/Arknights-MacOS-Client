@@ -5,9 +5,9 @@ import ArknightsInfrastructure
 import Foundation
 
 extension GameInstaller {
-	static func fetchRemoteResources(
-		_ operation: @Sendable () async throws -> (GameManifest, CDNConfiguration)
-	) async throws -> (GameManifest, CDNConfiguration) {
+	static func fetchRemoteResources<Resource>(
+		_ operation: @Sendable () async throws -> Resource
+	) async throws -> Resource {
 		do {
 			return try await operation()
 		} catch {

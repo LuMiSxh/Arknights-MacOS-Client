@@ -29,7 +29,11 @@ enum ResetReminderPlan {
 								identifier: identifier(region: region, reset: reset, lead: lead),
 								title: "Arknights \(region.displayName)",
 								body: body(timing: timing),
-								trigger: .calendar(utcComponents(for: fireDate))
+								trigger: .calendar(utcComponents(for: fireDate)),
+								categoryIdentifier: AppConstants.Reminders.notificationCategory,
+								userInfo: [
+									AppConstants.Reminders.regionUserInfoKey: region.rawValue
+								]
 							)
 						))
 				}

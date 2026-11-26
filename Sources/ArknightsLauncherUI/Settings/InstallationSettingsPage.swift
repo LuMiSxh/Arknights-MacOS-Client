@@ -87,8 +87,33 @@ struct InstallationSettingsPage: View {
 					)
 					.disabled(!installation.isInstalled || !installation.canInstall)
 				}
+				SettingsActionRow(
+					title: "Verify Files",
+					detail: "Check the game files against the manifest. Nothing is changed."
+				) {
+					CapsuleActionButton(
+						title: "Verify Files",
+						systemImage: "checkmark.shield",
+						tone: .neutral, presentation: .compact,
+						action: actions.verifyGameFiles
+					)
+					.disabled(!installation.isInstalled || !installation.canInstall)
+				}
+				if installation.isInstalled, let verification = installation.fileVerification {
+					SettingsActionRow(title: verificationSummary(verification)) {
+						if !verification.damagedPaths.isEmpty {
+							CapsuleActionButton(
+								title: "Repair",
+								systemImage: "wrench.and.screwdriver",
+								tone: .neutral, presentation: .compact,
+								action: actions.repairGame
+							)
+							.disabled(!installation.canInstall)
+						}
+					}
+				}
 				if !installation.isInstalled {
-					SettingsFootnote("Install the game before you repair it.")
+					SettingsFootnote("Install the game before you verify or repair it.")
 				}
 			}
 
@@ -125,7 +150,16 @@ struct InstallationSettingsPage: View {
 		return "\(path) · \(gameFilesStatus)"
 	}
 
+	private func verificationSummary(_ verification: GameFileVerification) -> String {
+		switch verification.damagedPaths.count {
+		case 0: "All files are intact."
+		case 1: "1 file is damaged or missing."
+		case let count: "\(count) files are damaged or missing."
+		}
+	}
+
 	private var gameFilesStatus: String {
+		if case .installing(_, .verifying) = lifecycle.activity { return "Verifying files…" }
 		if installation.isDownloading { return "Downloading" }
 		return LauncherDownloadProgressPresentation.gameStatus(
 			isDownloading: false,

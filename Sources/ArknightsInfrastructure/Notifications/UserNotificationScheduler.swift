@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import Foundation
+import Synchronization
 @preconcurrency import UserNotifications
 
 /// Thin wrapper over `UNUserNotificationCenter`. Create it only inside an app bundle.
-struct UserNotificationScheduler: NotificationScheduling {
+final class UserNotificationScheduler: NotificationScheduling, Sendable {
 	private let center = UNUserNotificationCenter.current()
+	/// `setNotificationCategories` replaces the whole set, so each feature's categories are kept here.
+	private let categories = Mutex<[String: UNNotificationCategory]>([:])
 
 	func authorization() async -> NotificationAuthorization {
 		switch await center.notificationSettings().authorizationStatus {
@@ -48,17 +51,19 @@ struct UserNotificationScheduler: NotificationScheduling {
 		center.removePendingNotificationRequests(withIdentifiers: Array(identifiers))
 	}
 
-	func registerCategories(_ categories: [NotificationCategory]) {
-		center.setNotificationCategories(
-			Set(
-				categories.map { category in
-					UNNotificationCategory(
-						identifier: category.identifier,
-						actions: category.actions.map {
-							UNNotificationAction(
-								identifier: $0.identifier, title: $0.title, options: [])
-						},
-						intentIdentifiers: [])
-				}))
+	func registerCategories(_ added: [NotificationCategory]) {
+		let all = categories.withLock { registered in
+			for category in added {
+				registered[category.identifier] = UNNotificationCategory(
+					identifier: category.identifier,
+					actions: category.actions.map {
+						UNNotificationAction(
+							identifier: $0.identifier, title: $0.title, options: [])
+					},
+					intentIdentifiers: [])
+			}
+			return Set(registered.values)
+		}
+		center.setNotificationCategories(all)
 	}
 }

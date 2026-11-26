@@ -72,7 +72,7 @@ enum LauncherDownloadProgressPresentation {
 		if status == .migratingStorage { return false }
 		if status.isIndeterminateWork { return true }
 		switch status {
-		case .verifyingInstallation, .downloading, .pausing: return true
+		case .verifyingInstallation, .downloading, .pausing, .cancellingVerification: return true
 		case .paused: return hasPartialDownload
 		default: return false
 		}

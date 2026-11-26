@@ -73,7 +73,8 @@ package protocol NotificationScheduling: Sendable {
 	func pendingIdentifiers() async -> Set<String>
 	func add(_ notification: LocalNotification) async throws
 	func removePending(identifiers: Set<String>)
-	/// Replaces the categories the system knows. Register them before the first notification.
+	/// Adds categories to the ones already registered, replacing any with the same identifier.
+	/// Register them before the first notification.
 	func registerCategories(_ categories: [NotificationCategory])
 }
 

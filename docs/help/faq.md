@@ -26,11 +26,14 @@ Yes. The game has no offline mode.
 
 No. It downloads only when you choose **Update**. Launcher updates work the same way. They never change game files.
 
-## What is the difference between update, resume, and repair?
+## What is the difference between update, resume, verify, and repair?
 
 - **Update** downloads only changed files.
 - **Resume** continues an interrupted download.
+- **Verify Files** checks every file against the manifest and changes nothing. It shows **All files are intact.** or the number of damaged or missing files, and offers **Repair**.
 - **Repair** checks every file and downloads missing or damaged files again.
+
+Find **Verify Files** and **Repair** in **Settings → Installation**. They are unavailable while the game or another installation task runs.
 
 ## Does the launcher change the game files?
 

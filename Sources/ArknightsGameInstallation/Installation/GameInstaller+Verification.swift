@@ -30,8 +30,13 @@ extension GameInstaller {
 		for item in manifest.file {
 			try Task.checkCancellation()
 			let relativePath = try Self.safeRelativePath(item.path)
-			let destination = try installFile(at: relativePath, inside: installDirectory)
-			guard let status = try destination.stat() else {
+			guard
+				let destination = try existingDestination(
+					at: relativePath,
+					inside: installDirectory
+				),
+				let status = try destination.stat()
+			else {
 				candidates.append(VerificationCandidate(item: item, relativePath: relativePath))
 				continue
 			}
@@ -95,6 +100,19 @@ extension GameInstaller {
 		let sequence = tally.nextSequence()
 		await progress(tally.snapshot(sequence: sequence))
 		return PendingDownloads(files: pending, lastSequence: sequence)
+	}
+
+	// A file under a folder that does not exist is missing. Resolving it must not create the
+	// folder, because verification never writes.
+	private func existingDestination(
+		at relativePath: String,
+		inside installDirectory: InstallerDirectory
+	) throws -> InstallerFile? {
+		do {
+			return try installFile(at: relativePath, inside: installDirectory)
+		} catch let error as POSIXError where error.code == .ENOENT {
+			return nil
+		}
 	}
 
 	// Hashes on the concurrent pool so synchronous file reads never occupy the caller's

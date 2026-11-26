@@ -151,15 +151,17 @@ def finalize_deltas(
     *,
     minimum_build: int | None = None,
     info_link: str | None = None,
+    critical: bool = False,
 ) -> list[Path]:
     """Publish deltas, add the informational gate, and refresh the feed signature."""
-    content = appcast.read_bytes()
-    root = sparkle_appcast.parse(content, "generated")
+    root = sparkle_appcast.parse(appcast.read_bytes(), "generated")
+    if critical:
+        sparkle_appcast.annotate_critical_update(root)
     if minimum_build is not None:
         if info_link is None:
             fail("the appcast informational gate needs an information link")
         sparkle_appcast.annotate_update_gate(root, minimum_build, info_link)
-        content = sparkle_appcast.serialize(root)
+    content = sparkle_appcast.serialize(root)
     names = [
         Path(unquote(urlparse(enclosure.get("url", "")).path)).name
         for deltas in root.iter(sparkle_appcast.DELTAS_TAG)
@@ -194,6 +196,7 @@ def finalize(arguments: argparse.Namespace) -> None:
         os.environ.get("SPARKLE_ED25519_PRIVATE_KEY", ""),
         minimum_build=MINIMUM_MIGRATABLE_BUILD,
         info_link=release_page_url(arguments.repository, arguments.release_version),
+        critical=os.environ.get("UPDATE_CRITICAL") == "true",
     )
     if published:
         success(f"Published {len(published)} Sparkle delta update(s)")

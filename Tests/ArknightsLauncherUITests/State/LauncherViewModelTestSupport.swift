@@ -100,6 +100,14 @@ actor ControllableInstaller: GameInstalling {
 	{
 		.removed
 	}
+	func verify(
+		configuration: GameConfiguration,
+		region: GameRegion,
+		in installDirectory: URL,
+		progress: @escaping @Sendable (DownloadProgress) async -> Void
+	) async throws -> GameFileVerification {
+		GameFileVerification(damagedPaths: [])
+	}
 	func install(
 		configuration: GameConfiguration,
 		region: GameRegion,

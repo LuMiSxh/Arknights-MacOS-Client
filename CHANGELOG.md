@@ -14,12 +14,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 > [!IMPORTANT]
 > Huge thanks to @riverfog7 for providing this client with an [ARM runtime](https://github.com/riverfog7/wine-build-new)!
 
+### Added
+
+- A daily reset reminder notification now has a **Play** button. Choose **Play**, or click the notification, to start the game for that reminder's server.
+- Added **Verify Files** to **Settings → Installation**. It checks the game files against the manifest without changing anything.
+
 ### Changed
 
 - The **ARM64 (Apple Silicon)** game environment now runs on macOS 26.5 or later.
 - **Debug logging** now also records detailed launcher log entries, not only Wine and graphics logs.
 - **Save Diagnostics** now includes the last three game sessions' logs and a summary of your recent launcher failures.
 - Launcher log lines now show a category, a stable event name, and named fields. The launcher also records settings changes and your time zone.
+- A critical launcher update has no **Later** button. **Cancel** remains while the update downloads.
 
 ## [1.0.2] - 2026-11-25
 

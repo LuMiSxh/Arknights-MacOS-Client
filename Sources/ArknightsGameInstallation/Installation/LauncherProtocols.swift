@@ -26,6 +26,13 @@ package protocol GameInstalling: Sendable {
 		progress: @escaping @Sendable (DownloadProgress) async -> Void
 	) async throws -> InstallResult
 
+	func verify(
+		configuration: GameConfiguration,
+		region: GameRegion,
+		in installDirectory: URL,
+		progress: @escaping @Sendable (DownloadProgress) async -> Void
+	) async throws -> GameFileVerification
+
 	func uninstall(
 		from installDirectory: URL, scope: UninstallScope
 	) async throws
