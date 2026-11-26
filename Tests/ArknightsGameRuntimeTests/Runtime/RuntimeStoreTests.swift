@@ -37,7 +37,7 @@ struct RuntimeStoreTests {
 		defer { temporary.remove() }
 		let access = RuntimeAccess(
 			macOSVersion: OperatingSystemVersion(
-				majorVersion: 26, minorVersion: 5, patchVersion: 0))
+				majorVersion: 26, minorVersion: 4, patchVersion: 0))
 		let paths = AppPaths(
 			applicationSupportDirectory: temporary.url, runtimeAccess: access)
 		let store = makeRuntimeStore(paths)

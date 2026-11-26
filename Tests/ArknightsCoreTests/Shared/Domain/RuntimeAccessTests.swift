@@ -17,7 +17,7 @@ struct RuntimeAccessTests {
 		(major: 27, minor: 0, lane: RuntimeLane.x86, allows: true),
 		(major: 28, minor: 0, lane: .x86, allows: false),
 		(major: 15, minor: 0, lane: .arm, allows: false),
-		(major: 26, minor: 5, lane: .arm, allows: false),
+		(major: 26, minor: 5, lane: .arm, allows: true),
 		(major: 27, minor: 0, lane: .arm, allows: true),
 	])
 	func accessFollowsTheLaneMacOSBounds(major: Int, minor: Int, lane: RuntimeLane, allows: Bool) {

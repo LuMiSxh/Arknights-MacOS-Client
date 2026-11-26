@@ -79,7 +79,7 @@ GitHub Actions dependencies use immutable commit pins with version comments. Eve
 6. The app bundle contains `LICENSE`, `RUNTIME.json`, and `ThirdPartyNotices.deflate`. The website publishes current [Third-party notices](../legal/third-party-notices.md) and [License texts](../legal/license-texts.md). **Settings → About → Third-Party Notices** shows the launcher list and the notices of the installed runtime.
 7. `scripts/licenses.py --check` passes. On a machine with a prepared runtime, `scripts/licenses.py --check --strict --runtime .build/runtime-x86` also passes. The step fails on a stale generated block or on any unverified launcher component.
 8. Each pinned runtime archive has its own reviewed source and notice package. For each runtime library, the runtime repository records the exact version or revision, notices, preferred-form source, and build scripts. The client does not publish a runtime closure inventory. The packaging checks cannot decide this step. See [Source code](../legal/source-code.md).
-9. Install, first-run runtime download, Update, Repair, and Play work from the DMG on a clean Mac. Test both architectures on macOS 26 or later.
+9. Install, first-run runtime download, Update, Repair, and Play work from the DMG on a clean Mac. Test both architectures on macOS 26.5 or later.
 
 If an artifact lacks a notice, has another runtime checksum, or points to the wrong tag, keep the release as a draft and open a repository issue with the version and asset.
 
@@ -87,7 +87,7 @@ If an artifact lacks a notice, has another runtime checksum, or points to the wr
 
 [`runtime.json`](../../scripts/config/runtime.json) is the single source of truth for the pinned runtimes. It has schema 4 and two lanes: `x86` and `arm`. Each lane carries the runtime name, version, archive URL, SHA-256, size, deltas, interface, component versions, provenance, `minimumMacOS`, and `prefixRevision`.
 
-One launcher release serves both architectures. The launcher chooses the lane by macOS version, not by a separate app build or Sparkle channel. It picks `arm` from `AppConstants.Runtime.armLaneMinimumMacOS` (27.0) and `x86` below. **Settings** → **Runtime** → **Danger zone** → **Runtime choice** overrides the automatic choice. The launcher downloads the runtime for the chosen lane on first use, and a switch never starts a download.
+One launcher release serves both architectures. The launcher chooses the lane by macOS version, not by a separate app build or Sparkle channel. It picks `arm` from `AppConstants.Runtime.armLaneMinimumMacOS` (26.5) and `x86` below. **Settings** → **Runtime** → **Danger zone** → **Runtime choice** overrides the automatic choice. The launcher downloads the runtime for the chosen lane on first use, and a switch never starts a download.
 
 ### Runtime lanes
 
@@ -96,7 +96,7 @@ A lane is one runtime architecture. The x86 lane runs the WineCX and DXMT binari
 | Lane  | Minimum macOS | Game environment             | Runtime content        |
 | ----- | ------------- | ---------------------------- | ---------------------- |
 | `x86` | 15.0          | `Environments/<publisher>-x86` | WineCX, DXMT, MoltenVK |
-| `arm` | 26.0          | `Environments/<publisher>-arm` | Wine, FEX, Mesa, DXMT  |
+| `arm` | 26.5          | `Environments/<publisher>-arm` | Wine, FEX, Mesa, DXMT  |
 
 The top-level `architecture` value is the default lane for `just runtime` and local tooling. The launcher resolves the lane from the macOS version and the saved override; it never reads the x86 interface for an ARM runtime. The `minimumMacOS` column is the lane's hard floor; the automatic choice can require a newer version.
 

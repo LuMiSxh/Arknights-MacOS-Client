@@ -15,7 +15,7 @@ Only Apple silicon Macs work: M-series Macs and the MacBook Neo (A18 Pro).
 | Runtime                   | How it runs               | macOS             |
 | ------------------------- | ------------------------- | ----------------- |
 | **x86_64**                | Through Rosetta 2         | macOS 15 to 27    |
-| **ARM64 (Apple Silicon)** | Natively on Apple silicon | macOS 27 or later |
+| **ARM64 (Apple Silicon)** | Natively on Apple silicon | macOS 26.5 or later |
 
 The launcher picks the runtime for your Mac. You do not choose one during setup.
 
@@ -23,8 +23,8 @@ The launcher picks the runtime for your Mac. You do not choose one during setup.
 
 | macOS              | Runtime the launcher uses                                              |
 | ------------------ | ---------------------------------------------------------------------- |
-| macOS 15 to 26     | **x86_64**                                                             |
-| macOS 27           | **ARM64 (Apple Silicon)**. You can override it with **x86_64**.        |
+| macOS 15 to 26.4   | **x86_64**                                                             |
+| macOS 26.5 to 27   | **ARM64 (Apple Silicon)**. You can override it with **x86_64**.        |
 | macOS 28 and later | **ARM64 (Apple Silicon)**                                              |
 
 Apple says macOS 27 is the last release with general Rosetta support. From macOS 28, the launcher blocks the x86_64 runtime.

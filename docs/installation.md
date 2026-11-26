@@ -24,7 +24,7 @@ Read on for details on each step.
 - An Apple silicon Mac: an M-series Mac, or the MacBook Neo (A18 Pro)
 - macOS 15 or later (see [Game runtime](help/runtime.md#macos-support))
 - The **x86_64** runtime needs Rosetta 2.
-- The **ARM64 (Apple Silicon)** runtime needs macOS 27 or later. It does not need Rosetta 2.
+- The **ARM64 (Apple Silicon)** runtime needs macOS 26.5 or later. It does not need Rosetta 2.
 - An account for your server
 - An internet connection and free space for the game and its updates
 
@@ -69,7 +69,7 @@ The setup assistant opens on the first start. Change any choice later in **Setti
    Nothing downloads on this step.
 
 3. **Install** — The step names your server and its publisher. It shows the runtime the launcher picked, the game files location, and Rosetta 2 if needed.
-   - The launcher picks **x86_64** on macOS 15 to 26 and **ARM64 (Apple Silicon)** on macOS 27 or later. You do not choose.
+   - The launcher picks **x86_64** on macOS 15 to 26.4 and **ARM64 (Apple Silicon)** on macOS 26.5 or later. You do not choose.
    - Choose **Change…** to pick another location for the game files.
    - **x86_64** needs Rosetta 2. If it is missing, choose **Install Rosetta 2…**, then **Check Again**.
    - On macOS 28 or later, see [macOS support](help/runtime.md#macos-support).
