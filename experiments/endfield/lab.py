@@ -8,6 +8,7 @@ never writes to the app's data directory. See experiments/endfield/README.md.
 
 import argparse
 import contextlib
+import filecmp
 import hashlib
 import json
 import os
@@ -32,7 +33,7 @@ sys.path.insert(0, str(REPOSITORY_DIR / "scripts"))
 
 import installer  # noqa: E402
 from lib.common import PROJECT_DIR, fail, run_main  # noqa: E402
-from lib.console import success, warning  # noqa: E402
+from lib.console import info, success, warning  # noqa: E402
 from lib.project_config import RUNTIME_CONFIG  # noqa: E402
 from runtime_config import load_runtime_config  # noqa: E402
 
@@ -62,11 +63,12 @@ DEFAULT_MEMORY_LIMIT_GB = 12.0
 # The record must survive a hard reboot after a freeze, so each line is fsynced.
 RECORD_INTERVAL_SECONDS = 1.0
 LOG_SYNC_SECONDS = 1.0
-PS_ARGV = ["/bin/ps", "-axo", "pid=,rss=,ucomm="]
-# Process names (ps ucomm) that the record tracks. The guard watches GUARDED_PROCESS_NAMES.
-RECORDED_PROCESS_NAMES = frozenset(
-    {"Endfield", "Endfield.exe", "PlatformProcess.exe", "wineserver", "wineserver64"}
-)
+# `command` is needed because Wine names every Unix process after its own binary, so
+# the Windows exe name is only visible in the command line, if at all.
+PS_ARGV = ["/bin/ps", "-axo", "pid=,rss=,ucomm=,command="]
+WINE_PROCESS_NAME_PREFIX = "wine"
+PROCESS_TABLE_SIZE = 5
+COMMAND_PREVIEW_CHARS = 120
 SAMPLE_TIMEOUT_SECONDS = 5
 VM_STAT_ARGV = ["/usr/bin/vm_stat"]
 SWAP_ARGV = ["/usr/sbin/sysctl", "vm.swapusage"]
@@ -196,6 +198,16 @@ class LaunchPlan:
 
 
 @dataclass(frozen=True, slots=True)
+class ProcessSample:
+    """One line of `ps -axo pid=,rss=,ucomm=,command=`."""
+
+    pid: int
+    resident: int
+    name: str
+    command: str
+
+
+@dataclass(frozen=True, slots=True)
 class GuardDecision:
     """The memory guard's view of one `ps` sample."""
 
@@ -292,8 +304,30 @@ def host_path(windows_path: str, prefix: Path, lab: Path) -> Path:
 def dxmt_dlls(runtime: Path) -> list[Path]:
     dlls = sorted((runtime / DXMT_DLL_DIRECTORY).glob("*.dll"))
     if not dlls:
-        fail(f"runtime has no DXMT DLLs in {DXMT_DLL_DIRECTORY}: {runtime}")
+        fail(
+            f"runtime has no DXMT DLLs in {DXMT_DLL_DIRECTORY}: {runtime} "
+            "(the dxmt-d3d11 backend needs a runtime that bundles DXMT)"
+        )
     return dlls
+
+
+def sync_dxmt(prefix: Path, runtime: Path) -> int:
+    """Copy the runtime's DXMT DLLs over the prefix copies; return how many changed.
+
+    A prefix keeps the DXMT DLLs of the runtime that created it. Running another
+    runtime without this refresh loads stale DLLs against a different `winemetal`,
+    which fails deep inside the game as a UnityPlayer load error.
+    """
+    system32 = prefix / "drive_c/windows/system32"
+    changed = 0
+    for dll in dxmt_dlls(runtime):
+        target = system32 / dll.name
+        if target.is_file() and filecmp.cmp(dll, target, shallow=False):
+            continue
+        system32.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(dll, target)
+        changed += 1
+    return changed
 
 
 def print_environment(env: dict[str, str]) -> None:
@@ -443,11 +477,20 @@ def run_launch(args: argparse.Namespace) -> None:
         print(f"log: {log}")
         print(f"sidecar: {sidecar}")
         print(f"record: {record_path}")
+        if args.backend == "dxmt-d3d11":
+            for dll in dxmt_dlls(runtime):
+                print(
+                    f"dxmt: {dll} -> {prefix / 'drive_c/windows/system32' / dll.name}"
+                )
         for problem in problems:
             warning(f"{problem} (a real launch stops here)")
         return
     if problems:
         fail("; ".join(problems))
+    if args.backend == "dxmt-d3d11":
+        changed = sync_dxmt(prefix, runtime)
+        if changed:
+            info(f"refreshed {changed} DXMT DLL(s) from {runtime}")
     record = {
         "backend": args.backend,
         "prefix": args.prefix,
@@ -476,24 +519,52 @@ def run_launch(args: argparse.Namespace) -> None:
         raise SystemExit(code)
 
 
-def parse_ps_samples(ps_output: str) -> list[tuple[int, int, str]]:
-    """Return (pid, resident bytes, command name) from `ps -axo pid=,rss=,ucomm=`."""
-    samples: list[tuple[int, int, str]] = []
+def parse_ps_samples(ps_output: str) -> list[ProcessSample]:
+    """Return one sample per `ps -axo pid=,rss=,ucomm=,command=` line."""
+    samples: list[ProcessSample] = []
     for line in ps_output.splitlines():
-        fields = line.split(None, 2)
-        if len(fields) == 3:
-            samples.append((int(fields[0]), int(fields[1]) * 1024, fields[2].strip()))
+        fields = line.split(None, 3)
+        if len(fields) == 4:
+            samples.append(
+                ProcessSample(
+                    pid=int(fields[0]),
+                    resident=int(fields[1]) * 1024,
+                    name=fields[2].strip(),
+                    command=fields[3].strip(),
+                )
+            )
     return samples
 
 
+def is_wine_process(sample: ProcessSample) -> bool:
+    """Return True when Wine owns the Unix process.
+
+    Wine names every Unix process after its own binary, so `Endfield.exe` never
+    reaches `ps`. Summing every Wine process covers the game, `Games.exe`,
+    `PlatformProcess.exe`, and `wineserver`.
+    """
+    return sample.name.lower().startswith(WINE_PROCESS_NAME_PREFIX)
+
+
+def is_game_process(sample: ProcessSample) -> bool:
+    """Return True for the game, by name or by the Windows path in its command line."""
+    if sample.name in GUARDED_PROCESS_NAMES:
+        return True
+    if not is_wine_process(sample):
+        return False
+    command = sample.command.lower()
+    return any(exe.lower() in command for exe in GUARDED_PROCESS_NAMES)
+
+
 def game_usage(ps_output: str) -> tuple[list[int], int]:
-    """Return the guarded game PIDs and their summed resident bytes from `ps` output."""
+    """Return the game PIDs and the resident bytes of the lab's Wine processes."""
     pids: list[int] = []
     resident = 0
-    for pid, rss, name in parse_ps_samples(ps_output):
-        if name in GUARDED_PROCESS_NAMES:
-            pids.append(pid)
-            resident += rss
+    for sample in parse_ps_samples(ps_output):
+        if is_wine_process(sample) or sample.name in GUARDED_PROCESS_NAMES:
+            resident += sample.resident
+        if is_game_process(sample):
+            pids.append(sample.pid)
     return pids, resident
 
 
@@ -634,6 +705,7 @@ class RunRecorder:
         self.started = time.monotonic()
         self.stopped = threading.Event()
         self.guard_fired = False
+        self.table_written = False
         self.lock = threading.Lock()
         path.parent.mkdir(parents=True, exist_ok=True)
         self.file = path.open("w", encoding="utf-8", buffering=1)
@@ -651,37 +723,51 @@ class RunRecorder:
             self.sample()
 
     def sample(self) -> None:
-        processes, guard = self.processes(sample_stdout(PS_ARGV))
-        self.write(
-            {
-                "timestamp": iso_timestamp(),
-                "elapsedSeconds": round(time.monotonic() - self.started, 1),
-                "processes": processes,
-                "vm": sample_vm_stat(),
-                "swap": sample_swap_usage(),
-                "pressure": sample_memory_pressure(),
-                "gpu": sample_gpu_statistics(),
-                "guard": guard.as_record(),
-            }
-        )
+        processes, guard, table = self.processes(sample_stdout(PS_ARGV))
+        entry: dict[str, object] = {
+            "timestamp": iso_timestamp(),
+            "elapsedSeconds": round(time.monotonic() - self.started, 1),
+            "processes": processes,
+            "vm": sample_vm_stat(),
+            "swap": sample_swap_usage(),
+            "pressure": sample_memory_pressure(),
+            "gpu": sample_gpu_statistics(),
+            "guard": guard.as_record(),
+        }
+        # One table per run shows how `ps` names the game without growing every line.
+        if table is not None and not self.table_written:
+            entry["processTable"] = table
+            self.table_written = True
+        self.write(entry)
         if guard.over_limit and not self.guard_fired:
             self.terminate(guard)
 
     def processes(
         self, ps_output: str | None
-    ) -> tuple[dict[str, int] | None, GuardDecision]:
+    ) -> tuple[dict[str, int] | None, GuardDecision, list[dict[str, object]] | None]:
         if ps_output is None:
-            return None, GuardDecision(self.limit, None, [])
+            return None, GuardDecision(self.limit, None, []), None
+        samples = parse_ps_samples(ps_output)
         processes: dict[str, int] = {}
         pids: list[int] = []
         resident = 0
-        for pid, rss, name in parse_ps_samples(ps_output):
-            if name in RECORDED_PROCESS_NAMES:
-                processes[name] = processes.get(name, 0) + rss
-            if name in GUARDED_PROCESS_NAMES:
-                pids.append(pid)
-                resident += rss
-        return processes, GuardDecision(self.limit, resident, pids)
+        for sample in samples:
+            if is_wine_process(sample) or sample.name in GUARDED_PROCESS_NAMES:
+                processes[sample.name] = processes.get(sample.name, 0) + sample.resident
+                resident += sample.resident
+            if is_game_process(sample):
+                pids.append(sample.pid)
+        largest = sorted(samples, key=lambda sample: sample.resident, reverse=True)
+        table = [
+            {
+                "pid": sample.pid,
+                "residentBytes": sample.resident,
+                "name": sample.name,
+                "command": sample.command[:COMMAND_PREVIEW_CHARS],
+            }
+            for sample in largest[:PROCESS_TABLE_SIZE]
+        ]
+        return processes, GuardDecision(self.limit, resident, pids), table
 
     def write(self, entry: dict[str, object]) -> None:
         with self.lock:
@@ -695,8 +781,8 @@ class RunRecorder:
         self.guard_fired = True
         assert guard.resident is not None
         message = (
-            f"the game uses {guard.resident / 1024**3:.1f} GB, over the "
-            f"{self.limit / 1024**3:.1f} GB limit; ending it"
+            f"the lab's Wine processes use {guard.resident / 1024**3:.1f} GB, over the "
+            f"{self.limit / 1024**3:.1f} GB limit; ending the prefix"
         )
         warning(message)
         self.write(
@@ -1237,8 +1323,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=DEFAULT_MEMORY_LIMIT_GB,
         metavar="GB",
-        help="end the game above this resident memory; 0 disables "
-        f"(default: {DEFAULT_MEMORY_LIMIT_GB:g})",
+        help="end the lab's Wine processes above this summed resident memory; "
+        f"0 disables (default: {DEFAULT_MEMORY_LIMIT_GB:g})",
     )
     launch.add_argument(
         "--dry-run", action="store_true", help="print the env, argv, and log path"

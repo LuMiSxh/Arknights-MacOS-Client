@@ -8,6 +8,13 @@ This lab tests Arknights: Endfield on the app's ARM Wine runtime.
 - The lab moves into the client only if the exit criteria pass.
 - Files: `lab.py` (CLI), `installer.py` and `zipstream.py` (streaming installer), `test_installer.py`, `test_lab.py` (recorder parsers), `fixtures/`, and this README.
 
+## Current state
+
+- **Runtime changed.** The lab runs the app's installed ARM runtime, `Runtimes/arm-1.0.2`: Wine 11.22, DXMT 0.80, a builtin `winemetal`, and a KosmicKrisp build newer than the catalog runtime's. Pass it with `--runtime`.
+- **DXMT works.** A `dxmt-d3d11` run on that runtime starts the game and renders (device utilization 20–52%, `recoveryCount` 0). The run ended after 116 s. The same backend failed on the catalog runtime because that runtime has no DXMT or `winemetal`.
+- **Vulkan is under test.** `vulkan-kk` on the new runtime uses the newer KosmicKrisp. The first start compiles shaders, which can take several minutes. A slow start is not a hang; the record's `elapsedSeconds` and `gpu` counters show activity.
+- **Still open.** The intro result on DXMT is not recorded yet. Two Vulkan runs froze WindowServer; the recorder and `collect` now keep the evidence.
+
 ## Safety
 
 - The lab root is separate from the app. The default is `~/Library/Application Support/EndfieldLab`.
@@ -23,9 +30,11 @@ Each finding lists its source. Verify a finding before you rely on it.
 
 - **Engine.** The game uses Unity IL2CPP on x86_64. Unity documents its player command-line flags ([Unity player arguments](https://docs.unity.com/en-us/engine/6000.0/manual/unity-editor/command-line-arguments/player)).
 - **Renderer.** Reports say the Vulkan renderer is selectable. Direct3D 12 under Wine fails with "Cannot load DXIL conversion library" ([Endfield_FineWine PR 21](https://github.com/stoicswe/Endfield_FineWine/pull/21)).
-- **Runtime graphics.** The ARM runtime 1.0.1 ships KosmicKrisp. It has `lib/libvulkan_kosmickrisp.dylib`, the Khronos loader `lib/libvulkan.1.dylib` (1.4.363), and the ICD file in `share/vulkan/icd.d/`. Wine loads `libvulkan.1.dylib`, so `VK_DRIVER_FILES` selects the driver.
+- **Runtime graphics.** The app's ARM runtime and the catalog runtime both ship KosmicKrisp: `lib/libvulkan_kosmickrisp.dylib`, the Khronos loader `lib/libvulkan.1.dylib` (1.4.363), and an ICD file in `share/vulkan/icd.d/`. Wine loads `libvulkan.1.dylib`, so `VK_DRIVER_FILES` selects the driver. The `arm-1.0.2` driver is a newer build than the catalog's (different size and hash, 2026-11-26 against 2026-11-17).
 - **KosmicKrisp requirements.** The driver needs macOS 26 or later and Apple silicon ([Mesa KosmicKrisp](https://docs.mesa3d.org/drivers/kosmickrisp.html)).
-- **Runtime DXMT payload.** The ARM runtime 1.0.1 ships `DXMT/x64` with `d3d10core.dll`, `d3d11.dll`, and `dxgi.dll` only. DXMT has no D3D12. The `vkd3d-kk` backend uses Wine's builtin `d3d12.dll` (vkd3d) on KosmicKrisp instead. Expect the DXIL error there.
+- **Runtime DXMT payload.** The app's ARM runtime ships `DXMT/x64` with `d3d10core.dll`, `d3d11.dll`, and `dxgi.dll`, plus a builtin `winemetal` (`lib/wine/aarch64-windows/winemetal.dll` and `lib/wine/aarch64-unix/winemetal.so`). The catalog `wine-11-22-arm64-v0-7-2-alpha-2` runtime has neither, so `dxmt-d3d11` cannot start there. DXMT has no D3D12. The `vkd3d-kk` backend uses Wine's builtin `d3d12.dll` (vkd3d) on KosmicKrisp instead. Expect the DXIL error there.
+- **UnityPlayer 1114.** A native DXMT `d3d11.dll` loaded against a missing or different `winemetal` fails its DLL initialization. Unity reports that as error 1114, "unityplayer.dll fehlt oder ist beschädigt". Use a runtime that bundles `winemetal`, and refresh the prefix DLLs after a runtime change.
+- **Freeze evidence.** `collect` on the 23:01 `vulkan-mvk` run found kernel `IOGPUCommandDescriptor::prepare` faults for `Endfield.exe` from 23:01:26 to 23:15:27, with negative `remainingBytes` and `maxWired` 12,713,115,648. WindowServer froze at 23:16. A process RSS guard alone may not catch GPU-side memory.
 - **Platform.** Endfield ships only on the ARM runtime. It needs macOS 27 or later.
 - **Anti-cheat.** ACE runs as a kernel-level driver. The community project [Endfield_FineWine](https://github.com/stoicswe/Endfield_FineWine) documents its work in `docs/technical.md`. Most of its fixes target Rosetta.
 - **ACE lead.** The relevant patches for us are `ARM/stage1-macos` patches 0010 to 0013. They cover `ntoskrnl` and `wdfldr.sys` for ACE's ARM64 drivers. No report yet confirms ACE under FEX. ACE patches belong in the private ARM Wine repository.
@@ -35,7 +44,7 @@ Each finding lists its source. Verify a finding before you rely on it.
 - **Parent check.** `Endfield.exe` runs only when the official `Games.exe` is its parent process ([reakjra/stepministrator](https://github.com/reakjra/stepministrator)).
 - **Launch chain.** A `+process` trace of a working run shows the chain. GRYPHLINK `Launcher.exe` starts `1.6.0\Games.exe`. `Games.exe` starts `"G:\Endfield.exe" -launcher_lang=en-us -launcher_sub_channel=6` with a plain `CreateProcess`. The game gets no renderer flag; the launcher's **Rendering Mode** setting selects Vulkan. The game then starts `PlatformProcess.exe` and ACE starts `ACE-Service64.exe -autorun`.
 - **Next parent test.** Start `Games.exe` alone with `--parent launcher --launcher-exe 'C:\Program Files\GRYPHLINK\1.6.0\Games.exe'`. If the game starts, the client needs no helper. Otherwise build stepministrator in the private ARM runtime pipeline with its llvm-mingw toolchain and ship it in the runtime.
-- **Runtime candidate.** The catalog runtime `wine-11-22-arm64-v0-7-2-alpha-2` works with `--runtime <lab>/runtimes/wine-11-22-arm64-v0-7-2-alpha-2/wine`. A local `bin/wine64 -> wine` symlink was added.
+- **Runtime to use.** Run the app's installed ARM runtime with `--runtime "$HOME/Library/Application Support/com.lumisxh.arknights-client/Runtimes/arm-1.0.2"`. It has `bin/wine64`, DXMT, and `winemetal`. The older catalog runtime `wine-11-22-arm64-v0-7-2-alpha-2` remains useful only for comparing Vulkan drivers; a local `bin/wine64 -> wine` symlink was added there.
 - **Endfield environment.** Yaagl's Endfield defaults are `FEX_MAXINST=5000`, `FEX_MULTIBLOCK=1`, `WINE_DARWIN_SPARSE_READ=1`, `WINE_NGX_SIGNER=1`, and `GST_PLUGIN_FEATURE_RANK=atdec:MAX,avdec_h264:MAX`. Pass them with `--env`.
 - **Sidecar.** Projecting the game to an iPad with Sidecar caused GPU lockups and Mac freezes. It also broke the native fullscreen Space. Test on a physical display only.
 
@@ -85,8 +94,8 @@ Start lab runs from your own terminal. Runs started from an agent's shell hang: 
 
 Open work:
 
-- **Shader cache.** The first start compiles shaders. Check that the next start reuses the cache.
-- **Intro video.** After you start the game on a fresh account, the screen stays black where the intro video should play.
+- **Shader cache.** The first start on a backend compiles shaders. On Vulkan this can take several minutes, so a slow start is not a hang. The record's `elapsedSeconds` and `gpu` counters show activity. Check that the next start reuses the cache.
+- **Intro video.** After you start the game on a fresh account, the screen stays black where the intro video should play. The DXMT run on `arm-1.0.2` reached the game; its intro result is not recorded yet.
   - Media Foundation DLLs (`mf`, `mfplat`, `mfreadwrite`, `winegstreamer`) load, but `GST_DEBUG=2` shows no pipeline activity.
   - `GST_PLUGIN_FEATURE_RANK=atdec:MAX,avdec_h264:MAX` (Yaagl's setting for Endfield) did not help.
   - Next, trace with `--wine-debug "err+all,+mfplat,+loaddll"`.
@@ -203,17 +212,37 @@ uv run --locked python experiments/endfield/lab.py launch \
   --backend vulkan-kk --parent launcher --debug ace
 ```
 
+Start the game on DXMT with the app's ARM runtime. The renderer flag goes after `--`:
+
+```sh
+uv run --locked python experiments/endfield/lab.py launch \
+  --backend dxmt-d3d11 --parent stepministrator \
+  --runtime "$HOME/Library/Application Support/com.lumisxh.arknights-client/Runtimes/arm-1.0.2" \
+  -- -force-d3d11
+```
+
+Start the game on Vulkan with the newer KosmicKrisp:
+
+```sh
+uv run --locked python experiments/endfield/lab.py launch \
+  --backend vulkan-kk --parent stepministrator \
+  --runtime "$HOME/Library/Application Support/com.lumisxh.arknights-client/Runtimes/arm-1.0.2" \
+  -- -force-vulkan
+```
+
+Put `--dry-run` before the `--` separator. Everything after `--` goes to the game.
+
 Options:
 
 - `--backend`: `dxmt-d3d11`, `vkd3d-kk`, `vulkan-kk`, or `vulkan-mvk`. `vulkan-mvk` uses a lab-only MoltenVK from `<lab>/toolchains/moltenvk-*/` (KhronosGroup release, `icd.d/MoltenVK_icd.json` with an absolute library path and without `is_portability_driver`). The ARM Wine does not enumerate portability drivers, so the loader skips MoltenVK while that flag is set. On 2026-11-22 `vulkan-kk` hung the M4 GPU ("firmware-detected lockup") when the game loaded its world.
-- `--parent`: `direct`, `launcher`, or `stepministrator`. Only `direct` adds the renderer flag for `--backend`. The `stepministrator` parent passes no renderer flag. The game takes its renderer from the launcher setting.
+- `--parent`: `direct`, `launcher`, or `stepministrator`. Only `direct` adds the renderer flag for `--backend`. With `stepministrator`, pass `-force-d3d11` or `-force-vulkan` after `--` to select the renderer.
 - `--prefix NAME`: prefix directory under the lab root. Default: `prefix`. Use one directory name; separators and `..` are rejected. Used by `prefix`, `launch`, and `build-helpers`.
-- `--runtime PATH`: use a patched runtime, for example `<lab>/runtimes/<name>`.
+- `--runtime PATH`: use a patched runtime, for example `<lab>/runtimes/<name>`. For `dxmt-d3d11`, use a runtime that bundles DXMT. The catalog `wine-11-22-arm64-v0-7-2-alpha-2` runtime has no DXMT or `winemetal`, so that backend cannot start there. The app's arm runtime (`Runtimes/arm-1.0.2`) has both.
 - `--debug`: `default`, `ace`, or `vulkan`.
 - `--wine-debug RAW`: set a raw `WINEDEBUG` value. It overrides `--debug`.
 - `--env K=V`: add an environment entry. Repeat it for more entries.
 - `--launcher-exe` and `--games-exe`: change the Windows paths of the official tools.
-- `--memory-limit-gb GB`: end the game when its resident memory exceeds this limit. Default: 12. Use `0` to disable. A run at about 22.8 GB on a 16 GB Mac hung the GPU and froze the display. The guard decision and any kill also go into the run record.
+- `--memory-limit-gb GB`: end the lab's Wine processes when their summed resident memory exceeds this limit. Default: 12. Use `0` to disable. A run at about 22.8 GB on a 16 GB Mac hung the GPU and froze the display. The guard decision and any kill also go into the run record.
 - `kill`: end the game and every process in the lab prefix. Run it over SSH when the display freezes: `uv run --locked python experiments/endfield/lab.py kill --prefix prefix-mf`.
 - `collect RUN`: copy the host crash reports and the system log for a finished run. See [Collect host reports](#collect-host-reports).
 - Extra arguments after `--` go to the game.
@@ -243,18 +272,21 @@ The `mf-prefix` command clones a prefix with `cp -c -R`. It does not run `winebo
 
 - The launcher parent starts the game itself. The lab does not pass game arguments or the renderer flag in this mode.
 - The lab stops before a real launch when a required file is missing. A dry run only warns.
+- A `dxmt-d3d11` launch copies `d3d10core.dll`, `d3d11.dll`, and `dxgi.dll` from the runtime's `DXMT/x64` into the prefix when they differ. A runtime without a DXMT payload fails the launch with a message that names the missing directory. A stale DXMT set fails inside the game as a UnityPlayer load error.
 
 ### Freeze recorder
 
 Every launch writes `<lab>/logs/<run>-record.jsonl`. The run name is the log name without its suffix. The recorder samples the host once per second:
 
-- Resident memory of `Endfield.exe`, `PlatformProcess.exe`, and `wineserver` from `ps`.
+- Resident memory of every Wine process from `ps`. Wine names each Unix process after its own binary, so `Endfield.exe` does not reach `ps`. The record and the guard sum the whole prefix instead.
 - Free and compressed memory, plus the swap counters, from `vm_stat`.
 - Swap usage from `sysctl vm.swapusage`.
 - Memory pressure from `memory_pressure -Q`.
 - GPU counters from `ioreg -r -c IOAccelerator`: device utilization, in-use memory, allocated memory, and `recoveryCount`.
 
-Each line is one JSON object. It holds a UTC timestamp, the elapsed seconds, the samples, and the guard decision. The recorder flushes and fsyncs every line, so a freeze and a hard reboot keep the record up to the last second.
+Each line is one JSON object. It holds a UTC timestamp, the elapsed seconds, the samples, and the guard decision. The first line also holds `processTable`: the five largest processes with their pid, resident bytes, name, and command line. Use it to check how `ps` names the game on a new runtime.
+
+The recorder flushes and fsyncs every line, so a freeze and a hard reboot keep the record up to the last second.
 
 The memory guard reads the same `ps` sample. When the game passes `--memory-limit-gb`, the record gets a `guard-kill` line before the lab ends the game. The warning also prints in the terminal.
 
@@ -313,3 +345,7 @@ The lab moves into the client only when all of these pass:
 | 2026-11-22 | ARM 1.0.1 | vulkan-mvk (MoltenVK 1.4.2) | stepministrator | Reached the world | Needed the ICD without is_portability_driver; Games.exe crashed in MoltenVK; game footprint about 34 GB on a 16 GB Mac; the Mac froze later (Sidecar active). |
 | 2026-11-22 | ARM 1.0.1 | vulkan-kk | stepministrator | Mac froze at the world load | gpuEvent "firmware-detected lockup"; Sidecar was active. |
 | 2026-11-22 | wine-11-22-arm64-v0-7-2-alpha-2 | vulkan-kk | stepministrator (Games.exe suspended) | Game starts; intro video stays black | Games.exe 0% CPU, no window, no Dock tile. |
+| 2026-11-26 | wine-11-22-arm64-v0-7-2-alpha-2 | vulkan-mvk (MoltenVK 1.4.2) | stepministrator | WindowServer froze after about 15 minutes | No recorder on that run. `collect` found kernel `IOGPUCommandDescriptor::prepare` faults for `Endfield.exe` from 23:01:26 to 23:15:27, then the freeze at 23:16. |
+| 2026-11-26 | wine-11-22-arm64-v0-7-2-alpha-2 | dxmt-d3d11 | stepministrator | No game: UnityPlayer 1114 | The catalog runtime has no DXMT or `winemetal`, and the prefix held stale DXMT DLLs. |
+| 2026-11-26 | arm-1.0.2 | dxmt-d3d11 | stepministrator | In-game; the run lasted 116 s | The launch refreshed DXMT from the runtime. Device utilization 20–52%, `recoveryCount` 0, guard saw about 4.4 GB of Wine memory. Intro result not recorded. |
+| 2026-11-26 | arm-1.0.2 | vulkan-kk | stepministrator | Under test | Newer KosmicKrisp. The first start compiles shaders and can take several minutes. |

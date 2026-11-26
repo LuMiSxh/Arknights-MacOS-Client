@@ -75,15 +75,27 @@ def test_parse_gpu_statistics_rejects_malformed_output():
     assert lab.parse_gpu_statistics(b"<plist><array>") is None
 
 
-def test_parse_ps_samples_reads_pid_rss_and_name():
+def test_parse_ps_samples_reads_pid_rss_name_and_command():
     text = (
-        "  101  1024 Endfield.exe\n  102  2048 Endfield.exe\n  103  4096 wineserver\n"
+        "  101  1024 wine64-preloader wine64-preloader C:\\stepministrator\\stepministrator.exe\n"
+        "  102  2048 Endfield.exe G:\\Endfield.exe -launcher_lang=en-us\n"
     )
-    assert lab.parse_ps_samples(text) == [
-        (101, 1024 * 1024, "Endfield.exe"),
+    samples = lab.parse_ps_samples(text)
+    assert [(sample.pid, sample.resident, sample.name) for sample in samples] == [
+        (101, 1024 * 1024, "wine64-preloader"),
         (102, 2048 * 1024, "Endfield.exe"),
-        (103, 4096 * 1024, "wineserver"),
     ]
+    assert samples[1].command == "G:\\Endfield.exe -launcher_lang=en-us"
+
+
+def test_game_usage_sums_wine_processes_and_finds_the_game():
+    text = (
+        "  101  1024 wine64-preloader wine64-preloader C:\\stepministrator\\stepministrator.exe\n"
+        "  102  2048 wine64-preloader wine64-preloader G:\\Endfield.exe -launcher_lang=en-us\n"
+        "  103  4096 wineserver wineserver\n"
+        "  200   512 bash bash -c grep Endfield.exe\n"
+    )
+    assert lab.game_usage(text) == ([102], (1024 + 2048 + 4096) * 1024)
 
 
 def test_is_freeze_report_selects_windowserver_and_skips_unrelated():
