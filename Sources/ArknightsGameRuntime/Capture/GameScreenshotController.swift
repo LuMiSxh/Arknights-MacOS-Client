@@ -175,7 +175,7 @@ package final class GameScreenshotController {
 		let failure = (error as? CaptureError) ?? .saveFailed(error.localizedDescription)
 		// ScreenCaptureKit can decline even when the preflight check passed.
 		if case .permissionDenied = failure { denyPermission() }
-		log?.error("Screenshot failed: \(failure.diagnosticDescription)")
+		log?.error(.app, "screenshot-failed", error: failure)
 		await post(
 			title: "Screenshot failed", body: failure.errorDescription ?? "", category: nil,
 			userInfo: [:])
@@ -200,7 +200,7 @@ package final class GameScreenshotController {
 					identifier: UUID().uuidString, title: title, body: body, trigger: .immediate,
 					categoryIdentifier: category, userInfo: userInfo, playsSound: false))
 		} catch {
-			log?.error("Could not post the screenshot notification: \(error)")
+			log?.error(.app, "notification-failed", error: error)
 		}
 	}
 
@@ -241,7 +241,7 @@ package final class GameScreenshotController {
 			Task { @MainActor in self?.takeScreenshot() }
 		}
 		if hotKey == nil {
-			log?.error("Another app already uses the screenshot shortcut.")
+			log?.warning(.app, "shortcut-in-use")
 		} else {
 			registeredShortcut = wanted
 		}

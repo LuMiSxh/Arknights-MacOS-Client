@@ -49,7 +49,7 @@ extension WineRuntime {
 			do {
 				try fileManager.removeItem(at: scriptURL)
 			} catch {
-				log?.error("Could not remove the registry script: \(error.localizedDescription)")
+				log?.warning(.prefix, "registry-script-remove-failed", error: error)
 			}
 		}
 

@@ -42,9 +42,8 @@ struct ThemeCacheFile: Sendable {
 			else { return ThemeCacheDocument() }
 			return document
 		} catch {
-			log?.error(
-				"Ignored the theme cache at \(url.path): \(launcherDiagnosticDescription(for: error))"
-			)
+			log?.warning(
+				.customization, "theme-cache-ignored", ["path": url], error: error)
 			return ThemeCacheDocument()
 		}
 	}
@@ -181,10 +180,9 @@ final class ThemeCacheStore: Sendable {
 				try file.write(document)
 				lastPersisted = generation
 			} catch {
-				file.log?.error(
-					"Failed to write the theme cache at \(file.url.path): "
-						+ launcherDiagnosticDescription(for: error)
-				)
+				file.log?.warning(
+					.customization, "theme-cache-write-failed", ["path": file.url],
+					error: error)
 			}
 		}
 	}

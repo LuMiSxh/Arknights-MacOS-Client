@@ -10,7 +10,7 @@ extension PresetCatalogService {
 	func enforceImageCacheLimitIfNeeded() async {
 		guard !hasEnforcedImageCacheLimit else { return }
 		hasEnforcedImageCacheLimit = true
-		log.attempt("Failed to enforce the preset image cache limit at \(cacheDirectory.path)") {
+		log.attempt(.customization, "enforce-image-cache-limit") {
 			try pruneImageCache(
 				incomingBytes: 0,
 				preserving: cacheDirectory.appending(path: ".cache-limit-check")
@@ -60,9 +60,7 @@ extension PresetCatalogService {
 		}
 		let finalError = lastError ?? CustomizationError.invalidPresetImage(url)
 		guard cacheEpoch == epoch else { throw CancellationError() }
-		log.error(
-			"Failed to load preset image from \(url.absoluteString): \(launcherDiagnosticDescription(for: finalError))"
-		)
+		log.error(.customization, "preset-image-load-failed", ["url": url], error: finalError)
 		guard cacheEpoch == epoch else { throw CancellationError() }
 		throw finalError
 	}
@@ -138,14 +136,15 @@ extension PresetCatalogService {
 			])
 			guard values.isRegularFile == true, values.isSymbolicLink != true else {
 				try FileManager.default.removeItem(at: url)
-				log.error("Removed non-regular preset cache entry at \(url.path)")
+				log.warning(.customization, "non-regular-cache-entry-removed", ["path": url])
 				return nil
 			}
 			let size = values.fileSize ?? 0
 			guard size > 0, size <= AppConstants.Presets.imageMaximumBytes else {
 				try FileManager.default.removeItem(at: url)
-				log.error(
-					"Removed oversized preset cache entry at \(url.path) (\(size) bytes)")
+				log.warning(
+					.customization, "oversized-cache-entry-removed",
+					["path": url, "bytes": size])
 				guard cacheEpoch == epoch else { return nil }
 				return nil
 			}
@@ -165,14 +164,12 @@ extension PresetCatalogService {
 					try FileManager.default.removeItem(at: url)
 				}
 			} catch {
-				log.error(
-					"Failed to remove invalid preset cache entry at \(url.path): \(error.localizedDescription)"
-				)
+				log.warning(
+					.customization, "invalid-cache-entry-remove-failed", ["path": url],
+					error: error)
 				guard cacheEpoch == epoch else { return nil }
 			}
-			log.error(
-				"Rejected preset cache entry at \(url.path): \(launcherDiagnosticDescription(for: error))"
-			)
+			log.warning(.customization, "cache-entry-rejected", ["path": url], error: error)
 			guard cacheEpoch == epoch else { return nil }
 			return nil
 		}
@@ -189,8 +186,7 @@ extension PresetCatalogService {
 			try data.write(to: url, options: .atomic)
 		} catch {
 			guard cacheEpoch == epoch else { return }
-			log.error(
-				"Failed to cache preset image at \(url.path): \(error.localizedDescription)")
+			log.warning(.customization, "image-cache-write-failed", ["path": url], error: error)
 		}
 	}
 
@@ -203,9 +199,9 @@ extension PresetCatalogService {
 			pathExtensions: ["cache"]
 		)
 		for failure in failures {
-			log.error(
-				"Failed to delete the preset cache file at \(failure.url.path): "
-					+ failure.error.localizedDescription)
+			log.warning(
+				.customization, "cache-file-delete-failed", ["path": failure.url],
+				error: failure.error)
 		}
 	}
 

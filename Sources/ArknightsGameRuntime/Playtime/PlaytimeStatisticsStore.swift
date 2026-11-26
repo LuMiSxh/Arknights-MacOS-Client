@@ -92,6 +92,6 @@ struct PlaytimeStatisticsStore: Sendable {
 	}
 
 	private func logFailure(_ error: Error, operation: String) {
-		log.error("Could not \(operation) local playtime statistics: \(error.localizedDescription)")
+		log.error(.session, "playtime-save-failed", ["operation": operation], error: error)
 	}
 }

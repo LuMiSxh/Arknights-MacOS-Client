@@ -118,7 +118,7 @@ struct HelpSettingsPage: View {
 				SettingsActionRow(
 					title: "Debug logging",
 					detail:
-						"Writes detailed Wine and graphics logs from the next game start. Logs grow quickly, so turn this off when you are done."
+						"Writes detailed launcher, Wine, and graphics logs. Wine and graphics logs start with the next game start. Logs grow quickly, so turn this off when you are done."
 				) {
 					SettingsToggle("Debug logging", isOn: $settings.debugLoggingEnabled)
 				}

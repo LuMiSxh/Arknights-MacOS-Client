@@ -181,7 +181,7 @@ extension LauncherViewModel: LauncherActions {
 		else {
 			return
 		}
-		log.info("Launcher settings reset to default")
+		log.info(.settings, "reset")
 	}
 
 	package func uninstallGame() {
@@ -208,8 +208,7 @@ extension LauncherViewModel: LauncherActions {
 		do {
 			try runtimeSelection.selectForDownload(lane: lane)
 		} catch {
-			log.error(
-				"Runtime lane switch failed: \(launcherDiagnosticDescription(for: error))")
+			log.error(.runtime, "lane-switch-failed", error: error)
 			return false
 		}
 		if runtimeSelection.selectedLane != previous {
@@ -240,8 +239,7 @@ extension LauncherViewModel: LauncherActions {
 			}
 			return true
 		} catch {
-			log.error(
-				"Runtime lane switch failed: \(launcherDiagnosticDescription(for: error))")
+			log.error(.runtime, "lane-switch-failed", error: error)
 			return false
 		}
 	}
@@ -252,8 +250,7 @@ extension LauncherViewModel: LauncherActions {
 			try await runtimeSelection.removeOtherLane()
 			return true
 		} catch {
-			log.error(
-				"Other runtime removal failed: \(launcherDiagnosticDescription(for: error))")
+			log.error(.runtime, "remove-other-failed", error: error)
 			return false
 		}
 	}
@@ -265,8 +262,7 @@ extension LauncherViewModel: LauncherActions {
 			gameSession.refreshRuntime()
 			return true
 		} catch {
-			log.error(
-				"Runtime removal failed: \(launcherDiagnosticDescription(for: error))")
+			log.error(.runtime, "remove-failed", error: error)
 			return false
 		}
 	}

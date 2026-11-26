@@ -50,8 +50,8 @@ extension InstallationController {
 		lifecycle.setStatus(
 			verifyAllExistingFiles ? .verifyingInstallation : .preparingInstallation)
 		log.info(
-			"Installation started; repair=\(verifyAllExistingFiles); target=\(targetDirectory.path)"
-		)
+			.install, "started",
+			["repair": verifyAllExistingFiles, "path": targetDirectory])
 
 		installationTask = Task { [weak self] in
 			guard let self else { return }
@@ -93,8 +93,8 @@ extension InstallationController {
 				lifecycle.setStatus(.ready)
 
 				log.info(
-					"Installation completed; files=\(result.downloadedFiles); bytes=\(result.downloadedBytes)"
-				)
+					.install, "completed",
+					["files": result.downloadedFiles, "bytes": result.downloadedBytes])
 				if launchAfterCompletion { onLaunchRequested?() }
 			} catch is CancellationError {
 				await updateInstalledState().value
@@ -102,7 +102,7 @@ extension InstallationController {
 				// A paused verification pass says nothing about partial-download progress.
 				if progress?.isVerifying == true { progress = nil }
 				lifecycle.setStatus(.paused)
-				log.info("Installation paused")
+				log.info(.install, "paused")
 			} catch {
 				guard finishInstallation(installationID) else { return }
 				presentInstallationFailure(
@@ -136,7 +136,11 @@ extension InstallationController {
 		}
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		log.info(
-			"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(region.rawValue)"
+			.install, "recovery-selected",
+			[
+				"action": "retry", "operation": failure.context.operation.rawValue,
+				"server": region.rawValue,
+			]
 		)
 		startInstallation(
 			launchAfterCompletion: false,
@@ -153,7 +157,7 @@ extension InstallationController {
 			lifecycle.update(lease, to: .installing(id: installationID, stage: .pausing))
 		}
 		lifecycle.setStatus(.pausing)
-		log.info("Installation pause requested")
+		log.info(.install, "pause-requested")
 		installationTask?.cancel()
 	}
 

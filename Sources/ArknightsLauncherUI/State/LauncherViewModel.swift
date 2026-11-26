@@ -93,11 +93,11 @@ package final class LauncherViewModel {
 		#endif
 
 		let launcherLog = LauncherLog(fileURL: paths.launcherLogFile)
+		let debugLoggingEnabled = preferences.value(
+			LauncherPreferencesStore.Key.debugLoggingEnabled)
+		launcherLog.setDebugEnabled(debugLoggingEnabled)
 		log = launcherLog
-		StartupTimeline.shared.attach(
-			launcherLog,
-			enabled: preferences.value(LauncherPreferencesStore.Key.debugLoggingEnabled)
-		)
+		StartupTimeline.shared.attach(launcherLog)
 		let playtimeStatistics = PlaytimeStatisticsController(
 			fileURL: paths.playtimeStatistics,
 			log: launcherLog
@@ -284,7 +284,7 @@ package final class LauncherViewModel {
 					await loadDeveloperArtwork()
 					customization.markInitialArtworkLoadComplete()
 				}
-				log.info("Developer simulation started")
+				log.info(.app, "developer-simulation-started")
 				return
 			}
 		#endif
@@ -294,8 +294,25 @@ package final class LauncherViewModel {
 		reminders.start()
 		screenshots.start()
 
-		let appVersion = Bundle.main.shortVersionString ?? "Development"
-		log.info("Launcher \(appVersion) started")
+		let system = DiagnosticsEnvironment.System.current(
+			rosetta: lifecycle.state.readiness.intelTranslation.diagnosticName,
+			displays: [])
+		let os = ProcessInfo.processInfo.operatingSystemVersion
+		log.info(
+			.app, "started",
+			[
+				"version": IssueReportURL.appVersion,
+				"build": DiagnosticsEnvironment.App.current().build,
+				"macos": "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)",
+				"chip": system.chip,
+				"memoryGB": system.memoryGB,
+				"rosetta": system.rosetta,
+				"lane": runtimeSelection.selectedLane.rawValue,
+				"server": installation.region.rawValue,
+				"installLocation": installation.installDirectory,
+				"timeZone": TimeZone.current.identifier,
+				"debugLogging": debugLoggingEnabled,
+			])
 	}
 
 	deinit {

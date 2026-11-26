@@ -44,14 +44,14 @@ To open the app data folder, go to **Settings → Storage → Logs and data**. C
 | `launcher.log`, `launcher.previous.log`                                       | Setup, downloads, updates, and errors  |
 | `arknights-yostar.log`, `arknights-gryphline.log`, `arknights-hypergryph.log` | Game start messages for that publisher |
 | `unity.log`                                                                   | Messages from the game itself          |
-| `unity.previous.log`, `arknights-<publisher>.previous.log`                    | The same logs from the session before  |
+| `unity.previous.log`, `unity.previous-2.log`, `arknights-<publisher>.previous.log`, `arknights-<publisher>.previous-2.log` | The same game logs from the two sessions before |
 | `chromium.log`                                                                | The sign-in window                     |
 | `sdklogs/<publisher>/`                                                        | Publisher SDK logs (see below)         |
 
 Logs can contain private paths, URLs, account IDs, or access keys. Do not attach them directly. If a maintainer asks for logs, choose **Help → Save Diagnostics…**. The launcher saves the file to Downloads. The file includes:
 
-- Launcher and game logs, including the session before.
-- `environment.json` with app, system, runtime, game, and settings details.
+- The launcher log and its previous session, and the game runtime and Unity logs from the last three game sessions.
+- `environment.json` with app, system, time zone, runtime, game, and settings details, and the last five launcher failures.
 - The SDK logs for China, China (Bilibili), and Taiwan.
 - The game crash reporter logs from the last 7 days, and the China (Bilibili) platform logs.
 - macOS crash reports from the last 7 days for the launcher, Wine, and the game.

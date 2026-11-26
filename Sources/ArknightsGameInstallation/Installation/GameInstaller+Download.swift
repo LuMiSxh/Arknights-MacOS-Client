@@ -63,9 +63,10 @@ extension GameInstaller {
 			} catch {
 				if attempt == maxAttempts { throw error }
 				await progress(await counter.resetRate())
-				log?.debug(
-					"Retrying \(item.path) (attempt \(attempt + 1)/\(maxAttempts)) after: "
-						+ launcherDiagnosticDescription(for: error)
+				log?.warning(
+					.install, "download-retry",
+					["path": item.path, "attempt": attempt + 1, "maxAttempts": maxAttempts],
+					error: error
 				)
 				let delay = AppConstants.Network.retryBackoffStep * attempt
 				try await Task.sleep(for: delay, tolerance: delay / 10)
@@ -134,9 +135,9 @@ extension GameInstaller {
 		do {
 			try metadataFile.unlink()
 		} catch {
-			log?.error(
-				"Could not remove resume metadata for \(item.path): \(error.localizedDescription)"
-			)
+			log?.warning(
+				.install, "resume-metadata-remove-failed",
+				["path": item.path], error: error)
 		}
 	}
 }

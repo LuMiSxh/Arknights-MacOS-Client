@@ -3,16 +3,16 @@
 import ArknightsCore
 import Foundation
 
-/// Keeps the previous game session's logs for diagnostics.
+/// Keeps the last three game session logs for diagnostics.
 ///
 /// The Wine log is appended to and Unity truncates its log at start, so without a rotation the
-/// logs of a crashed session are gone after the next launch. Each launch moves a non-empty log
-/// to `*.previous.log` and replaces the older copy.
+/// logs of a crashed session are gone after the next launch. Each launch shifts the two older
+/// non-empty logs back and moves the newest to `*.previous.log`.
 enum SessionLogRotation {
 	@concurrent
 	static func rotate(region: GameRegion, paths: AppPaths, log: LauncherLog) async {
 		for file in [paths.runtimeLogFile(for: region), paths.unityLogFile] {
-			log.attempt("Rotating \(file.lastPathComponent)") {
+			log.attempt(.session, "log-rotate") {
 				try rotate(file)
 			}
 		}
@@ -27,10 +27,16 @@ enum SessionLogRotation {
 		}
 		guard size?.intValue ?? 0 > 0 else { return }
 		let previous = AppPaths.previousLogFile(of: file)
+		let previousSecond = AppPaths.previousSecondLogFile(of: file)
 		do {
-			try fileManager.removeItem(at: previous)
+			try fileManager.removeItem(at: previousSecond)
 		} catch  where AppPaths.isMissingPathError(error) {
-			// No earlier session log to replace.
+			// No log from two sessions ago to replace.
+		}
+		do {
+			try fileManager.moveItem(at: previous, to: previousSecond)
+		} catch  where AppPaths.isMissingPathError(error) {
+			// The oldest kept session has no log to shift.
 		}
 		try fileManager.moveItem(at: file, to: previous)
 	}

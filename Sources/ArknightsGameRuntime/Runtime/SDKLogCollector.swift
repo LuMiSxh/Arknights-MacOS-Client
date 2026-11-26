@@ -22,7 +22,7 @@ enum SDKLogCollector {
 		lane: RuntimeLane,
 		log: LauncherLog
 	) async {
-		log.attempt("Collecting SDK logs") {
+		log.attempt(.diagnostics, "sdk-log-collect") {
 			try collect(
 				publisher: publisher,
 				sources: paths.sdkLogDirectories(for: publisher, lane: lane),

@@ -9,6 +9,14 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Debug logging** now also records detailed launcher log entries, not only Wine and graphics logs.
+- **Save Diagnostics** now includes the last three game sessions' logs and a summary of your recent launcher failures.
+- Launcher log lines now show a category, a stable event name, and named fields. The launcher also records settings changes and your time zone.
+
 ## [1.0.2] - 2026-11-25
 
 > [!IMPORTANT]

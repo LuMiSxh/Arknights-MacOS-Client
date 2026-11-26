@@ -51,9 +51,9 @@ extension GameInstaller {
 		do {
 			try excludeFromBackup(installationRoot.url)
 		} catch {
-			log?.error(
-				"Failed to exclude game installation from backups at \(installationRoot.url.path): \(error.localizedDescription)"
-			)
+			log?.warning(
+				.install, "backup-exclusion-failed",
+				["path": installationRoot.url], error: error)
 		}
 		try compatibilityManager.restoreForUpdate(in: installationRoot.url)
 		let previousState: InstalledState?
@@ -61,9 +61,9 @@ extension GameInstaller {
 			previousState = try loadState(from: installationRoot)
 		} catch {
 			previousState = nil
-			log?.error(
-				"Failed to read installed-state file at \(installationRoot.url.path): \(error.localizedDescription)"
-			)
+			log?.warning(
+				.install, "state-read-failed",
+				["path": installationRoot.url], error: error)
 		}
 		let previousFiles = previousState?.files.map {
 			Dictionary($0.map { ($0.path, $0) }, uniquingKeysWith: { existing, _ in existing })
@@ -80,9 +80,12 @@ extension GameInstaller {
 		}
 		let downloadedBytes = try Self.totalByteCount(of: pendingFiles)
 		try requireFreeSpace(forPending: pendingFiles, in: installationRoot)
-		log?.debug(
-			"Manifest has \(manifest.file.count) files; \(pendingFiles.count) need download "
-				+ "(\(downloadedBytes) bytes); repair=\(verifyAllExistingFiles)"
+		log?.info(
+			.install, "manifest-planned",
+			[
+				"files": manifest.file.count, "needed": pendingFiles.count,
+				"bytes": downloadedBytes, "repair": verifyAllExistingFiles,
+			]
 		)
 		let progressBaseline = try DownloadProgressBaseline(
 			manifestFiles: manifest.file,
@@ -132,8 +135,11 @@ extension GameInstaller {
 		let reusedFiles = await reuse.tally.files
 		let reusedBytes = await reuse.tally.bytes
 		log?.debug(
-			"Install finished; \(pendingFiles.count) file(s), \(downloadedBytes) bytes; "
-				+ "reused \(reusedFiles) file(s), \(reusedBytes) bytes from other regions"
+			.install, "finished",
+			[
+				"files": pendingFiles.count, "bytes": downloadedBytes,
+				"reusedFiles": reusedFiles, "reusedBytes": reusedBytes,
+			]
 		)
 		return InstallResult(
 			downloadedFiles: pendingFiles.count,

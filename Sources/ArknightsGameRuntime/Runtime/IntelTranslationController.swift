@@ -62,7 +62,9 @@ package final class IntelTranslationController {
 			updatePreflightFailure(
 				for: IntelTranslationCheck(
 					state: .available, diagnostics: "lane=arm intelTranslation=notRequired"))
-			log.info("Intel translation preflight skipped; lane=arm state=not-required")
+			log.info(
+				.runtime, "preflight-skipped",
+				["lane": RuntimeLane.arm.rawValue, "state": "not-required"])
 			return .available
 		}
 		if !force,
@@ -97,8 +99,8 @@ package final class IntelTranslationController {
 		}
 		updatePreflightFailure(for: check)
 		log.info(
-			"Intel translation preflight; state=\(check.state.diagnosticName) \(check.diagnostics)"
-		)
+			.runtime, "preflight",
+			["state": check.state.diagnosticName, "detail": check.diagnostics])
 	}
 
 	// A stale awaiter must not clear the handle of a newer installation.
@@ -132,7 +134,8 @@ package final class IntelTranslationController {
 			clearInstallation(ownedBy: operationID)
 			let output = Self.boundedDiagnostics(result.output)
 			log.info(
-				"Rosetta installation finished; status=\(result.status) output=\(output)")
+				.runtime, "rosetta-install-finished",
+				["result": result.status, "output": output])
 			guard result.status == 0 else {
 				let message =
 					"Apple’s installer exited with status \(String(result.status)). Use the Terminal command below or check the launcher log for details."
@@ -155,7 +158,7 @@ package final class IntelTranslationController {
 			let message =
 				"Apple’s Rosetta installer could not start. Use the Terminal command below or check the launcher log for details."
 			lifecycle.state.readiness.rosettaInstallation = .failed(message)
-			log.error("Rosetta installation failed: \(error.localizedDescription)")
+			log.error(.runtime, "rosetta-install-failed", error: error)
 			presentRosettaFailure(
 				message: message,
 				diagnostic: error.localizedDescription,
@@ -174,7 +177,9 @@ package final class IntelTranslationController {
 		guard failure.actions.contains(.retry), canInstallRosetta else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		Task { [weak self, log] in
-			log.info("Recovery selected; action=retry operation=rosetta-installation")
+			log.info(
+				.runtime, "recovery-selected",
+				["action": "retry", "operation": "rosetta-installation"])
 			_ = await self?.installRosetta()
 		}
 		return true
@@ -189,7 +194,9 @@ package final class IntelTranslationController {
 		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		Task { [weak self, log] in
-			log.info("Recovery selected; action=retry operation=intel-translation-preflight")
+			log.info(
+				.runtime, "recovery-selected",
+				["action": "retry", "operation": "intel-translation-preflight"])
 			_ = await self?.refreshAvailability(force: true)
 		}
 		return true

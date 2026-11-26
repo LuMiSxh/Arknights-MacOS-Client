@@ -12,7 +12,7 @@ package enum GameShimIO {
 		do {
 			try work()
 		} catch {
-			log?.error("\(context): \(launcherDiagnosticDescription(for: error))")
+			log?.warning(.install, "best-effort-failed", ["context": context], error: error)
 		}
 	}
 

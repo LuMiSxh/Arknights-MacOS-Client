@@ -215,18 +215,23 @@ package final class LauncherLifecycleStore {
 		diagnostic: String
 	) -> Bool {
 		if state.presentation.failure?.id == failure.id {
-			log.error(
-				"Failure not presented; code=\(failure.code?.rawValue ?? "none") operation=\(failure.context.operation.rawValue) diagnostic=\(diagnostic)"
-			)
+			log.warning(
+				.app, "failure-suppressed",
+				[
+					"code": failure.code?.rawValue,
+					"operation": failure.context.operation.rawValue,
+					"detail": diagnostic,
+				])
 			return false
 		}
 		state.presentation.failure = failure
 		log.error(
-			"Failure presented; code=\(failure.code?.rawValue ?? "none") operation=\(failure.context.operation.rawValue) diagnostic=\(diagnostic)"
-		)
-		if let code = failure.code {
-			log.info("Support code shown: \(code.rawValue) (\(failure.context.operation.rawValue))")
-		}
+			.app, "failure-presented",
+			[
+				"code": failure.code?.rawValue,
+				"operation": failure.context.operation.rawValue,
+				"detail": diagnostic,
+			])
 		return true
 	}
 

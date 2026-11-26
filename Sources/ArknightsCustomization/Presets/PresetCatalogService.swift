@@ -46,7 +46,7 @@ package actor PresetCatalogService {
 			redirectValidator: Self.isAllowedRemoteAssetURL
 		)
 
-		log.attempt("Failed to create preset cache directory at \(cacheDirectory.path)") {
+		log.attempt(.customization, "create-preset-cache-directory") {
 			try FileManager.default.createDirectory(
 				at: cacheDirectory,
 				withIntermediateDirectories: true
@@ -136,8 +136,8 @@ package actor PresetCatalogService {
 			)
 		} catch {
 			log.error(
-				"Failed to clear preset catalog caches at \(cacheDirectory.path): \(error.localizedDescription)"
-			)
+				.customization, "cache-clear-failed", ["path": cacheDirectory],
+				error: error)
 			throw error
 		}
 	}
@@ -151,7 +151,8 @@ package actor PresetCatalogService {
 			let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
 			guard size <= maximumBytes else {
 				try FileManager.default.removeItem(at: url)
-				log.error("Removed oversized preset index at \(url.path) (\(size) bytes)")
+				log.warning(
+					.customization, "oversized-index-removed", ["path": url, "bytes": size])
 				return nil
 			}
 			let store = JSONFileStore(maximumBytes: maximumBytes, prettyPrinted: false)
@@ -161,9 +162,7 @@ package actor PresetCatalogService {
 			else { return nil }
 			return file.items
 		} catch {
-			log.error(
-				"Failed to read preset index at \(url.path): \(launcherDiagnosticDescription(for: error))"
-			)
+			log.warning(.customization, "index-read-failed", ["path": url], error: error)
 			return nil
 		}
 	}
@@ -191,9 +190,7 @@ package actor PresetCatalogService {
 			try data.write(to: url, options: .atomic)
 		} catch {
 			guard cacheEpoch == epoch else { return }
-			log.error(
-				"Failed to write preset index at \(url.path): \(launcherDiagnosticDescription(for: error))"
-			)
+			log.warning(.customization, "index-write-failed", ["path": url], error: error)
 		}
 	}
 

@@ -278,6 +278,12 @@ package struct AppPaths: Sendable {
 		log.deletingPathExtension().appendingPathExtension("previous.log")
 	}
 
+	/// Where the log before the previous one moves: `unity.previous.log` becomes
+	/// `unity.previous-2.log`.
+	package static func previousSecondLogFile(of log: URL) -> URL {
+		log.deletingPathExtension().appendingPathExtension("previous-2.log")
+	}
+
 	/// Where the launcher keeps copies of the publisher SDK logs.
 	package func collectedSDKLogDirectory(for publisher: GamePublisher) -> URL {
 		logsDirectory.appending(path: "sdklogs/\(publisher.rawValue)", directoryHint: .isDirectory)

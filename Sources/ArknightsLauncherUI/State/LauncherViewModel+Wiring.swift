@@ -29,6 +29,9 @@ extension LauncherViewModel {
 		settings.onAnnouncementCheckRequested = { [weak self] in
 			self?.actions.checkAnnouncements()
 		}
+		settings.onDebugLoggingChanged = { [weak self] enabled in
+			self?.log.setDebugEnabled(enabled)
+		}
 		settings.onDynamicThemeChanged = { [weak self] in
 			self?.customization.updateThemeColor()
 		}

@@ -282,6 +282,10 @@ package enum AppConstants {
 		static let maximumMessageBytes = 16 * 1_024
 		static let truncationMarker = " [trunc]"
 		package static let wineLogTailBytes = 2_000
+		/// How much of the runtime log a failed Wine setup step reads back for its `err:` lines.
+		package static let wineStepTailBytes = 64 * 1_024
+		/// How many trailing `err:` lines a failed setup step keeps.
+		package static let wineErrorLines = 10
 		package static let sdkLogMaximumBytes = 2 * 1_024 * 1_024
 		package static let crashReportSearchWindow: TimeInterval = 120
 	}

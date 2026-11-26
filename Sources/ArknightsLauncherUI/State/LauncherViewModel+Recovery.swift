@@ -179,6 +179,7 @@ extension LauncherViewModel {
 	}
 
 	private func logRecovery(action: RecoveryAction, result: String) {
-		log.info("Recovery selected; action=\(action.rawValue) result=\(result)")
+		log.info(
+			.app, "recovery-selected", ["action": action.rawValue, "result": result])
 	}
 }

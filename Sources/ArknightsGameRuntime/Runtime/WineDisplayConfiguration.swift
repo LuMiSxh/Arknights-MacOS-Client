@@ -55,7 +55,7 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 		do {
 			contents = try String(contentsOf: registryURL, encoding: .utf8)
 		} catch {
-			log?.error("Could not read the prefix user.reg: \(error.localizedDescription)")
+			log?.error(.prefix, "user-reg-read-failed", error: error)
 			return nil
 		}
 

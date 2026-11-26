@@ -241,7 +241,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 			if let observerID { self.lifecycle.removeActivityObserver(observerID) }
 			self.postponedActivityObserverID = nil
 			installHandler()
-			self.log.info("Resuming postponed launcher update installation")
+			self.log.info(.update, "postponed-install-resumed")
 		}
 		postponedActivityObserverID = observerID
 		return true
@@ -263,7 +263,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		// Sparkle calls didAbort before didFinish for a probe that ends in an
 		// error. Keep the completion pending until the update cycle finishes.
 		if !Self.isNoUpdateError(error) {
-			log.error("Launcher update aborted: \(error)")
+			log.error(.update, "aborted", error: error)
 		}
 		if recordProbeOutcome(Self.probeOutcome(for: error)) { return }
 		finishLauncherUpdate()
@@ -274,11 +274,11 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	/// return false and keep their inline message.
 	private func reportUpdateFailure(_ error: any Error) -> Bool {
 		if Self.isBusyError(error) {
-			log.info("Launcher update deferred; another operation holds the launcher")
+			log.info(.update, "deferred")
 			checkForUpdatesWhenIdle()
 			return true
 		}
-		log.error("Launcher update failed: \(error)")
+		log.error(.update, "failed", error: error)
 		guard installationID != nil || isUserInitiatedCheck else { return false }
 		// Keep the failure the user already sees. A second one would replace it.
 		guard lifecycle.state.presentation.failure == nil else { return true }
@@ -287,7 +287,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		lifecycle.presentFailure(
 			ContextualLauncherError(
 				userMessage: LauncherUpdateUserDriver.errorDetail,
-				diagnosticDescription: String(describing: error),
+				diagnosticDescription: logFields(for: error).id,
 				supportCode: .updateFailed
 			),
 			id: failureID,
@@ -307,7 +307,9 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 			lifecycle.consumeFailure(id: id) != nil
 		else { return false }
 		updateFailureID = nil
-		log.info("Recovery selected; action=retry operation=launcher-update")
+		log.info(
+			.update, "recovery-selected",
+			["action": "retry", "operation": "launcher-update"])
 		checkForUpdates()
 		return true
 	}

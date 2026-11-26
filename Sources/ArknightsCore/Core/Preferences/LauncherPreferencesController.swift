@@ -9,19 +9,24 @@ package final class LauncherPreferencesController {
 	private let log: LauncherLog?
 	package var launchOptions: GameLaunchOptions = .default {
 		didSet {
-			persist {
+			persist(
+				Key.gameLaunchOptions, from: Self.launchOptionsSummary(oldValue),
+				to: Self.launchOptionsSummary(launchOptions)
+			) {
 				do {
 					try store.setLaunchOptions(launchOptions)
 				} catch {
-					log?.error(
-						"Could not save game launch options: \(error.localizedDescription)")
+					log?.warning(.settings, "launch-options-save-failed", error: error)
 				}
 			}
 		}
 	}
 	package var automaticallyChecksLauncherUpdates = Key.automaticLauncherUpdates.defaultValue {
 		didSet {
-			persist(automaticallyChecksLauncherUpdates, for: Key.automaticLauncherUpdates) {
+			persist(
+				automaticallyChecksLauncherUpdates, from: oldValue,
+				for: Key.automaticLauncherUpdates
+			) {
 				if !isReloading, automaticallyChecksLauncherUpdates {
 					onLauncherUpdateCheckRequested?()
 				}
@@ -30,7 +35,7 @@ package final class LauncherPreferencesController {
 	}
 	package var automaticallyChecksGameUpdates = Key.automaticGameUpdates.defaultValue {
 		didSet {
-			persist(automaticallyChecksGameUpdates, for: Key.automaticGameUpdates) {
+			persist(automaticallyChecksGameUpdates, from: oldValue, for: Key.automaticGameUpdates) {
 				if !isReloading, automaticallyChecksGameUpdates {
 					onGameUpdateCheckRequested?()
 				}
@@ -39,62 +44,80 @@ package final class LauncherPreferencesController {
 	}
 	package var announcementsEnabled = Key.announcementsEnabled.defaultValue {
 		didSet {
-			persist(announcementsEnabled, for: Key.announcementsEnabled) {
+			persist(announcementsEnabled, from: oldValue, for: Key.announcementsEnabled) {
 				if !isReloading, announcementsEnabled { onAnnouncementCheckRequested?() }
 			}
 		}
 	}
 	package var showsServerResetCountdown = Key.showsServerResetCountdown.defaultValue {
-		didSet { persist(showsServerResetCountdown, for: Key.showsServerResetCountdown) }
+		didSet {
+			persist(showsServerResetCountdown, from: oldValue, for: Key.showsServerResetCountdown)
+		}
 	}
 	package var showsGameVersion = Key.showsGameVersion.defaultValue {
-		didSet { persist(showsGameVersion, for: Key.showsGameVersion) }
+		didSet { persist(showsGameVersion, from: oldValue, for: Key.showsGameVersion) }
 	}
 	package var showsBranding = Key.showsBranding.defaultValue {
-		didSet { persist(showsBranding, for: Key.showsBranding) }
+		didSet { persist(showsBranding, from: oldValue, for: Key.showsBranding) }
 	}
 	package var playsLauncherMusic = Key.playsLauncherMusic.defaultValue {
-		didSet { persist(playsLauncherMusic, for: Key.playsLauncherMusic) }
+		didSet { persist(playsLauncherMusic, from: oldValue, for: Key.playsLauncherMusic) }
 	}
 	package var launcherMusicURL = Key.launcherMusicURL.defaultValue {
-		didSet { persist(launcherMusicURL, for: Key.launcherMusicURL) }
+		didSet { persist(launcherMusicURL, from: oldValue, for: Key.launcherMusicURL) }
 	}
 	package var showsPlayingMusic = Key.showsPlayingMusic.defaultValue {
-		didSet { persist(showsPlayingMusic, for: Key.showsPlayingMusic) }
+		didSet { persist(showsPlayingMusic, from: oldValue, for: Key.showsPlayingMusic) }
 	}
 	package var showsDiscordPresence = Key.showsDiscordPresence.defaultValue {
 		didSet {
-			persist(showsDiscordPresence, for: Key.showsDiscordPresence) {
+			persist(showsDiscordPresence, from: oldValue, for: Key.showsDiscordPresence) {
 				onDiscordPresenceChanged?()
 			}
 		}
 	}
 	package var launcherMusicVolume = Key.launcherMusicVolume.defaultValue {
-		didSet { persist(launcherMusicVolume, for: Key.launcherMusicVolume) }
+		didSet { persist(launcherMusicVolume, from: oldValue, for: Key.launcherMusicVolume) }
 	}
 	package var launcherMusicMuted = Key.launcherMusicMuted.defaultValue {
-		didSet { persist(launcherMusicMuted, for: Key.launcherMusicMuted) }
+		didSet { persist(launcherMusicMuted, from: oldValue, for: Key.launcherMusicMuted) }
 	}
 	package var usesDynamicTheme = Key.usesDynamicTheme.defaultValue {
 		didSet {
-			persist(usesDynamicTheme, for: Key.usesDynamicTheme) {
+			persist(usesDynamicTheme, from: oldValue, for: Key.usesDynamicTheme) {
 				onDynamicThemeChanged?()
 			}
 		}
 	}
 	package var launcherAppearance: LauncherAppearance = .system {
-		didSet { persist { store.setLauncherAppearance(launcherAppearance) } }
+		didSet {
+			persist(
+				Key.launcherAppearance, from: oldValue.rawValue, to: launcherAppearance.rawValue
+			) {
+				store.setLauncherAppearance(launcherAppearance)
+			}
+		}
 	}
 	package var homeTheme: HomeTheme = .automatic {
-		didSet { persist { store.setHomeTheme(homeTheme) } }
+		didSet {
+			persist(Key.homeTheme, from: oldValue.rawValue, to: homeTheme.rawValue) {
+				store.setHomeTheme(homeTheme)
+			}
+		}
 	}
 	package var brandingTheme: HomeTheme = .automatic {
-		didSet { persist { store.setBrandingTheme(brandingTheme) } }
+		didSet {
+			persist(Key.brandingTheme, from: oldValue.rawValue, to: brandingTheme.rawValue) {
+				store.setBrandingTheme(brandingTheme)
+			}
+		}
 	}
 
 	package var resetReminderTiming: ResetReminderTiming = .off {
 		didSet {
-			persist {
+			persist(
+				Key.resetReminderTiming, from: oldValue.rawValue, to: resetReminderTiming.rawValue
+			) {
 				store.setResetReminderTiming(resetReminderTiming)
 				onResetReminderChanged?()
 			}
@@ -103,29 +126,44 @@ package final class LauncherPreferencesController {
 
 	package var resetReminderRegions: [GameRegion] = [] {
 		didSet {
-			persist {
+			persist(
+				Key.resetReminderRegions, from: Self.listSummary(oldValue),
+				to: Self.listSummary(resetReminderRegions)
+			) {
 				store.setResetReminderRegions(resetReminderRegions)
 				onResetReminderChanged?()
 			}
 		}
 	}
 	package var usesHardwareCursor = Key.usesHardwareCursor.defaultValue {
-		didSet { persist(usesHardwareCursor, for: Key.usesHardwareCursor) }
+		didSet { persist(usesHardwareCursor, from: oldValue, for: Key.usesHardwareCursor) }
 	}
 	package var dismissedInGameResolutionNote = Key.dismissedInGameResolutionNote.defaultValue {
-		didSet { persist(dismissedInGameResolutionNote, for: Key.dismissedInGameResolutionNote) }
+		didSet {
+			persist(
+				dismissedInGameResolutionNote, from: oldValue,
+				for: Key.dismissedInGameResolutionNote)
+		}
 	}
 	package var batterySaverEnabled = Key.batterySaverEnabled.defaultValue {
-		didSet { persist(batterySaverEnabled, for: Key.batterySaverEnabled) }
+		didSet { persist(batterySaverEnabled, from: oldValue, for: Key.batterySaverEnabled) }
 	}
 	package var debugLoggingEnabled = Key.debugLoggingEnabled.defaultValue {
-		didSet { persist(debugLoggingEnabled, for: Key.debugLoggingEnabled) }
+		didSet {
+			persist(debugLoggingEnabled, from: oldValue, for: Key.debugLoggingEnabled) {
+				onDebugLoggingChanged?(debugLoggingEnabled)
+			}
+		}
 	}
 	/// The runtime patches the user turned off. Each is stored as its own switch.
 	package var disabledRuntimePatches: Set<RuntimePatch> = [] {
 		didSet {
 			persist {
 				for patch in oldValue.symmetricDifference(disabledRuntimePatches) {
+					logChange(
+						Key.runtimePatchEnabled(patch).name,
+						from: !oldValue.contains(patch),
+						to: !disabledRuntimePatches.contains(patch))
 					store.set(
 						!disabledRuntimePatches.contains(patch), for: Key.runtimePatchEnabled(patch)
 					)
@@ -134,23 +172,39 @@ package final class LauncherPreferencesController {
 		}
 	}
 	package var batterySaverFrameRateLimit: GameFrameRateLimit = .fps30 {
-		didSet { persist { store.setBatterySaverFrameRateLimit(batterySaverFrameRateLimit) } }
+		didSet {
+			persist(
+				Key.batterySaverFrameRateLimit, from: oldValue.rawValue,
+				to: batterySaverFrameRateLimit.rawValue
+			) {
+				store.setBatterySaverFrameRateLimit(batterySaverFrameRateLimit)
+			}
+		}
 	}
 	package var screenshotShortcut: ScreenshotShortcut = .off {
 		didSet {
-			persist {
+			persist(
+				Key.screenshotShortcut, from: Self.shortcutKind(oldValue),
+				to: Self.shortcutKind(screenshotShortcut)
+			) {
 				store.setScreenshotShortcut(screenshotShortcut)
 				onScreenshotShortcutChanged?(oldValue)
 			}
 		}
 	}
 	package var screenshotNotifies = Key.screenshotNotifies.defaultValue {
-		didSet { persist(screenshotNotifies, for: Key.screenshotNotifies) }
+		didSet { persist(screenshotNotifies, from: oldValue, for: Key.screenshotNotifies) }
 	}
 	/// The folder the user chose for screenshots, or `nil` for the default folder.
 	/// The folder the user chose for screenshots, or `nil` for the default folder.
 	package var screenshotDirectory: URL? {
-		didSet { persist { store.setScreenshotDirectory(screenshotDirectory) } }
+		didSet {
+			persist(
+				Key.screenshotDirectory, from: oldValue, to: screenshotDirectory, isPrivate: true
+			) {
+				store.setScreenshotDirectory(screenshotDirectory)
+			}
+		}
 	}
 
 	@ObservationIgnored package var onLauncherUpdateCheckRequested: (() -> Void)?
@@ -159,6 +213,8 @@ package final class LauncherPreferencesController {
 	@ObservationIgnored package var onDynamicThemeChanged: (() -> Void)?
 
 	@ObservationIgnored package var onDiscordPresenceChanged: (() -> Void)?
+	/// Called with the new value after the user turns debug logging on or off.
+	@ObservationIgnored package var onDebugLoggingChanged: ((Bool) -> Void)?
 	@ObservationIgnored package var onResetReminderChanged: (() -> Void)?
 	/// Called with the previous value after the shortcut changes, including a reset to defaults.
 	@ObservationIgnored package var onScreenshotShortcutChanged: ((ScreenshotShortcut) -> Void)?
@@ -185,6 +241,7 @@ package final class LauncherPreferencesController {
 		store.removeResettablePreferences()
 		reload()
 		isReloading = false
+		log?.info(.settings, "reset-to-defaults")
 		return true
 	}
 
@@ -222,14 +279,27 @@ package final class LauncherPreferencesController {
 		resetReminderRegions = store.resetReminderRegions()
 	}
 
-	private func persist<Value: Sendable>(
-		_ value: Value,
-		for key: LauncherPreferencesStore.ScalarKey<Value>,
+	private func persist<Value: Sendable & LogValue>(
+		_ value: Value, from old: Value, for key: LauncherPreferencesStore.ScalarKey<Value>,
 		then effect: () -> Void = {}
 	) {
 		persist {
+			logChange(
+				key.name, from: old, to: value,
+				isPrivate: Self.privateKeys.contains(key.name))
 			store.set(value, for: key)
 			effect()
+		}
+	}
+
+	/// Persists one setting and logs the user-made change as `from`/`to`.
+	private func persist(
+		_ key: String, from old: any LogValue, to new: any LogValue,
+		isPrivate: Bool = false, _ write: () -> Void
+	) {
+		persist {
+			logChange(key, from: old, to: new, isPrivate: isPrivate)
+			write()
 		}
 	}
 
@@ -238,5 +308,61 @@ package final class LauncherPreferencesController {
 	private func persist(_ write: () -> Void) {
 		guard isLoaded else { return }
 		write()
+	}
+
+	/// Logs each user-made change once. Init and reset reloads stay silent; a reset logs one
+	/// `reset-to-defaults` line instead.
+	private func logChange(
+		_ key: String, from old: any LogValue, to new: any LogValue, isPrivate: Bool = false
+	) {
+		guard !isReloading else { return }
+		let oldText = old.logValue
+		let newText = new.logValue
+		guard oldText != newText else { return }
+		log?.info(
+			.settings, "changed",
+			[
+				"key": key,
+				"from": isPrivate ? "<set>" : oldText,
+				"to": isPrivate ? "<set>" : newText,
+			])
+	}
+
+	/// Paths and URLs that identify the user or their files log as set, never as values.
+	private static let privateKeys: Set<String> = [
+		Key.launcherMusicURL.name, Key.screenshotDirectory,
+	]
+
+	/// A stable summary without the target display's name or UUID, which identify the hardware.
+	private static func launchOptionsSummary(_ options: GameLaunchOptions) -> String {
+		[
+			"displayMode=\(options.displayMode.rawValue)",
+			"resolution=\(options.resolution.storageValue)",
+			"fullscreenResolution=\(options.fullscreenResolution.storageValue)",
+			"windowSize=\(options.windowSize.storageValue)",
+			"usesGameSettings=\(options.usesGameSettings)",
+			"renderingMode=\(options.renderingMode.rawValue)",
+			"metalPerformanceHUD=\(options.usesMetalPerformanceHUD)",
+			"gameMode=\(options.usesGameMode)",
+			"synchronization=\(options.synchronizationMode.rawValue)",
+			"frameRateLimit=\(options.frameRateLimit.rawValue)",
+			"display=\(options.display == nil ? "primary" : "set")",
+		].joined(separator: ",")
+	}
+
+	private static func listSummary<Element: RawRepresentable>(
+		_ values: some Sequence<Element>
+	) -> String where Element.RawValue == String {
+		let names = values.map(\.rawValue).sorted()
+		return names.isEmpty ? "none" : names.joined(separator: ",")
+	}
+
+	/// The shortcut kind only; a custom shortcut's label is user text.
+	private static func shortcutKind(_ shortcut: ScreenshotShortcut) -> String {
+		switch shortcut {
+		case .off: "off"
+		case .standard: "standard"
+		case .custom: "custom"
+		}
 	}
 }

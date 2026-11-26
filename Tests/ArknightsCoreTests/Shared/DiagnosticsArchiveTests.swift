@@ -111,7 +111,7 @@ struct DiagnosticsArchiveTests {
 			app: .init(version: "1.0.0", build: "1", location: "applications"),
 			system: .init(
 				macOS: "Version 15", chip: "Apple M1", memoryGB: 16, rosetta: "available",
-				lowPowerMode: false, displays: []),
+				lowPowerMode: false, displays: [], timeZone: "Asia/Tokyo"),
 			runtime: .init(
 				selectedLane: "arm", name: nil, installedVersions: [:],
 				metalFXSpatialUpscaling: "unknown", pinnedPrefixRevision: nil, prefixMigrations: nil
@@ -121,12 +121,19 @@ struct DiagnosticsArchiveTests {
 				updateAvailable: false, installLocation: "managed",
 				volume: .init(freeBytes: nil, fileSystem: nil), installState: nil,
 				installedServers: []),
-			settings: .init(options: options, usesHardwareCursor: true))
+			settings: .init(options: options, usesHardwareCursor: true),
+			recentFailures: [
+				.init(
+					time: "2026-11-26T09:41:00.123Z", code: "install-failed",
+					operation: "install")
+			])
 
 		let json = try environment.json()
 
 		#expect(json.contains("\"schema\" : 1"))
 		#expect(json.contains("\"fullscreenResolution\" : \"1600x900\""))
+		#expect(json.contains("\"timeZone\" : \"Asia/Tokyo\""))
+		#expect(json.contains("\"code\" : \"install-failed\""))
 	}
 
 	private func write(_ text: String, to url: URL, modified: Date) throws {

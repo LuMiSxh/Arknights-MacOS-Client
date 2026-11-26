@@ -87,8 +87,8 @@ extension LayoutMigrator {
 		// existing file and leave the Custom copy in place instead of blocking every launch.
 		guard move.kind != .artwork else {
 			log?.info(
-				"Layout migration kept the existing artwork at \(move.destination.path); "
-					+ "the legacy copy stays at \(move.source.path)")
+				.storage, "layout-artwork-kept",
+				["destination": move.destination, "source": move.source])
 			return false
 		}
 		throw LayoutMigrationError.conflictingDirectories(move.source, move.destination)

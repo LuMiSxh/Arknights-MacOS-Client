@@ -7,7 +7,7 @@ import Foundation
 extension GameSessionController {
 	package func refreshRuntime() {
 		if let diagnostic = paths.runtimeLaneDiagnostic {
-			log.error(diagnostic)
+			log.info(.runtime, "lane-diagnostic", ["detail": diagnostic])
 		}
 		do {
 			let runtime = try discoverRuntime()
@@ -23,11 +23,15 @@ extension GameSessionController {
 			runtimeName = nil
 			metalFXSpatialUpscalingSupported = false
 			installedRuntime = nil
-			let message = "Runtime discovery failed: \(error.localizedDescription)"
+			var path: URL?
+			if case .missingRuntime(let url)? = error as? WineRuntimeDiscoveryError {
+				path = url
+			}
+			let fields: LogFields = ["lane": currentRuntimeLane().rawValue, "path": path]
 			if WineRuntimeDiscoveryError.isNotInstalled(error) {
-				log.info(message)
+				log.warning(.runtime, "discovery-failed", fields, error: error)
 			} else {
-				log.error(message)
+				log.error(.runtime, "discovery-failed", fields, error: error)
 			}
 		}
 	}
@@ -40,7 +44,7 @@ extension GameSessionController {
 		do {
 			try RuntimeMigrationStore().reset(prefixDirectory: prefixDirectory)
 			lifecycle.setStatus(.winePrefixResetScheduled)
-			log.info("Wine prefix migration state was reset on request")
+			log.info(.prefix, "migration-reset")
 		} catch {
 			presentRuntimeMaintenanceFailure(
 				error,
@@ -70,7 +74,7 @@ extension GameSessionController {
 				try await Self.removeWinePrefix(at: prefixDirectory)
 				lifecycle.end(lease)
 				lifecycle.setStatus(.winePrefixDeleted)
-				log.info("Wine prefix deleted on request")
+				log.info(.prefix, "deleted")
 			} catch {
 				lifecycle.end(lease)
 				presentRuntimeMaintenanceFailure(

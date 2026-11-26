@@ -395,14 +395,18 @@ The launch directs Wine, Unity, and Chromium diagnostics to the central macOS lo
   `arknights-gryphline.log` (Taiwan), or `arknights-hypergryph.log` (Hypergryph).
 - `L:` maps that directory. Unity receives `-logFile L:\unity.log`. The Vuplex compatibility component
   adds `--log-file=L:\chromium.log`.
-- Each launch moves a non-empty Wine log and `unity.log` to `*.previous.log`, so diagnostics keep the last session.
-- After a game session and on **Reveal logs**, the launcher copies the SDK logs for China, China (Bilibili), and Taiwan to `logs/sdklogs/<publisher>`. The SDK writes them under the prefix user's profile, which is the macOS account name or `crossover`, so the launcher checks every profile and keeps the newest copy of each file. Each file keeps only its last 2 MiB. Yostar regions have no SDK logs. **Save Diagnostics** refreshes them.
+- Each launch shifts a non-empty Wine log and `unity.log` through `*.previous.log` and
+  `*.previous-2.log`, so diagnostics keep the last three sessions. `launcher.log` rotates to
+  `launcher.previous.log` at 4 MiB.
+- After a game session and on **Show Logs**, the launcher copies the SDK logs for China, China (Bilibili), and Taiwan to `logs/sdklogs/<publisher>`. The SDK writes them under the prefix user's profile, which is the macOS account name or `crossover`, so the launcher checks every profile and keeps the newest copy of each file. Each file keeps only its last 2 MiB. Yostar regions have no SDK logs. **Save Diagnostics** refreshes them.
 - **Save Diagnostics** also reads the game folder of every server, managed or located. It adds recent `.log` and `.txt` files from `CrashSightLog/` and, for China (Bilibili), from `BLPlatform64/` and `BLPlatform64/BLWebBrowser/`. It skips any listed folder that is a symbolic link or sits below one. It adds `.ips` crash reports of the last 7 days from `~/Library/Logs/DiagnosticReports`. It keeps a report only when its `procPath`, read from the first 8 KiB, lies inside the app bundle, the app support folder, or a game folder. Limits live in `AppConstants.Diagnostics`. The archive never includes databases, `mmkv/`, `HGEventLog*`, or save data. A log that vanishes while the archive is written is skipped, not fatal. `environment.json` holds no paths and passes through the same redaction.
-- `environment.json` (schema 1) holds app, system, runtime, game, and settings facts from local state. It makes no network call.
+- `environment.json` (schema 1) holds app, system, runtime, game, and settings facts from local state,
+  including the system time zone and the last five presented failures. It makes no network call.
 - [Storage](../../help/storage.md#logs) lists the macOS paths.
 
-Launch diagnostics include the session ID, region, display, frame rate limit, and synchronization options, and whether
-graphics diagnostics were enabled. An unexpected exit adds the process status, the termination reason,
-the latest `Arknights-*.ips` crash report when available, and a bounded tail of the publisher log.
+Launch diagnostics include the session ID, server, lane, display mode and resolution, frame rate limit,
+synchronization options, battery saver, and whether graphics diagnostics were enabled. An unexpected exit
+adds the process status, the termination reason, the latest `Arknights-*.ips` crash report when available,
+and a bounded tail of the publisher log. [Logging](../logging.md) describes the line format, levels, and fields.
 
 Keep diagnostics bounded. Never log credentials, page contents, or arbitrary remote response bodies.

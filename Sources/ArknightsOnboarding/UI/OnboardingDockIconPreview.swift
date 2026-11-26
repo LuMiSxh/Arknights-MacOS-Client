@@ -60,9 +60,7 @@ struct OnboardingDockIconPreview: View {
 		do {
 			return try Data(contentsOf: url)
 		} catch {
-			log.error(
-				"Failed to read custom game icon at \(url.path): \(error.localizedDescription)"
-			)
+			log.warning(.customization, "icon-read-failed", ["path": url], error: error)
 			return nil
 		}
 	}

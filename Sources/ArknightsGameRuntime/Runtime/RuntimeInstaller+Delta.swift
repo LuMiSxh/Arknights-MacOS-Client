@@ -39,7 +39,8 @@ extension RuntimeInstaller {
 		} catch {
 			try Task.checkCancellation()
 			log?.error(
-				"Runtime delta from \(installed) failed, installing the full archive: \(error)")
+				.runtime, "delta-failed", ["from": installed, "version": pin.version],
+				error: error)
 			discardDeltaStaging(in: staging)
 			return nil
 		}
@@ -47,7 +48,7 @@ extension RuntimeInstaller {
 
 	/// Removes the trees of a delta attempt that will not be installed.
 	func discardDeltaStaging(in staging: URL) {
-		bestEffort("Could not discard the failed runtime delta staging") {
+		bestEffort("delta-staging-discard") {
 			for url in [Self.extractedDelta(in: staging), Self.deltaTarget(in: staging)]
 			where FileManager.default.fileExists(atPath: url.path) {
 				try FileManager.default.removeItem(at: url)

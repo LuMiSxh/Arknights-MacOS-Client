@@ -74,7 +74,7 @@ extension InstallationController {
 		let requestedRegion = region
 		guard let lease = lifecycle.begin(.maintaining(.uninstalling)) else { return }
 		lifecycle.setStatus(.movingToTrash)
-		log.info("Game uninstall requested")
+		log.info(.install, "uninstall-requested")
 		Task { [weak self, lifecycle = self.lifecycle, installer = self.installer] in
 			defer { lifecycle.end(lease) }
 			let outcome: UninstallOutcome
@@ -117,8 +117,8 @@ extension InstallationController {
 		guard failure.actions.contains(.retry), canUninstallGame else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		log.info(
-			"Recovery selected; action=retry operation=uninstall region=\(region.rawValue)"
-		)
+			.install, "recovery-selected",
+			["action": "retry", "operation": "uninstall", "server": region.rawValue])
 		uninstallGame()
 		return true
 	}

@@ -224,7 +224,7 @@ package struct LauncherPreferencesStore {
 		do {
 			return try JSONDecoder().decode(GameLaunchOptions.self, from: data)
 		} catch {
-			log?.error("Could not read game launch options: \(error.localizedDescription)")
+			log?.warning(.settings, "launch-options-read-failed", error: error)
 			return .default
 		}
 	}

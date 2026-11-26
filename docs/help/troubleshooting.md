@@ -113,4 +113,4 @@ Keep the defaults on unless you know what a patch does. The game may break or be
 
 Use **Debug logging** when a maintainer asks for detailed logs. Turn it on in **Settings → Help → Troubleshooting**.
 
-The next game start writes detailed Wine and graphics logs. Logs grow quickly. Turn **Debug logging** off when you are done.
+The next game start writes detailed Wine and graphics logs. The launcher log also records detailed steps. Logs grow quickly. Turn **Debug logging** off when you are done.

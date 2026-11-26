@@ -1,21 +1,29 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import Foundation
+import Synchronization
 
 /// Appends to a size-capped file the launcher and Wine layers share, so "Report a Problem"
 /// and Settings → Logs always have one place to find recent diagnostic history.
 ///
 /// Logging never suspends the caller: entries are timestamped immediately and written in call
-/// order on one serial queue. Use `flush()` when a caller needs earlier entries on disk.
+/// order on one serial queue. Use `prepare()` when a caller needs earlier entries on disk.
 package final class LauncherLog: Sendable {
 	fileprivate enum Level: String {
 		case debug = "DEBUG"
 		case info = "INFO"
+		case warning = "WARN"
 		case error = "ERROR"
+
+		var padded: String {
+			rawValue.padding(toLength: 5, withPad: " ", startingAt: 0)
+		}
 	}
 
 	private let queue = DispatchQueue(label: "com.lumisxh.arknights-client.log", qos: .utility)
 	private let writer: LauncherLogWriter
+	private let debugEnabled = Mutex(false)
+	private static let timestampStyle = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
 
 	/// Room for the timestamp, level, and newline around a message.
 	private static let lineOverheadBytes = 128
@@ -33,25 +41,50 @@ package final class LauncherLog: Sendable {
 		)
 	}
 
-	package func debug(_ message: String) {
-		enqueue(.debug, message)
+	package var isDebugEnabled: Bool {
+		debugEnabled.withLock { $0 }
 	}
 
-	package func info(_ message: String) {
-		enqueue(.info, message)
+	package func setDebugEnabled(_ enabled: Bool) {
+		debugEnabled.withLock { $0 = enabled }
 	}
 
-	package func error(_ message: String) {
-		enqueue(.error, message)
+	package func debug(
+		_ category: LogCategory, _ event: StaticString,
+		_ fields: @autoclosure () -> LogFields = [:]
+	) {
+		guard isDebugEnabled else { return }
+		enqueue(.debug, category: category, event: event, fields: fields())
 	}
 
-	/// Runs best-effort work and logs a failure with `context`; the caller continues either way.
-	/// Use it only when the error is neither handled nor rethrown.
-	package func attempt(_ context: String, _ work: () throws -> Void) {
+	package func info(
+		_ category: LogCategory, _ event: StaticString, _ fields: LogFields = [:]
+	) {
+		enqueue(.info, category: category, event: event, fields: fields)
+	}
+
+	package func warning(
+		_ category: LogCategory, _ event: StaticString, _ fields: LogFields = [:],
+		error: (any Error)? = nil
+	) {
+		enqueue(.warning, category: category, event: event, fields: fields, error: error)
+	}
+
+	package func error(
+		_ category: LogCategory, _ event: StaticString, _ fields: LogFields = [:],
+		error: (any Error)? = nil
+	) {
+		enqueue(.error, category: category, event: event, fields: fields, error: error)
+	}
+
+	/// Runs best-effort work and logs a WARN entry with the error on failure.
+	package func attempt(
+		_ category: LogCategory, _ event: StaticString, _ work: () throws -> Void
+	) {
 		do {
 			try work()
 		} catch {
-			self.error("\(context): \(launcherDiagnosticDescription(for: error))")
+			warning(category, event, error: error)
 		}
 	}
 
@@ -60,9 +93,24 @@ package final class LauncherLog: Sendable {
 		await perform { $0.prepare() }
 	}
 
-	private func enqueue(_ level: Level, _ message: String) {
-		let date = Date()
-		queue.async { [writer] in writer.write(level, message, at: date) }
+	private func enqueue(
+		_ level: Level, category: LogCategory, event: StaticString, fields: LogFields,
+		error: (any Error)? = nil
+	) {
+		var body = "\(category.rawValue) \(event)\(fields.rendered)"
+		if let error {
+			let rendered = logFields(for: error)
+			body += " error=\(logFieldValue(rendered.id))"
+			if let detail = rendered.detail {
+				body += " detail=\(logFieldValue(detail))"
+			}
+		}
+		write(level: level, body: body)
+	}
+
+	private func write(level: Level, body: String) {
+		let line = "\(Self.timestampStyle.format(Date())) \(level.padded) \(body)"
+		queue.async { [writer] in writer.write(line) }
 	}
 
 	private func perform(_ work: @escaping @Sendable (LauncherLogWriter) -> Void) async {
@@ -84,7 +132,6 @@ package final class LauncherLog: Sendable {
 private final class LauncherLogWriter: @unchecked Sendable {
 	private let fileURL: URL
 	private let fileManager = FileManager.default
-	private let timestampStyle = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
 	private let maximumFileSize: Int
 	private let maximumMessageBytes: Int
 	private var descriptor: Int32 = -1
@@ -119,15 +166,13 @@ private final class LauncherLogWriter: @unchecked Sendable {
 		}
 	}
 
-	func write(_ level: LauncherLog.Level, _ message: String, at date: Date) {
+	func write(_ line: String) {
 		var flattened = String.UnicodeScalarView()
-		for scalar in message.unicodeScalars {
+		for scalar in line.unicodeScalars {
 			flattened.append(scalar.properties.generalCategory == .control ? " " : scalar)
 		}
 		let sanitized = boundedMessage(String(flattened))
-		let timestamp = timestampStyle.format(date)
-		let line = "\(timestamp) [\(level.rawValue)] \(sanitized)\n"
-		let bytes = Array(line.utf8)
+		let bytes = Array((sanitized + "\n").utf8)
 		do {
 			do {
 				try prepareFile(forAppending: bytes.count)

@@ -159,6 +159,19 @@ enum BackgroundMusicFailure: Sendable {
 	case unreachable
 }
 
+extension BackgroundMusicFailure: LogValue {
+	nonisolated package var logValue: String {
+		switch self {
+		case .unplayableTrack: "unplayable-track"
+		case .unreachable: "unreachable"
+		}
+	}
+}
+
+extension YouTubePlayer.PlaybackState: LogValue {
+	nonisolated package var logValue: String { description.lowercased() }
+}
+
 /// The value types the background-music controller passes between its track, playback, and
 /// fade paths.
 

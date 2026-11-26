@@ -101,7 +101,7 @@ extension WineRuntime {
 
 	func stopSynchronously(prefixDirectory: URL, log: LauncherLog? = nil) {
 		guard let wineserverURL else {
-			log?.error("wineserver is missing while terminating the app")
+			log?.error(.session, "wineserver-missing")
 			return
 		}
 		let process = Process()
@@ -118,9 +118,7 @@ extension WineRuntime {
 		do {
 			try process.run()
 		} catch {
-			log?.error(
-				"Failed to start wineserver while terminating the app: \(error.localizedDescription)"
-			)
+			log?.error(.session, "wineserver-start-failed", error: error)
 			return
 		}
 		guard
@@ -130,13 +128,11 @@ extension WineRuntime {
 		else {
 			if process.terminationStatus != 0 {
 				let status = process.terminationStatus
-				log?.error(
-					"wineserver exited with status \(status) while terminating the app"
-				)
+				log?.warning(.session, "wineserver-exit", ["exitStatus": status])
 			}
 			return
 		}
-		log?.error("wineserver timed out while terminating the app; sending terminate")
+		log?.error(.session, "wineserver-timeout")
 		process.terminate()
 		guard
 			terminated.wait(
@@ -148,9 +144,9 @@ extension WineRuntime {
 		let result = Darwin.kill(process.processIdentifier, SIGKILL)
 		Task {
 			if result == 0 {
-				log?.error("wineserver required SIGKILL while terminating the app")
+				log?.info(.session, "wineserver-kill")
 			} else {
-				log?.error("Failed to send SIGKILL to wineserver while terminating the app")
+				log?.warning(.session, "wineserver-kill-failed")
 			}
 		}
 	}

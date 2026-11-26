@@ -46,7 +46,7 @@ extension BackgroundMusicController {
 		playbackState = state
 		reconcilePlaybackIntent(with: state)
 		nowPlaying.updatePlayback(isPlaying: isPlaying)
-		lifecycle.log.debug("Background music state: \(state)")
+		lifecycle.log.debug(.music, "playback-state", ["state": state])
 		guard state == .playing else { return }
 		consecutiveFailures = 0
 		transition(.playerPlayed)
@@ -67,9 +67,7 @@ extension BackgroundMusicController {
 				applyTrackTitle(from: metadata)
 			} catch {
 				guard titleSlot.owns(token) else { return }
-				lifecycle.log.debug(
-					"Background music could not read the track title: \(error.localizedDescription)"
-				)
+				lifecycle.log.warning(.music, "metadata-read-failed", error: error)
 			}
 			guard titleSlot.owns(token) else { return }
 			titleSlot.invalidate()
@@ -77,7 +75,7 @@ extension BackgroundMusicController {
 	}
 
 	private func handle(_ failure: BackgroundMusicFailure, on targetPlayer: YouTubePlayer) {
-		lifecycle.log.error("Background music player failed: \(failure)")
+		lifecycle.log.error(.music, "player-failed", ["failure": failure])
 		// A paused or silenced player is not trying to play, and during a game the music is silenced
 		// or about to be; a late failure changes nothing.
 		guard phase == .playing || phase == .unavailable, !lifecycle.activity.hasGameProcess
@@ -93,7 +91,7 @@ extension BackgroundMusicController {
 	}
 
 	private func stopBecauseUnavailable(on targetPlayer: YouTubePlayer) {
-		lifecycle.log.error("Background music stopped: the player cannot play the music")
+		lifecycle.log.warning(.music, "stopped-unavailable")
 		cancelOperation()
 		volumeSlot.invalidate()
 		discardPlaybackExpectation()
@@ -108,8 +106,7 @@ extension BackgroundMusicController {
 			} catch {
 				guard fadeSlot.owns(token) else { return }
 				lifecycle.log.error(
-					"Background music failed to pause after the player failed: \(error.localizedDescription)"
-				)
+					.music, "pause-after-failure-failed", error: error)
 			}
 			finishFade(token)
 		}
@@ -131,12 +128,10 @@ extension BackgroundMusicController {
 		let playlist = try await playerCommands.getPlaylist(target) ?? []
 		guard fadeSlot.owns(token), !lifecycle.activity.hasGameProcess else { return false }
 		if playlist.isEmpty {
-			lifecycle.log.error(
-				"Background music playlist is empty or unavailable; playing it in order")
+			lifecycle.log.warning(.music, "playlist-empty")
 			try await playerCommands.play(target)
 		} else {
 			try await playerCommands.playVideoInPlaylist(target, randomIndex(playlist.count))
-			lifecycle.log.info("Background music playlist started on a random track")
 		}
 		didStartCurrentPlaylist = true
 		return true

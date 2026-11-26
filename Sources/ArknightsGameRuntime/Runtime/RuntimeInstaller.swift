@@ -143,10 +143,10 @@ package struct RuntimeInstaller: Sendable {
 			_ = try FileManager.default.replaceItemAt(versionDirectory, withItemAt: prepared)
 		}
 		try store.recordInstalled(lane: pin.lane, version: pin.version)
-		bestEffort("Could not clean up older runtimes after install") {
+		bestEffort("old-runtimes-cleanup") {
 			try store.cleanup(pinned: [pin.lane: pin.version])
 		}
-		bestEffort("Could not remove downloaded runtime archives after install") {
+		bestEffort("downloads-cleanup") {
 			try removeDownloadedArchives(for: pin.lane)
 		}
 
@@ -175,8 +175,8 @@ package struct RuntimeInstaller: Sendable {
 			} catch {
 				try Task.checkCancellation()
 				log?.error(
-					"The runtime delta produced a tree that failed the runtime checks, installing the full archive: \(error)"
-				)
+					.runtime, "delta-validation-failed", ["version": pin.version],
+					error: error)
 				discardDeltaStaging(in: staging)
 			}
 		}
@@ -226,9 +226,9 @@ package struct RuntimeInstaller: Sendable {
 	}
 
 	/// Runs cleanup that must not fail an install that already succeeded.
-	func bestEffort(_ context: String, _ work: () throws -> Void) {
+	func bestEffort(_ event: StaticString, _ work: () throws -> Void) {
 		if let log {
-			log.attempt(context, work)
+			log.attempt(.runtime, event, work)
 		} else {
 			// best effort: cleanup must not fail an install that already succeeded.
 			do {
@@ -361,9 +361,8 @@ package struct RuntimeInstaller: Sendable {
 			do {
 				try FileManager.default.removeItem(at: archiveURL)
 			} catch {
-				log?.error(
-					"Failed to remove the mismatched runtime archive at \(archiveURL.path): \(error.localizedDescription)"
-				)
+				log?.warning(
+					.runtime, "archive-remove-failed", ["path": archiveURL.path], error: error)
 			}
 			throw RuntimeInstallError.hashMismatch
 		}

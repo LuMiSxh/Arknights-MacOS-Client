@@ -127,7 +127,9 @@ extension LauncherViewModel {
 			lifecycle.canBeginExclusiveActivity,
 			lifecycle.consumeFailure(id: failureID) != nil
 		else { return false }
-		log.info("Recovery selected; action=retry operation=storage-migration")
+		log.info(
+			.app, "recovery-selected",
+			["action": "retry", "operation": "storage-migration"])
 		beginStartup()
 		return true
 	}
