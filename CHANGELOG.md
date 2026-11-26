@@ -9,9 +9,6 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-- The **ARM64 (Apple Silicon)** game environment now runs on macOS 26.5 or later.
->>>>>>> 75abe14d (Run the native ARM64 lane on macOS 26.5 and later)
-=======
 ## [Unreleased]
 
 > [!IMPORTANT]
@@ -23,9 +20,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Debug logging** now also records detailed launcher log entries, not only Wine and graphics logs.
 - **Save Diagnostics** now includes the last three game sessions' logs and a summary of your recent launcher failures.
 - Launcher log lines now show a category, a stable event name, and named fields. The launcher also records settings changes and your time zone.
-=======
-- The **ARM64 (Apple Silicon)** game environment now runs on macOS 26.5 or later.
->>>>>>> 75abe14d (Run the native ARM64 lane on macOS 26.5 and later)
 
 ## [1.0.2] - 2026-11-25
 
