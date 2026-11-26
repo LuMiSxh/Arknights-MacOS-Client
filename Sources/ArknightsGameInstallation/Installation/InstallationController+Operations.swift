@@ -38,6 +38,7 @@ extension InstallationController {
 		lifecycle.state.refresh = .idle
 		progress = nil
 		progressSequence = 0
+		fileVerification = nil
 		guard
 			let lease = lifecycle.begin(
 				.installing(
@@ -60,32 +61,9 @@ extension InstallationController {
 					configuration: configuration,
 					region: requestedRegion,
 					into: targetDirectory,
-					verifyAllExistingFiles: verifyAllExistingFiles
-				) { [weak self] update in
-					await MainActor.run {
-						guard let self, self.ownsInstallation(installationID) else { return }
-						guard
-							(update.sequence == 0 && self.progressSequence == 0)
-								|| update.sequence >= self.progressSequence
-						else {
-							return
-						}
-						self.progressSequence = update.sequence
-						self.progress = update
-						let activity = LauncherActivity.installing(
-							id: installationID,
-							stage: update.isVerifying ? .verifying : .downloading
-						)
-						if self.lifecycle.activity != activity {
-							self.lifecycle.update(lease, to: activity)
-						}
-						let status: LauncherStatus =
-							update.isVerifying ? .verifyingInstallation : .downloading
-						if self.lifecycle.state.presentation.status != status {
-							self.lifecycle.setStatus(status)
-						}
-					}
-				}
+					verifyAllExistingFiles: verifyAllExistingFiles,
+					progress: installationProgressHandler(id: installationID, lease: lease)
+				)
 				guard finishInstallation(installationID) else { return }
 				installPresence = .installed(version: configuration.gameLatestVersion)
 				setRegionInstalled(requestedRegion, true)
@@ -152,13 +130,52 @@ extension InstallationController {
 
 	package func cancelDownload() {
 		guard isDownloading else { return }
-		guard case .installing(let installationID, _) = lifecycle.activity else { return }
-		if let lease = activityLease {
-			lifecycle.update(lease, to: .installing(id: installationID, stage: .pausing))
+		guard case .installing(let installationID, let stage) = lifecycle.activity else { return }
+		switch stage {
+		case .verifying:
+			// Verification keeps no partial state to resume, so it reports Cancelling, not Pausing.
+			lifecycle.setStatus(.cancellingVerification)
+			log.info(.install, "verify-cancel-requested")
+		case .preparing, .downloading, .pausing:
+			if let lease = activityLease {
+				lifecycle.update(lease, to: .installing(id: installationID, stage: .pausing))
+			}
+			lifecycle.setStatus(.pausing)
+			log.info(.install, "pause-requested")
 		}
-		lifecycle.setStatus(.pausing)
-		log.info(.install, "pause-requested")
 		installationTask?.cancel()
+	}
+
+	/// Publishes progress only while the installation still owns the activity.
+	func installationProgressHandler(
+		id installationID: UUID,
+		lease: ActivityLease
+	) -> GameInstaller.ProgressHandler {
+		{ [weak self] update in
+			await MainActor.run {
+				guard let self, self.ownsInstallation(installationID) else { return }
+				guard
+					(update.sequence == 0 && self.progressSequence == 0)
+						|| update.sequence >= self.progressSequence
+				else {
+					return
+				}
+				self.progressSequence = update.sequence
+				self.progress = update
+				let activity = LauncherActivity.installing(
+					id: installationID,
+					stage: update.isVerifying ? .verifying : .downloading
+				)
+				if self.lifecycle.activity != activity {
+					self.lifecycle.update(lease, to: activity)
+				}
+				let status: LauncherStatus =
+					update.isVerifying ? .verifyingInstallation : .downloading
+				if self.lifecycle.state.presentation.status != status {
+					self.lifecycle.setStatus(status)
+				}
+			}
+		}
 	}
 
 	// The installing activity carries its operation ID, so a stale task that lost a race to a

@@ -187,11 +187,7 @@ package struct AppPaths: Sendable {
 		}
 	}
 
-	/// The selected lane's installed `RUNTIME.json`, or `nil` when no runtime is installed.
-	package func activeRuntimeConfigurationURL(for lane: RuntimeLane? = nil) -> URL? {
-		installedRuntimeConfigurationURL(for: lane ?? runtimeLane)
-	}
-
+	/// The lane's installed `RUNTIME.json`, or `nil` when no runtime is installed.
 	package func installedRuntimeConfigurationURL(for lane: RuntimeLane) -> URL? {
 		guard let version = installedRuntimeVersion(for: lane) else { return nil }
 		return runtimeVersionDirectory(for: lane, version: version)

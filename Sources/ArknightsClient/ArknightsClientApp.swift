@@ -10,7 +10,11 @@ import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-	weak var model: LauncherViewModel?
+	weak var model: LauncherViewModel? {
+		didSet { launchPendingRegion() }
+	}
+	/// A launch requested from a notification before the scene created the model (cold start).
+	private var pendingLaunchRegion: GameRegion?
 	weak var launcherUpdater: LauncherUpdaterController?
 	var terminateApplication: () -> Void = { NSApp.terminate(nil) }
 	var stopGame: (() -> Void)?
@@ -230,9 +234,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	@objc private func playRegion(_ sender: NSMenuItem) {
 		guard
 			let rawValue = sender.representedObject as? String,
-			let region = GameRegion(rawValue: rawValue),
-			let model
+			let region = GameRegion(rawValue: rawValue)
 		else {
+			showMainWindow()
+			return
+		}
+		launch(region)
+	}
+
+	/// Launches through the Dock guards and shows the window when the launch is refused.
+	private func launch(_ region: GameRegion) {
+		guard let model else {
+			pendingLaunchRegion = region
 			showMainWindow()
 			return
 		}
@@ -241,6 +254,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 				showMainWindow()
 			}
 		}
+	}
+
+	private func launchPendingRegion() {
+		guard model != nil, let region = pendingLaunchRegion else { return }
+		pendingLaunchRegion = nil
+		launch(region)
 	}
 
 	@objc private func takeScreenshot() {
@@ -280,18 +299,24 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
 		_ center: UNUserNotificationCenter,
 		didReceive response: UNNotificationResponse
 	) async {
-		let path =
-			response.notification.request.content.userInfo[
-				AppConstants.Screenshots.pathUserInfoKey] as? String
-		let isScreenshot =
-			response.notification.request.content.categoryIdentifier
-			== AppConstants.Screenshots.notificationCategory
-		await MainActor.run {
-			if isScreenshot {
-				// A tap or the Show in Finder button both reveal the file. Neither needs the launcher.
-				if let path {
+		let content = response.notification.request.content
+		if content.categoryIdentifier == AppConstants.Screenshots.notificationCategory {
+			// A tap or the Show in Finder button both reveal the file. Neither needs the launcher.
+			if let path = content.userInfo[AppConstants.Screenshots.pathUserInfoKey] as? String {
+				await MainActor.run {
 					NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: path)])
 				}
+			}
+			return
+		}
+		let reminderRegion =
+			content.categoryIdentifier == AppConstants.Reminders.notificationCategory
+			? (content.userInfo[AppConstants.Reminders.regionUserInfoKey] as? String)
+				.flatMap(GameRegion.init(rawValue:))
+			: nil
+		await MainActor.run {
+			if let reminderRegion {
+				launch(reminderRegion)
 			} else {
 				showMainWindow()
 			}

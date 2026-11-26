@@ -8,6 +8,7 @@ package enum SupportOperation: String, Codable, Sendable {
 	case install
 	case update
 	case repair
+	case verify
 	case uninstall
 	case cacheClearing = "cache-clearing"
 	case intelTranslationPreflight = "intel-translation-preflight"

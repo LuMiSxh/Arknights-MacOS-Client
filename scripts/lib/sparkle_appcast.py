@@ -11,6 +11,7 @@ from lib.common import fail
 SPARKLE_NAMESPACE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
 SPARKLE_VERSION_TAG = f"{{{SPARKLE_NAMESPACE}}}version"
 INFORMATIONAL_UPDATE_TAG = f"{{{SPARKLE_NAMESPACE}}}informationalUpdate"
+CRITICAL_UPDATE_TAG = f"{{{SPARKLE_NAMESPACE}}}criticalUpdate"
 BELOW_VERSION_TAG = f"{{{SPARKLE_NAMESPACE}}}belowVersion"
 DELTAS_TAG = f"{{{SPARKLE_NAMESPACE}}}deltas"
 XML_DECLARATION = '<?xml version="1.0" standalone="yes"?>\n'
@@ -57,6 +58,13 @@ def annotate_update_gate(root: ET.Element, minimum_build: int, info_link: str) -
     if link is None:
         link = ET.SubElement(item, "link")
     link.text = info_link
+
+
+def annotate_critical_update(root: ET.Element) -> None:
+    """Make the newest item critical, so Sparkle offers no way to postpone it."""
+    item = newest_item(root)
+    if item.find(CRITICAL_UPDATE_TAG) is None:
+        ET.SubElement(item, CRITICAL_UPDATE_TAG)
 
 
 def serialize(root: ET.Element) -> bytes:

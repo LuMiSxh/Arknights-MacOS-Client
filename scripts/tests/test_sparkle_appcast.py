@@ -94,6 +94,30 @@ def test_serialize_round_trips_the_gate() -> None:
     sparkle_appcast.validate_update_gate(sparkle_appcast.parse(text, "test"), 18)
 
 
+def test_critical_marks_only_the_newest_item() -> None:
+    root = sparkle_appcast.parse(appcast(), "test")
+
+    sparkle_appcast.annotate_critical_update(root)
+
+    assert sparkle_appcast.serialize(root).decode() == (
+        '<?xml version="1.0" standalone="yes"?>\n'
+        '<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">\n'
+        "  <channel>\n"
+        "    <item>\n"
+        "      <title>0.5.2</title>\n"
+        "      <sparkle:version>16</sparkle:version>\n"
+        '      <enclosure url="https://example.com/old.tar.xz" />\n'
+        "    </item>\n"
+        "    <item>\n"
+        "      <title>0.8.0</title>\n"
+        "      <sparkle:version>30</sparkle:version>\n"
+        '      <enclosure url="https://example.com/new.tar.xz" />\n'
+        "    <sparkle:criticalUpdate /></item>\n"
+        "  </channel>\n"
+        "</rss>\n"
+    )
+
+
 def test_file_validation_rejects_a_feed_without_the_gate(tmp_path: Path) -> None:
     appcast_path = tmp_path / "appcast.xml"
     appcast_path.write_text(appcast())

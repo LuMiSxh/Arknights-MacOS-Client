@@ -161,11 +161,13 @@ struct LauncherUpdateView: View {
 				action: driver.cancelCheck
 			)
 		case .available:
-			CapsuleActionButton(
-				title: "Later",
-				tone: .neutral,
-				action: { driver.choose(.dismiss) }
-			)
+			if !driver.isCritical {
+				CapsuleActionButton(
+					title: "Later",
+					tone: .neutral,
+					action: { driver.choose(.dismiss) }
+				)
+			}
 			if driver.informationOnly {
 				if let informationURL = driver.informationURL {
 					CapsuleActionButton(
@@ -192,11 +194,13 @@ struct LauncherUpdateView: View {
 		case .extracting:
 			EmptyView()
 		case .readyToInstall:
-			CapsuleActionButton(
-				title: "Later",
-				tone: .neutral,
-				action: { driver.choose(.dismiss) }
-			)
+			if !driver.isCritical {
+				CapsuleActionButton(
+					title: "Later",
+					tone: .neutral,
+					action: { driver.choose(.dismiss) }
+				)
+			}
 			CapsuleActionButton(
 				title: "Install Update",
 				systemImage: "arrow.down.app",

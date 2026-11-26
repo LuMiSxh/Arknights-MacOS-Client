@@ -22,6 +22,8 @@ Check these inputs first:
 | `runtime.json`          | Schema 4 with `lanes.x86` and `lanes.arm`; each lane has a runtime name and version, an HTTPS URL, lowercase SHA-256, byte size, pinned deltas, `minimumMacOS`, lane `prefixRevision`, interface, components, and provenance |
 | Working tree and `main` | Clean, on `main`, equal to upstream. `just release` checks all three                                                                                                                                              |
 
+A release can be critical. Set the **critical** input when you start **Draft release** from GitHub Actions; `just release` does not pass it. Use it only for an urgent fix that users must install now. The update window then has no **Later** button, and **Cancel** remains while the update downloads. Launcher builds from this release onward honor the flag; older builds ignore it.
+
 The `pages` and `package` jobs run independently from the same commit. Pages requires `main`, runs `pnpm check`, and builds with `BASE_PATH=/Arknights-MacOS-Client`. A Pages failure does not stop the draft but keeps the workflow red.
 
 The `package` job works in this order. It validates the branch, version, `CHANGELOG.md`, and `Info.plist`. It runs `just ci`. It extracts the changelog section as release notes. It builds the arm64 app and DMG. It creates the signed update archive and appcast, writes `SHA256SUMS`, and creates the draft `vX.Y.Z` release. It publishes no runtime binary.

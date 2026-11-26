@@ -63,6 +63,8 @@ extension LauncherViewModel {
 				started = installation.retryInstallationFailure(id: failureID)
 			case .uninstall:
 				started = installation.retryUninstallFailure(id: failureID)
+			case .verify:
+				started = installation.retryVerificationFailure(id: failureID)
 			case .cacheClearing:
 				started = storage.retryCacheFailure(id: failureID)
 			case .launch, .runtimeDiscovery, .prefixMigration, .prefixDeletion,

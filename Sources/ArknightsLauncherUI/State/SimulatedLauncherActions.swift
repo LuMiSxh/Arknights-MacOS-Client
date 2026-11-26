@@ -39,6 +39,8 @@ import ArknightsCore
 			}
 		}
 
+		func verifyGameFiles() {}
+
 		func cancelDownload() {
 			model.updateDeveloperSimulation {
 				$0.failure = .none

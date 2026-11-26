@@ -17,6 +17,11 @@ on:
         required: false
         default: 0
         type: number
+      critical:
+        description: Mark the release critical. Users cannot postpone its update. Use only for urgent fixes.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -190,6 +195,7 @@ jobs:
         env:
           SPARKLE_ED25519_PRIVATE_KEY: ${{ secrets.SPARKLE_ED25519_PRIVATE_KEY }}
           GH_TOKEN: ${{ github.token }}
+          UPDATE_CRITICAL: ${{ inputs.critical }}
         run: |
           shopt -s nullglob
           update_directory="$RUNNER_TEMP/sparkle-updates"

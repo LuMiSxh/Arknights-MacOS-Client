@@ -120,6 +120,11 @@ package enum AppConstants {
 		/// macOS keeps at most 64 pending local notifications per app. Stay well under it.
 		package static let maximumPendingRequests = 48
 		package static let identifierPrefix = "reset."
+		/// The category that adds the Play action to a reset reminder.
+		package static let notificationCategory = "reset-reminder"
+		package static let playAction = "reset-reminder.play"
+		/// The `userInfo` key that carries the server the reminder is about.
+		package static let regionUserInfoKey = "region"
 	}
 
 	package enum Announcements {

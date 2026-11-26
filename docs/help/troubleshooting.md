@@ -40,7 +40,7 @@ Do not move or rename partly downloaded files or change the installation locatio
 
 ## An update or repair does not finish
 
-When no other download runs, choose **Settings → Installation → Repair**.
+When no other download runs, choose **Settings → Installation → Verify Files**. If it reports damaged or missing files, choose **Repair**.
 
 ## The game will not start
 
@@ -81,6 +81,8 @@ If the cursor lags, turn off VSync in the game. Tearing can occur.
 ## A launcher update is waiting
 
 Launcher updates wait until the game, a download, or a repair finishes. They never remove game files. After some updates, the first start moves game folders to a new layout. If it reports a conflict, do not delete either folder. See [Storage](storage.md#after-a-launcher-update).
+
+A critical launcher update has no **Later** button. Install it when the window appears.
 
 ## Advanced diagnostics
 

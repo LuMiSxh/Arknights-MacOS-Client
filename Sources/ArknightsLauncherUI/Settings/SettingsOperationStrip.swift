@@ -24,6 +24,7 @@ enum SettingsOperationStripPresentation {
 	private static func label(for status: LauncherStatus) -> String? {
 		switch status {
 		case .checking, .preparingInstallation, .verifyingInstallation, .downloading, .pausing,
+			.cancellingVerification,
 			.paused, .preparingWine, .startingGame, .stoppingGame, .movingToTrash,
 			.migratingStorage, .deletingWinePrefix:
 			status.message.trimmingCharacters(in: CharacterSet(charactersIn: "…"))

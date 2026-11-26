@@ -64,6 +64,15 @@ final class ResetReminderController {
 	/// Reads the notification permission, fills the window, and listens for the events that move it.
 	func start() {
 		guard observers.isEmpty else { return }
+		scheduler.registerCategories([
+			NotificationCategory(
+				identifier: AppConstants.Reminders.notificationCategory,
+				actions: [
+					NotificationAction(
+						identifier: AppConstants.Reminders.playAction,
+						title: "Play")
+				])
+		])
 		observe(.NSSystemTimeZoneDidChange)
 		observe(.NSSystemClockDidChange)
 		observe(NSWorkspace.didWakeNotification, center: NSWorkspace.shared.notificationCenter)
