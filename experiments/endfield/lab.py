@@ -149,9 +149,14 @@ MINGW_FLAGS = (
 
 PREFIX_WINE_OVERRIDES = "winemac.drv=d"
 DXMT_OVERRIDES = "d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
+# Alpha-4 and newer provide D3D10/11 and NVAPI/NGX in the runtime itself (Mullion).
+MULLION_OVERRIDES = (
+    "d3d10core,d3d11,dxgi,nvapi64,nvngx,winemetal=b;dcomp,mscoree,mshtml="
+)
 # backend -> (WINEDLLOVERRIDES, game argument that selects the renderer)
 BACKENDS: dict[str, tuple[str, str]] = {
     "dxmt-d3d11": (DXMT_OVERRIDES, "-force-d3d11"),
+    "mullion-d3d11": (MULLION_OVERRIDES, "-force-d3d11"),
     # Wine's builtin d3d12 (vkd3d) runs on Vulkan, so it also goes through KosmicKrisp.
     "vkd3d-kk": ("dcomp,mscoree,mshtml=", "-force-d3d12"),
     "vulkan-kk": ("dcomp,mscoree,mshtml=", "-force-vulkan"),

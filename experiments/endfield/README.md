@@ -38,6 +38,7 @@ Each finding lists its source. Verify a finding before you rely on it.
 - **KosmicKrisp frame stall.** The 23:40 `vulkan-kk` run on `arm-1.0.2` rendered the first in-game frame and then stalled. The last log line was `AGX: exceeded compiled variants footprint limit`. A `sample` of the game process shows the render thread in `libvulkan_kosmickrisp` → `-[CAMetalLayer nextDrawable]` → `allocate_drawable_texture` → `-[AGXG16GFamilyDevice newTextureWithDescriptor:iosurface:plane:]`. `Alloc system memory` rose from 3 GB to 65 GB while `In use` stayed near 1 GB. The collected log also has `IOGPUCommandDescriptor::prepare` faults at 23:46:50 to 23:47:28, including an unsigned underflow in `wiring delta`. The sample is saved beside the run record as `<run>-sample.txt`.
 - **Intro video.** The intro plays on DXMT. It stays black on both Vulkan drivers. The video path is therefore not the bug; the Vulkan present path is.
 - **Shader compilation is Vulkan-only.** DXMT starts the game without a shader compile. The Vulkan path compiles shaders for a long time (about 13 minutes in the reported run) and then hits the AGX compiled-variants limit.
+- **NVAPI and NGX are alpha-4 only.** The catalog release `wine-11-22-arm64-v0-7-2-alpha-4` (2026-11-24) ships `lib/wine/aarch64-windows/nvapi64.dll` and `nvngx.dll` and provides D3D10/11 through Mullion. Alpha-3 has neither file, and `runtime.lock.json` pins alpha-3, so the installed `arm-1.0.2` cannot start DLSS. The catalog notes download URL is `https://web.aws.riverfog7.com/files/wine/catalog.json`.
 - **Platform.** Endfield ships only on the ARM runtime. It needs macOS 27 or later.
 - **Anti-cheat.** ACE runs as a kernel-level driver. The community project [Endfield_FineWine](https://github.com/stoicswe/Endfield_FineWine) documents its work in `docs/technical.md`. Most of its fixes target Rosetta.
 - **ACE lead.** The relevant patches for us are `ARM/stage1-macos` patches 0010 to 0013. They cover `ntoskrnl` and `wdfldr.sys` for ACE's ARM64 drivers. No report yet confirms ACE under FEX. ACE patches belong in the private ARM Wine repository.
@@ -225,6 +226,15 @@ uv run --locked python experiments/endfield/lab.py launch \
   -- -force-d3d11
 ```
 
+Start the game on the alpha-4 builtin D3D11 with NGX, which enables DLSS:
+
+```sh
+uv run --locked python experiments/endfield/lab.py launch \
+  --backend mullion-d3d11 --parent stepministrator \
+  --runtime "$HOME/Library/Application Support/EndfieldLab/runtimes/wine-11-22-arm64-v0-7-2-alpha-4/wine" \
+  --retina --env WINE_NGX_SIGNER=1 -- -force-d3d11
+```
+
 Start the game on Vulkan with the newer KosmicKrisp:
 
 ```sh
@@ -238,7 +248,7 @@ Put `--dry-run` before the `--` separator. Everything after `--` goes to the gam
 
 Options:
 
-- `--backend`: `dxmt-d3d11`, `vkd3d-kk`, `vulkan-kk`, or `vulkan-mvk`. `vulkan-mvk` uses a lab-only MoltenVK from `<lab>/toolchains/moltenvk-*/` (KhronosGroup release, `icd.d/MoltenVK_icd.json` with an absolute library path and without `is_portability_driver`). The ARM Wine does not enumerate portability drivers, so the loader skips MoltenVK while that flag is set. On 2026-11-22 `vulkan-kk` hung the M4 GPU ("firmware-detected lockup") when the game loaded its world.
+- `--backend`: `dxmt-d3d11`, `mullion-d3d11`, `vkd3d-kk`, `vulkan-kk`, or `vulkan-mvk`. `mullion-d3d11` uses the runtime's builtin D3D11, NVAPI, and NGX, and needs alpha-4 or newer. `vulkan-mvk` uses a lab-only MoltenVK from `<lab>/toolchains/moltenvk-*/` (KhronosGroup release, `icd.d/MoltenVK_icd.json` with an absolute library path and without `is_portability_driver`). The ARM Wine does not enumerate portability drivers, so the loader skips MoltenVK while that flag is set. On 2026-11-22 `vulkan-kk` hung the M4 GPU ("firmware-detected lockup") when the game loaded its world.
 - `--parent`: `direct`, `launcher`, or `stepministrator`. Only `direct` adds the renderer flag for `--backend`. With `stepministrator`, pass `-force-d3d11` or `-force-vulkan` after `--` to select the renderer.
 - `--prefix NAME`: prefix directory under the lab root. Default: `prefix`. Use one directory name; separators and `..` are rejected. Used by `prefix`, `launch`, and `build-helpers`.
 - `--runtime PATH`: use a patched runtime, for example `<lab>/runtimes/<name>`. For `dxmt-d3d11`, use a runtime that bundles DXMT. The catalog `wine-11-22-arm64-v0-7-2-alpha-2` runtime has no DXMT or `winemetal`, so that backend cannot start there. The app's arm runtime (`Runtimes/arm-1.0.2`) has both.
