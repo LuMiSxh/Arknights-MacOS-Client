@@ -121,6 +121,7 @@ LOG_SHOW_PREDICATE = (
     'OR eventMessage CONTAINS[c] "gpuEvent"'
 )
 DXMT_DLL_DIRECTORY = Path("DXMT/x64")
+RETINA_KEY = r"HKCU\Software\Wine\Mac Driver"
 KOSMICKRISP_ICD = Path("share/vulkan/icd.d/kosmickrisp_mesa_icd.aarch64.json")
 # Lab-only MoltenVK (KhronosGroup release, unpacked by hand): KosmicKrisp hangs the M4 GPU
 # when the game loads its world.
@@ -311,6 +312,34 @@ def dxmt_dlls(runtime: Path) -> list[Path]:
     return dlls
 
 
+def set_retina(prefix: Path, runtime: Path, env: dict[str, str], enabled: bool) -> None:
+    """Write the Mac driver RetinaMode that the next launch reads."""
+    argv = [
+        str(runtime / "bin/wine64"),
+        "reg",
+        "add",
+        RETINA_KEY,
+        "/v",
+        "RetinaMode",
+        "/d",
+        "y" if enabled else "n",
+        "/f",
+    ]
+    completed = subprocess.run(
+        argv,
+        env=env | {"WINEDEBUG": "-all"},
+        cwd=prefix,
+        check=False,
+        capture_output=True,
+        text=True,
+        errors="replace",
+        timeout=60,
+    )
+    if completed.returncode:
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        fail(f"could not set RetinaMode: {detail}")
+
+
 def sync_dxmt(prefix: Path, runtime: Path) -> int:
     """Copy the runtime's DXMT DLLs over the prefix copies; return how many changed.
 
@@ -482,6 +511,8 @@ def run_launch(args: argparse.Namespace) -> None:
                 print(
                     f"dxmt: {dll} -> {prefix / 'drive_c/windows/system32' / dll.name}"
                 )
+        if args.retina is not None:
+            print(f"retina: {'y' if args.retina else 'n'}")
         for problem in problems:
             warning(f"{problem} (a real launch stops here)")
         return
@@ -491,6 +522,9 @@ def run_launch(args: argparse.Namespace) -> None:
         changed = sync_dxmt(prefix, runtime)
         if changed:
             info(f"refreshed {changed} DXMT DLL(s) from {runtime}")
+    if args.retina is not None:
+        set_retina(prefix, runtime, plan.env, args.retina)
+        info(f"retina mode {'on' if args.retina else 'off'}")
     record = {
         "backend": args.backend,
         "prefix": args.prefix,
@@ -501,6 +535,7 @@ def run_launch(args: argparse.Namespace) -> None:
         "argv": plan.argv,
         "env": plan.env,
         "record": str(record_path),
+        "retina": args.retina,
     }
     log.parent.mkdir(parents=True, exist_ok=True)
     sidecar.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
@@ -1365,6 +1400,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="end the lab's Wine processes above this summed resident memory; "
         f"0 disables (default: {DEFAULT_MEMORY_LIMIT_GB:g})",
     )
+    retina = launch.add_mutually_exclusive_group()
+    retina.add_argument(
+        "--retina",
+        dest="retina",
+        action="store_true",
+        help="render at the Retina backing scale",
+    )
+    retina.add_argument(
+        "--no-retina",
+        dest="retina",
+        action="store_false",
+        help="render at 1x",
+    )
+    launch.set_defaults(retina=None)
     launch.add_argument(
         "--dry-run", action="store_true", help="print the env, argv, and log path"
     )

@@ -47,6 +47,7 @@ Each finding lists its source. Verify a finding before you rely on it.
 - **Launch chain.** A `+process` trace of a working run shows the chain. GRYPHLINK `Launcher.exe` starts `1.6.0\Games.exe`. `Games.exe` starts `"G:\Endfield.exe" -launcher_lang=en-us -launcher_sub_channel=6` with a plain `CreateProcess`. The game gets no renderer flag; the launcher's **Rendering Mode** setting selects Vulkan. The game then starts `PlatformProcess.exe` and ACE starts `ACE-Service64.exe -autorun`.
 - **Next parent test.** Start `Games.exe` alone with `--parent launcher --launcher-exe 'C:\Program Files\GRYPHLINK\1.6.0\Games.exe'`. If the game starts, the client needs no helper. Otherwise build stepministrator in the private ARM runtime pipeline with its llvm-mingw toolchain and ship it in the runtime.
 - **Runtime to use.** Run the app's installed ARM runtime with `--runtime "$HOME/Library/Application Support/com.lumisxh.arknights-client/Runtimes/arm-1.0.2"`. It has `bin/wine64`, DXMT, and `winemetal`. The older catalog runtime `wine-11-22-arm64-v0-7-2-alpha-2` remains useful only for comparing Vulkan drivers; a local `bin/wine64 -> wine` symlink was added there.
+- **Backend guidance (maintainer report).** The ARM runtime maintainer reports that DXMT works best, Vulkan is slightly slower, D3D12 does not work, there is no D3DMetal, DLSS works, and Endfield reaches 4K with DLSS on his Mac. Only DXMT is confirmed in this lab.
 - **Endfield environment.** Yaagl's Endfield defaults are `FEX_MAXINST=5000`, `FEX_MULTIBLOCK=1`, `WINE_DARWIN_SPARSE_READ=1`, `WINE_NGX_SIGNER=1`, and `GST_PLUGIN_FEATURE_RANK=atdec:MAX,avdec_h264:MAX`. Pass them with `--env`.
 - **Sidecar.** Projecting the game to an iPad with Sidecar caused GPU lockups and Mac freezes. It also broke the native fullscreen Space. Test on a physical display only.
 
@@ -232,7 +233,7 @@ uv run --locked python experiments/endfield/lab.py launch \
   -- -force-vulkan
 ```
 
-Put `--dry-run` before the `--` separator. Everything after `--` goes to the game.
+Put `--dry-run` before the `--` separator. Everything after `--` goes to the game. Add `--retina` to either command to render at the Retina backing scale.
 
 Options:
 
@@ -245,6 +246,7 @@ Options:
 - `--env K=V`: add an environment entry. Repeat it for more entries.
 - `--launcher-exe` and `--games-exe`: change the Windows paths of the official tools.
 - `--memory-limit-gb GB`: end the lab's Wine processes when their summed resident memory exceeds this limit. Default: 12. Use `0` to disable. A run at about 22.8 GB on a 16 GB Mac hung the GPU and froze the display. The guard decision and any kill also go into the run record.
+- `--retina` / `--no-retina`: set `HKCU\Software\Wine\Mac Driver\RetinaMode` before the launch. Without either flag the lab leaves the value unchanged. Retina renders at the backing scale, so the GPU load and memory grow.
 - `kill`: end the game and every process in the lab prefix. Run it over SSH when the display freezes: `uv run --locked python experiments/endfield/lab.py kill --prefix prefix-mf`. It uses the runtime of the running Wine processes, so it works without `--runtime` and when the pinned runtime is not installed.
 - `collect RUN`: copy the host crash reports and the system log for a finished run. See [Collect host reports](#collect-host-reports).
 - Extra arguments after `--` go to the game.
@@ -274,6 +276,7 @@ The `mf-prefix` command clones a prefix with `cp -c -R`. It does not run `winebo
 
 - The launcher parent starts the game itself. The lab does not pass game arguments or the renderer flag in this mode.
 - The lab stops before a real launch when a required file is missing. A dry run only warns.
+- A launch writes `RetinaMode` only when `--retina` or `--no-retina` is given. `RetinaMode` lives in `HKCU\Software\Wine\Mac Driver`.
 - A `dxmt-d3d11` launch copies `d3d10core.dll`, `d3d11.dll`, and `dxgi.dll` from the runtime's `DXMT/x64` into the prefix when they differ. A runtime without a DXMT payload fails the launch with a message that names the missing directory. A stale DXMT set fails inside the game as a UnityPlayer load error.
 
 ### Freeze recorder
