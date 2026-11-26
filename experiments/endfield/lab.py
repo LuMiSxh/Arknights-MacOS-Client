@@ -32,7 +32,7 @@ REPOSITORY_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_DIR / "scripts"))
 
 import installer  # noqa: E402
-from lib.common import PROJECT_DIR, fail, run_main  # noqa: E402
+from lib.common import PROJECT_DIR, ScriptError, fail, run_main  # noqa: E402
 from lib.console import info, success, warning  # noqa: E402
 from lib.project_config import RUNTIME_CONFIG  # noqa: E402
 from runtime_config import load_runtime_config  # noqa: E402
@@ -577,11 +577,15 @@ def sample_processes() -> str:
     ).stdout
 
 
-def end_game(pids: list[int], env: dict[str, str], runtime: Path) -> None:
+def kill_processes(pids: list[int]) -> None:
     # SIGKILL first: it frees the game's memory at once, even when Wine is stuck.
     for pid in pids:
         with contextlib.suppress(ProcessLookupError):
             os.kill(pid, signal.SIGKILL)
+
+
+def end_game(pids: list[int], env: dict[str, str], runtime: Path) -> None:
+    kill_processes(pids)
     quiet = env | {"WINEDEBUG": "-all"}
     subprocess.run(
         [str(runtime / "bin/wineserver"), "-k"], env=quiet, check=False, timeout=30
@@ -796,10 +800,45 @@ class RunRecorder:
         end_game(guard.pids, self.env, self.runtime)
 
 
+def runtime_from_processes(ps_output: str) -> Path | None:
+    """Return the runtime of the running Wine processes, from their command line."""
+    for sample in parse_ps_samples(ps_output):
+        for marker in ("/bin/wineserver", "/bin/wine64"):
+            position = sample.command.find(marker)
+            if position <= 0:
+                continue
+            root = Path(sample.command[:position].strip())
+            if (root / "bin/wineserver").is_file():
+                return root
+    return None
+
+
+def kill_runtime(override: Path | None, ps_output: str) -> Path | None:
+    """Prefer the runtime of the running processes over the pinned default.
+
+    The pinned runtime may not be the one that is running, or may not be installed.
+    """
+    runtime = runtime_from_processes(ps_output)
+    if runtime is not None:
+        return runtime
+    try:
+        return resolve_runtime(override)
+    except ScriptError:
+        if override is not None:
+            raise
+        return None
+
+
 def run_kill(args: argparse.Namespace) -> None:
     lab = lab_root()
-    runtime = resolve_runtime(args.runtime)
-    pids, _ = game_usage(sample_processes())
+    ps_output = sample_processes()
+    pids, _ = game_usage(ps_output)
+    runtime = kill_runtime(args.runtime, ps_output)
+    if runtime is None:
+        warning("no runtime found; ending only the matched game processes")
+        kill_processes(pids)
+        success(f"ended {len(pids)} game process(es)")
+        return
     end_game(pids, base_environment(lab, lab / args.prefix, runtime), runtime)
     success(f"ended {len(pids)} game process(es) and the {args.prefix} prefix")
 

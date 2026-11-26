@@ -98,6 +98,18 @@ def test_game_usage_sums_wine_processes_and_finds_the_game():
     assert lab.game_usage(text) == ([102], (1024 + 2048 + 4096) * 1024)
 
 
+def test_runtime_from_processes_reads_the_binary_path(tmp_path):
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "bin/wineserver").touch()
+    text = f"  42  2048 wineserver {tmp_path}/bin/wineserver -w\n"
+    assert lab.runtime_from_processes(text) == tmp_path
+
+
+def test_runtime_from_processes_ignores_commands_without_a_runtime():
+    text = "  42  2048 bash bash -c ls /nonexistent/bin/wine64\n"
+    assert lab.runtime_from_processes(text) is None
+
+
 def test_is_freeze_report_selects_windowserver_and_skips_unrelated():
     assert lab.is_freeze_report(
         "WindowServer_2026-11-26-231701_Mina.userspace_watchdog_timeout.spin"
