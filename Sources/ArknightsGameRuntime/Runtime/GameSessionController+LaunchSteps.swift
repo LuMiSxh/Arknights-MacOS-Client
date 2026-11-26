@@ -103,7 +103,16 @@ extension GameSessionController {
 			return nil
 		case .runtimeUnavailable(let error):
 			runtimeName = nil
-			log.error("Runtime discovery failed: \(error.localizedDescription)")
+			var path: URL?
+			if case .missingRuntime(let url)? = error as? WineRuntimeDiscoveryError {
+				path = url
+			}
+			let fields: LogFields = ["lane": request.lane.rawValue, "path": path]
+			if WineRuntimeDiscoveryError.isNotInstalled(error) {
+				log.warning(.runtime, "discovery-failed", fields, error: error)
+			} else {
+				log.error(.runtime, "discovery-failed", fields, error: error)
+			}
 			presentLaunchFailure(error, operation: .runtimeDiscovery, request: request)
 			return nil
 		case .ready(let discovered, let migration):
@@ -128,11 +137,12 @@ extension GameSessionController {
 			: .launchingGame(sessionID: request.id, processIdentifier: nil)
 		guard let lease = lifecycle.begin(initialActivity) else { return nil }
 		lifecycle.setStatus(hasPendingMigration ? .preparingWine : .startingGame)
-		log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		log.info(
+			.launch, "requested",
 			Self.launchDiagnostics(
 				sessionID: request.id,
 				region: request.region,
+				lane: request.lane,
 				options: request.options,
 				batterySaver: request.usesBatterySaver,
 				graphicsDiagnosticsEnabled: graphicsDiagnosticsEnabled
@@ -218,8 +228,8 @@ extension GameSessionController {
 		RuntimeLoaderIcon.apply(to: context.runtime, log: log, setIcon: applyLoaderIcon)
 		let features = context.runtime.features
 		let screen = GameScreenList.system().resolve(request.options.display)
-		if let saved = request.options.display, screen?.isFallback == true {
-			log.info("\(saved.name) is not connected. The game opens on the primary display.")
+		if request.options.display != nil, screen?.isFallback == true {
+			log.info(.launch, "display-fallback", ["reason": "disconnected"])
 		}
 		let displayConfiguration = WineDisplayConfiguration.current(
 			renderingMode: request.options.renderingMode,
@@ -265,7 +275,11 @@ extension GameSessionController {
 			fittedWindowSize != request.options.windowSize
 		{
 			log.info(
-				"Window size \(request.options.windowSize.displayName) is scaled to \(fittedWindowSize.displayName) to fit the screen."
+				.launch, "window-scaled",
+				[
+					"requested": request.options.windowSize.storageValue,
+					"fitted": fittedWindowSize.storageValue,
+				]
 			)
 		}
 		await SessionLogRotation.rotate(region: request.region, paths: paths, log: log)
@@ -297,13 +311,20 @@ extension GameSessionController {
 			runtimeEnvironmentOverrides: prepared.environment,
 			clientVariant: request.region.clientVariant,
 			publisher: request.region.publisher,
+			sessionID: request.id,
+			server: request.region,
 			gameIconURL: customGameIconURL(),
 			logURL: paths.runtimeLogFile(for: request.region),
 			log: log,
 			spawnGate: spawnGate
 		)
 		log.info(
-			"Game runtime started; session=\(request.id.uuidString); pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: request.requestedAt))"
+			.launch, "runtime-started",
+			[
+				"session": request.id,
+				"pid": launch.processIdentifier,
+				"elapsed": Self.launchDuration(since: request.requestedAt),
+			]
 		)
 		guard activeGameSessionID == request.id, !applicationTerminationRequested else {
 			return nil
@@ -343,7 +364,11 @@ extension GameSessionController {
 		playtimeStatistics.start(sessionID: request.id, region: request.region)
 		monitorGamePrefix(using: context.runtime, sessionID: request.id)
 		log.info(
-			"Game window became visible; session=\(request.id.uuidString); elapsed=\(Self.launchDuration(since: request.requestedAt))"
+			.launch, "window-visible",
+			[
+				"session": request.id,
+				"elapsed": Self.launchDuration(since: request.requestedAt),
+			]
 		)
 	}
 }

@@ -79,9 +79,8 @@ package final class RuntimeSelectionStore: Sendable {
 			existing = try files.read(RuntimeSelection.self, at: fileURL)
 		} catch {
 			// A damaged document must not block installs; the version directories are the truth.
-			log?.error(
-				"Runtime document at \(fileURL.path) is unreadable and will be rebuilt: "
-					+ launcherDiagnosticDescription(for: error))
+			log?.warning(
+				.storage, "runtime-document-unreadable", ["path": fileURL], error: error)
 			existing = nil
 			unreadable = true
 		}

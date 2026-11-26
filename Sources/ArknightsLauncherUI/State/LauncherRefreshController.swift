@@ -100,8 +100,11 @@ final class LauncherRefreshController {
 		guard failure.context.region == installation.region.supportRegion else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		log.info(
-			"Recovery selected; action=retry operation=configuration-refresh region=\(installation.region.rawValue)"
-		)
+			.refresh, "recovery-selected",
+			[
+				"action": "retry", "operation": "configuration-refresh",
+				"server": installation.region.rawValue,
+			])
 		lifecycle.state.refresh = .idle
 		startRefresh(forceGameUpdateCheck: true)
 		return true
@@ -115,7 +118,7 @@ final class LauncherRefreshController {
 		customization.restoreOfficialLogo(for: newRegion)
 		communication.resetPresentedNotice()
 		lifecycle.setStatus(.checking)
-		log.info("Region switched to \(newRegion.displayName)")
+		log.info(.settings, "server-switched", ["server": newRegion.rawValue])
 		startRefresh()
 		return true
 	}
@@ -124,7 +127,7 @@ final class LauncherRefreshController {
 		forceGameUpdateCheck: Bool, refreshID: UUID, token: TaskSlot.Token
 	) async {
 		guard isCurrentRefresh(refreshID, token) else { return }
-		log.info("Refreshing game and branding state")
+		log.debug(.refresh, "started", ["server": installation.region.rawValue])
 		let region = installation.region
 		await installation.updateInstalledState().value
 		guard isCurrentRefresh(refreshID, token) else { return }
@@ -138,9 +141,8 @@ final class LauncherRefreshController {
 			} catch is CancellationError {
 				return nil
 			} catch {
-				log.error(
-					"Branding for \(region.displayName) failed: \(launcherDiagnosticDescription(for: error))"
-				)
+				log.warning(
+					.refresh, "branding-failed", ["server": region.rawValue], error: error)
 				return nil
 			}
 		}
@@ -154,9 +156,6 @@ final class LauncherRefreshController {
 				guard isCurrentRefresh(refreshID, token) else { return }
 				installation.configuration = fetchedConfiguration
 				installation.updateGameAvailability()
-				log.info(
-					"Game configuration loaded; latest=\(fetchedConfiguration.gameLatestVersion)"
-				)
 			} catch is CancellationError {
 				return
 			} catch {
@@ -171,9 +170,9 @@ final class LauncherRefreshController {
 					)
 					return
 				}
-				log.error(
-					"Game configuration failed: \(launcherDiagnosticDescription(for: error))"
-				)
+				log.warning(
+					.refresh, "configuration-failed", ["server": region.rawValue],
+					error: error)
 			}
 		}
 
@@ -186,9 +185,6 @@ final class LauncherRefreshController {
 		if let currentBranding = fetchedBranding {
 			branding = currentBranding
 			communication.presentNoticeIfNeeded(currentBranding)
-			log.info(
-				"Branding loaded; noticeEnabled=\(currentBranding.noticePopOpen == true)"
-			)
 			brandingSlot.replace { [weak self] brandingToken in
 				guard let self else { return }
 				await loadBrandingAssets(
@@ -211,7 +207,14 @@ final class LauncherRefreshController {
 			)
 		}
 		let completedState = lifecycle.state.presentation.status.message
-		log.info("Refresh completed; state=\(completedState)")
+		log.info(
+			.refresh, "completed",
+			[
+				"state": completedState,
+				"server": region.rawValue,
+				"latest": installation.configuration?.gameLatestVersion,
+				"noticeEnabled": fetchedBranding?.noticePopOpen,
+			])
 	}
 
 	private func presentConfigurationFailure(
@@ -257,9 +260,9 @@ final class LauncherRefreshController {
 			do {
 				return try await artworkCache.officialLogoData(for: region)
 			} catch {
-				log.error(
-					"Official \(region.displayName) logo load failed: \(error.localizedDescription)"
-				)
+				log.warning(
+					.customization, "logo-load-failed", ["server": region.rawValue],
+					error: error)
 				return nil
 			}
 		}
@@ -270,9 +273,9 @@ final class LauncherRefreshController {
 			} catch is CancellationError {
 				return nil
 			} catch {
-				log.error(
-					"Artwork for \(region.displayName) failed: \(error.localizedDescription)"
-				)
+				log.warning(
+					.customization, "artwork-load-failed", ["server": region.rawValue],
+					error: error)
 				return nil
 			}
 		}

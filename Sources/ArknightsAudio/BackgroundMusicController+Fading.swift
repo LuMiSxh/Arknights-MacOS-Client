@@ -36,12 +36,10 @@ extension BackgroundMusicController {
 				guard fadeSlot.owns(token) else { return }
 				try await playerCommands.pause(player)
 				guard fadeSlot.owns(token) else { return }
-				lifecycle.log.info("Background music faded out and paused")
+				lifecycle.log.debug(.music, "fade-out-completed")
 			} catch {
 				guard fadeSlot.owns(token) else { return }
-				lifecycle.log.error(
-					"Background music failed to pause after fading out: \(error.localizedDescription)"
-				)
+				lifecycle.log.error(.music, "pause-after-fade-out-failed", error: error)
 			}
 			finishFade(token)
 		}
@@ -78,16 +76,14 @@ extension BackgroundMusicController {
 				if let userPlaybackOperation {
 					finishOperation(userPlaybackOperation)
 				}
-				lifecycle.log.info("Background music resuming with fade-in")
+				lifecycle.log.debug(.music, "fade-in-started")
 			} catch {
 				guard fadeSlot.owns(token) else { return }
 				if let userPlaybackOperation {
 					finishOperation(userPlaybackOperation)
 				}
 				clearPlaybackExpectation(expectation)
-				lifecycle.log.error(
-					"Background music failed to resume: \(error.localizedDescription)"
-				)
+				lifecycle.log.error(.music, "resume-failed", error: error)
 				finishFade(token)
 				return
 			}
@@ -130,11 +126,9 @@ extension BackgroundMusicController {
 		Task { [log = lifecycle.log, commands = playerCommands] in
 			do {
 				if let playerToStop { try await commands.pause(playerToStop) }
-				log.info("Background music stopped")
+				log.debug(.music, "stopped")
 			} catch {
-				log.error(
-					"Background music failed to stop cleanly: \(error.localizedDescription)"
-				)
+				log.error(.music, "stop-failed", error: error)
 			}
 		}
 	}
@@ -150,9 +144,7 @@ extension BackgroundMusicController {
 			try await playerCommands.setVolume(playerToUse, normalizedVolume)
 		} catch {
 			guard !Task.isCancelled, isCurrent(playerToUse, generation: generation) else { return }
-			lifecycle.log.debug(
-				"Background music volume update was not applied: \(error.localizedDescription)"
-			)
+			lifecycle.log.warning(.music, "volume-update-not-applied", error: error)
 		}
 	}
 

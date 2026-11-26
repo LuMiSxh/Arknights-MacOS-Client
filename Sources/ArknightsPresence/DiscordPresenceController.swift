@@ -34,7 +34,9 @@ package final class DiscordPresenceController {
 				DiscordIPCConnection(
 					maximumPayloadBytes: AppConstants.Presence.messageMaximumBytes,
 					handshakeTimeout: AppConstants.Presence.handshakeTimeout,
-					reportProtocolError: { log.error("Discord presence: \($0)") }
+					reportProtocolError: {
+						log.warning(.presence, "protocol-error", ["message": $0])
+					}
 				)
 			}
 		)

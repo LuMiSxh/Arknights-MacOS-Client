@@ -24,8 +24,9 @@
 - Write UI copy as literals at the view. Do not add `*Strings` files. Extract a constant only when two or more sites share it.
 - Map infrastructure errors at the owning feature boundary; each feature owns its error type. Support codes are pinned by `SupportCodeStabilityTests`; user-facing messages are copy.
 - Define persisted locations through `AppPaths`; preserve paths, keys, and formats unless a migration is explicit. Centralize application-owned keys, limits, retries, and timeouts in `Shared/Configuration/AppConstants.swift`; keep upstream literals beside their protocol.
+- Log through the structured `LauncherLog` API; follow `docs/development/logging.md`.
 - Keep production Swift under 800 lines and tests under 450. Split a type by responsibility (`Type+Download.swift`), never by line count. C/Objective-C shims and scripts are exempt.
-- Do not use `try?` for filesystem, process, or network work. Use `log.attempt("context") { try … }` for best-effort work.
+- Do not use `try?` for filesystem, process, or network work. Use `log.attempt(.category, "event") { try … }` for best-effort work.
 - Use `try?` only to remove an app-owned temporary file, with `// best effort:` on that line or the line above. `scripts/lib/try_lint.py` enforces this in Core, Customization, Infrastructure, Installation, Presence, and Runtime.
 - Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python.
 - Comment only non-obvious WHYs, workarounds, and security/concurrency invariants. Add DocC only to `package` APIs whose behavior the name does not state.

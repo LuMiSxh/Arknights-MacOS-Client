@@ -20,19 +20,24 @@ extension LauncherViewModel {
 		do {
 			installState = try await InstalledStateSummary.read(in: installDirectory)
 		} catch {
-			log.error("Install state skipped: \(launcherDiagnosticDescription(for: error))")
+			log.warning(.diagnostics, "install-state-skipped", error: error)
 		}
 		var migrations: DiagnosticsEnvironment.PrefixMigrations?
 		do {
 			migrations = try await PrefixMigrationSummary.read(prefixDirectory: prefixDirectory)
 		} catch {
-			log.error("Prefix migrations skipped: \(launcherDiagnosticDescription(for: error))")
+			log.warning(.diagnostics, "prefix-migrations-skipped", error: error)
 		}
 
 		let installedVersions = Dictionary(
 			uniqueKeysWithValues: RuntimeLane.allCases.compactMap { lane in
 				runtimeSelection.installedVersion(for: lane).map { (lane.rawValue, $0) }
 			})
+		let recentFailures = await Self.launcherFailures(
+			current: paths.launcherLogFile,
+			previous: AppPaths.previousLogFile(of: paths.launcherLogFile),
+			log: log
+		)
 		return DiagnosticsEnvironment(
 			app: .current(),
 			system: .current(
@@ -58,8 +63,32 @@ extension LauncherViewModel {
 				installState: installState,
 				installedServers: installation.installedRegions.map(\.rawValue).sorted()),
 			settings: .init(
-				options: settings.launchOptions, usesHardwareCursor: settings.usesHardwareCursor)
+				options: settings.launchOptions, usesHardwareCursor: settings.usesHardwareCursor),
+			recentFailures: recentFailures
 		)
+	}
+
+	/// The failures the launcher presented, from the previous and current session logs.
+	@concurrent
+	private static func launcherFailures(
+		current: URL, previous: URL, log: LauncherLog
+	) async -> [DiagnosticsEnvironment.Failure] {
+		let text = logText(at: previous, log: log) + logText(at: current, log: log)
+		return LogFailureParser.failures(inLogText: text)
+	}
+
+	/// A missing log file is empty; any other read failure is logged and treated as empty.
+	private nonisolated static func logText(at url: URL, log: LauncherLog) -> String {
+		do {
+			return try String(contentsOf: url, encoding: .utf8)
+		} catch  where AppPaths.isMissingPathError(error) {
+			return ""
+		} catch {
+			log.warning(
+				.diagnostics, "launcher-log-read-skipped",
+				["file": url.lastPathComponent], error: error)
+			return ""
+		}
 	}
 
 	/// The install folder of every server, managed or located, for the game folder logs.

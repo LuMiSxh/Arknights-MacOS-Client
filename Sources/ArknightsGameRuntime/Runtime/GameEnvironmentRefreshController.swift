@@ -163,26 +163,34 @@ package final class GameEnvironmentRefreshController {
 					let outcome = await refresh(target, using: runtime)
 					guard holds(lease, token) else { break passes }
 					switch outcome {
-					case .refreshed: log.info("Game environment updated; lane=\(lane.rawValue)")
+					case .refreshed:
+						log.info(.runtime, "environment-updated", ["lane": lane.rawValue])
 					case .upToDate: break
 					case .cancelled: break passes
 					case .failed(let diagnostic):
 						// The next launch of that server repeats the migration and presents any error.
 						log.error(
-							"Game environment update failed; lane=\(lane.rawValue): \(diagnostic)")
+							.runtime, "environment-update-failed",
+							["lane": lane.rawValue, "detail": diagnostic])
 					}
 				}
 				guard isRequested, !Task.isCancelled else { break }
 				isRequested = false
 			}
 		} catch {
-			let message =
-				"Game environment update skipped; runtime unavailable: "
-				+ "\(launcherDiagnosticDescription(for: error))"
+			var path: URL?
+			if case .missingRuntime(let url)? = error as? WineRuntimeDiscoveryError {
+				path = url
+			}
+			let fields: LogFields = ["lane": lane.rawValue, "path": path]
 			if WineRuntimeDiscoveryError.isNotInstalled(error) {
-				log.info(message)
+				log.warning(.runtime, "unavailable", fields, error: error)
 			} else {
-				log.error(message)
+				// The next launch repeats the migration, so a skip is expected here.
+				let skippedFields: LogFields = [
+					"lane": lane.rawValue, "path": path, "error": logFields(for: error).id,
+				]
+				log.info(.runtime, "environment-update-skipped", skippedFields)
 			}
 		}
 		// A stale lease cannot set idle, but the pass must still free the controller for the next one.

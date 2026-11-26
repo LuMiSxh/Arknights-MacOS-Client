@@ -52,7 +52,7 @@ package final class StorageMaintenanceController {
 					try await Self.clearCaches(winePrefix: winePrefix)
 				}
 				onStorageOverviewChanged?()
-				log.info("Shader and browser caches cleared")
+				log.info(.storage, "caches-cleared")
 			} catch {
 				presentCacheFailure(error, id: operationID, region: region)
 			}
@@ -70,7 +70,8 @@ package final class StorageMaintenanceController {
 		else { return false }
 		guard failure.actions.contains(.retry) else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
-		log.info("Recovery selected; action=retry operation=cache-clearing")
+		log.info(
+			.storage, "recovery-selected", ["action": "retry", "operation": "cache-clearing"])
 		clearGameCache()
 		return true
 	}
@@ -83,7 +84,7 @@ package final class StorageMaintenanceController {
 			do {
 				try await clearGalleryCache()
 				onStorageOverviewChanged?()
-				log.info("Preset gallery caches cleared")
+				log.info(.storage, "gallery-caches-cleared")
 			} catch {
 				lifecycle.show(error)
 			}
@@ -97,7 +98,7 @@ package final class StorageMaintenanceController {
 	/// Opens the application support folder, which holds settings, runtimes, and game environments.
 	package func revealApplicationSupport() {
 		let url = paths.applicationSupportRoot
-		log.attempt("Create the application support folder") {
+		log.attempt(.storage, "support-folder-create") {
 			try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
 		}
 		NSWorkspace.shared.open(url)

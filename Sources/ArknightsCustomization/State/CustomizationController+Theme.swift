@@ -132,11 +132,11 @@ extension CustomizationController {
 
 	private func applyDynamicLauncherIcon(_ image: NSImage, persistToBundle: Bool) {
 		guard !launcherIconManager.apply(image, persistToBundle: persistToBundle) else { return }
-		log.error("Failed to persist the Dynamic Theme launcher icon")
+		log.error(.customization, "dynamic-icon-persist-failed")
 	}
 
 	private func resetDynamicLauncherIcon() {
 		guard !launcherIconManager.reset() else { return }
-		log.error("Failed to restore the bundled launcher icon")
+		log.error(.customization, "bundled-icon-restore-failed")
 	}
 }

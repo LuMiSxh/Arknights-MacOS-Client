@@ -30,6 +30,45 @@ package func launcherDiagnosticDescription(for error: any Error) -> String {
 		?? error.localizedDescription
 }
 
+/// The stable identifier and optional detail written to a structured log line for `error`.
+package func logFields(for error: any Error) -> (id: String, detail: String?) {
+	(id: logIdentifier(for: error), detail: logDetail(for: error))
+}
+
+private func logIdentifier(for error: any Error) -> String {
+	if let code = (error as? any SupportCodeProviding)?.supportCode {
+		return code.rawValue
+	}
+	if let urlError = error as? URLError {
+		return "URLError#\(urlError.code.rawValue)"
+	}
+	let nsError = error as NSError
+	guard isSwiftNative(error) else {
+		return "\(nsError.domain)#\(nsError.code)"
+	}
+	let typeName = String(describing: type(of: error))
+	let caseName = String(describing: error)
+		.split(separator: "(", maxSplits: 1, omittingEmptySubsequences: false)[0]
+		.trimmingCharacters(in: .whitespaces)
+	return "\(typeName).\(caseName)"
+}
+
+private func logDetail(for error: any Error) -> String? {
+	if let diagnostic = (error as? any LauncherDiagnosticError)?.diagnosticDescription {
+		return diagnostic
+	}
+	if let description = (error as? any LocalizedError)?.errorDescription {
+		return description
+	}
+	// A Swift error without its own description bridges to the generic, system-localized
+	// "operation couldn't be completed" text, which only repeats the identifier.
+	return isSwiftNative(error) ? nil : error.localizedDescription
+}
+
+private func isSwiftNative(_ error: any Error) -> Bool {
+	(error as NSError).domain == String(reflecting: type(of: error))
+}
+
 package func launcherUserMessage(for error: any Error) -> String {
 	if error is URLError {
 		return "A network error occurred. Check your connection and try again."
@@ -88,7 +127,7 @@ package enum LauncherError: LocalizedError, LauncherDiagnosticError, Sendable {
 		case .invalidResponse: "The game service returned an invalid response."
 		case .server(let code, let message): "Game service API error \(code): \(message)"
 		case .remoteContentTooLarge(let url, let maximumBytes):
-			"Remote content from \(url.host ?? url.absoluteString) exceeded the \(maximumBytes.formatted(.byteCount(style: .file))) limit."
+			"Remote content from \(url.host ?? url.logValue) exceeded the \(maximumBytes.formatted(.byteCount(style: .file))) limit."
 		case .storageMigrationFailed(let diagnostic):
 			"Application storage migration failed: \(diagnostic)"
 		}

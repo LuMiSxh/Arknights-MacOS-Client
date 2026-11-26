@@ -61,9 +61,9 @@ final class PartialDownload {
 		do {
 			try handle.close()
 		} catch {
-			log?.error(
-				"Failed to close partial download at \(partial.url.path): \(error.localizedDescription)"
-			)
+			log?.warning(
+				.install, "partial-close-failed",
+				["path": partial.url], error: error)
 		}
 	}
 

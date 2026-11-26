@@ -53,6 +53,7 @@ package struct DiagnosticsEnvironment: Codable, Sendable, Equatable {
 		package var rosetta: String
 		package var lowPowerMode: Bool
 		package var displays: [Display]
+		package var timeZone: String
 
 		package static func current(rosetta: String, displays: [Display]) -> System {
 			System(
@@ -61,8 +62,22 @@ package struct DiagnosticsEnvironment: Codable, Sendable, Equatable {
 				memoryGB: Int(ProcessInfo.processInfo.physicalMemory / 1_073_741_824),
 				rosetta: rosetta,
 				lowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled,
-				displays: displays
+				displays: displays,
+				timeZone: TimeZone.current.identifier
 			)
+		}
+	}
+
+	/// One failure the launcher presented, with the log line's own ISO 8601 timestamp.
+	package struct Failure: Codable, Sendable, Equatable {
+		package var time: String
+		package var code: String
+		package var operation: String
+
+		package init(time: String, code: String, operation: String) {
+			self.time = time
+			self.code = code
+			self.operation = operation
 		}
 	}
 
@@ -207,15 +222,18 @@ package struct DiagnosticsEnvironment: Codable, Sendable, Equatable {
 	package var runtime: Runtime
 	package var game: Game
 	package var settings: Settings
+	package var recentFailures: [Failure]
 
 	package init(
-		app: App, system: System, runtime: Runtime, game: Game, settings: Settings
+		app: App, system: System, runtime: Runtime, game: Game, settings: Settings,
+		recentFailures: [Failure]
 	) {
 		self.app = app
 		self.system = system
 		self.runtime = runtime
 		self.game = game
 		self.settings = settings
+		self.recentFailures = recentFailures
 	}
 
 	/// Pretty-printed JSON with sorted keys, so two reports diff cleanly.

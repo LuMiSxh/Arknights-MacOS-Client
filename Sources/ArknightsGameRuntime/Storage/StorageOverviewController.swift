@@ -114,7 +114,7 @@ package final class StorageOverviewController {
 			} catch {
 				guard let self, self.measurementSlot.owns(token) else { return }
 				self.isMeasuring = false
-				log.error("Failed to measure launcher storage: \(error.localizedDescription)")
+				log.error(.storage, "measure-failed", error: error)
 			}
 		}
 	}

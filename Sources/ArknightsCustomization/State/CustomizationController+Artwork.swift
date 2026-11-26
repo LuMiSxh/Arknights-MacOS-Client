@@ -113,7 +113,7 @@ extension CustomizationController {
 			let decoded = await CustomizationImageIO.decodeImage(data)
 			guard ownsPassiveArtworkLoad(token) else { return false }
 			guard let decoded else {
-				log.error("Custom launcher artwork is not a valid image")
+				log.error(.customization, "artwork-invalid")
 				return false
 			}
 			let image = NSImage(cgImage: decoded, size: .zero)
@@ -124,9 +124,7 @@ extension CustomizationController {
 			guard ownsPassiveArtworkLoad(token) else { return false }
 			setHasPersistedCustomArtwork(false)
 			if (error as? CocoaError)?.code == .fileReadNoSuchFile { return false }
-			log.error(
-				"Failed to load custom launcher artwork: \(launcherDiagnosticDescription(for: error))"
-			)
+			log.error(.customization, "custom-artwork-load-failed", error: error)
 			return false
 		}
 	}
@@ -163,9 +161,9 @@ extension CustomizationController {
 				self.officialLogo = logo.map { NSImage(cgImage: $0, size: .zero) }
 			} catch {
 				guard self?.officialLogoLoad.owns(token) == true else { return }
-				log.error(
-					"Failed to load cached logo for \(region.displayName): \(error.localizedDescription)"
-				)
+				log.warning(
+					.customization, "cached-logo-load-failed",
+					["server": region.rawValue], error: error)
 			}
 		}
 	}
@@ -188,9 +186,9 @@ extension CustomizationController {
 			)
 			return true
 		} catch {
-			log.error(
-				"Failed to load cached artwork for \(region.displayName): \(error.localizedDescription)"
-			)
+			log.warning(
+				.customization, "cached-artwork-load-failed",
+				["server": region.rawValue], error: error)
 			return false
 		}
 	}
@@ -256,7 +254,7 @@ extension CustomizationController {
 
 	private func discardStagedArtwork(at url: URL) {
 		guard FileManager.default.fileExists(atPath: url.path) else { return }
-		log.attempt("Failed to remove staged custom artwork at \(url.path)") {
+		log.attempt(.customization, "remove-staged-artwork") {
 			try FileManager.default.removeItem(at: url)
 		}
 	}

@@ -152,7 +152,7 @@ package final class PlaytimeStatisticsController {
 		if statistics.activeSession != nil { changedLocally = true }
 		if loaded.activeSession != nil {
 			changedLocally = true
-			log.info("Discarded an unfinished playtime session after launcher restart")
+			log.info(.session, "discarded-unfinished-session")
 		}
 		if changedLocally { save() }
 	}

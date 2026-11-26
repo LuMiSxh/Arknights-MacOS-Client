@@ -86,7 +86,7 @@ extension GameInstaller {
 				at: file.url
 			)
 		} catch is DecodingError {
-			log?.debug("Ignoring invalid installer resume metadata at \(file.url.path)")
+			log?.debug(.install, "resume-metadata-invalid", ["path": file.url])
 			try file.unlink()
 			return nil
 		}

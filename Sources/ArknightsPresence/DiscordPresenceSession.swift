@@ -139,9 +139,7 @@ actor DiscordPresenceSession {
 			state = .active(sessionID: request.sessionID)
 			monitor(connection, token: token)
 		} catch {
-			log.error(
-				"Discord presence could not update: \(launcherDiagnosticDescription(for: error))"
-			)
+			log.warning(.presence, "update-failed", error: error)
 			guard token == generation else { return }
 			self.connection = nil
 			await connection.disconnect()
@@ -156,9 +154,7 @@ actor DiscordPresenceSession {
 			do {
 				try await existing.setActivity(nil, pid: processIdentifier)
 			} catch {
-				log.error(
-					"Discord presence could not clear: \(launcherDiagnosticDescription(for: error))"
-				)
+				log.warning(.presence, "clear-failed", error: error)
 			}
 			await existing.disconnect()
 		}
@@ -180,9 +176,13 @@ actor DiscordPresenceSession {
 				return transport
 			} catch {
 				await transport.disconnect()
-				log.error(
-					"Discord presence could not connect (attempt \(attempt)): \(launcherDiagnosticDescription(for: error))"
-				)
+				log.debug(
+					.presence, "connect-failed",
+					["attempt": attempt, "error": logFields(for: error).id])
+				if attempt == connectionAttempts, token == generation, !Task.isCancelled {
+					log.warning(
+						.presence, "unavailable", ["attempt": attempt], error: error)
+				}
 				guard attempt < connectionAttempts, token == generation, !Task.isCancelled
 				else { return nil }
 				do {

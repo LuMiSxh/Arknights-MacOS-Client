@@ -121,11 +121,11 @@ package final class LauncherCommunicationController {
 						actionURL: announcement.actionURL
 					)
 				)
-				log.info("Announcement presented; id=\(announcement.id)")
+				log.info(.app, "announcement-presented", ["id": announcement.id])
 			} catch is CancellationError {
 				return
 			} catch {
-				log.error("Announcement check failed: \(launcherDiagnosticDescription(for: error))")
+				log.error(.app, "announcement-check-failed", error: error)
 			}
 		}
 	}

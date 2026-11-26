@@ -49,7 +49,12 @@ extension GameSessionController {
 		}
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		log.info(
-			"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(installation.region.rawValue)"
+			.session, "recovery-selected",
+			[
+				"action": "retry",
+				"operation": failure.context.operation.rawValue,
+				"server": installation.region.rawValue,
+			]
 		)
 		switch failure.context.operation {
 		case .runtimeStop:

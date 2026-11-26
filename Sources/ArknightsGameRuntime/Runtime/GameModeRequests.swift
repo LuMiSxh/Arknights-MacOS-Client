@@ -33,23 +33,21 @@ final class GameModeRequests: Sendable {
 	}
 
 	private func logStartFailure(_ error: any Error, on: Bool, log: LauncherLog) {
-		log.error(
-			"Failed to start gamepolicyctl for Game Mode \(on ? "on" : "auto"): \(error.localizedDescription)"
-		)
+		log.warning(
+			.session, "game-mode-start-failed", ["mode": on ? "on" : "auto"], error: error)
 	}
 
 	private func logExit(status: Int32, on: Bool, log: LauncherLog) {
 		guard status != 0 else { return }
-		log.error(
-			"gamepolicyctl exited with status \(status) while setting Game Mode \(on ? "on" : "auto")"
-		)
+		log.warning(
+			.session, "game-mode-exit", ["exitStatus": status, "mode": on ? "on" : "auto"])
 	}
 
 	// Returns after the process exits so a caller can order the next request behind it.
 	@concurrent
 	func setGameMode(on: Bool, log: LauncherLog) async {
 		guard FileManager.default.isExecutableFile(atPath: executable.path) else {
-			log.debug("Game Mode request skipped because gamepolicyctl is unavailable")
+			log.debug(.session, "game-mode-skipped")
 			return
 		}
 		let process = makeProcess(on: on)
@@ -73,9 +71,8 @@ final class GameModeRequests: Sendable {
 			logExit(status: result.status, on: on, log: log)
 		} catch {
 			clear(process)
-			log.error(
-				"Failed to wait for gamepolicyctl while setting Game Mode \(on ? "on" : "auto"): \(error.localizedDescription)"
-			)
+			log.warning(
+				.session, "game-mode-wait-failed", ["mode": on ? "on" : "auto"], error: error)
 		}
 	}
 
@@ -113,12 +110,11 @@ final class GameModeRequests: Sendable {
 		do {
 			let exit = try process.waitSynchronously(timeout: quitWait)
 			if exit.timedOut {
-				log.error("gamepolicyctl did not exit before quit; terminating it")
+				log.warning(.session, "game-mode-quit-timeout")
 			}
 			return exit.result
 		} catch {
-			log.error(
-				"Failed to wait for gamepolicyctl before quit: \(error.localizedDescription)")
+			log.warning(.session, "game-mode-quit-wait-failed", error: error)
 			return nil
 		}
 	}

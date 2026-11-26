@@ -252,7 +252,7 @@ package enum CustomizationImageIO {
 
 	static func discard(_ url: URL, log: LauncherLog) {
 		guard FileManager.default.fileExists(atPath: url.path) else { return }
-		log.attempt("Failed to remove temporary icon file at \(url.path)") {
+		log.attempt(.customization, "remove-temporary-icon") {
 			try FileManager.default.removeItem(at: url)
 		}
 	}

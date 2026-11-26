@@ -17,13 +17,11 @@ extension BackgroundMusicController {
 				guard isCurrent(operation) else { return }
 				try await playerCommands.pause(player)
 				guard isCurrent(operation) else { return }
-				lifecycle.log.info("Background music paused by user")
+				lifecycle.log.info(.music, "paused-by-user")
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
 				clearPlaybackExpectation(expectation)
-				lifecycle.log.error(
-					"Background music failed to pause: \(error.localizedDescription)"
-				)
+				lifecycle.log.error(.music, "pause-failed", error: error)
 			}
 			guard isCurrent(operation) else { return }
 			finishOperation(operation)
@@ -56,18 +54,16 @@ extension BackgroundMusicController {
 				)
 				if changed {
 					lifecycle.log.info(
-						"Background music started the \(direction.logName) track"
-					)
+						.music, "track-changed", ["direction": direction.logName])
 				} else {
 					lifecycle.log.error(
-						"Background music did not start the \(direction.logName) track"
-					)
+						.music, "track-change-failed", ["direction": direction.logName])
 				}
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
 				lifecycle.log.error(
-					"Background music failed to select the \(direction.logName) track: \(error.localizedDescription)"
-				)
+					.music, "track-select-failed", ["direction": direction.logName],
+					error: error)
 			}
 			guard isCurrent(operation) else { return }
 			finishOperation(operation)
@@ -162,8 +158,7 @@ extension BackgroundMusicController {
 			return true
 		}
 		lifecycle.log.error(
-			"Background music timed out waiting for the next track; previous=\(previousVideoID ?? "unknown")"
-		)
+			.music, "track-start-timed-out", ["previousVideoId": previousVideoID])
 		return false
 	}
 
@@ -229,8 +224,7 @@ extension BackgroundMusicController {
 					try await playerCommands.pause(targetPlayer)
 				} catch {
 					lifecycle.log.error(
-						"Background music failed to pause the changed track: \(error.localizedDescription)"
-					)
+						.music, "pause-changed-track-failed", error: error)
 					return false
 				}
 			} else if state == .paused {
@@ -257,9 +251,7 @@ extension BackgroundMusicController {
 		do {
 			return try await playerCommands.getPlaybackState(targetPlayer)
 		} catch {
-			lifecycle.log.debug(
-				"Background music could not read the playback state: \(error.localizedDescription)"
-			)
+			lifecycle.log.warning(.music, "playback-state-read-failed", error: error)
 			return nil
 		}
 	}
@@ -268,9 +260,7 @@ extension BackgroundMusicController {
 		do {
 			return try await playerCommands.getPlaybackMetadata(targetPlayer)
 		} catch {
-			lifecycle.log.debug(
-				"Background music could not read the track title: \(error.localizedDescription)"
-			)
+			lifecycle.log.warning(.music, "metadata-read-failed", error: error)
 			return nil
 		}
 	}
@@ -306,7 +296,8 @@ extension BackgroundMusicController {
 		lastObservedVideoID = metadata.videoId
 		currentMusicTitle = title
 		guard changed else { return true }
-		lifecycle.log.info("Background music now playing: \(title)")
+		let playlist = currentSource?.isPlaylist == true
+		lifecycle.log.info(.music, "track-started", ["title": title, "playlist": playlist])
 		return true
 	}
 }

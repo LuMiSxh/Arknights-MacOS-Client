@@ -213,7 +213,7 @@ package final class RuntimeSelectionController {
 		self.access = access
 		let store = RuntimeStore(paths: paths, selectionStore: selectionStore)
 		self.store = store
-		log?.attempt("Could not rebuild the runtime record") {
+		log?.attempt(.runtime, "record-rebuild") {
 			try store.recoverRecordIfNeeded()
 		}
 		self.selectedLane = paths.runtimeLane
@@ -250,6 +250,43 @@ package final class RuntimeSelectionController {
 		} else {
 			self.failure = nil
 		}
+		logLaneAccess()
+	}
+
+	/// Records each lane's access decision once at startup, so a lane the host cannot run is
+	/// visible in the log instead of only in an opaque install failure.
+	private func logLaneAccess() {
+		guard let log else { return }
+		for lane in RuntimeLane.allCases {
+			log.info(.runtime, "lane-access", accessFields(for: lane))
+		}
+	}
+
+	private func accessFields(for lane: RuntimeLane) -> LogFields {
+		let host = Self.versionText(access.macOSVersion)
+		switch lane {
+		case .x86:
+			return [
+				"lane": lane.rawValue,
+				"allowed": access.allows(lane),
+				"reason": access.accessReason(for: lane).rawValue,
+				"maximum": "\(AppConstants.Runtime.x86LaneLastSupportedMacOSMajorVersion)",
+				"macos": host,
+			]
+		case .arm:
+			let minimum = AppConstants.Runtime.armLaneMinimumMacOS
+			return [
+				"lane": lane.rawValue,
+				"allowed": access.allows(lane),
+				"reason": access.accessReason(for: lane).rawValue,
+				"minimum": "\(minimum.majorVersion).\(minimum.minorVersion)",
+				"macos": host,
+			]
+		}
+	}
+
+	private static func versionText(_ version: OperatingSystemVersion) -> String {
+		"\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
 	}
 
 	package func installedVersion(for lane: RuntimeLane) -> String? {
@@ -276,15 +313,13 @@ package final class RuntimeSelectionController {
 		do {
 			return try configuration.pinnedRuntime(for: lane)
 		} catch {
-			log?.error(
-				"Runtime pin unavailable; lane=\(lane.rawValue); \(launcherDiagnosticDescription(for: error))"
-			)
+			log?.error(.runtime, "pin-unavailable", ["lane": lane.rawValue], error: error)
 			return nil
 		}
 	}
 
 	package func refresh() {
-		log?.attempt("Could not rebuild the runtime record") {
+		log?.attempt(.runtime, "record-rebuild") {
 			try store.recoverRecordIfNeeded()
 		}
 		installedVersions = Self.installedVersions(in: store)
@@ -294,8 +329,7 @@ package final class RuntimeSelectionController {
 			selectedLane = selection.effectiveLane(access: access)
 			laneOverride = selection.validOverride(access: access)
 		} catch {
-			log?.error(
-				"Runtime selection could not be read; \(launcherDiagnosticDescription(for: error))")
+			log?.error(.runtime, "selection-unreadable", error: error)
 		}
 	}
 
@@ -353,7 +387,7 @@ package final class RuntimeSelectionController {
 			installTask = nil
 			if installOwner.owns(token) { installOwner.invalidate() }
 		}
-		log?.info("Runtime install started; lane=\(lane.rawValue) version=\(pin.version)")
+		log?.info(.runtime, "install-started", ["lane": lane.rawValue, "version": pin.version])
 
 		// The operation runs in its own task so a pause can cancel it. Awaiting its value means the
 		// installer's lease and file handles are released before this method returns, even on cancel.
@@ -373,7 +407,9 @@ package final class RuntimeSelectionController {
 			} onCancel: {
 				task.cancel()
 			}
-			log?.info("Runtime installed; lane=\(lane.rawValue) version=\(installed.version)")
+			log?.info(
+				.runtime, "install-completed",
+				["lane": installed.lane.rawValue, "version": installed.version])
 			do {
 				try store.recordInstalled(lane: installed.lane, version: installed.version)
 			} catch {
@@ -388,11 +424,14 @@ package final class RuntimeSelectionController {
 			// A pause is not a failure: the partial archive stays and no failure is presented.
 			// Pausing before the first byte leaves nothing to resume, so the lane stays not installed.
 			if pauseRequested, hasPartialArchive(for: pin) { pausedLane = lane }
-			log?.info("Runtime install cancelled; lane=\(lane.rawValue) paused=\(pauseRequested)")
+			log?.info(
+				.runtime, "install-cancelled", ["lane": lane.rawValue, "paused": pauseRequested])
 			return false
 		} catch {
 			guard installOwner.owns(token) else {
-				log?.info("Runtime install failure ignored; lane=\(lane.rawValue); superseded")
+				log?.info(
+					.runtime, "install-failure-ignored",
+					["lane": lane.rawValue, "reason": "superseded"])
 				return false
 			}
 			present(.installFailure(error, lane: lane))
@@ -409,8 +448,7 @@ package final class RuntimeSelectionController {
 		} catch let error as CocoaError where error.code == .fileNoSuchFile {
 			return false
 		} catch {
-			log?.error(
-				"Could not inspect the partial runtime archive: \(error.localizedDescription)")
+			log?.error(.runtime, "install-partial-archive-inspect-failed", error: error)
 			return false
 		}
 	}
@@ -481,8 +519,8 @@ package final class RuntimeSelectionController {
 		selectedLane = effective
 		clearFailure()
 		log?.info(
-			"Runtime lane selected; lane=\(effective.rawValue) override=\(lane?.rawValue ?? "none")"
-		)
+			.runtime, "lane-selected",
+			["lane": effective.rawValue, "override": lane?.rawValue])
 	}
 
 	/// Removes the lane that is not selected. The selected lane is never touched.
@@ -526,15 +564,13 @@ package final class RuntimeSelectionController {
 			throw error
 		}
 		refresh()
-		log?.info("Runtime removed; lane=\(lane.rawValue)")
+		log?.info(.runtime, "removed", ["lane": lane.rawValue])
 	}
 
 	private func present(_ error: RuntimeSelectionError) {
 		let failure = Self.failure(for: error)
 		self.failure = failure
-		log?.error(
-			"Runtime selection failed; code=\(failure.code?.rawValue ?? "none"); \(failure.diagnostic)"
-		)
+		log?.error(.runtime, "selection-failed", error: error)
 		// Presented through the shared lifecycle so Home shows the same failure sheet as game failures.
 		lifecycle.presentFailure(
 			message: failure.message,

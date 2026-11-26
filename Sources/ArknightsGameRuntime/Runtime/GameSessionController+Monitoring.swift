@@ -14,7 +14,7 @@ extension GameSessionController {
 			session?.spawnGate.denyFurtherSpawns()
 			updateSessionActivity(.stoppingGame(sessionID: sessionID, processIdentifier: nil))
 			lifecycle.setStatus(.stoppingGame)
-			log.info("Game stop requested during launch")
+			log.info(.session, "stop-requested", ["phase": "launch"])
 			session?.launchTask?.cancel()
 			return
 		}
@@ -82,7 +82,7 @@ extension GameSessionController {
 		session?.monitorTask?.cancel()
 		session?.monitorTask = Task { [weak self] in
 			guard let self else { return }
-			log.info("Game stop requested")
+			log.info(.session, "stop-requested")
 			guard activeGameSessionID == sessionID else { return }
 			await stopAndFinishGameSession(
 				using: runtime,
@@ -108,9 +108,7 @@ extension GameSessionController {
 			runtime = try Self.discoverRuntime(
 				paths: paths, lane: lane, compatibilityManager: gameCompatibilityManager)
 		} catch {
-			log.error(
-				"Could not stop Wine during app termination: \(launcherDiagnosticDescription(for: error))"
-			)
+			log.error(.session, "termination-stop-failed", error: error)
 			return
 		}
 		runtime.stopSynchronously(
@@ -163,7 +161,7 @@ extension GameSessionController {
 					log: log
 				)
 				guard activeGameSessionID == sessionID else { return }
-				log.error("Game process exited unexpectedly; \(diagnostics)")
+				log.error(.session, "process-exited", diagnostics)
 				await stopAndFinishGameSession(
 					using: runtime,
 					sessionID: sessionID,
@@ -187,9 +185,9 @@ extension GameSessionController {
 				)
 				guard activeGameSessionID == sessionID else { return }
 				if exit.status == 0, exit.reason == .exit {
-					log.info("Game process exited; \(diagnostics)")
+					log.info(.session, "process-exited", diagnostics)
 				} else {
-					log.error("Game process exited unexpectedly; \(diagnostics)")
+					log.error(.session, "process-exited", diagnostics)
 				}
 				guard activeGameSessionID == sessionID else { return }
 				let failure =
@@ -224,8 +222,7 @@ extension GameSessionController {
 				try await runtime.waitUntilStopped(prefixDirectory: prefixDirectory)
 			} catch {
 				guard !Task.isCancelled else { return }
-				log.error(
-					"Game process monitor failed: \(launcherDiagnosticDescription(for: error))")
+				log.error(.session, "monitor-failed", error: error)
 				guard let self, !Task.isCancelled, activeGameSessionID == sessionID else {
 					return
 				}
@@ -277,7 +274,7 @@ extension GameSessionController {
 			}.value
 		} catch {
 			guard activeGameSessionID == sessionID else { return }
-			log.error("Runtime cleanup failed: \(launcherDiagnosticDescription(for: error))")
+			log.error(.session, "cleanup-failed", error: error)
 			presentRuntimeFailure(
 				error,
 				id: sessionID,
@@ -313,7 +310,7 @@ extension GameSessionController {
 				blocksGameLaunch: terminalFailure.blocksGameLaunch
 			)
 		}
-		log.info("Game process stopped")
+		log.debug(.session, "stopped")
 	}
 
 	private func markGameSessionStopping(_ sessionID: UUID, processIdentifier: Int32?) {

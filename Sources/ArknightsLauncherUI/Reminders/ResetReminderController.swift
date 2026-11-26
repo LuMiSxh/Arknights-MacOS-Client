@@ -122,7 +122,7 @@ final class ResetReminderController {
 				} catch {
 					// A failed request never answers the permission question, so the user's
 					// setting stays and the status remains `.notDetermined`.
-					log?.error("Notification permission request failed: \(error)")
+					log?.warning(.settings, "notification-authorization-failed", error: error)
 					return
 				}
 				guard slot.owns(token) else {
@@ -166,7 +166,9 @@ final class ResetReminderController {
 			do {
 				try await scheduler.add(notification)
 			} catch {
-				log?.error("Could not schedule \(notification.identifier): \(error)")
+				log?.warning(
+					.settings, "notification-schedule-failed",
+					["identifier": notification.identifier], error: error)
 			}
 			guard slot.owns(token) else { return }
 		}

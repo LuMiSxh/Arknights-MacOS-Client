@@ -9,7 +9,6 @@ extension PresetCatalogService {
 	func refreshAvatarsFromRemote() async -> [PresetAvatar] {
 		let epoch = cacheEpoch
 		do {
-			log.info("Fetching remote character table from GameData…")
 			let data = try await characterTableData()
 			guard cacheEpoch == epoch else { return [] }
 
@@ -25,11 +24,11 @@ extension PresetCatalogService {
 				epoch: epoch
 			)
 			guard cacheEpoch == epoch else { return [] }
-			log.info("Successfully indexed \(parsed.count) operators into local cache")
+			log.info(.customization, "operators-indexed", ["count": parsed.count])
 			return parsed
 		} catch {
 			guard cacheEpoch == epoch else { return [] }
-			log.error("Failed to fetch remote character table: \(error.localizedDescription)")
+			log.warning(.customization, "operators-fetch-failed", error: error)
 			return []
 		}
 	}
@@ -80,7 +79,6 @@ extension PresetCatalogService {
 	func refreshWallpapersFromRemote() async -> [PresetWallpaper] {
 		let epoch = cacheEpoch
 		do {
-			log.info("Fetching official wallpapers from Yostar Fankit API…")
 			var wallpapers: [PresetWallpaper] = []
 
 			for page in 1...AppConstants.Presets.wallpaperPageLimit {
@@ -131,12 +129,12 @@ extension PresetCatalogService {
 			)
 			guard cacheEpoch == epoch else { return [] }
 			log.info(
-				"Successfully loaded \(wallpapers.count) official wallpapers from Yostar"
-			)
+				.customization, "wallpapers-loaded",
+				["source": "yostar", "count": wallpapers.count])
 			return wallpapers
 		} catch {
 			guard cacheEpoch == epoch else { return [] }
-			log.error("Failed to fetch official wallpapers: \(error.localizedDescription)")
+			log.warning(.customization, "wallpapers-fetch-failed", error: error)
 			return []
 		}
 	}

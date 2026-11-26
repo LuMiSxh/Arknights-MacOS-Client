@@ -24,8 +24,10 @@ extension LauncherViewModel {
 					AppPaths.previousLogFile(of: paths.launcherLogFile),
 					runtimeLog,
 					AppPaths.previousLogFile(of: runtimeLog),
+					AppPaths.previousSecondLogFile(of: runtimeLog),
 					paths.unityLogFile,
 					AppPaths.previousLogFile(of: paths.unityLogFile),
+					AppPaths.previousSecondLogFile(of: paths.unityLogFile),
 					paths.chromiumLogFile,
 				],
 				sdkLogDirectory: paths.collectedSDKLogDirectory(for: publisher),
@@ -42,10 +44,10 @@ extension LauncherViewModel {
 				runtimeConfigurationURL: paths.activeRuntimeConfigurationURL(
 					for: runtimeSelection.selectedLane)
 			).write()
-			log.info("Diagnostics archive written: \(archive.lastPathComponent)")
+			log.info(.diagnostics, "archive-written", ["file": archive.lastPathComponent])
 			NSWorkspace.shared.activateFileViewerSelecting([archive])
 		} catch is CancellationError {
-			log.info("Diagnostics archive cancelled")
+			log.info(.diagnostics, "archive-cancelled")
 		} catch {
 			lifecycle.show(
 				DiagnosticsError(detail: launcherDiagnosticDescription(for: error)),

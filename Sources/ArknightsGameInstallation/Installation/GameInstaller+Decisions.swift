@@ -25,7 +25,7 @@ extension GameInstaller {
 			LauncherError.remoteContentTooLarge(url, maximumBytes: maximumBytes)
 		case .responseSizeMismatch(let url, let expected, let actual):
 			InstallerError.downloadedSizeMismatch(
-				path: url.absoluteString, expected: expected, actual: actual)
+				path: url.logValue, expected: expected, actual: actual)
 		case .invalidResponse, .redirectRejected:
 			LauncherError.invalidResponse
 		}

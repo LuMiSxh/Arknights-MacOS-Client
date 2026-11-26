@@ -7,34 +7,32 @@ extension GameSessionController {
 	nonisolated static func launchDiagnostics(
 		sessionID: UUID,
 		region: GameRegion,
+		lane: RuntimeLane,
 		options: GameLaunchOptions,
 		batterySaver: Bool,
 		graphicsDiagnosticsEnabled: Bool
-	) -> String {
-		// One long `+` chain exceeds the type checker's budget once the option types are imported.
-		let fields = [
-			"session=\(sessionID.uuidString)",
-			"region=\(region.displayName)",
-			"usesGameSettings=\(options.usesGameSettings)",
-			"displayMode=\(options.displayMode.displayName)",
-			"resolution=\(options.resolution.storageValue)",
-			"fullscreenResolution=\(options.fullscreenResolution.storageValue)",
-			"windowSize=\(options.windowSize.width)x\(options.windowSize.height)",
-			"rendering=\(options.renderingMode.rawValue)",
-			"metalHUD=\(options.usesMetalPerformanceHUD)",
-			"gameMode=\(options.usesGameMode)",
-			"synchronization=\(options.synchronizationMode.displayName)",
-			"frameRateLimit=\(options.frameRateLimit.rawValue)",
-			"batterySaver=\(batterySaver ? "active" : "inactive")",
-			"graphicsDiagnostics=\(graphicsDiagnosticsEnabled)",
+	) -> LogFields {
+		[
+			"session": sessionID,
+			"server": region.rawValue,
+			"lane": lane.rawValue,
+			"usesGameSettings": options.usesGameSettings,
+			"displayMode": options.displayMode.rawValue,
+			"resolution": options.resolution.storageValue,
+			"fullscreenResolution": options.fullscreenResolution.storageValue,
+			"windowSize": options.windowSize.storageValue,
+			"rendering": options.renderingMode.rawValue,
+			"metalHUD": options.usesMetalPerformanceHUD,
+			"gameMode": options.usesGameMode,
+			"synchronization": options.synchronizationMode.rawValue,
+			"frameRateLimit": options.frameRateLimit.rawValue,
+			"batterySaver": batterySaver,
+			"graphicsDiagnostics": graphicsDiagnosticsEnabled,
 		]
-		return "Game launch requested; " + fields.joined(separator: "; ")
 	}
 
-	nonisolated static func launchDuration(since start: Date, now: Date = .now) -> String {
-		max(0, now.timeIntervalSince(start)).formatted(
-			.number.locale(Locale(identifier: "en_US_POSIX")).precision(.fractionLength(2))
-		) + "s"
+	nonisolated static func launchDuration(since start: Date, now: Date = .now) -> Duration {
+		.seconds(max(0, now.timeIntervalSince(start)))
 	}
 
 	// Reads the crash report and log tail off the caller's actor.
@@ -44,7 +42,7 @@ extension GameSessionController {
 		since: Date?,
 		logURL: URL?,
 		log: LauncherLog
-	) async -> String {
+	) async -> LogFields {
 		exitDiagnostics(exit, since: since, logURL: logURL, log: log)
 	}
 
@@ -53,20 +51,18 @@ extension GameSessionController {
 		since: Date?,
 		logURL: URL?,
 		log: LauncherLog
-	) -> String {
-		var parts = ["status=\(exit.status)", "reason=\(Self.reasonDescription(exit.reason))"]
-		if let since { parts.append("ranFor=\(launchDuration(since: since))") }
-		guard let logURL else { return parts.joined(separator: " ") }
-		if let crashReport = recentCrashReportPath(near: .now, log: log) {
-			parts.append("crashReport=\(crashReport)")
+	) -> LogFields {
+		let crashReport = logURL == nil ? nil : recentCrashReportPath(near: .now, log: log)
+		let tail = logURL.flatMap {
+			FileTail.read(of: $0, maximumBytes: AppConstants.Logging.wineLogTailBytes)
 		}
-		if let tail = FileTail.read(
-			of: logURL,
-			maximumBytes: AppConstants.Logging.wineLogTailBytes
-		) {
-			parts.append("\(logURL.lastPathComponent) tail: \(tail)")
-		}
-		return parts.joined(separator: " ")
+		return [
+			"exitStatus": exit.status,
+			"reason": reasonDescription(exit.reason),
+			"elapsed": since.map { Duration.seconds(max(0, Date().timeIntervalSince($0))) },
+			"crashReport": crashReport,
+			"detail": tail,
+		]
 	}
 
 	private nonisolated static func reasonDescription(
@@ -95,7 +91,7 @@ extension GameSessionController {
 				includingPropertiesForKeys: [.contentModificationDateKey]
 			)
 		} catch {
-			log.error("Could not list crash reports: \(error.localizedDescription)")
+			log.error(.diagnostics, "crash-report-list-failed", error: error)
 			return nil
 		}
 		return
@@ -113,9 +109,9 @@ extension GameSessionController {
 					else { return nil }
 					return (url, modified)
 				} catch {
-					log.error(
-						"Could not read the date of \(url.lastPathComponent): \(error.localizedDescription)"
-					)
+					log.warning(
+						.diagnostics, "crash-report-date-failed",
+						["file": url.lastPathComponent], error: error)
 					return nil
 				}
 			}

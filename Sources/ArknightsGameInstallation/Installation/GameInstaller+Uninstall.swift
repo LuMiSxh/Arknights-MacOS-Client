@@ -91,9 +91,7 @@ extension GameInstaller {
 		do {
 			return try loadState(from: root)?.files
 		} catch {
-			log?.error(
-				"Could not read the installed state for uninstall: \(launcherDiagnosticDescription(for: error))"
-			)
+			log?.warning(.install, "installed-state-read-failed", error: error)
 			return nil
 		}
 	}
@@ -107,9 +105,9 @@ extension GameInstaller {
 			let relativePath = try Self.safeRelativePath(path)
 			return (relativePath, try root.file(at: relativePath))
 		} catch {
-			log?.error(
-				"Left a listed file that failed path validation: \(launcherDiagnosticDescription(for: error))"
-			)
+			log?.warning(
+				.install, "manifest-path-rejected",
+				["path": path], error: error)
 			return nil
 		}
 	}
@@ -163,9 +161,9 @@ extension GameInstaller {
 				try entry.staged.rename(to: entry.original)
 			} catch {
 				restoredAll = false
-				log?.error(
-					"Could not put back \(entry.original.url.path): \(launcherDiagnosticDescription(for: error))"
-				)
+				log?.warning(
+					.install, "restore-failed",
+					["path": entry.original.url], error: error)
 			}
 		}
 		// Only empty folders remain when every file came back.
@@ -180,9 +178,9 @@ extension GameInstaller {
 			guard let attributes = try file.stat() else { return false }
 			return attributes.st_mode & S_IFMT == S_IFREG
 		} catch {
-			log?.error(
-				"Left \(file.url.path): \(launcherDiagnosticDescription(for: error))"
-			)
+			log?.warning(
+				.install, "file-skipped",
+				["path": file.url], error: error)
 			return false
 		}
 	}

@@ -40,7 +40,8 @@ enum ScreenshotFileWriter {
 				let target = directory.appending(path: "\(name).png")
 				if try renameWithoutReplacing(partURL, to: target) { return target }
 			}
-			throw CaptureError.saveFailed("Every file name is taken in \(directory.path).")
+			throw CaptureError.saveFailed(
+				"Every screenshot file name is taken in the chosen folder.")
 		} catch {
 			// best effort: the original error matters more than a leftover .part file.
 			try? fileManager.removeItem(at: partURL)

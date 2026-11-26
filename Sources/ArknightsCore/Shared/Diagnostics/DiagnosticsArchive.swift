@@ -71,9 +71,7 @@ package struct DiagnosticsArchive: Sendable {
 			to: directory,
 			redaction: redaction,
 			reportCleanupFailure: {
-				log.error(
-					"Diagnostics file skipped or cleanup failed:\(launcherDiagnosticDescription(for: $0))"
-				)
+				log.warning(.diagnostics, "file-skipped", error: $0)
 			}
 		)
 	}
@@ -90,7 +88,7 @@ package struct DiagnosticsArchive: Sendable {
 				contentsOf: try Self.sdkLogItems(
 					in: sdkLogDirectory, publisher: publisher, fileManager: fileManager))
 		} catch {
-			log.error("SDK logs skipped: \(launcherDiagnosticDescription(for: error))")
+			log.warning(.diagnostics, "sdk-logs-skipped", error: error)
 		}
 		let cutoff = now.addingTimeInterval(-AppConstants.Diagnostics.recentFileWindow)
 		for (region, directory) in gameDirectories {
@@ -100,9 +98,9 @@ package struct DiagnosticsArchive: Sendable {
 						region: region, directory: directory, cutoff: cutoff,
 						fileManager: fileManager))
 			} catch {
-				log.error(
-					"Game folder logs skipped for \(region.rawValue): \(launcherDiagnosticDescription(for: error))"
-				)
+				log.warning(
+					.diagnostics, "game-folder-logs-skipped",
+					["server": region.rawValue], error: error)
 			}
 		}
 		do {
@@ -113,7 +111,7 @@ package struct DiagnosticsArchive: Sendable {
 						+ gameDirectories.map(\.directory),
 					cutoff: cutoff, fileManager: fileManager))
 		} catch {
-			log.error("Crash reports skipped: \(launcherDiagnosticDescription(for: error))")
+			log.warning(.diagnostics, "crash-reports-skipped", error: error)
 		}
 		items.append(contentsOf: runtimeConfigurationItems())
 		// The facts hold no paths by design; redaction is the backstop for any free-form value.
@@ -133,12 +131,16 @@ package struct DiagnosticsArchive: Sendable {
 			do {
 				runtimeConfiguration = try BundledResource.runtimeConfiguration.url()
 			} catch {
-				log.error("\(archiveName) skipped: \(launcherDiagnosticDescription(for: error))")
+				log.warning(
+					.diagnostics, "runtime-configuration-skipped",
+					["file": archiveName], error: error)
 				return []
 			}
 		}
 		guard fileManager.fileExists(atPath: runtimeConfiguration.path) else {
-			log.error("\(archiveName) skipped: \(runtimeConfiguration.path) does not exist")
+			log.warning(
+				.diagnostics, "runtime-configuration-missing",
+				["file": archiveName, "path": runtimeConfiguration])
 			return []
 		}
 		let installed = AppPaths.installedRuntimeConfigurationURLs(
@@ -170,9 +172,10 @@ package struct DiagnosticsArchive: Sendable {
 
 		This folder was written by Arknights Client \(IssueReportURL.appVersion).
 
-		- `environment.json`: app, system, runtime, game, and settings details.
+		- `environment.json`: app, system, runtime, game, and settings details, and the recent failures.
 		- `Logs/`: the launcher log, the game runtime log, the Unity log, and the browser log,
-		  when each exists. Each `*.previous.log` file holds the session before.
+		  when each exists. Each `*.previous.log` file holds the session before; the game
+		  runtime and Unity logs also keep `*.previous-2.log`, the session before that.
 		- `Logs/sdklogs/`: the publisher SDK logs for China, China (Bilibili), and Taiwan,
 		  when they exist. The China (Bilibili) logs from its game folder are included.
 		- `Logs/CrashSight/`: the game crash reporter logs from the last 7 days, per server.

@@ -7,13 +7,18 @@ import Synchronization
 /// Startup instrumentation. Logs each launch milestone once at debug level, measured from the
 /// kernel's process start time, so a start can be checked against the one-second goal.
 ///
-/// Milestones are buffered until `attach(_:enabled:)` and dropped when debug logging is off.
-/// Read them with `grep 'Startup:' ~/Library/Logs/com.lumisxh.arknights-client/launcher.log`.
+/// Milestones are buffered until `attach(_:)`; `LauncherLog` applies the debug gate.
+/// Read them with
+/// `grep 'startup-milestone' ~/Library/Logs/com.lumisxh.arknights-client/launcher.log`.
 package final class StartupTimeline: Sendable {
+	private struct Milestone: Sendable {
+		let name: String
+		let elapsedMilliseconds: Int
+	}
+
 	private enum Sink {
-		case pending([String])
+		case pending([Milestone])
 		case log(LauncherLog)
-		case disabled
 	}
 
 	private struct State {
@@ -35,51 +40,51 @@ package final class StartupTimeline: Sendable {
 	}
 
 	/// Connects the shared timeline to the launcher log and flushes anything recorded earlier.
-	/// When `enabled` is false, earlier milestones are dropped and later ones are ignored.
-	package func attach(_ log: LauncherLog, enabled: Bool) {
-		let pending = state.withLock { state -> [String] in
-			guard case .pending(let lines) = state.sink else { return [] }
-			state.sink = enabled ? .log(log) : .disabled
-			return enabled ? lines : []
+	package func attach(_ log: LauncherLog) {
+		let pending = state.withLock { state -> [Milestone] in
+			guard case .pending(let milestones) = state.sink else { return [] }
+			state.sink = .log(log)
+			return milestones
 		}
-		for line in pending {
-			log.debug(line)
+		for milestone in pending {
+			log.debug(
+				.app, "startup-milestone",
+				["name": milestone.name, "elapsedMs": milestone.elapsedMilliseconds])
 		}
 	}
 
 	package func mark(_ milestone: String) {
-		record("Startup: \(milestone)")
+		record(milestone)
 	}
 
 	package func beginStep(_ name: String) {
-		record("Startup: step \(name) start")
+		record("step \(name) start")
 	}
 
 	package func endStep(_ name: String) {
-		record("Startup: step \(name) end")
+		record("step \(name) end")
 	}
 
 	package func artworkVisible(cached: Bool) {
-		record("Startup: hero artwork visible (\(cached ? "cache" : "no cache"))")
+		record("hero artwork visible (\(cached ? "cache" : "no cache"))")
 	}
 
-	private func record(_ message: String) {
+	private func record(_ name: String) {
 		let elapsed = origin.duration(to: clock.now)
 		let milliseconds =
 			originMilliseconds + Int(elapsed.components.seconds * 1000)
 			+ Int(elapsed.components.attoseconds / 1_000_000_000_000_000)
-		let line = "\(message) +\(milliseconds) ms"
 		state.withLock { state in
+			guard state.loggedMessages.insert(name).inserted else { return }
 			switch state.sink {
-			case .disabled:
-				return
-			case .pending(var lines):
-				guard state.loggedMessages.insert(message).inserted else { return }
-				lines.append(line)
-				state.sink = .pending(lines)
+			case .pending(var milestones):
+				milestones.append(
+					Milestone(name: name, elapsedMilliseconds: milliseconds))
+				state.sink = .pending(milestones)
 			case .log(let log):
-				guard state.loggedMessages.insert(message).inserted else { return }
-				log.debug(line)
+				log.debug(
+					.app, "startup-milestone",
+					["name": name, "elapsedMs": milliseconds])
 			}
 		}
 	}

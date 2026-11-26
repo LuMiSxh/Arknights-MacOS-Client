@@ -24,7 +24,7 @@ enum RuntimeLoaderIcon {
 		let marker = bundle.path + "/" + markerName
 		guard !fileManager.fileExists(atPath: marker) else { return }
 		// The upstream signature seals the bundle; a Finder icon is an xattr plus a root file outside the seal.
-		log.attempt("Setting the loader bundle icon") {
+		log.attempt(.runtime, "loader-icon") {
 			try setIcon(bundle)
 		}
 	}

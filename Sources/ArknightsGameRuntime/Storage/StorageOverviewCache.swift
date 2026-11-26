@@ -24,14 +24,13 @@ struct StorageOverviewCacheStore: Sendable {
 				return []
 			}
 			guard file.formatVersion == AppConstants.Storage.overviewCacheFormatVersion else {
-				log.error(
-					"Ignored storage overview cache with format version \(file.formatVersion)"
-				)
+				log.warning(
+					.storage, "overview-cache-format", ["formatVersion": file.formatVersion])
 				return []
 			}
 			return file.entries
 		} catch {
-			log.error("Ignored unreadable storage overview cache: \(error.localizedDescription)")
+			log.warning(.storage, "overview-cache-unreadable", error: error)
 			return []
 		}
 	}
@@ -42,7 +41,7 @@ struct StorageOverviewCacheStore: Sendable {
 			formatVersion: AppConstants.Storage.overviewCacheFormatVersion,
 			entries: entries
 		)
-		log.attempt("Could not save storage overview cache") {
+		log.attempt(.storage, "overview-cache-save") {
 			try files.write(file, to: fileURL, createParentDirectory: true)
 		}
 	}

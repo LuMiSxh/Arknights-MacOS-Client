@@ -161,7 +161,7 @@ package final class InstallationController {
 					self.currentSelectableRegions.contains($0)
 				}
 				if let diagnostic = snapshot.diagnostic {
-					log.error(diagnostic)
+					log.info(.install, "state-diagnostic", ["detail": diagnostic])
 				}
 			} catch is CancellationError {
 				return
@@ -169,9 +169,9 @@ package final class InstallationController {
 				guard let self, self.ownsStateRefresh(token, request: request) else {
 					return
 				}
-				log.error(
-					"Failed to inspect installation state for \(request.selectedRegion.displayName): \(error.localizedDescription)"
-				)
+				log.warning(
+					.install, "state-inspection-failed",
+					["server": request.selectedRegion.rawValue], error: error)
 			}
 		}
 	}
@@ -234,7 +234,9 @@ package final class InstallationController {
 				applyInstallDirectory(selected)
 			}
 		} catch {
-			log.error("Could not read the chosen install folder: \(error.localizedDescription)")
+			log.warning(
+				.install, "folder-read-failed",
+				["path": selected], error: error)
 		}
 	}
 

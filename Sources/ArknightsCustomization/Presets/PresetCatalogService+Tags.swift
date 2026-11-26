@@ -11,7 +11,7 @@ extension PresetCatalogService {
 		if !hasLoadedWallpaperTagCache {
 			hasLoadedWallpaperTagCache = true
 			if let data = await readBoundedCache(at: cachedWallpaperTagsFile) {
-				log.attempt("Ignored cached wallpaper tags") {
+				log.attempt(.customization, "apply-cached-wallpaper-tags") {
 					tagStore.apply(try WallpaperTagCatalog.decode(data))
 				}
 			}
@@ -34,21 +34,20 @@ extension PresetCatalogService {
 			)
 			guard cacheEpoch == epoch else { return false }
 			guard response.statusCode == 200 else {
-				log.info(
-					"Kept bundled wallpaper tags; manifest returned HTTP \(response.statusCode)")
+				log.warning(
+					.customization, "wallpaper-tags-kept", ["httpStatus": response.statusCode])
 				return false
 			}
 			let tags = try WallpaperTagCatalog.decode(data)
 			tagStore.apply(tags)
-			log.info("Loaded \(tags.count) wallpaper tag entries from the repository")
-			log.attempt("Failed to cache wallpaper tags") {
+			log.info(.customization, "wallpaper-tags-loaded", ["count": tags.count])
+			log.attempt(.customization, "cache-wallpaper-tags") {
 				try data.write(to: cachedWallpaperTagsFile, options: .atomic)
 			}
 			return true
 		} catch {
 			guard cacheEpoch == epoch else { return false }
-			log.error(
-				"Failed to fetch wallpaper tags: \(launcherDiagnosticDescription(for: error))")
+			log.warning(.customization, "wallpaper-tags-fetch-failed", error: error)
 			return false
 		}
 	}
@@ -59,9 +58,7 @@ extension PresetCatalogService {
 			return try BoundedFileReader.readRegularFile(
 				at: url, maximumBytes: AppConstants.Presets.wallpaperTagsMaximumBytes)
 		} catch {
-			log.error(
-				"Failed to read cached wallpaper tags: \(launcherDiagnosticDescription(for: error))"
-			)
+			log.warning(.customization, "wallpaper-tags-read-failed", error: error)
 			return nil
 		}
 	}

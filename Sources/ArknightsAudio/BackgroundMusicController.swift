@@ -156,7 +156,8 @@ package final class BackgroundMusicController {
 		guard !isFollowingChanges else { return }
 		isFollowingChanges = true
 		lifecycle.log.info(
-			"Background music started following launcher state; enabled=\(settings.playsLauncherMusic)"
+			.music, "started-following-state",
+			["enabled": settings.playsLauncherMusic]
 		)
 		activityObserverID = lifecycle.observeActivityChanges { [weak self] in
 			guard let self else { return }
@@ -317,14 +318,16 @@ package final class BackgroundMusicController {
 	private func setupPlayer() {
 		guard let source = parsedYouTubeSource else {
 			stopAndClearPlayer()
-			lifecycle.log.error("Background music failed: invalid YouTube URL")
+			lifecycle.log.error(.music, "invalid-url")
 			return
 		}
 		let sourceType = sourceTypeName(source)
 
 		invalidatePlayerTasks()
 		// Only a new player or source picks a random start; reusing the playlist resumes it.
-		if player == nil || currentSource != source { didStartCurrentPlaylist = false }
+		if player == nil || currentSource != source {
+			didStartCurrentPlaylist = false
+		}
 		consecutiveFailures = 0
 		currentSource = source
 		transition(.sourceLoaded)
@@ -339,14 +342,12 @@ package final class BackgroundMusicController {
 						try await playerCommands.load(player, source)
 					}
 					guard loadingSlot.owns(token) else { return }
-					lifecycle.log.info("Background music loaded source type: \(sourceType)")
+					lifecycle.log.info(.music, "source-loaded", ["source": sourceType])
 					// A freshly cued playlist starts from its `.cued` event, once YouTube knows its tracks.
 					if !(isNewSource && source.isPlaylist) { performFadeIn(on: player) }
 				} catch {
 					guard loadingSlot.owns(token) else { return }
-					lifecycle.log.error(
-						"Background music failed to load source: \(error.localizedDescription)"
-					)
+					lifecycle.log.error(.music, "source-load-failed", error: error)
 				}
 				guard loadingSlot.owns(token) else { return }
 				loadingSlot.invalidate()
@@ -363,7 +364,7 @@ package final class BackgroundMusicController {
 				restrictRelatedVideosToSameChannel: false
 			)
 		)
-		lifecycle.log.info("Background music initializing player with source type: \(sourceType)")
+		lifecycle.log.debug(.music, "player-initializing", ["source": sourceType])
 		player = newPlayer
 		observeEvents(of: newPlayer)
 	}

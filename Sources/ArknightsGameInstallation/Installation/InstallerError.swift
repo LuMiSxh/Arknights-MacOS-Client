@@ -57,7 +57,7 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 		case .symbolicLinkInInstallPath(let url):
 			"The game installer refused a symbolic link in its destination: \(url.path)"
 		case .invalidRemoteAsset(let url):
-			"Refused an unsupported remote asset URL: \(url.absoluteString)"
+			"Refused an unsupported remote asset URL: \(url.logValue)"
 		case .invalidDownloadResponse(let status, let path):
 			"Download for \(path) returned HTTP \(status)."
 		case .downloadedSizeMismatch(let path, let expected, let actual):

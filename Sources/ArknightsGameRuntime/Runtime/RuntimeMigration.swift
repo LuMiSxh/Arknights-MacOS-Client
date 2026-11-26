@@ -6,7 +6,7 @@ import ArknightsInfrastructure
 import Foundation
 
 // One-time Wine prefix setup step, recorded so it isn't replayed on every launch.
-enum RuntimeMigration: String, CaseIterable, Codable, Sendable {
+enum RuntimeMigration: String, CaseIterable, Codable, Sendable, LogValue {
 	case initializeWinePrefix = "initialize-wine-prefix"
 	case installDXMT = "install-dxmt"
 	case configureRegistry = "configure-registry"

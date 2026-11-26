@@ -85,9 +85,7 @@ import ArknightsGameRuntime
 					guard installation.region == region else { return }
 					customization.officialLogo = logo.map { NSImage(cgImage: $0, size: .zero) }
 				} catch {
-					log.error(
-						"Failed to load developer logo: \(error.localizedDescription)"
-					)
+					log.warning(.customization, "developer-logo-load-failed", error: error)
 				}
 				do {
 					if let imageData = try await artworkCache.imageData(
@@ -106,14 +104,10 @@ import ArknightsGameRuntime
 						)
 					}
 				} catch {
-					log.error(
-						"Failed to load developer artwork: \(error.localizedDescription)"
-					)
+					log.warning(.customization, "developer-artwork-load-failed", error: error)
 				}
 			} catch {
-				log.error(
-					"Failed to load developer branding: \(error.localizedDescription)"
-				)
+				log.warning(.customization, "developer-branding-load-failed", error: error)
 			}
 		}
 

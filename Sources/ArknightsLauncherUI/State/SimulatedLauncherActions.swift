@@ -159,7 +159,7 @@ import ArknightsCore
 			else {
 				return
 			}
-			model.log.info("Launcher settings reset to default")
+			model.log.info(.settings, "reset")
 		}
 
 		func uninstallGame() {}

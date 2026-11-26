@@ -192,6 +192,7 @@ extension WineRuntime {
 		logsDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle,
+		logURL: URL? = nil,
 		log: LauncherLog? = nil,
 		spawnGate: WineProcessSpawnGate? = nil
 	) async throws {
@@ -204,22 +205,29 @@ extension WineRuntime {
 		var plan = migrationContext.plan
 		if !plan.pending.isEmpty {
 			log?.info(
-				"Prefix migration plan: \(plan.pending); runtimeRevision=\(revision); "
-					+ "persistedState=\(persistedState != nil); dxmtCurrent=\(dxmtCurrent)"
+				.prefix, "migration-plan",
+				[
+					"pending": Set(plan.pending),
+					"runtimeRevision": revision,
+					"persistedState": persistedState != nil,
+					"dxmtCurrent": dxmtCurrent,
+				]
 			)
 		}
 		for migration in plan.pending {
 			// A yielding caller stops between steps; the persisted state then resumes the rest.
 			try Task.checkCancellation()
 			let stepStarted = Date()
-			log?.debug("Running prefix migration: \(migration)")
+			log?.debug(.prefix, "migration-step-started", ["step": migration])
 			switch migration {
 			case .initializeWinePrefix:
 				try await initializePrefix(
 					prefixDirectory: prefixDirectory,
 					environment: environment,
 					logHandle: logHandle,
-					spawnGate: spawnGate
+					logURL: logURL,
+					spawnGate: spawnGate,
+					log: log
 				)
 			case .installDXMT:
 				try Self.installDXMT(
@@ -230,13 +238,26 @@ extension WineRuntime {
 					libraries: dxmtPayloadLibraries
 				)
 			case .configureRegistry:
-				try await configureCompatibilityOverrides(
-					prefixDirectory: prefixDirectory,
-					environment: environment,
-					log: log,
-					logHandle: logHandle,
-					spawnGate: spawnGate
-				)
+				let stepOffset = logURL.map { Self.runtimeLogOffset($0, log: log) }
+				do {
+					try await configureCompatibilityOverrides(
+						prefixDirectory: prefixDirectory,
+						environment: environment,
+						log: log,
+						logHandle: logHandle,
+						spawnGate: spawnGate
+					)
+				} catch is CancellationError {
+					throw CancellationError()
+				} catch {
+					let errors =
+						logURL.map {
+							Self.wineErrorsSince(stepOffset ?? 0, in: $0, log: log)
+						} ?? []
+					Self.logWineStepFailure(
+						step: migration, status: nil, errors: errors, log: log)
+					throw error
+				}
 			case .shareRuntimeLibraries:
 				try await shareRuntimeLibraries(prefixDirectory: prefixDirectory, log: log)
 			case .removeLegacy32BitLibraries:
@@ -245,17 +266,20 @@ extension WineRuntime {
 			plan.complete(migration)
 			try store.save(plan.state, to: prefixDirectory)
 			log?.debug(
-				"Completed prefix migration: \(migration); "
-					+ "elapsed=\(String(format: "%.2fs", max(0, Date().timeIntervalSince(stepStarted))))"
+				.prefix, "migration-step-completed",
+				[
+					"step": migration,
+					"elapsed": Duration.seconds(max(0, Date().timeIntervalSince(stepStarted))),
+				]
 			)
 		}
 		if plan.pending.isEmpty {
 			if persistedState != plan.state {
 				try store.save(plan.state, to: prefixDirectory)
 			}
-			log?.debug("Prefix migration: nothing pending; runtimeRevision=\(revision)")
+			log?.debug(.prefix, "up-to-date", ["runtimeRevision": revision])
 		} else {
-			log?.info("Prefix migration completed; ran \(plan.pending.count) step(s)")
+			log?.info(.prefix, "migration-completed", ["steps": plan.pending.count])
 		}
 		try store.removeLegacyMarkers(from: prefixDirectory)
 		try WinePrefixConfigurator().configure(
@@ -299,15 +323,15 @@ extension WineRuntime {
 		try Task.checkCancellation()
 		if let code = report.cloneUnsupportedCode {
 			log?.info(
-				"Prefix library sharing skipped: cloning unsupported (errno \(code)); keeping copies"
-			)
+				.prefix, "library-share-skipped",
+				["reason": "clone-unsupported", "errno": code])
 		}
 		for failure in report.failures {
-			log?.error("Prefix library sharing failed for \(failure)")
+			log?.warning(.prefix, "library-share-failed", ["path": failure])
 		}
 		log?.info(
-			"Prefix library sharing: cloned \(report.clonedCount) file(s), \(report.clonedBytes) bytes"
-		)
+			.prefix, "library-share",
+			["cloned": report.clonedCount, "bytes": report.clonedBytes])
 	}
 
 	// Best effort: failures are logged and never block launch, but cancellation leaves the step pending.
@@ -321,28 +345,33 @@ extension WineRuntime {
 		)
 		try Task.checkCancellation()
 		if report.skipped {
-			log?.info("Legacy 32-bit library cleanup skipped: runtime still ships i386-windows")
+			log?.info(
+				.prefix, "legacy-library-cleanup-skipped",
+				["reason": "i386-windows-present"])
 			return
 		}
 		for failure in report.failures {
-			log?.error("Legacy 32-bit library cleanup failed for \(failure)")
+			log?.warning(.prefix, "legacy-library-cleanup-failed", ["path": failure])
 		}
 		log?.info(
-			"Legacy 32-bit library cleanup: removed \(report.removedCount) file(s), \(report.removedBytes) bytes"
-		)
+			.prefix, "legacy-library-cleanup",
+			["removed": report.removedCount, "bytes": report.removedBytes])
 	}
 
 	private func initializePrefix(
 		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle,
-		spawnGate: WineProcessSpawnGate?
+		logURL: URL?,
+		spawnGate: WineProcessSpawnGate?,
+		log: LauncherLog?
 	) async throws {
 		var winebootEnvironment = environment
 		// wineboot always opens a wait dialog; without the mac driver it has no window to show.
 		winebootEnvironment["WINEDLLOVERRIDES"] = [
 			winebootEnvironment["WINEDLLOVERRIDES"], Self.winebootDLLOverride,
 		].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ";")
+		let stepOffset = logURL.map { Self.runtimeLogOffset($0, log: log) }
 		let exitStatus = try await runAndWait(
 			executable: executableURL,
 			arguments: ["wineboot.exe", "-u"],
@@ -351,6 +380,16 @@ extension WineRuntime {
 			spawnGate: spawnGate
 		)
 		guard exitStatus == 0 else {
+			let errors =
+				logURL.map {
+					Self.wineErrorsSince(stepOffset ?? 0, in: $0, log: log)
+				} ?? []
+			Self.logWineStepFailure(
+				step: RuntimeMigration.initializeWinePrefix,
+				status: exitStatus,
+				errors: errors,
+				log: log
+			)
 			throw GameRuntimeError.runtimeConfiguration(
 				"Wine could not initialize its prefix (status \(exitStatus))."
 			)
@@ -474,5 +513,79 @@ extension WineRuntime {
 		])
 		return lhsValues.fileSize == rhsValues.fileSize
 			&& lhsValues.contentModificationDate == rhsValues.contentModificationDate
+	}
+
+	/// The trailing `err:` lines Wine writes for a failed step, oldest first.
+	static func wineErrorLines(
+		in text: String,
+		limit: Int = AppConstants.Logging.wineErrorLines
+	) -> [String] {
+		text.split(whereSeparator: { $0.isNewline })
+			.filter { $0.contains("err:") }
+			.suffix(limit)
+			.map { String($0).trimmingCharacters(in: .whitespaces) }
+	}
+
+	/// Reads the runtime log bytes written since `offset`, bounded to the last 64 KiB, and
+	/// returns their `err:` lines. A read failure omits the field instead of failing the launch.
+	static func wineErrorsSince(
+		_ offset: UInt64,
+		in logURL: URL,
+		maximumBytes: Int = AppConstants.Logging.wineStepTailBytes,
+		log: LauncherLog?
+	) -> [String] {
+		let data: Data
+		let start: UInt64
+		do {
+			let handle = try FileHandle(forReadingFrom: logURL)
+			defer { handle.closeFile() }
+			let size = try handle.seekToEnd()
+			start = max(offset, size > UInt64(maximumBytes) ? size - UInt64(maximumBytes) : 0)
+			try handle.seek(toOffset: start)
+			data = try handle.read(upToCount: maximumBytes) ?? Data()
+		} catch {
+			log?.warning(.prefix, "step-log-read-failed", error: error)
+			return []
+		}
+		var text = String(decoding: data, as: UTF8.self)
+		if start > offset, let newline = text.firstIndex(of: "\n") {
+			// The byte window cut the first line; drop it so only whole errors remain.
+			text = String(text[text.index(after: newline)...])
+		}
+		return wineErrorLines(in: text)
+	}
+
+	/// The runtime log's size before a setup step, so its failure reads only that step's output.
+	static func runtimeLogOffset(_ logURL: URL, log: LauncherLog?) -> UInt64 {
+		do {
+			let handle = try FileHandle(forReadingFrom: logURL)
+			defer { handle.closeFile() }
+			return try handle.seekToEnd()
+		} catch {
+			log?.warning(.prefix, "step-log-offset-failed", error: error)
+			return 0
+		}
+	}
+
+	static func logWineStepFailure(
+		step: any LogValue,
+		status: Int32?,
+		errors: [String],
+		log: LauncherLog?
+	) {
+		guard let log else { return }
+		let errorText = errors.isEmpty ? nil : errors.joined(separator: " | ")
+		switch (status, errorText) {
+		case (.some(let status), .some(let errorText)):
+			log.error(
+				.prefix, "step-failed",
+				["step": step, "exitStatus": status, "wineErrors": errorText])
+		case (.some(let status), .none):
+			log.error(.prefix, "step-failed", ["step": step, "exitStatus": status])
+		case (.none, .some(let errorText)):
+			log.error(.prefix, "step-failed", ["step": step, "wineErrors": errorText])
+		case (.none, .none):
+			log.error(.prefix, "step-failed", ["step": step])
+		}
 	}
 }

@@ -250,6 +250,8 @@ struct WineRuntime: Sendable {
 		runtimeEnvironmentOverrides: [String: String] = [:],
 		clientVariant: GameClientVariant = .standard,
 		publisher: GamePublisher = .yostar,
+		sessionID: UUID? = nil,
+		server: GameRegion? = nil,
 		gameIconURL: URL? = nil,
 		logURL: URL? = nil,
 		log: LauncherLog? = nil,
@@ -264,9 +266,7 @@ struct WineRuntime: Sendable {
 		do {
 			try mutablePrefixDirectory.setResourceValues(prefixValues)
 		} catch {
-			log?.error(
-				"Failed to exclude the Wine prefix from backups: \(error.localizedDescription)"
-			)
+			log?.warning(.prefix, "backup-exclusion-failed", error: error)
 		}
 
 		let logURL =
@@ -276,6 +276,16 @@ struct WineRuntime: Sendable {
 			)
 		let logHandle = try Self.openRuntimeLog(at: logURL, fileManager: fileManager)
 		defer { logHandle.closeFile() }
+		logHandle.appendLaunchLogLine(
+			Self.runtimeLogHeader(
+				sessionID: sessionID,
+				lane: lane,
+				server: server,
+				runtimeRevision: revision,
+				macOSVersion: ProcessInfo.processInfo.operatingSystemVersion
+			),
+			log: log
+		)
 		RuntimePerformanceLog.write(
 			stage: "filesystem", since: launchStarted, to: logHandle, log: log)
 		let compatibilityChanges: GameCompatibilityChanges
@@ -305,6 +315,11 @@ struct WineRuntime: Sendable {
 			synchronizationMode: synchronizationMode,
 			debugLogging: debugLogging
 		)
+		// MoltenVK dumps every supported extension at its default level. Keep normal launches to
+		// errors; debug logging and graphics diagnostics keep their detail.
+		if !debugLogging && !graphicsDiagnostics {
+			environment["MVK_CONFIG_LOG_LEVEL"] = "1"
+		}
 		environment.merge(runtimeEnvironmentOverrides) { _, value in value }
 		if clientVariant == .bilibili {
 			environment["LANG"] = "zh_CN.UTF-8"
@@ -317,29 +332,56 @@ struct WineRuntime: Sendable {
 			logsDirectory: logURL.deletingLastPathComponent(),
 			environment: environment,
 			logHandle: logHandle,
+			logURL: logURL,
 			log: log,
 			spawnGate: spawnGate
 		)
 		RuntimePerformanceLog.write(
 			stage: "prefix", since: launchStarted, to: logHandle, log: log)
 		if clientVariant == .bilibili {
-			try await applyBilibiliFontConfiguration(
+			let fontStepOffset = Self.runtimeLogOffset(logURL, log: log)
+			do {
+				try await applyBilibiliFontConfiguration(
+					prefixDirectory: prefixDirectory,
+					environment: environment,
+					logHandle: logHandle,
+					spawnGate: spawnGate,
+					log: log
+				)
+			} catch is CancellationError {
+				throw CancellationError()
+			} catch {
+				Self.logWineStepFailure(
+					step: "bilibili-fonts",
+					status: nil,
+					errors: Self.wineErrorsSince(fontStepOffset, in: logURL, log: log),
+					log: log
+				)
+				throw error
+			}
+		}
+		environment.removeValue(forKey: "WINEDLLOVERRIDES")
+		let displayStepOffset = Self.runtimeLogOffset(logURL, log: log)
+		do {
+			try await applyDisplayConfiguration(
+				displayConfiguration,
 				prefixDirectory: prefixDirectory,
 				environment: environment,
 				logHandle: logHandle,
-				spawnGate: spawnGate,
+				log: log,
+				spawnGate: spawnGate
+			)
+		} catch is CancellationError {
+			throw CancellationError()
+		} catch {
+			Self.logWineStepFailure(
+				step: "display-configuration",
+				status: nil,
+				errors: Self.wineErrorsSince(displayStepOffset, in: logURL, log: log),
 				log: log
 			)
+			throw error
 		}
-		environment.removeValue(forKey: "WINEDLLOVERRIDES")
-		try await applyDisplayConfiguration(
-			displayConfiguration,
-			prefixDirectory: prefixDirectory,
-			environment: environment,
-			logHandle: logHandle,
-			log: log,
-			spawnGate: spawnGate
-		)
 		RuntimePerformanceLog.write(
 			stage: "display", since: launchStarted, to: logHandle, log: log)
 		environment["ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR"] = String(
@@ -441,6 +483,27 @@ struct WineRuntime: Sendable {
 		return controllerEnvironment
 	}
 
+	/// The first line of each launch's runtime log, matching the launcher log's session ID.
+	static func runtimeLogHeader(
+		sessionID: UUID?,
+		lane: RuntimeLane?,
+		server: GameRegion?,
+		runtimeRevision: String,
+		macOSVersion: OperatingSystemVersion
+	) -> String {
+		let macos =
+			"\(macOSVersion.majorVersion).\(macOSVersion.minorVersion).\(macOSVersion.patchVersion)"
+		let values = [
+			("session", sessionID?.uuidString ?? "none"),
+			("lane", lane?.rawValue ?? "none"),
+			("server", server?.rawValue ?? "none"),
+			("runtime", runtimeRevision),
+			("macos", macos),
+		]
+		let fields = values.map { "\($0.0)=\(logFieldValue($0.1))" }
+		return "Arknights Client \(fields.joined(separator: " "))\n"
+	}
+
 }
 
 extension FileHandle {
@@ -449,7 +512,7 @@ extension FileHandle {
 		do {
 			try write(contentsOf: Data(line.utf8))
 		} catch {
-			log?.error("Launch log write failed: \(error)")
+			log?.error(.session, "launch-log-write-failed", error: error)
 		}
 	}
 }
@@ -465,7 +528,7 @@ enum RuntimePerformanceLog {
 		let components = start.duration(to: now).components
 		let seconds = Double(components.seconds) + Double(components.attoseconds) / 1e18
 		let line = String(
-			format: "Arknights Client timing: %@=%.3fs\n",
+			format: "Arknights Client timing stage=%@ elapsed=%.3fs\n",
 			stage,
 			max(0, seconds)
 		)

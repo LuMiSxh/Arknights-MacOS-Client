@@ -75,7 +75,6 @@ extension LauncherViewModel {
 			showsDismissAction: false
 		)
 		lifecycle.restoreFailure(failure)
-		log.error(
-			"Legacy data deletion failed: \(launcherDiagnosticDescription(for: error))")
+		log.error(.storage, "legacy-data-deletion-failed", error: error)
 	}
 }

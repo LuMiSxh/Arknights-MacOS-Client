@@ -57,8 +57,8 @@ extension GameInstaller {
 				sources.append(try loadReuseSource(at: candidate))
 			} catch {
 				log?.debug(
-					"Skipping \(candidate.path) as a reuse source: \(error.localizedDescription)"
-				)
+					.install, "reuse-source-skipped",
+					["source": candidate, "error": logFields(for: error).id])
 			}
 		}
 		return ReuseSession(sources: sources)
@@ -121,10 +121,9 @@ extension GameInstaller {
 			} catch is CancellationError {
 				throw CancellationError()
 			} catch {
-				log?.debug(
-					"Could not reuse \(item.path) from \(source.directory.path); falling back: "
-						+ launcherDiagnosticDescription(for: error)
-				)
+				log?.warning(
+					.install, "reuse-fallback",
+					["path": item.path, "source": source.directory], error: error)
 			}
 		}
 		return false
@@ -158,9 +157,9 @@ extension GameInstaller {
 			do {
 				try clone.unlink()
 			} catch {
-				log?.error(
-					"Failed to remove reuse clone at \(clone.url.path): \(error.localizedDescription)"
-				)
+				log?.warning(
+					.install, "reuse-clone-remove-failed",
+					["path": clone.url], error: error)
 			}
 		}
 		let cloneDescriptor = try clone.open(flags: O_RDWR | O_CLOEXEC | O_NOFOLLOW)
@@ -180,7 +179,9 @@ extension GameInstaller {
 			progress: progress
 		)
 		await progress(await counter.addReused(bytes: item.byteCount))
-		log?.debug("Reused \(item.path) (\(item.byteCount) bytes) from \(source.directory.path)")
+		log?.debug(
+			.install, "reused",
+			["path": item.path, "bytes": item.byteCount, "source": source.directory])
 		return true
 	}
 
@@ -188,9 +189,9 @@ extension GameInstaller {
 		do {
 			if let status = try partial.stat(), status.st_size == 0 { try partial.unlink() }
 		} catch {
-			log?.error(
-				"Failed to remove empty partial at \(partial.url.path): \(error.localizedDescription)"
-			)
+			log?.warning(
+				.install, "empty-partial-remove-failed",
+				["path": partial.url], error: error)
 		}
 	}
 }

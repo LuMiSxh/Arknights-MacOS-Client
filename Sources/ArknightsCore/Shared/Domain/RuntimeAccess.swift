@@ -13,16 +13,29 @@ package struct RuntimeAccess: Sendable {
 		self.macOSVersion = macOSVersion
 	}
 
-	package func allows(_ lane: RuntimeLane) -> Bool {
+	/// Why `lane` may or may not run on this host, for the startup lane-access log.
+	package enum LaneAccessReason: String, Sendable {
+		case ok
+		case macOSBelowMinimum = "macos-below-minimum"
+		case macOSAboveMaximum = "macos-above-maximum"
+	}
+
+	package func accessReason(for lane: RuntimeLane) -> LaneAccessReason {
 		switch lane {
 		case .x86:
-			return macOSVersion.majorVersion
-				<= AppConstants.Runtime.x86LaneLastSupportedMacOSMajorVersion
+			let lastSupported = AppConstants.Runtime.x86LaneLastSupportedMacOSMajorVersion
+			return macOSVersion.majorVersion <= lastSupported ? .ok : .macOSAboveMaximum
 		case .arm:
 			let minimum = AppConstants.Runtime.armLaneMinimumMacOS
-			return (macOSVersion.majorVersion, macOSVersion.minorVersion, macOSVersion.patchVersion)
+			let meetsMinimum =
+				(macOSVersion.majorVersion, macOSVersion.minorVersion, macOSVersion.patchVersion)
 				>= (minimum.majorVersion, minimum.minorVersion, minimum.patchVersion)
+			return meetsMinimum ? .ok : .macOSBelowMinimum
 		}
+	}
+
+	package func allows(_ lane: RuntimeLane) -> Bool {
+		accessReason(for: lane) == .ok
 	}
 
 	/// The lane the launcher uses unless the user overrides it. ARM64 is preferred wherever it runs.
