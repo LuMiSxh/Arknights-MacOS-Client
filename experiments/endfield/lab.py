@@ -7,14 +7,24 @@ never writes to the app's data directory. See experiments/endfield/README.md.
 """
 
 import argparse
+import contextlib
+import hashlib
 import json
 import os
+import plistlib
+import re
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
+import threading
+import time
+import urllib.parse
+import urllib.request
+import xml.parsers.expat
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path, PureWindowsPath
 
 REPOSITORY_DIR = Path(__file__).resolve().parents[2]
@@ -45,6 +55,69 @@ WINE_DEBUG_PRESETS = {
     "vulkan": "err+all,+vulkan,+loaddll",
 }
 PARENTS = ("direct", "launcher", "stepministrator")
+# macOS short process names (ps ucomm) of the game. A KosmicKrisp GPU hang at ~22.8 GB
+# resident on a 16 GB Mac froze WindowServer; the guard ends the game before that.
+GUARDED_PROCESS_NAMES = frozenset({GAME_PROCESS_NAME, f"{GAME_PROCESS_NAME}.exe"})
+DEFAULT_MEMORY_LIMIT_GB = 12.0
+# The record must survive a hard reboot after a freeze, so each line is fsynced.
+RECORD_INTERVAL_SECONDS = 1.0
+LOG_SYNC_SECONDS = 1.0
+PS_ARGV = ["/bin/ps", "-axo", "pid=,rss=,ucomm="]
+# Process names (ps ucomm) that the record tracks. The guard watches GUARDED_PROCESS_NAMES.
+RECORDED_PROCESS_NAMES = frozenset(
+    {"Endfield", "Endfield.exe", "PlatformProcess.exe", "wineserver", "wineserver64"}
+)
+SAMPLE_TIMEOUT_SECONDS = 5
+VM_STAT_ARGV = ["/usr/bin/vm_stat"]
+SWAP_ARGV = ["/usr/sbin/sysctl", "vm.swapusage"]
+PRESSURE_ARGV = ["/usr/bin/memory_pressure", "-Q"]
+GPU_ARGV = ["/usr/sbin/ioreg", "-a", "-r", "-c", "IOAccelerator"]
+GPU_STATISTIC_KEYS = (
+    "Device Utilization %",
+    "In use system memory",
+    "Alloc system memory",
+    "recoveryCount",
+)
+VM_STAT_PAGES = {
+    "Pages free": "freeBytes",
+    "Pages occupied by compressor": "compressedBytes",
+}
+VM_STAT_COUNTERS = {"Swapins": "swapins", "Swapouts": "swapouts"}
+SWAP_AMOUNT = re.compile(r"(\w+)\s*=\s*([\d.]+)([KMGT])")
+MEMORY_PRESSURE_LEVEL = re.compile(r"memory pressure level:\s*(\w+)")
+MEMORY_FREE_PERCENT = re.compile(r"memory free percentage:\s*(\d+)%")
+# Host crash reports that can name a freeze. `collect` copies the matching files.
+DIAGNOSTIC_REPORTS = (
+    ("user", Path.home() / "Library/Logs/DiagnosticReports"),
+    ("system", Path("/Library/Logs/DiagnosticReports")),
+)
+REPORT_NAME_MARKERS = (
+    "windowserver",
+    "gpuevent",
+    "agx",
+    "endfield",
+    "metal",
+    "watchdog",
+    "panic",
+)
+REPORT_SUFFIXES = (".ips", ".spin", ".panic", ".diag", ".crash")
+REPORT_TIME_MARGIN_SECONDS = 60
+COLLECT_END_MARGIN = timedelta(minutes=2)
+LOG_SHOW_TIMEOUT_SECONDS = 600
+# WindowServer's own records, kernel GPU errors, and kernel memorystatus. A bare
+# "jetsam" match also catches runningboardd assertion dumps, which add noise only.
+LOG_SHOW_PREDICATE = (
+    '(senderImagePath CONTAINS "WindowServer") '
+    'OR (process == "kernel" AND ('
+    'eventMessage CONTAINS[c] "IOGPU" '
+    'OR eventMessage CONTAINS[c] "AGX" '
+    'OR eventMessage CONTAINS[c] "GPU restart" '
+    'OR eventMessage CONTAINS[c] "GPU hang" '
+    'OR eventMessage CONTAINS[c] "memorystatus" '
+    'OR eventMessage CONTAINS[c] "jetsam"'
+    ")) "
+    'OR eventMessage CONTAINS[c] "gpuEvent"'
+)
 DXMT_DLL_DIRECTORY = Path("DXMT/x64")
 KOSMICKRISP_ICD = Path("share/vulkan/icd.d/kosmickrisp_mesa_icd.aarch64.json")
 # Lab-only MoltenVK (KhronosGroup release, unpacked by hand): KosmicKrisp hangs the M4 GPU
@@ -83,6 +156,35 @@ BACKENDS: dict[str, tuple[str, str]] = {
 }
 VULKAN_BACKENDS = {"vkd3d-kk", "vulkan-kk", "vulkan-mvk"}
 
+DEFAULT_PREFIX_NAME = "prefix"
+MF_PREFIX_NAME = "prefix-mf"
+# Diagnostic only. Microsoft's binaries are not licensed for this repository.
+# Never commit or ship them.
+MF_INSTALL_COMMIT = "f8d24e9b600bad038911e8618721c8bfb83872e9"
+MF_HOST = "raw.githubusercontent.com"
+MF_RAW_URL = f"https://{MF_HOST}/Ultimator14/mf-install/{MF_INSTALL_COMMIT}"
+MF_CACHE_DIRECTORY = f"mf-install-{MF_INSTALL_COMMIT[:8]}"
+MF_HTTP_TIMEOUT_SECONDS = 60
+MF_WINDOWS_DIRECTORY = r"C:\mf-install"
+MF_OVERRIDE_KEY = r"HKEY_CURRENT_USER\Software\Wine\DllOverrides"
+# Repository path -> SHA-256. Only the x64 system32 DLLs are copied, as Yaagl does.
+MF_FILES: dict[str, str] = {
+    "system32/colorcnv.dll": "0bab1293a19c960315b89789f7cf4dd39d6cb743d0f4929d03e8f149b6845718",
+    "system32/mf.dll": "dbf0458bed308078edd82c81e6d1209e111c5bfa5d64dd068cedfd9e0a6c05ab",
+    "system32/mferror.dll": "d9ce54938155a37f260b01d808917bc541383b750cd3a3094ce9308e318a0e2c",
+    "system32/mfplat.dll": "025294dd69a421fe4eacaa463f8cb797610d8f3a7a3c61656ae83d0cee07a9bf",
+    "system32/mfplay.dll": "a5c579a7ad6d55cbb13c748201b97c286e0e165827b8ed19019c696459f1f13a",
+    "system32/mfreadwrite.dll": "665d8a6cdf29f9df2d9014a0eb7dcf1f840b7809a625f0752fdc3830ee952413",
+    "system32/msmpeg2adec.dll": "97a9b89b1b50cddf6adff9059dce5935d905796dbcd6db58ea2fa693caaa194a",
+    "system32/msmpeg2vdec.dll": "d7d0bc980c658d5e2f2c605075338493eac97b9d7674007a9490846c2dcdf6f3",
+    "system32/sqmapi.dll": "17411c6a6c1e699bc4b0c04d782fd9aa09cf577dba41e743f7588904d489cb9f",
+    "mf.reg": "078fb5b82e9afcb98a2a61ea5424bf1e297d8da974176a371c41ee0c6d251873",
+    "wmf.reg": "296cf8e139c0145fdb86eb6c901b6f45d33d34179c6d05fc4ebc555fb8d85760",
+}
+MF_DLL_PATHS = tuple(path for path in MF_FILES if path.endswith(".dll"))
+MF_REGISTRY_PATHS = tuple(path for path in MF_FILES if path.endswith(".reg"))
+MF_REGISTER_DLLS = ("colorcnv.dll", "msmpeg2adec.dll", "msmpeg2vdec.dll")
+
 
 @dataclass(frozen=True, slots=True)
 class LaunchPlan:
@@ -93,8 +195,36 @@ class LaunchPlan:
     notes: list[str]
 
 
+@dataclass(frozen=True, slots=True)
+class GuardDecision:
+    """The memory guard's view of one `ps` sample."""
+
+    limit: int
+    resident: int | None
+    pids: list[int]
+
+    @property
+    def over_limit(self) -> bool:
+        return (
+            self.limit > 0 and self.resident is not None and self.resident > self.limit
+        )
+
+    def as_record(self) -> dict[str, object]:
+        return {
+            "limitBytes": self.limit,
+            "sampled": self.resident is not None,
+            "residentBytes": self.resident,
+            "pids": self.pids,
+            "overLimit": self.over_limit,
+        }
+
+
 def utc_stamp() -> str:
     return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+
+
+def iso_timestamp() -> str:
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def lab_root() -> Path:
@@ -126,12 +256,12 @@ def runtime_version(runtime: Path) -> str | None:
     return version if isinstance(version, str) else None
 
 
-def base_environment(lab: Path, runtime: Path) -> dict[str, str]:
+def base_environment(lab: Path, prefix: Path, runtime: Path) -> dict[str, str]:
     # Mirrors WineRuntime.isolatedEnvironment. HOME points into the prefix so Wine never
     # writes to the real home directory.
-    home = lab / "prefix" / "home"
+    home = prefix / "home"
     return {
-        "WINEPREFIX": str(lab / "prefix"),
+        "WINEPREFIX": str(prefix),
         "HOME": str(home),
         "WINEHOMEDIR": str(home),
         "WINEPRELOADERAPPNAME": GAME_PROCESS_NAME,
@@ -149,10 +279,10 @@ def base_environment(lab: Path, runtime: Path) -> dict[str, str]:
     }
 
 
-def host_path(windows_path: str, lab: Path) -> Path:
-    """Map a path on the lab's C: (prefix drive_c) or G: (game folder) drive."""
+def host_path(windows_path: str, prefix: Path, lab: Path) -> Path:
+    """Map a path on the prefix's C: drive or the lab's G: (game folder) drive."""
     windows = PureWindowsPath(windows_path)
-    roots = {"C:": lab / "prefix" / "drive_c", "G:": lab / "game"}
+    roots = {"C:": prefix / "drive_c", "G:": lab / "game"}
     root = roots.get(windows.drive.upper())
     if root is None:
         fail(f"Windows path must be on drive C: or G:: {windows_path}")
@@ -189,19 +319,25 @@ def run_logged(argv: list[str], env: dict[str, str], cwd: Path, log: Path) -> in
         ) as process,
     ):
         assert process.stdout is not None
+        synced = time.monotonic()
         for line in process.stdout:
             sys.stdout.write(line)
             file.write(line)
+            now = time.monotonic()
+            if now - synced >= LOG_SYNC_SECONDS:
+                # A freeze forces a hard reboot; keep the log tail on disk.
+                os.fsync(file.fileno())
+                synced = now
         return process.wait()
 
 
 def run_prefix(args: argparse.Namespace) -> None:
     lab = lab_root()
     runtime = resolve_runtime(args.runtime)
-    prefix = lab / "prefix"
+    prefix = lab / args.prefix
     system32 = prefix / "drive_c/windows/system32"
     dosdevices_link = prefix / "dosdevices/g:"
-    env = base_environment(lab, runtime) | {
+    env = base_environment(lab, prefix, runtime) | {
         "WINEDLLOVERRIDES": PREFIX_WINE_OVERRIDES,
         "WINEDEBUG": WINE_DEBUG_PRESETS["default"],
     }
@@ -231,12 +367,14 @@ def run_prefix(args: argparse.Namespace) -> None:
     success(f"prefix ready: {prefix}")
 
 
-def launch_plan(args: argparse.Namespace, lab: Path, runtime: Path) -> LaunchPlan:
+def launch_plan(
+    args: argparse.Namespace, lab: Path, prefix: Path, runtime: Path
+) -> LaunchPlan:
     wine = str(runtime / "bin/wine64")
     game_directory = lab / "game"
-    game_executable = host_path(GAME_EXECUTABLE, lab)
+    game_executable = host_path(GAME_EXECUTABLE, prefix, lab)
     override, renderer_argument = BACKENDS[args.backend]
-    env = base_environment(lab, runtime) | {
+    env = base_environment(lab, prefix, runtime) | {
         "WINEDEBUG": args.wine_debug or WINE_DEBUG_PRESETS[args.debug],
         "WINEDLLOVERRIDES": override,
     }
@@ -252,14 +390,14 @@ def launch_plan(args: argparse.Namespace, lab: Path, runtime: Path) -> LaunchPla
         env["VK_DRIVER_FILES"] = str(icd)
     # Only the direct parent picks the renderer. The official launcher passes none.
     game_arguments = [*FIXED_GAME_ARGUMENTS, *args.game_args]
-    required = [lab / "prefix"]
+    required = [prefix]
     notes: list[str] = []
     if args.parent == "direct":
         argv = [wine, GAME_EXECUTABLE, renderer_argument, *game_arguments]
         cwd = game_directory
         required.append(game_executable)
     elif args.parent == "launcher":
-        launcher = host_path(args.launcher_exe, lab)
+        launcher = host_path(args.launcher_exe, prefix, lab)
         argv = [wine, args.launcher_exe]
         cwd = launcher.parent
         required.append(launcher)
@@ -268,17 +406,16 @@ def launch_plan(args: argparse.Namespace, lab: Path, runtime: Path) -> LaunchPla
             "and the renderer flag are not passed"
         )
     else:
-        helper = host_path(STEPMINISTRATOR, lab)
+        helper = host_path(STEPMINISTRATOR, prefix, lab)
         argv = [wine, STEPMINISTRATOR, args.games_exe, GAME_EXECUTABLE, *game_arguments]
         # The helper sets the game's working directory itself.
         cwd = helper.parent
-        required += [host_path(args.games_exe, lab), game_executable, helper]
+        required += [host_path(args.games_exe, prefix, lab), game_executable, helper]
     env |= dict(args.env)
     return LaunchPlan(argv=argv, cwd=cwd, env=env, required=required, notes=notes)
 
 
-def missing_message(path: Path, lab: Path) -> str:
-    helper = host_path(STEPMINISTRATOR, lab)
+def missing_message(path: Path, helper: Path) -> str:
     hint = " (build it with build-helpers)" if path == helper else ""
     return f"missing: {path}{hint}"
 
@@ -286,14 +423,18 @@ def missing_message(path: Path, lab: Path) -> str:
 def run_launch(args: argparse.Namespace) -> None:
     lab = lab_root()
     runtime = resolve_runtime(args.runtime)
-    plan = launch_plan(args, lab, runtime)
+    prefix = lab / args.prefix
+    plan = launch_plan(args, lab, prefix, runtime)
     started_at = utc_stamp()
-    log = lab / "logs" / f"{started_at}-{args.backend}-{args.parent}.log"
+    run = f"{started_at}-{args.backend}-{args.parent}"
+    log = lab / "logs" / f"{run}.log"
+    record_path = lab / "logs" / f"{run}-record.jsonl"
     sidecar = log.with_suffix(".json")
     for note in plan.notes:
         warning(note)
+    helper = host_path(STEPMINISTRATOR, prefix, lab)
     problems = [
-        missing_message(path, lab) for path in plan.required if not path.exists()
+        missing_message(path, helper) for path in plan.required if not path.exists()
     ]
     if args.dry_run:
         print_environment(plan.env)
@@ -301,6 +442,7 @@ def run_launch(args: argparse.Namespace) -> None:
         print(f"cwd: {plan.cwd}")
         print(f"log: {log}")
         print(f"sidecar: {sidecar}")
+        print(f"record: {record_path}")
         for problem in problems:
             warning(f"{problem} (a real launch stops here)")
         return
@@ -308,22 +450,272 @@ def run_launch(args: argparse.Namespace) -> None:
         fail("; ".join(problems))
     record = {
         "backend": args.backend,
+        "prefix": args.prefix,
         "parent": args.parent,
         "startedAt": started_at,
         "runtime": {"path": str(runtime), "version": runtime_version(runtime)},
         "cwd": str(plan.cwd),
         "argv": plan.argv,
         "env": plan.env,
+        "record": str(record_path),
     }
     log.parent.mkdir(parents=True, exist_ok=True)
     sidecar.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
-    code = run_logged(plan.argv, plan.env, plan.cwd, log)
+    limit = int(args.memory_limit_gb * 1024**3) if args.memory_limit_gb > 0 else 0
+    recorder = RunRecorder(record_path, limit, plan.env, runtime)
+    recorder.start()
+    try:
+        code = run_logged(plan.argv, plan.env, plan.cwd, log)
+    finally:
+        recorder.close()
     # With the launcher parent, wine returns when the launcher stub exits, while the game
     # may still run. The other parents return only after the game has exited.
     if args.parent != "launcher":
         end_leftovers(plan.env, runtime)
     if code:
         raise SystemExit(code)
+
+
+def parse_ps_samples(ps_output: str) -> list[tuple[int, int, str]]:
+    """Return (pid, resident bytes, command name) from `ps -axo pid=,rss=,ucomm=`."""
+    samples: list[tuple[int, int, str]] = []
+    for line in ps_output.splitlines():
+        fields = line.split(None, 2)
+        if len(fields) == 3:
+            samples.append((int(fields[0]), int(fields[1]) * 1024, fields[2].strip()))
+    return samples
+
+
+def game_usage(ps_output: str) -> tuple[list[int], int]:
+    """Return the guarded game PIDs and their summed resident bytes from `ps` output."""
+    pids: list[int] = []
+    resident = 0
+    for pid, rss, name in parse_ps_samples(ps_output):
+        if name in GUARDED_PROCESS_NAMES:
+            pids.append(pid)
+            resident += rss
+    return pids, resident
+
+
+def sample_processes() -> str:
+    return subprocess.run(
+        PS_ARGV,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+
+
+def end_game(pids: list[int], env: dict[str, str], runtime: Path) -> None:
+    # SIGKILL first: it frees the game's memory at once, even when Wine is stuck.
+    for pid in pids:
+        with contextlib.suppress(ProcessLookupError):
+            os.kill(pid, signal.SIGKILL)
+    quiet = env | {"WINEDEBUG": "-all"}
+    subprocess.run(
+        [str(runtime / "bin/wineserver"), "-k"], env=quiet, check=False, timeout=30
+    )
+    wait_for_wineserver(quiet, runtime)
+
+
+def sample_stdout(argv: list[str]) -> str | None:
+    """Run a cheap host sampler; return None when it fails, so the record shows a gap."""
+    try:
+        completed = subprocess.run(
+            argv,
+            check=False,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=SAMPLE_TIMEOUT_SECONDS,
+        )
+    except OSError, subprocess.TimeoutExpired:
+        return None
+    return completed.stdout if completed.returncode == 0 else None
+
+
+def parse_vm_stat(text: str) -> dict[str, int]:
+    """Return free and compressed bytes plus swap counters from `vm_stat` output."""
+    page_size = 4096
+    match = re.search(r"page size of (\d+) bytes", text)
+    if match:
+        page_size = int(match.group(1))
+    values: dict[str, int] = {}
+    for line in text.splitlines():
+        label, separator, value = line.partition(":")
+        if not separator:
+            continue
+        label = label.strip()
+        digits = value.strip().rstrip(".")
+        if not digits.isdigit():
+            continue
+        if label in VM_STAT_PAGES:
+            values[VM_STAT_PAGES[label]] = int(digits) * page_size
+        elif label in VM_STAT_COUNTERS:
+            values[VM_STAT_COUNTERS[label]] = int(digits)
+    return values
+
+
+def parse_swap_usage(text: str) -> dict[str, int]:
+    """Return total, used, and free swap bytes from `sysctl vm.swapusage` output."""
+    units = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
+    values: dict[str, int] = {}
+    for name, amount, unit in SWAP_AMOUNT.findall(text):
+        if name in {"total", "used", "free"}:
+            values[f"{name}Bytes"] = int(float(amount) * units[unit])
+    return values
+
+
+def parse_memory_pressure(text: str) -> dict[str, int | str]:
+    """Return the pressure level, or the free percentage, from `memory_pressure -Q`."""
+    level = MEMORY_PRESSURE_LEVEL.search(text)
+    if level:
+        return {"level": level.group(1)}
+    percent = MEMORY_FREE_PERCENT.search(text)
+    if percent:
+        return {"freePercent": int(percent.group(1))}
+    return {}
+
+
+def parse_gpu_statistics(payload: bytes) -> dict[str, int] | None:
+    """Return the GPU counters from `ioreg -a -r -c IOAccelerator` output."""
+    try:
+        entries = plistlib.loads(payload)
+    except ValueError, xml.parsers.expat.ExpatError:
+        return None
+    if not isinstance(entries, list):
+        return None
+    for entry in entries:
+        statistics = (
+            entry.get("PerformanceStatistics") if isinstance(entry, dict) else None
+        )
+        if isinstance(statistics, dict) and "Device Utilization %" in statistics:
+            return {
+                key: value
+                for key, value in statistics.items()
+                if key in GPU_STATISTIC_KEYS and isinstance(value, int)
+            }
+    return None
+
+
+def sample_vm_stat() -> dict[str, int] | None:
+    text = sample_stdout(VM_STAT_ARGV)
+    return parse_vm_stat(text) if text else None
+
+
+def sample_swap_usage() -> dict[str, int] | None:
+    text = sample_stdout(SWAP_ARGV)
+    return parse_swap_usage(text) if text else None
+
+
+def sample_memory_pressure() -> dict[str, int | str] | None:
+    text = sample_stdout(PRESSURE_ARGV)
+    return parse_memory_pressure(text) if text else None
+
+
+def sample_gpu_statistics() -> dict[str, int] | None:
+    text = sample_stdout(GPU_ARGV)
+    return parse_gpu_statistics(text.encode("utf-8")) if text else None
+
+
+class RunRecorder:
+    """Write one JSON line per second with host memory, GPU, and guard state.
+
+    A freeze forces a hard reboot, so every line is flushed and fsynced before the next
+    sample. The memory guard reads the same `ps` sample as the record.
+    """
+
+    def __init__(
+        self, path: Path, limit: int, env: dict[str, str], runtime: Path
+    ) -> None:
+        self.limit = limit
+        self.env = env
+        self.runtime = runtime
+        self.started = time.monotonic()
+        self.stopped = threading.Event()
+        self.guard_fired = False
+        self.lock = threading.Lock()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.file = path.open("w", encoding="utf-8", buffering=1)
+
+    def start(self) -> None:
+        threading.Thread(target=self.run, daemon=True).start()
+
+    def close(self) -> None:
+        self.stopped.set()
+        with self.lock:
+            self.file.close()
+
+    def run(self) -> None:
+        while not self.stopped.wait(RECORD_INTERVAL_SECONDS):
+            self.sample()
+
+    def sample(self) -> None:
+        processes, guard = self.processes(sample_stdout(PS_ARGV))
+        self.write(
+            {
+                "timestamp": iso_timestamp(),
+                "elapsedSeconds": round(time.monotonic() - self.started, 1),
+                "processes": processes,
+                "vm": sample_vm_stat(),
+                "swap": sample_swap_usage(),
+                "pressure": sample_memory_pressure(),
+                "gpu": sample_gpu_statistics(),
+                "guard": guard.as_record(),
+            }
+        )
+        if guard.over_limit and not self.guard_fired:
+            self.terminate(guard)
+
+    def processes(
+        self, ps_output: str | None
+    ) -> tuple[dict[str, int] | None, GuardDecision]:
+        if ps_output is None:
+            return None, GuardDecision(self.limit, None, [])
+        processes: dict[str, int] = {}
+        pids: list[int] = []
+        resident = 0
+        for pid, rss, name in parse_ps_samples(ps_output):
+            if name in RECORDED_PROCESS_NAMES:
+                processes[name] = processes.get(name, 0) + rss
+            if name in GUARDED_PROCESS_NAMES:
+                pids.append(pid)
+                resident += rss
+        return processes, GuardDecision(self.limit, resident, pids)
+
+    def write(self, entry: dict[str, object]) -> None:
+        with self.lock:
+            if self.file.closed:
+                return
+            self.file.write(json.dumps(entry, separators=(",", ":")) + "\n")
+            self.file.flush()
+            os.fsync(self.file.fileno())
+
+    def terminate(self, guard: GuardDecision) -> None:
+        self.guard_fired = True
+        assert guard.resident is not None
+        message = (
+            f"the game uses {guard.resident / 1024**3:.1f} GB, over the "
+            f"{self.limit / 1024**3:.1f} GB limit; ending it"
+        )
+        warning(message)
+        self.write(
+            {
+                "timestamp": iso_timestamp(),
+                "event": "guard-kill",
+                "message": message,
+                "guard": guard.as_record(),
+            }
+        )
+        end_game(guard.pids, self.env, self.runtime)
+
+
+def run_kill(args: argparse.Namespace) -> None:
+    lab = lab_root()
+    runtime = resolve_runtime(args.runtime)
+    pids, _ = game_usage(sample_processes())
+    end_game(pids, base_environment(lab, lab / args.prefix, runtime), runtime)
+    success(f"ended {len(pids)} game process(es) and the {args.prefix} prefix")
 
 
 def end_leftovers(env: dict[str, str], runtime: Path) -> None:
@@ -335,9 +727,13 @@ def end_leftovers(env: dict[str, str], runtime: Path) -> None:
         check=False,
         capture_output=True,
     )
+    wait_for_wineserver(quiet, runtime)
+
+
+def wait_for_wineserver(env: dict[str, str], runtime: Path) -> None:
     try:
         subprocess.run(
-            [str(runtime / "bin/wineserver"), "-w"], env=quiet, check=False, timeout=30
+            [str(runtime / "bin/wineserver"), "-w"], env=env, check=False, timeout=30
         )
     except subprocess.TimeoutExpired:
         warning("the prefix is still running after 30 s; check for leftover processes")
@@ -358,7 +754,7 @@ def run_build_helpers(args: argparse.Namespace) -> None:
     )
     if compiler is None:
         fail(f"{MINGW_COMPILER} not found; unpack llvm-mingw into {lab / 'toolchains'}")
-    stepministrator = host_path(STEPMINISTRATOR, lab)
+    stepministrator = host_path(STEPMINISTRATOR, lab / args.prefix, lab)
     command = [
         compiler,
         *MINGW_FLAGS,
@@ -380,6 +776,180 @@ def run_build_helpers(args: argparse.Namespace) -> None:
     success(f"built {stepministrator}")
 
 
+def require_mf_url(url: str) -> None:
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme != "https" or parts.hostname != MF_HOST or parts.port is not None:
+        fail(f"mf-install downloads must use https://{MF_HOST}: {url}")
+
+
+class _MfRedirects(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        require_mf_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_MF_OPENER = urllib.request.build_opener(_MfRedirects)
+
+
+def fetch_mf_bytes(url: str) -> bytes:
+    require_mf_url(url)
+    try:
+        with _MF_OPENER.open(url, timeout=MF_HTTP_TIMEOUT_SECONDS) as response:
+            return response.read()
+    except OSError as error:
+        fail(f"download failed: {url}: {error}")
+
+
+def mf_cached_path(lab: Path, path: str) -> Path:
+    return lab / "downloads" / MF_CACHE_DIRECTORY / Path(path).name
+
+
+def cache_mf_file(lab: Path, path: str) -> None:
+    """Keep one pinned file in the cache, downloading it when the cached copy differs."""
+    digest = MF_FILES[path]
+    cached = mf_cached_path(lab, path)
+    if cached.is_file() and hashlib.sha256(cached.read_bytes()).hexdigest() == digest:
+        return
+    data = fetch_mf_bytes(f"{MF_RAW_URL}/{path}")
+    actual = hashlib.sha256(data).hexdigest()
+    if actual != digest:
+        fail(f"SHA-256 mismatch for {path}: expected {digest}, got {actual}")
+    cached.parent.mkdir(parents=True, exist_ok=True)
+    partial = cached.with_name(f"{cached.name}.part")
+    partial.write_bytes(data)
+    partial.replace(cached)
+
+
+def cache_mf_files(lab: Path) -> None:
+    for path in MF_FILES:
+        cache_mf_file(lab, path)
+
+
+def clone_prefix(source: Path, target: Path) -> None:
+    if target.exists():
+        shutil.rmtree(target)
+    code = subprocess.run(
+        ["cp", "-c", "-R", str(source), str(target)], check=False
+    ).returncode
+    if code:
+        fail(f"cp -c exited with {code}")
+
+
+def point_game_drive(prefix: Path, lab: Path) -> None:
+    link = prefix / "dosdevices/g:"
+    game = lab / "game"
+    if link.is_symlink() and link.readlink() == game:
+        return
+    link.unlink(missing_ok=True)
+    link.symlink_to(game)
+
+
+def mf_destination(path: str, prefix: Path, lab: Path) -> Path:
+    if path in MF_DLL_PATHS:
+        return prefix / "drive_c/windows/system32" / Path(path).name
+    return host_path(MF_WINDOWS_DIRECTORY, prefix, lab) / Path(path).name
+
+
+def copy_mf_files(lab: Path, prefix: Path) -> None:
+    for path in MF_FILES:
+        destination = mf_destination(path, prefix, lab)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(mf_cached_path(lab, path), destination)
+
+
+def mf_steps(wine: str) -> list[tuple[str, list[str]]]:
+    """Return (label, argv) pairs. Each label names that step's log file."""
+    overrides = [
+        (
+            f"override-{Path(path).stem}",
+            [wine, "reg", "add", MF_OVERRIDE_KEY, "/v", Path(path).stem]
+            + ["/d", "native", "/f"],
+        )
+        for path in MF_DLL_PATHS
+    ]
+    imports = [
+        (
+            f"regedit-{Path(path).name}",
+            [wine, "regedit", "/S", str(PureWindowsPath(MF_WINDOWS_DIRECTORY, path))],
+        )
+        for path in MF_REGISTRY_PATHS
+    ]
+    registrations = [
+        (f"regsvr32-{name}", [wine, "regsvr32", "/s", name])
+        for name in MF_REGISTER_DLLS
+    ]
+    return [*overrides, *imports, *registrations]
+
+
+def run_mf_steps(
+    steps: list[tuple[str, list[str]]],
+    env: dict[str, str],
+    lab: Path,
+    runtime: Path,
+    stamp: str,
+) -> None:
+    for label, argv in steps:
+        log = lab / "logs" / f"{stamp}-mf-prefix-{label}.log"
+        code = run_logged(argv, env, lab, log)
+        if not code:
+            continue
+        message = f"mf-prefix step {label} exited with {code}; see {log}"
+        # The ARM64 regsvr32 may not load these x64 DLLs. Finish the prefix anyway: the
+        # log shows the failure, and the decoders then stay unregistered.
+        if label.startswith("regsvr32-"):
+            warning(
+                f"{message}; the decoder is not registered, so the test is inconclusive"
+            )
+        else:
+            fail(message)
+    wait_for_wineserver(env, runtime)
+
+
+def print_mf_plan(
+    source: Path,
+    target: Path,
+    lab: Path,
+    env: dict[str, str],
+    steps: list[tuple[str, list[str]]],
+) -> None:
+    print_environment(env)
+    for path in MF_FILES:
+        print(f"download: {MF_RAW_URL}/{path} -> {mf_cached_path(lab, path)}")
+    print(f"clone: cp -c -R {source} {target}")
+    print(f"symlink: {target / 'dosdevices/g:'} -> {lab / 'game'}")
+    for path in MF_FILES:
+        destination = mf_destination(path, target, lab)
+        print(f"copy: {mf_cached_path(lab, path)} -> {destination}")
+    for label, argv in steps:
+        print(f"argv [{label}]: {shlex.join(argv)}")
+
+
+def run_mf_prefix(args: argparse.Namespace) -> None:
+    lab = lab_root()
+    runtime = resolve_runtime(args.runtime)
+    source = lab / args.source
+    target = lab / args.target
+    if args.source == args.target:
+        fail("--from and --to must name different prefixes")
+    if not source.is_dir():
+        fail(f"source prefix missing: {source}")
+    if target.exists() and not args.force:
+        fail(f"target prefix exists: {target} (pass --force to replace it)")
+    env = base_environment(lab, target, runtime) | {
+        "WINEDEBUG": WINE_DEBUG_PRESETS["default"]
+    }
+    steps = mf_steps(str(runtime / "bin/wine64"))
+    if args.dry_run:
+        print_mf_plan(source, target, lab, env, steps)
+        return
+    cache_mf_files(lab)
+    clone_prefix(source, target)
+    point_game_drive(target, lab)
+    copy_mf_files(lab, target)
+    run_mf_steps(steps, env, lab, runtime, utc_stamp())
+    success(f"mf-prefix ready: {target}")
+
+
 def env_pair(value: str) -> tuple[str, str]:
     key, separator, env_value = value.partition("=")
     if not separator or not key:
@@ -396,6 +966,181 @@ def add_runtime_argument(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def prefix_name(value: str) -> str:
+    """Accept one directory name, so every prefix stays directly under the lab root."""
+    if value in {"", ".", ".."} or "/" in value or "\\" in value:
+        raise argparse.ArgumentTypeError(f"expected a directory name, got {value!r}")
+    return value
+
+
+def add_prefix_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--prefix",
+        type=prefix_name,
+        default=DEFAULT_PREFIX_NAME,
+        metavar="NAME",
+        help="prefix directory under the lab root (default: prefix)",
+    )
+
+
+def resolve_run(lab: Path, run: str) -> Path:
+    """Return the sidecar of the one run that matches a stamp or a full run name."""
+    logs = lab / "logs"
+    matches = [
+        path
+        for path in sorted(logs.glob("*.json"))
+        if path.stem == run or path.stem.startswith(f"{run}-")
+    ]
+    if not matches:
+        fail(f"no run matches {run!r} under {logs}")
+    if len(matches) > 1:
+        names = ", ".join(path.stem for path in matches)
+        fail(f"{run!r} matches several runs: {names}")
+    return matches[0]
+
+
+def run_start(sidecar: Path) -> datetime:
+    entry = json.loads(sidecar.read_text(encoding="utf-8"))
+    started = entry.get("startedAt") if isinstance(entry, dict) else None
+    if not isinstance(started, str):
+        fail(f"run sidecar has no startedAt: {sidecar}")
+    return datetime.strptime(started, "%Y%m%dT%H%M%SZ").replace(tzinfo=UTC)
+
+
+def last_record_time(text: str) -> datetime | None:
+    """Return the timestamp of the last complete record line.
+
+    A hard reboot can leave a partial last line, so an unparseable tail is skipped.
+    """
+    for line in reversed(text.splitlines()):
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        timestamp = entry.get("timestamp") if isinstance(entry, dict) else None
+        if isinstance(timestamp, str):
+            return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ").replace(
+                tzinfo=UTC
+            )
+    return None
+
+
+def is_freeze_report(name: str) -> bool:
+    """Return True for a host report that can explain a freeze."""
+    lowered = name.lower()
+    return lowered.endswith(REPORT_SUFFIXES) and (
+        any(marker in lowered for marker in REPORT_NAME_MARKERS)
+        or lowered.endswith((".spin", ".panic"))
+    )
+
+
+def collect_reports(start: datetime, destination: Path) -> tuple[int, list[str]]:
+    """Copy readable freeze reports newer than `start`; return the count and sudo hints."""
+    copied = 0
+    hints: list[str] = []
+    threshold = start.timestamp() - REPORT_TIME_MARGIN_SECONDS
+    for label, directory in DIAGNOSTIC_REPORTS:
+        try:
+            entries = sorted(directory.iterdir())
+        except FileNotFoundError, PermissionError:
+            continue
+        for path in entries:
+            if not is_freeze_report(path.name):
+                continue
+            try:
+                if not path.is_file() or path.stat().st_mtime < threshold:
+                    continue
+            except OSError:
+                continue
+            target = destination / f"{label}-{path.name}"
+            try:
+                shutil.copy2(path, target)
+            except PermissionError:
+                hints.append(
+                    f"sudo cp -p {shlex.quote(str(path))} {shlex.quote(str(target))}"
+                )
+            else:
+                copied += 1
+    return copied, hints
+
+
+def write_sudo_hints(destination: Path, hints: list[str]) -> None:
+    if not hints:
+        return
+    script = destination / "sudo-copy.sh"
+    script.write_text(
+        "# Run these lines in your terminal to copy the root-owned reports.\n"
+        + "\n".join(hints)
+        + "\n",
+        encoding="utf-8",
+    )
+    print(f"root-owned reports: run {script}, or these lines:")
+    for hint in hints:
+        print(hint)
+
+
+def log_show_command(start: datetime, end: datetime) -> list[str]:
+    """Return `log show` for the freeze window; bare timestamps are local time."""
+    return [
+        "/usr/bin/log",
+        "show",
+        "--start",
+        start.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+        "--end",
+        end.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+        "--info",
+        "--style",
+        "compact",
+        "--predicate",
+        LOG_SHOW_PREDICATE,
+    ]
+
+
+def collect_system_log(start: datetime, end: datetime, destination: Path) -> None:
+    argv = log_show_command(start, end)
+    try:
+        completed = subprocess.run(
+            argv,
+            check=False,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=LOG_SHOW_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        warning(f"log show failed: {error}")
+        return
+    (destination / "log-show.txt").write_text(completed.stdout, encoding="utf-8")
+    if completed.stderr.strip():
+        (destination / "log-show.err").write_text(completed.stderr, encoding="utf-8")
+    if completed.returncode:
+        warning(
+            f"log show exited with {completed.returncode}; "
+            f"see {destination / 'log-show.err'}"
+        )
+
+
+def run_collect(args: argparse.Namespace) -> None:
+    lab = lab_root()
+    sidecar = resolve_run(lab, args.run)
+    start = run_start(sidecar)
+    record = lab / "logs" / f"{sidecar.stem}-record.jsonl"
+    last = (
+        last_record_time(record.read_text(encoding="utf-8"))
+        if record.is_file()
+        else None
+    )
+    end = max(last + COLLECT_END_MARGIN, start) if last else datetime.now(UTC)
+    destination = lab / "logs" / f"{sidecar.stem}-collect"
+    destination.mkdir(parents=True, exist_ok=True)
+    copied, hints = collect_reports(start, destination)
+    write_sudo_hints(destination, hints)
+    collect_system_log(start, end, destination)
+    success(f"collected {copied} report(s) and the system log: {destination}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run Arknights: Endfield on the ARM Wine runtime in the lab root."
@@ -403,11 +1148,39 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
 
     prefix = commands.add_parser("prefix", help="create the lab Wine prefix")
+    add_prefix_argument(prefix)
     add_runtime_argument(prefix)
     prefix.add_argument(
         "--force", action="store_true", help="delete and recreate an existing prefix"
     )
     prefix.add_argument(
+        "--dry-run", action="store_true", help="print the steps without running them"
+    )
+
+    mf = commands.add_parser(
+        "mf-prefix", help="clone a prefix with Microsoft Media Foundation (diagnostic)"
+    )
+    mf.add_argument(
+        "--from",
+        dest="source",
+        type=prefix_name,
+        default=DEFAULT_PREFIX_NAME,
+        metavar="NAME",
+        help="prefix to clone (default: prefix)",
+    )
+    mf.add_argument(
+        "--to",
+        dest="target",
+        type=prefix_name,
+        default=MF_PREFIX_NAME,
+        metavar="NAME",
+        help="new prefix; replaced with --force (default: prefix-mf)",
+    )
+    add_runtime_argument(mf)
+    mf.add_argument(
+        "--force", action="store_true", help="replace an existing target prefix"
+    )
+    mf.add_argument(
         "--dry-run", action="store_true", help="print the steps without running them"
     )
 
@@ -425,10 +1198,12 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument(
         "--dry-run", action="store_true", help="print the compiler command only"
     )
+    add_prefix_argument(build)
 
     launch = commands.add_parser("launch", help="start the game once")
     launch.add_argument("--backend", required=True, choices=sorted(BACKENDS))
     launch.add_argument("--parent", required=True, choices=PARENTS)
+    add_prefix_argument(launch)
     add_runtime_argument(launch)
     launch.add_argument(
         "--debug",
@@ -458,10 +1233,33 @@ def build_parser() -> argparse.ArgumentParser:
         help="Windows path of the official Games.exe (stepministrator parent)",
     )
     launch.add_argument(
+        "--memory-limit-gb",
+        type=float,
+        default=DEFAULT_MEMORY_LIMIT_GB,
+        metavar="GB",
+        help="end the game above this resident memory; 0 disables "
+        f"(default: {DEFAULT_MEMORY_LIMIT_GB:g})",
+    )
+    launch.add_argument(
         "--dry-run", action="store_true", help="print the env, argv, and log path"
     )
     launch.add_argument(
         "game_args", nargs="*", metavar="GAME_ARG", help="extra game arguments"
+    )
+
+    kill = commands.add_parser(
+        "kill", help="end the game and every process in the lab prefix"
+    )
+    add_prefix_argument(kill)
+    add_runtime_argument(kill)
+
+    collect = commands.add_parser(
+        "collect", help="gather host crash reports and the system log for a run"
+    )
+    collect.add_argument(
+        "run",
+        metavar="RUN",
+        help="run stamp or name, e.g. 20261126T220110Z-vulkan-mvk-stepministrator",
     )
     return parser
 
@@ -470,10 +1268,16 @@ def main() -> None:
     args = build_parser().parse_args()
     if args.command == "prefix":
         run_prefix(args)
+    elif args.command == "mf-prefix":
+        run_mf_prefix(args)
     elif args.command == "install":
         run_install(args)
     elif args.command == "build-helpers":
         run_build_helpers(args)
+    elif args.command == "kill":
+        run_kill(args)
+    elif args.command == "collect":
+        run_collect(args)
     else:
         run_launch(args)
 

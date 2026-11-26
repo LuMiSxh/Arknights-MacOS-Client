@@ -6,7 +6,7 @@ This lab tests Arknights: Endfield on the app's ARM Wine runtime.
 
 - Status: experiment. The lab is not part of the app, SwiftPM, or CI.
 - The lab moves into the client only if the exit criteria pass.
-- Files: `lab.py` (CLI), `installer.py` and `zipstream.py` (streaming installer), `test_installer.py`, `fixtures/`, and this README.
+- Files: `lab.py` (CLI), `installer.py` and `zipstream.py` (streaming installer), `test_installer.py`, `test_lab.py` (recorder parsers), `fixtures/`, and this README.
 
 ## Safety
 
@@ -91,6 +91,7 @@ Open work:
   - `GST_PLUGIN_FEATURE_RANK=atdec:MAX,avdec_h264:MAX` (Yaagl's setting for Endfield) did not help.
   - Next, trace with `--wine-debug "err+all,+mfplat,+loaddll"`.
   - Killing the game during shader compilation may have left a broken cache. A game repair is being tested.
+  - Next, run the [Media Foundation test](#media-foundation-test).
 
 Build the helper with ARM64 llvm-mingw. Unpack llvm-mingw into `<lab>/toolchains/` first:
 
@@ -98,7 +99,47 @@ Build the helper with ARM64 llvm-mingw. Unpack llvm-mingw into `<lab>/toolchains
 uv run --locked python experiments/endfield/lab.py build-helpers
 ```
 
-The output is `<lab>/prefix/drive_c/stepministrator/stepministrator.exe`. Add `--dry-run` to print the compiler command only.
+The output is `<lab>/prefix/drive_c/stepministrator/stepministrator.exe`. Add `--prefix NAME` to build into another prefix. Add `--dry-run` to print the compiler command only.
+
+### Media Foundation test
+
+[mf-install](https://github.com/Ultimator14/mf-install) copies Microsoft's native Media Foundation DLLs and its H.264 and AAC decoders into a prefix. Yaagl uses this approach. The test uses it in a cloned prefix, in place of Wine's `mf` and `winegstreamer` path.
+
+- This is a diagnostic only. Microsoft's binaries are not licensed for this repository. Never commit or ship them.
+- The test pins commit `f8d24e9b600bad038911e8618721c8bfb83872e9`. `lab.py` checks the SHA-256 of each file.
+- Downloads go to `<lab>/downloads/mf-install-f8d24e9b/`. Only `raw.githubusercontent.com` is allowed.
+
+Do not run `mf-prefix` while the source prefix runs. The clone copies a live prefix.
+
+`mf-prefix` runs these steps:
+
+1. Checks that the source prefix exists and the target does not. Add `--force` to replace the target.
+2. Downloads the pinned files and checks their SHA-256. A failed download leaves the target untouched.
+3. Clones the source prefix with `cp -c -R`. APFS copy-on-write keeps the clone small until files change.
+4. Points `dosdevices/g:` at `<lab>/game`.
+5. Copies the 9 DLLs to `C:\windows\system32`, the x64 set Yaagl copies. Copies `mf.reg` and `wmf.reg` to `C:\mf-install`.
+6. Sets a `native` DLL override for each of the 9 DLLs.
+7. Imports `mf.reg` and `wmf.reg` with `regedit`.
+8. Registers `colorcnv.dll`, `msmpeg2adec.dll`, and `msmpeg2vdec.dll` with `regsvr32`.
+9. Waits for `wineserver` to exit.
+
+Each step writes its own log to `<lab>/logs/`. The command stops at the first failing step. Its message names the step and the log.
+
+The runtime has no x86_64 `regsvr32`. Step 8 uses the ARM64 `regsvr32`, which may fail on the x64 DLLs. A failure there is only a warning. `wmf.reg` does not register the decoders, so the test is inconclusive after such a failure. Check that step's log.
+
+Run these commands from your own terminal, not from an agent shell:
+
+```sh
+uv run --locked python experiments/endfield/lab.py mf-prefix --runtime "$HOME/Library/Application Support/EndfieldLab/runtimes/wine-11-22-arm64-v0-7-2-alpha-2/wine"
+uv run --locked python experiments/endfield/lab.py launch --prefix prefix-mf --backend vulkan-kk --parent stepministrator --runtime "$HOME/Library/Application Support/EndfieldLab/runtimes/wine-11-22-arm64-v0-7-2-alpha-2/wine" --wine-debug "err+all,+mfplat,+loaddll" --env FEX_MAXINST=5000 --env FEX_MULTIBLOCK=1 --env WINE_DARWIN_SPARSE_READ=1 --env WINE_NGX_SIGNER=1
+```
+
+The clone copies `drive_c/stepministrator` from `prefix`. Run `build-helpers` first if the helper is missing.
+
+Read the result:
+
+- **Intro plays:** the Wine Media Foundation path (`mf` or `winegstreamer`) is the bug.
+- **Still black:** the bug is not in that path. Check rendering, or video that does not use Media Foundation.
 
 ## Usage
 
@@ -130,7 +171,7 @@ Install the game into `<lab>/game`. The command stops when free disk is below th
 uv run --locked python experiments/endfield/lab.py install
 ```
 
-Run the installer tests:
+Run the lab tests:
 
 ```sh
 uv run --locked python -m pytest experiments/endfield -q
@@ -140,6 +181,12 @@ Build the helpers. Add `--dry-run` to print the compiler commands only:
 
 ```sh
 uv run --locked python experiments/endfield/lab.py build-helpers
+```
+
+Clone a prefix with Media Foundation. Add `--dry-run` to print the steps only. See the [Media Foundation test](#media-foundation-test):
+
+```sh
+uv run --locked python experiments/endfield/lab.py mf-prefix --dry-run --runtime "$HOME/Library/Application Support/EndfieldLab/runtimes/wine-11-22-arm64-v0-7-2-alpha-2/wine"
 ```
 
 Print a launch without starting it:
@@ -160,17 +207,22 @@ Options:
 
 - `--backend`: `dxmt-d3d11`, `vkd3d-kk`, `vulkan-kk`, or `vulkan-mvk`. `vulkan-mvk` uses a lab-only MoltenVK from `<lab>/toolchains/moltenvk-*/` (KhronosGroup release, `icd.d/MoltenVK_icd.json` with an absolute library path and without `is_portability_driver`). The ARM Wine does not enumerate portability drivers, so the loader skips MoltenVK while that flag is set. On 2026-11-22 `vulkan-kk` hung the M4 GPU ("firmware-detected lockup") when the game loaded its world.
 - `--parent`: `direct`, `launcher`, or `stepministrator`. Only `direct` adds the renderer flag for `--backend`. The `stepministrator` parent passes no renderer flag. The game takes its renderer from the launcher setting.
+- `--prefix NAME`: prefix directory under the lab root. Default: `prefix`. Use one directory name; separators and `..` are rejected. Used by `prefix`, `launch`, and `build-helpers`.
 - `--runtime PATH`: use a patched runtime, for example `<lab>/runtimes/<name>`.
 - `--debug`: `default`, `ace`, or `vulkan`.
 - `--wine-debug RAW`: set a raw `WINEDEBUG` value. It overrides `--debug`.
 - `--env K=V`: add an environment entry. Repeat it for more entries.
 - `--launcher-exe` and `--games-exe`: change the Windows paths of the official tools.
+- `--memory-limit-gb GB`: end the game when its resident memory exceeds this limit. Default: 12. Use `0` to disable. A run at about 22.8 GB on a 16 GB Mac hung the GPU and froze the display. The guard decision and any kill also go into the run record.
+- `kill`: end the game and every process in the lab prefix. Run it over SSH when the display freezes: `uv run --locked python experiments/endfield/lab.py kill --prefix prefix-mf`.
+- `collect RUN`: copy the host crash reports and the system log for a finished run. See [Collect host reports](#collect-host-reports).
 - Extra arguments after `--` go to the game.
 
-Each launch writes three files to `<lab>/logs/`:
+Each launch writes four files to `<lab>/logs/`:
 
 - A `.log` file with the game output.
-- A `.json` file with the exact environment, argument list, runtime path, and runtime version.
+- A `.json` file with the exact environment, argument list, runtime path, runtime version, and prefix name.
+- A `-record.jsonl` file with one host sample per second. See [Freeze recorder](#freeze-recorder).
 - A timestamp in the file name, in UTC.
 
 The `prefix` command logs `wineboot` output the same way.
@@ -185,10 +237,44 @@ The `prefix` command:
 
 The prefix environment reuses the launch base environment. This keeps `HOME` inside the prefix.
 
+The `mf-prefix` command clones a prefix with `cp -c -R`. It does not run `wineboot`.
+
 ### Launch behavior
 
 - The launcher parent starts the game itself. The lab does not pass game arguments or the renderer flag in this mode.
 - The lab stops before a real launch when a required file is missing. A dry run only warns.
+
+### Freeze recorder
+
+Every launch writes `<lab>/logs/<run>-record.jsonl`. The run name is the log name without its suffix. The recorder samples the host once per second:
+
+- Resident memory of `Endfield.exe`, `PlatformProcess.exe`, and `wineserver` from `ps`.
+- Free and compressed memory, plus the swap counters, from `vm_stat`.
+- Swap usage from `sysctl vm.swapusage`.
+- Memory pressure from `memory_pressure -Q`.
+- GPU counters from `ioreg -r -c IOAccelerator`: device utilization, in-use memory, allocated memory, and `recoveryCount`.
+
+Each line is one JSON object. It holds a UTC timestamp, the elapsed seconds, the samples, and the guard decision. The recorder flushes and fsyncs every line, so a freeze and a hard reboot keep the record up to the last second.
+
+The memory guard reads the same `ps` sample. When the game passes `--memory-limit-gb`, the record gets a `guard-kill` line before the lab ends the game. The warning also prints in the terminal.
+
+`launch` fsyncs the Wine log about once per second. The log keeps its tail through a hard reboot.
+
+### Collect host reports
+
+After a freeze and a reboot, gather the host evidence for the run:
+
+```sh
+uv run --locked python experiments/endfield/lab.py collect 20261126T220110Z-vulkan-mvk-stepministrator
+```
+
+Use the run stamp or the full run name. `collect` writes `<lab>/logs/<run>-collect/`:
+
+- The WindowServer, GPU, Endfield, and Wine reports from `~/Library/Logs/DiagnosticReports` and `/Library/Logs/DiagnosticReports`. It copies only reports newer than the run start.
+- `log-show.txt`: the unified log from the run start to two minutes after the last record. It selects kernel GPU, WindowServer, jetsam, and memorystatus messages. `collect` converts the UTC run times to local time, which `log show` expects.
+- `log-show.err`: the `log show` error output, when it writes any.
+
+A report that needs root privileges stays in place. `collect` prints the `sudo cp` line and writes `sudo-copy.sh`. Run the line from your terminal, then copy the file into the same directory.
 
 ## Test plan
 
