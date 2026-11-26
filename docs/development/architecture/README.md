@@ -162,7 +162,7 @@ and resource layout), and `runtime.json` (runtime layout) through `scripts/lib/p
 
 The native side runs on Apple Silicon and macOS 15 or newer. The runtime ships as two downloadable
 lanes: x86_64, which runs through Rosetta 2, and native ARM64, which needs
-`AppConstants.Runtime.armLaneMinimumMacOS` (27.0). `RuntimeAccess` picks the lane: ARM64 where it is
+`AppConstants.Runtime.armLaneMinimumMacOS` (26.5). `RuntimeAccess` picks the lane: ARM64 where it is
 allowed, otherwise x86_64. A persisted override wins only while the OS allows it.
 Before launch on the x86_64 lane, the launcher verifies that macOS can run an Intel process through
 Rosetta 2.
