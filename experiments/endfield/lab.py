@@ -163,6 +163,8 @@ BACKENDS: dict[str, tuple[str, str]] = {
     "vulkan-mvk": ("dcomp,mscoree,mshtml=", "-force-vulkan"),
 }
 VULKAN_BACKENDS = {"vkd3d-kk", "vulkan-kk", "vulkan-mvk"}
+# Alpha-4's DXVK D3D9 path creates a Vulkan instance even when the game uses D3D11.
+ICD_BACKENDS = VULKAN_BACKENDS | {"mullion-d3d11"}
 
 DEFAULT_PREFIX_NAME = "prefix"
 MF_PREFIX_NAME = "prefix-mf"
@@ -451,7 +453,7 @@ def launch_plan(
         if not icds:
             fail(f"no MoltenVK ICD matches {lab / MOLTENVK_ICD_GLOB}")
         env["VK_DRIVER_FILES"] = str(icds[-1])
-    elif args.backend in VULKAN_BACKENDS:
+    elif args.backend in ICD_BACKENDS:
         icd = runtime / KOSMICKRISP_ICD
         if not icd.is_file():
             fail(f"runtime has no KosmicKrisp ICD: {icd}")
