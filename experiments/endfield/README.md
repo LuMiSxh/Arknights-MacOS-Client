@@ -6,7 +6,7 @@ This lab tests Arknights: Endfield on the app's ARM Wine runtime.
 
 - Status: experiment. The lab is not part of the app, SwiftPM, or CI.
 - The lab moves into the client only if the exit criteria pass.
-- Files: `lab.py` (CLI), `installer.py` and `zipstream.py` (streaming installer), `test_installer.py`, `test_lab.py` (recorder parsers), `fixtures/`, and this README.
+- Files: `lab.py` (CLI), `installer.py` and `zipstream.py` (streaming installer), `updates.py` (version and update check), `gamecrypt.py` (AES-256-CBC), `test_installer.py`, `test_lab.py`, `test_updates.py`, `fixtures/`, and this README.
 
 ## Current state
 
@@ -84,6 +84,52 @@ Safety rules:
 - It rejects absolute paths, drive letters, `..`, empty components, and symlink entries.
 - It never follows a symlink under `<lab>/game`. It writes only under the lab root.
 - It supports stored and deflate entries only.
+
+## Game updates
+
+The launcher API reports the latest version and, when it can patch an install, the patch files. These facts come from the live API on 2026-11-27.
+
+Request:
+
+```text
+GET https://launcher.gryphline.com/api/game/get_latest
+  ?appcode=YDUTE5gscDZ229CW
+  &launcher_appcode=TiaytKBUIEdoEwRT
+  &channel=6&sub_channel=6&launcher_sub_channel=6
+  &disk_type=0&patch_encrypt=true
+  [&version=<installed>]
+```
+
+- Send no `device_id`.
+- The response holds `version`, `action` (1 means update required), `state` (1 means the install is ahead), and `launcher_action`.
+- `pkg` holds `packs[]`, `url`, `file_path`, `game_files_md5`, and `total_size`.
+- `patch` holds `patches[]` or `url`, `v2_patch_info_url|md5|size`, `v2_verify_files_url|md5|size`, `cd_key`, and `total_size`. It can be null.
+- `pre_patch` has the same shape as `patch`.
+
+Read the installed version from the game's `config.ini`. The file is AES-256-CBC encrypted.
+
+- Key, hex: `c0f30e1ce763bbc21cc355a34303ac50399444bff68c4a22af398c0a166ee143`.
+- IV, hex: `33467861192750649501937264608400`. This is 16 bytes. The ASCII form is 32 bytes and invalid for AES-CBC.
+- The decrypted INI has `[Game]` with `version`, `entry`, and `entry_md5`. Run `lab.py version`.
+
+The `game_files` manifest uses the same AES scheme. `installer.py` checks only `pkg.game_files_md5` and ignores the manifest contents.
+
+Observed live:
+
+- The lab install reports `1.7.2`.
+- Requesting `1.7.2` returns `action` 0 and no packs.
+- Requesting `1.7.1`, `1.7.0`, `1.6.x`, or `1.4.0` returns `action` 1, 63 packs, and `pkg.total_size` 139623810121. `state` is 0.
+- `patch` and `pre_patch` were null for every version probed on sub-channels 6 and 9999, and through `batch_proxy` too. The server offered only the full package.
+- The lab therefore could not download `v2_patch_info` or `v2_verify_files`. `lab.py update-check` fetches them into `<lab>/updates/` when a patch appears.
+
+Applying a patch would need:
+
+1. Download `v2_patch_info` (plain JSON) and `v2_verify_files` (AES), verify their MD5 and size, and decrypt the verify list.
+2. Download each patch archive. Extract it with the password in `cd_key`.
+3. Apply each per-file binary diff with [hpatchz](https://github.com/sisong/HDiffPatch) (MIT). Honor `delete_files.txt`, and copy VFS diffs from `vfs_files/vfs_patch/`.
+4. Verify the result against `v2_verify_files`, then write the new `config.ini`.
+
+Patch URLs are not observed yet. If they use a host other than `beyond.hg-cdn.com`, add it to `installer.ALLOWED_HOSTS`.
 
 ## stepministrator
 
@@ -185,6 +231,19 @@ Install the game into `<lab>/game`. The command stops when free disk is below th
 
 ```sh
 uv run --locked python experiments/endfield/lab.py install
+```
+
+Print the installed game version. It decrypts `<lab>/game/config.ini` read-only:
+
+```sh
+uv run --locked python experiments/endfield/lab.py version
+```
+
+Ask the API for an update, once for the installed version and once for one patch version lower. It downloads only `v2_patch_info` and `v2_verify_files` when a patch exists:
+
+```sh
+uv run --locked python experiments/endfield/lab.py update-check
+uv run --locked python experiments/endfield/lab.py update-check --version 1.7.1 --no-download
 ```
 
 Run the lab tests:

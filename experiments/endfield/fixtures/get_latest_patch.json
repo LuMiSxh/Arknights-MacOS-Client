@@ -1,0 +1,41 @@
+{
+  "action": 1,
+  "version": "1.7.2",
+  "request_version": "1.7.1",
+  "state": 0,
+  "launcher_action": 0,
+  "pkg": {
+    "file_path": "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.7/update/6/6/Windows/1.7.2_0JZ/files",
+    "game_files_md5": "f610574a6888953d6995ccfa790a47e7",
+    "package_type": "ALL_PACKAGE",
+    "total_size": "139623810121",
+    "packs": [
+      {
+        "url": "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.7/update/6/6/Windows/1.7.2_0JZ/packs/Beyond_Release_v1d7-Rel-o.zip.001",
+        "md5": "1b8b35c7808d1c114665ca24c453cd4b",
+        "package_size": "1073741824"
+      },
+      {
+        "url": "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.7/update/6/6/Windows/1.7.2_0JZ/packs/Beyond_Release_v1d7-Rel-o.zip.002",
+        "md5": "4fa3b776f886a3f33513ea4ae86a4dae",
+        "package_size": "1073741824"
+      }
+    ]
+  },
+  "patch": {
+    "url": "",
+    "patches": [
+      "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.7/update/6/6/Windows/1.7.2_0JZ/patch/Beyond_1.7.1_to_1.7.2.zip",
+      "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.7/update/6/6/Windows/1.7.2_0JZ/patch/Beyond_1.7.1_to_1.7.2_vfs.zip"
+    ],
+    "v2_patch_info_url": "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.7/update/6/6/Windows/1.7.2_0JZ/patch/v2_patch_info.json",
+    "v2_patch_info_md5": "0123456789abcdef0123456789abcdef",
+    "v2_patch_info_size": "2048",
+    "v2_verify_files_url": "https://beyond.hg-cdn.com/YDUTE5gscDZ229CW/1.7/update/6/6/Windows/1.7.2_0JZ/patch/v2_verify_files",
+    "v2_verify_files_md5": "fedcba9876543210fedcba9876543210",
+    "v2_verify_files_size": "4096",
+    "cd_key": "patch-password",
+    "total_size": "987654321"
+  },
+  "pre_patch": null
+}

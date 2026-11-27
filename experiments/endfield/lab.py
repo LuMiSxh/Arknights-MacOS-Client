@@ -33,6 +33,7 @@ sys.path.insert(0, str(REPOSITORY_DIR / "scripts"))
 
 import installer  # noqa: E402
 import media  # noqa: E402
+import updates  # noqa: E402
 from lib.common import PROJECT_DIR, ScriptError, fail, run_main  # noqa: E402
 from lib.console import info, success, warning  # noqa: E402
 from lib.project_config import RUNTIME_CONFIG  # noqa: E402
@@ -921,6 +922,118 @@ def run_background(args: argparse.Namespace) -> None:
         fail(str(error))
 
 
+def game_path(args: argparse.Namespace, lab: Path) -> Path:
+    return args.game.expanduser() if args.game else lab / "game"
+
+
+def url_host(url: str | None) -> str:
+    return (urllib.parse.urlsplit(url).hostname or "?") if url else "-"
+
+
+def run_version(args: argparse.Namespace) -> None:
+    lab = lab_root()
+    game = game_path(args, lab)
+    try:
+        installed = updates.installed_game(game)
+    except installer.InstallError as error:
+        fail(str(error))
+    print(f"config: {game / updates.CONFIG_FILE}")
+    print(f"version: {installed.version}")
+    print(f"entry: {installed.entry} ({installed.entry_md5})")
+    print(f"appcode: {installed.appcode} region: {installed.region}")
+    print(f"channel: {installed.channel} sub_channel: {installed.sub_channel}")
+
+
+def report_latest(
+    probe: str, latest: updates.Latest, lab: Path, *, download: bool
+) -> None:
+    print(
+        f"\nrequested {probe}: latest={latest.version} action={latest.action} "
+        f"state={latest.state} launcher_action={latest.launcher_action}"
+    )
+    package = latest.package
+    if package is not None:
+        print(
+            f"pkg: {len(package.packs)} packs, total_size={package.total_size}, "
+            f"files={url_host(package.file_path)}, "
+            f"game_files_md5={package.game_files_md5}"
+        )
+    patch = latest.patch
+    print(f"patch: {'present' if patch else 'absent'}")
+    if patch is None:
+        return
+    print(
+        f"  total_size={patch.total_size} cd_key="
+        f"{'set' if patch.cd_key else 'unset'} archives={len(patch.urls)}"
+    )
+    print(
+        f"  v2_patch_info: size={patch.patch_info_size} "
+        f"md5={patch.patch_info_md5} host={url_host(patch.patch_info_url)}"
+    )
+    print(
+        f"  v2_verify_files: size={patch.verify_size} "
+        f"md5={patch.verify_md5} host={url_host(patch.verify_url)}"
+    )
+    for url in patch.urls[:3]:
+        print(f"  archive: {url_host(url)}")
+    if not download:
+        return
+    directory = lab / "updates"
+    if patch.patch_info_url:
+        path = updates.download_verified(
+            patch.patch_info_url,
+            patch.patch_info_md5,
+            patch.patch_info_size,
+            directory,
+        )
+        print(f"  saved {path}")
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            print(f"  patch info unreadable: {error}")
+        else:
+            kind = sorted(document) if isinstance(document, dict) else type(document)
+            print(f"  patch info summary: {kind}")
+    if patch.verify_url:
+        path = updates.download_verified(
+            patch.verify_url, patch.verify_md5, patch.verify_size, directory
+        )
+        print(f"  saved {path}")
+        summary = updates.summarize_verify(updates.decrypt_verify_file(path))
+        print(
+            f"  verify summary: format={summary['format']} "
+            f"files={summary['count']} total_size={summary['totalSize']}"
+        )
+        for entry in summary["sample"]:
+            print(f"    {entry[:160]}")
+
+
+def run_update_check(args: argparse.Namespace) -> None:
+    lab = lab_root()
+    game = game_path(args, lab)
+    version = args.version
+    if version is None:
+        try:
+            version = updates.installed_game(game).version
+        except installer.InstallError as error:
+            fail(str(error))
+        info(f"installed version {version} from {game / updates.CONFIG_FILE}")
+    else:
+        info(f"probing version {version}")
+    probes = [version]
+    older = updates.older_version(version)
+    if older is None:
+        warning(f"cannot derive an older version from {version}")
+    else:
+        probes.append(older)
+    for probe in probes:
+        try:
+            latest = updates.fetch_latest(probe)
+        except installer.InstallError as error:
+            fail(f"{probe}: {error}")
+        report_latest(probe, latest, lab, download=not args.no_download)
+
+
 def run_build_helpers(args: argparse.Namespace) -> None:
     lab = lab_root()
     toolchains = sorted(lab.glob(MINGW_TOOLCHAIN_GLOB))
@@ -1148,6 +1261,12 @@ def prefix_name(value: str) -> str:
     return value
 
 
+def add_game_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--game", type=Path, help="game directory (default: <lab>/game)"
+    )
+
+
 def add_prefix_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--prefix",
@@ -1359,6 +1478,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run", action="store_true", help="print the steps without running them"
     )
 
+    version = commands.add_parser("version", help="print the installed game version")
+    add_game_argument(version)
+
+    update = commands.add_parser(
+        "update-check", help="ask the launcher API for an incremental update"
+    )
+    add_game_argument(update)
+    update.add_argument(
+        "--version", help="installed version to report (default: read config.ini)"
+    )
+    update.add_argument(
+        "--no-download",
+        action="store_true",
+        help="do not fetch v2_patch_info or v2_verify_files",
+    )
+
     install = commands.add_parser("install", help="stream the game into <lab>/game")
     install.add_argument(
         "--plan",
@@ -1464,6 +1599,10 @@ def main() -> None:
         run_prefix(args)
     elif args.command == "mf-prefix":
         run_mf_prefix(args)
+    elif args.command == "version":
+        run_version(args)
+    elif args.command == "update-check":
+        run_update_check(args)
     elif args.command == "install":
         run_install(args)
     elif args.command == "build-helpers":
