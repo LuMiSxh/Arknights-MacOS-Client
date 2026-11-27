@@ -1,0 +1,137 @@
+name: Promote canary release
+
+# Makes a published canary prerelease stable: moves its feed item to the stable channel,
+# marks the release latest, and redeploys the website. Rebuilds nothing.
+# A rerun after a partial failure finishes the job: every step is repeatable.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag of the published canary prerelease (vX.Y.Z-rc.N)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  # Keep in sync with APPCAST_FEED_TAG in scripts/lib/project_config.py; a test enforces it.
+  APPCAST_TAG: appcast-feed
+
+# A group per tag. A shared feed group would let a queued promote replace a pending
+# publish without any notice, because GitHub keeps only one pending run per group.
+# Writers that overlap are caught by the checksum check before the feed upload.
+concurrency:
+  group: promote-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote release
+    runs-on: xcode-27
+    timeout-minutes: 20
+    # The feed signature covers the edited item list, so this job re-signs it.
+    environment: release
+    permissions:
+      contents: write
+    env:
+      PROMOTE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Check the tag format
+        run: |
+          set -euo pipefail
+          if [[ ! "$PROMOTE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            echo "::error::Tag must look like vX.Y.Z or vX.Y.Z-rc.N." >&2
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          prune-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Check the release is published
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Promotion must run from main." >&2
+            exit 1
+          fi
+          # The feed decides what may be promoted: the item must be canary, or already the
+          # newest stable one (a rerun). A release that is no longer a prerelease is a rerun.
+          is_draft="$(gh release view "$PROMOTE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --json isDraft --jq .isDraft)"
+          if [[ "$is_draft" != "false" ]]; then
+            echo "::error::$PROMOTE_TAG must be a published release." >&2
+            exit 1
+          fi
+
+      - name: Resolve Sparkle tools
+        run: |
+          set -euo pipefail
+          xcrun swift package resolve
+          sign_update="$(find "$GITHUB_WORKSPACE/.build/artifacts/sparkle" \
+            -type f -path '*/Sparkle/bin/sign_update' -perm -111 -print -quit)"
+          if [[ -z "$sign_update" ]]; then
+            echo "Sparkle sign_update tool not found." >&2
+            exit 1
+          fi
+          echo "SIGN_UPDATE=$sign_update" >> "$GITHUB_ENV"
+
+      - name: Promote the feed item and attach the legacy feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPARKLE_ED25519_PRIVATE_KEY: ${{ secrets.SPARKLE_ED25519_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/promote"
+          mkdir -p "$work/canonical" "$work/promoted" "$work/legacy"
+          # Fails when the feed release or asset is missing.
+          gh release download "$APPCAST_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern appcast.xml --dir "$work/canonical"
+          base="$(shasum -a 256 "$work/canonical/appcast.xml")"
+          base="${base%% *}"
+          uv run --locked --no-dev scripts/appcast.py promote \
+            --appcast "$work/canonical/appcast.xml" \
+            --output "$work/promoted/appcast.xml" \
+            --sign-update "$SIGN_UPDATE" \
+            --tag "$PROMOTE_TAG"
+          uv run --locked --no-dev scripts/appcast.py legacy \
+            --appcast "$work/promoted/appcast.xml" \
+            --output "$work/legacy/appcast.xml" \
+            --sign-update "$SIGN_UPDATE"
+          # Order matters for reruns: the release becomes latest with its legacy feed before
+          # the canonical feed changes, so a failure leaves the canary item in place.
+          gh release upload "$PROMOTE_TAG" "$work/legacy/appcast.xml" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          gh release edit "$PROMOTE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --prerelease=false --latest
+          mkdir -p "$work/recheck"
+          gh release download "$APPCAST_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern appcast.xml --dir "$work/recheck" --clobber
+          now="$(shasum -a 256 "$work/recheck/appcast.xml")"
+          now="${now%% *}"
+          if [[ "$now" != "$base" ]]; then
+            echo "::error::The canonical appcast changed while promoting (was $base, now $now). Another release was published or promoted. Check the feed, then run Promote canary release again." >&2
+            exit 1
+          fi
+          gh release upload "$APPCAST_TAG" "$work/promoted/appcast.xml" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+  pages:
+    name: Publish website
+    needs: promote
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml

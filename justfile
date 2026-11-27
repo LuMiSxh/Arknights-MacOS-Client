@@ -207,20 +207,20 @@ icon:
 announcement *args:
     {{ uv }} scripts/manage_announcements.py "$@"
 
-# Trigger a draft release for the required X.Y.Z version. Pass minimum_build above a yanked build. Requires repository write access.
+# Trigger a draft release for the required X.Y.Z version (X.Y.Z-rc.N with channel canary). Pass minimum_build above a yanked build. Requires repository write access.
 [group('Owner')]
-release version minimum_build="0":
+release version minimum_build="0" channel="stable":
     #!/usr/bin/env bash
     set -euo pipefail
     die() { echo "$1" >&2; exit 1; }
-    {{ uv }} scripts/release.py validate {{ quote(version) }}
+    {{ uv }} scripts/release.py validate {{ quote(version) }} --channel {{ quote(channel) }}
     [[ -z "$(git status --porcelain)" ]] || die "the working tree must be clean"
     [[ "$(git branch --show-current)" == main ]] || die "releases must be triggered from main after the release branch is merged"
     git fetch --quiet
     upstream="$(git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null)" || die "main has no upstream"
     [[ "$(git rev-parse HEAD)" == "$(git rev-parse "$upstream")" ]] || die "main must match $upstream"
     gh auth status >/dev/null
-    gh workflow run release.yml --ref main --field version={{ quote(version) }} --field minimum_build={{ quote(minimum_build) }}
+    gh workflow run release.yml --ref main --field version={{ quote(version) }} --field minimum_build={{ quote(minimum_build) }} --field channel={{ quote(channel) }}
     echo "Triggered draft release v"{{ quote(version) }}
 
 # Show manual and Sparkle app-download statistics for published releases. Requires GitHub CLI access.

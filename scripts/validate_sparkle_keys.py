@@ -4,8 +4,8 @@
 """Check the Sparkle signing key against the app and verify the signed release files.
 
 The private key must derive the `SUPublicEDKey` that ships in the app. Sparkle's
-own `sign_update --verify` then checks the archive, every delta, and the appcast
-feed, so this script never parses signatures itself.
+own `sign_update --verify` then checks the feed, plus the archive and every delta of
+the new build's item. Older items were verified when they were published.
 """
 
 import argparse
@@ -14,8 +14,8 @@ import binascii
 import hmac
 import os
 import plistlib
-import re
 import subprocess
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -23,6 +23,7 @@ from lib import sparkle_appcast
 from lib.common import fail, run_main
 from lib.console import success
 from lib.project_config import MINIMUM_MIGRATABLE_BUILD
+from lib.sparkle_appcast import verify
 
 KEY_BYTES = 32
 PKCS8_ED25519_PREFIX = bytes.fromhex("302e020100300506032b657004220420")
@@ -77,29 +78,15 @@ def public_key_from_plist(path: Path) -> str:
     return public_key
 
 
-def appcast_enclosures(appcast: str) -> list[tuple[str, str]]:
-    """Return `(file name, edSignature)` for every enclosure, deltas included."""
-    enclosures = []
-    for tag in re.findall(r"<enclosure\b[^>]*>", appcast):
-        attributes = dict(re.findall(r'([\w:]+)="([^"]*)"', tag))
-        name = Path(unquote(urlparse(attributes.get("url", "")).path)).name
-        enclosures.append((name, attributes.get("sparkle:edSignature", "")))
-    return enclosures
-
-
-def verify(
-    sign_update: Path, private_key: str, path: Path, signature: str | None = None
-) -> None:
-    """Run `sign_update --verify`; the feed carries its own signature."""
-    command = [sign_update, "--verify", "--ed-key-file", "-", path]
-    if signature is not None:
-        command.append(signature)
-    result = subprocess.run(
-        command, input=private_key.encode(), capture_output=True, check=False
-    )
-    if result.returncode != 0:
-        detail = (result.stdout + result.stderr).decode(errors="replace").strip()
-        fail(f"Sparkle signature check failed for {path.name}: {detail}")
+def item_enclosures(item: ET.Element) -> list[tuple[str, str]]:
+    """Return `(file name, edSignature)` for every enclosure of an item, deltas included."""
+    return [
+        (
+            Path(unquote(urlparse(enclosure.get("url", "")).path)).name,
+            enclosure.get(sparkle_appcast.ED_SIGNATURE_ATTRIBUTE, ""),
+        )
+        for enclosure in item.iter("enclosure")
+    ]
 
 
 def verify_release(
@@ -108,10 +95,12 @@ def verify_release(
     appcast: Path,
     update_file: Path,
     delta_directory: Path,
+    build: int,
 ) -> None:
-    """Verify the feed, then each enclosure against the archive or delta it names."""
+    """Verify the feed, then each enclosure of item `build` against the file it names."""
     verify(sign_update, private_key, appcast)
-    enclosures = appcast_enclosures(appcast.read_text(encoding="utf-8"))
+    root = sparkle_appcast.parse(appcast.read_bytes(), "release")
+    enclosures = item_enclosures(sparkle_appcast.new_item(root, build))
     if not any(name == update_file.name for name, _ in enclosures):
         fail(f"Sparkle appcast has no enclosure for {update_file.name!r}")
     for name, signature in enclosures:
@@ -128,6 +117,7 @@ def main() -> None:
     parser.add_argument("--appcast", type=Path)
     parser.add_argument("--update-file", type=Path)
     parser.add_argument("--delta-directory", type=Path)
+    parser.add_argument("--build", type=int, help="CFBundleVersion of the new release")
     arguments = parser.parse_args()
     private_key = os.environ.get("SPARKLE_ED25519_PRIVATE_KEY", "")
     if not private_key:
@@ -138,10 +128,13 @@ def main() -> None:
             arguments.sign_update
             and arguments.update_file
             and arguments.delta_directory
+            and arguments.build is not None
         ):
-            fail("--appcast needs --sign-update, --update-file, and --delta-directory")
+            fail(
+                "--appcast needs --sign-update, --update-file, --delta-directory, and --build"
+            )
         sparkle_appcast.validate_appcast_gate(
-            arguments.appcast, MINIMUM_MIGRATABLE_BUILD
+            arguments.appcast, arguments.build, MINIMUM_MIGRATABLE_BUILD
         )
         verify_release(
             arguments.sign_update,
@@ -149,6 +142,7 @@ def main() -> None:
             arguments.appcast,
             arguments.update_file,
             arguments.delta_directory,
+            arguments.build,
         )
     success("Sparkle signing key and release signatures validated")
 

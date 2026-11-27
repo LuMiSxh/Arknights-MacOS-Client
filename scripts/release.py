@@ -11,6 +11,15 @@ from pathlib import Path
 from lib.common import PROJECT_DIR, VERSION_PATTERN, fail, run_main
 from lib.console import success
 from lib.project_config import load_project_configuration
+from lib.sparkle_appcast import CANARY_CHANNEL
+
+STABLE_CHANNEL = "stable"
+RELEASE_CANDIDATE_SUFFIX = re.compile(r"-rc\.[1-9][0-9]*$")
+
+
+def base_version(version: str) -> str:
+    """Return `X.Y.Z` for a release version that may end in `-rc.N`."""
+    return RELEASE_CANDIDATE_SUFFIX.sub("", version)
 
 
 def extract(text: str, version: str) -> str:
@@ -30,15 +39,24 @@ def extract(text: str, version: str) -> str:
     return body
 
 
-def validate_release(version: str, changelog_path: Path, marketing_version: str) -> str:
-    """Validate the requested version and return its release notes."""
-    if not VERSION_PATTERN.fullmatch(version):
-        fail("version must use X.Y.Z with numeric components")
-    release_notes = extract(changelog_path.read_text(encoding="utf-8"), version)
-    if marketing_version != version:
+def validate_release(
+    version: str,
+    changelog_path: Path,
+    marketing_version: str,
+    channel: str = STABLE_CHANNEL,
+) -> str:
+    """Validate the requested version and return its release notes.
+
+    Only the canary channel accepts `X.Y.Z-rc.N`; notes and the app version use `X.Y.Z`.
+    """
+    base = base_version(version) if channel == CANARY_CHANNEL else version
+    if not VERSION_PATTERN.fullmatch(base):
+        fail("version must use X.Y.Z with numeric components (X.Y.Z-rc.N for canary)")
+    release_notes = extract(changelog_path.read_text(encoding="utf-8"), base)
+    if marketing_version != base:
         fail(
             "Resources/Info.plist CFBundleShortVersionString "
-            f"is {marketing_version!r}, expected {version!r}"
+            f"is {marketing_version!r}, expected {base!r}"
         )
     return release_notes
 
@@ -85,6 +103,9 @@ def main() -> None:
     notes_parser.add_argument("version")
     validate_parser = commands.add_parser("validate", help="check release metadata")
     validate_parser.add_argument("version")
+    validate_parser.add_argument(
+        "--channel", choices=(STABLE_CHANNEL, CANARY_CHANNEL), default=STABLE_CHANNEL
+    )
     bundle_parser = commands.add_parser(
         "bundle-version", help="print the next CFBundleVersion"
     )
@@ -104,10 +125,14 @@ def main() -> None:
         return
     changelog = PROJECT_DIR / "CHANGELOG.md"
     if arguments.command == "notes":
-        print(extract(changelog.read_text(encoding="utf-8"), arguments.version))
+        print(
+            extract(
+                changelog.read_text(encoding="utf-8"), base_version(arguments.version)
+            )
+        )
         return
     marketing_version = load_project_configuration().product.marketing_version
-    validate_release(arguments.version, changelog, marketing_version)
+    validate_release(arguments.version, changelog, marketing_version, arguments.channel)
     success(f"Release metadata matches {arguments.version}")
 
 

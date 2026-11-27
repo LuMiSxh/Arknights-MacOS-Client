@@ -1,0 +1,93 @@
+name: Publish appcast
+
+# Publishing a draft release (stable or prerelease) makes its staged feed the canonical one.
+# The release job signed that feed; this job holds no signing secret and only moves the file.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+env:
+  # Keep in sync with APPCAST_FEED_TAG in scripts/lib/project_config.py; a test enforces it.
+  APPCAST_TAG: appcast-feed
+
+# A group per tag. GitHub keeps one pending run per group and cancels an older pending
+# run when a newer one queues, so a shared feed group could drop a publish without notice.
+# Overlapping writers are caught by the checksum check before the feed upload.
+concurrency:
+  group: publish-appcast-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Replace the canonical appcast
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Replace the canonical appcast
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          if [[ "$RELEASE_TAG" == "$APPCAST_TAG" ]]; then
+            echo "The feed release itself needs no appcast update."
+            exit 0
+          fi
+          assets="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --json assets --jq '.assets[].name')"
+          if ! grep -qx appcast-staged.xml <<<"$assets" || ! grep -qx appcast-base.txt <<<"$assets"; then
+            echo "::notice::$RELEASE_TAG has no staged appcast, so the feed stays as it is."
+            exit 0
+          fi
+          staged_directory="$RUNNER_TEMP/staged"
+          current_directory="$RUNNER_TEMP/current"
+          mkdir -p "$staged_directory" "$current_directory"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern appcast-staged.xml --pattern appcast-base.txt --dir "$staged_directory"
+          staged_sha="$(sha256sum "$staged_directory/appcast-staged.xml" | cut -d ' ' -f 1)"
+          base="$(tr -d '[:space:]' < "$staged_directory/appcast-base.txt")"
+
+          # `none` means no canonical feed existed or could be read when the draft was built.
+          current=none
+          feed_exists=false
+          feed_error="$RUNNER_TEMP/appcast-feed.err"
+          if gh release view "$APPCAST_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>"$feed_error"; then
+            gh release download "$APPCAST_TAG" --repo "$GITHUB_REPOSITORY" \
+              --pattern appcast.xml --dir "$current_directory"
+            current="$(sha256sum "$current_directory/appcast.xml" | cut -d ' ' -f 1)"
+            feed_exists=true
+          elif ! grep -q 'release not found' "$feed_error"; then
+            cat "$feed_error" >&2
+            echo "::error::Unable to query the $APPCAST_TAG release." >&2
+            exit 1
+          fi
+
+          # Equal to the staged feed means an earlier run of this job already swapped it.
+          if [[ "$current" != "$staged_sha" ]]; then
+            if [[ "$current" != "$base" ]]; then
+              echo "::error::The canonical appcast changed after $RELEASE_TAG was built (base $base, now $current). Another release was published or promoted in between. Delete this draft and run Draft release again."
+              exit 1
+            fi
+            if [[ "$feed_exists" != true ]]; then
+              gh release create "$APPCAST_TAG" --repo "$GITHUB_REPOSITORY" \
+                --prerelease --latest=false --target "$GITHUB_SHA" \
+                --title "Appcast feed" \
+                --notes "Canonical Sparkle appcast. Maintained by the release workflows; do not edit."
+            fi
+            cp "$staged_directory/appcast-staged.xml" "$staged_directory/appcast.xml"
+            gh release upload "$APPCAST_TAG" "$staged_directory/appcast.xml" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          fi
+          # Dispatch before the cleanup: the staged assets mark the work as unfinished, so a
+          # rerun after a failure here swaps nothing, redeploys, and then cleans up.
+          # Dispatching from main runs the deploy under the Pages environment's branch rules.
+          gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref "$DEFAULT_BRANCH"
+          gh release delete-asset "$RELEASE_TAG" appcast-staged.xml appcast-base.txt \
+            --repo "$GITHUB_REPOSITORY" --yes
