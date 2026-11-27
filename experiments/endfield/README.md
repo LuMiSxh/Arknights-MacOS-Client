@@ -326,6 +326,42 @@ Use the run stamp or the full run name. `collect` writes `<lab>/logs/<run>-colle
 
 A report that needs root privileges stays in place. `collect` prints the `sudo cp` line and writes `sudo-copy.sh`. Run the line from your terminal, then copy the file into the same directory.
 
+## Background media
+
+The launcher's home screen loops a video. Its web UI gets the URL from the batch API and plays it in a `<video loop>` element. The still image is the fallback.
+
+Request: `POST https://launcher.gryphline.com/api/proxy/web/batch_proxy` with one `proxy_reqs` entry. Its `kind` is `get_main_bg_image`, and its `get_main_bg_image_req` holds `appcode`, `language` (`en-us`), `channel` and `sub_channel` (`6`), `platform` (`Windows`), and `source` (`launcher`).
+
+Response: `proxy_rsps[].get_main_bg_image_rsp` holds `data_version` and `main_bg_image`:
+
+- `url`: a still WebP with `md5`, on `gl-utils-public.hg-cdn.com`.
+- `video_url`: an MP4 on the same host. It has no hash or size field.
+
+The UI code is in `1.6.0/res/web/index.f1a2b9.js`, inside the lab prefix's launcher folder (web bundle `version.json` 0.2.15). The UI plays `video_url` only when it is set. It shows `url` when there is no video or the video fails.
+
+Download the files:
+
+```sh
+uv run --locked python experiments/endfield/lab.py background
+```
+
+The command writes `<lab>/media/main_bg_image.json` with the raw response, then the WebP and the MP4. It downloads each file through a `.part` file and checks the WebP MD5 before the rename. Running it again downloads both files again.
+
+The files from the 2026-11-27 run, read with `ffprobe`:
+
+- Video `1aaccbf685888149b299a1a854d68546.mp4`: 20,817,304 bytes. MP4 (`mp42`), H.264 Main profile at level 5.0, 2324×1392, 30 fps, 450 frames, 15.000 s, 11.1 Mbps, 8-bit `yuv420p`, progressive, no B-frames, no audio track.
+- Still `b7c23b1626958a976a6140fe27a3621b.webp`: 4,240,402 bytes, 2324×1392. Its MD5 matches the response.
+
+Loop: the response has one video and no separate loop segment. The first and last frames are close but not identical (35.1 dB PSNR averaged over R, G, B), so a hard loop may show a small step. Check the seam on screen.
+
+For a SwiftUI launcher:
+
+- The video is H.264 in MP4, which AVFoundation plays natively. Do not switch to a VP9 or AV1 WebM for `AVPlayer`.
+- Playback in `AVPlayer` is not tested. Test it on Apple Silicon with macOS 15 before shipping. This lab only probed the file.
+- `AVPlayerLooper` or a seek on `AVPlayerItemDidPlayToEndTime` loops the item. The file has no audio track, so no audio setup is needed.
+
+`gl-utils-public.hg-cdn.com` is in `installer.ALLOWED_HOSTS`, so the installer accepts URLs on it too.
+
 ## Next experiments
 
 In order:

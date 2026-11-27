@@ -28,7 +28,9 @@ from typing import Any
 import zipstream
 from zipstream import CentralDirectory, Entry, ZipError
 
-ALLOWED_HOSTS = frozenset({"launcher.gryphline.com", "beyond.hg-cdn.com"})
+ALLOWED_HOSTS = frozenset(
+    {"launcher.gryphline.com", "beyond.hg-cdn.com", "gl-utils-public.hg-cdn.com"}
+)
 API_URL = "https://launcher.gryphline.com/api/proxy/batch_proxy"
 APP_CODE = "YDUTE5gscDZ229CW"
 CHANNEL = "6"
@@ -79,7 +81,7 @@ class Manifest:
 
 
 def validate_url(url: str) -> str:
-    """Allow only https URLs on the two known hosts, with no port or user info."""
+    """Allow only https URLs on the known hosts, with no port or user info."""
     parts = urllib.parse.urlsplit(url)
     if parts.scheme != "https" or parts.netloc.lower() not in ALLOWED_HOSTS:
         raise InstallError(f"URL is not allowed: {url!r}")
@@ -246,7 +248,7 @@ def ranged_reader(parts: list[Part]) -> zipstream.Fetch:
     return fetch
 
 
-def _md5(path: Path) -> str:
+def file_md5(path: Path) -> str:
     digest = hashlib.md5(usedforsecurity=False)
     with path.open("rb") as file:
         while block := file.read(READ_BYTES):
@@ -287,7 +289,7 @@ def download_part(part: Part, directory: Path, report: Callable[[int], None]) ->
                         output.write(block)
                         have += len(block)
                         report(have)
-        if partial.stat().st_size != part.size or _md5(partial) != part.md5:
+        if partial.stat().st_size != part.size or file_md5(partial) != part.md5:
             partial.unlink()
             raise TransientError(f"size or MD5 mismatch for {part.name}")
         partial.replace(final)

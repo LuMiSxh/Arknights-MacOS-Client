@@ -32,6 +32,7 @@ REPOSITORY_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_DIR / "scripts"))
 
 import installer  # noqa: E402
+import media  # noqa: E402
 from lib.common import PROJECT_DIR, ScriptError, fail, run_main  # noqa: E402
 from lib.console import info, success, warning  # noqa: E402
 from lib.project_config import RUNTIME_CONFIG  # noqa: E402
@@ -913,6 +914,13 @@ def run_install(args: argparse.Namespace) -> None:
         fail(str(error))
 
 
+def run_background(args: argparse.Namespace) -> None:
+    try:
+        media.run(lab_root())
+    except installer.InstallError as error:
+        fail(str(error))
+
+
 def run_build_helpers(args: argparse.Namespace) -> None:
     lab = lab_root()
     toolchains = sorted(lab.glob(MINGW_TOOLCHAIN_GLOB))
@@ -1442,6 +1450,11 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="RUN",
         help="run stamp or name, e.g. 20261126T220110Z-vulkan-mvk-stepministrator",
     )
+
+    commands.add_parser(
+        "background",
+        help="fetch the home-screen background video and image into <lab>/media",
+    )
     return parser
 
 
@@ -1459,6 +1472,8 @@ def main() -> None:
         run_kill(args)
     elif args.command == "collect":
         run_collect(args)
+    elif args.command == "background":
+        run_background(args)
     else:
         run_launch(args)
 

@@ -1,0 +1,15 @@
+{
+  "proxy_rsps": [
+    {
+      "kind": "get_main_bg_image",
+      "get_main_bg_image_rsp": {
+        "data_version": "",
+        "main_bg_image": {
+          "url": "https://gl-utils-public.hg-cdn.com/hg-utils/prod/eppcsuwqpaueijqk/YDUTE5gscDZ229CW/b7/c2/b7c23b1626958a976a6140fe27a3621b.webp",
+          "md5": "b765ab5c1ea93c985fa12569e615fae5",
+          "video_url": "https://gl-utils-public.hg-cdn.com/hg-utils/prod/eppcsuwqpaueijqk/YDUTE5gscDZ229CW/1a/ac/1aaccbf685888149b299a1a854d68546.mp4"
+        }
+      }
+    }
+  ]
+}
