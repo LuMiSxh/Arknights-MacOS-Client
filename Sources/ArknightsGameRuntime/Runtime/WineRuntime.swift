@@ -249,11 +249,10 @@ struct WineRuntime: Sendable {
 		frameRateLimit: GameFrameRateLimit?,
 		runtimeEnvironmentOverrides: [String: String] = [:],
 		clientVariant: GameClientVariant = .standard,
-		publisher: GamePublisher = .yostar,
 		sessionID: UUID? = nil,
 		server: GameRegion? = nil,
 		gameIconURL: URL? = nil,
-		logURL: URL? = nil,
+		logURL: URL,
 		log: LauncherLog? = nil,
 		spawnGate: WineProcessSpawnGate = WineProcessSpawnGate()
 	) async throws -> WineLaunch {
@@ -269,11 +268,6 @@ struct WineRuntime: Sendable {
 			log?.warning(.prefix, "backup-exclusion-failed", error: error)
 		}
 
-		let logURL =
-			logURL
-			?? prefixDirectory.deletingLastPathComponent().appending(
-				path: publisher.runtimeLogFileName
-			)
 		let logHandle = try Self.openRuntimeLog(at: logURL, fileManager: fileManager)
 		defer { logHandle.closeFile() }
 		logHandle.appendLaunchLogLine(

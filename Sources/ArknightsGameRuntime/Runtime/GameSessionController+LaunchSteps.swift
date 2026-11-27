@@ -4,11 +4,25 @@ import ArknightsCore
 import ArknightsGameInstallation
 import Foundation
 
+// The game's launch identity, read from the server configuration when the user asks to play.
+struct LaunchProfile {
+	let executableName: String
+	let startArguments: [String]
+
+	static func arknights(configuration: GameConfiguration?) -> LaunchProfile {
+		LaunchProfile(
+			executableName: configuration?.executableName ?? "Arknights.exe",
+			startArguments: configuration?.gameStartParams ?? []
+		)
+	}
+}
+
 // Everything captured when the user asks to play, before the first suspension.
 struct LaunchRequest {
 	let id: UUID
 	let region: GameRegion
 	let lane: RuntimeLane
+	let profile: LaunchProfile
 	let executable: URL
 	let prefixDirectory: URL
 	let options: GameLaunchOptions
@@ -290,7 +304,7 @@ extension GameSessionController {
 			// browser process aborts and the game throws. Keep the flag on this lane only.
 			gameArguments.append("--no-sandbox")
 		}
-		gameArguments += installation.configuration?.gameStartParams ?? []
+		gameArguments += request.profile.startArguments
 		gameArguments += request.options.playerArguments(
 			gamePixelsPerPoint: prepared.displayConfiguration.gamePixelsPerPoint,
 			fullscreenDisplay: fullscreenDisplay,
@@ -310,7 +324,6 @@ extension GameSessionController {
 			frameRateLimit: request.frameRateCap,
 			runtimeEnvironmentOverrides: prepared.environment,
 			clientVariant: request.region.clientVariant,
-			publisher: request.region.publisher,
 			sessionID: request.id,
 			server: request.region,
 			gameIconURL: customGameIconURL(),
