@@ -111,10 +111,8 @@ package enum GameShimIO {
 		if isCurrentlyInstalledShim {
 			try fileManager.moveItem(at: helperURL, to: previousURL)
 		} else {
-			if fileManager.fileExists(atPath: backupURL.path) {
-				try fileManager.removeItem(at: backupURL)
-			}
-			try fileManager.moveItem(at: helperURL, to: backupURL)
+			try moveOfficialHelperAside(
+				helperURL, to: backupURL, fileManager: fileManager)
 		}
 		do {
 			try fileManager.moveItem(at: temporaryURL, to: helperURL)
@@ -136,6 +134,27 @@ package enum GameShimIO {
 					},
 				]
 			)
+		}
+	}
+
+	// After a crash between the two moves of an earlier swap, the backup is the only copy of the
+	// official helper. It is never deleted before the helper that supersedes it is in the backup's
+	// place: a missing helper keeps the backup as the original, and a present one replaces it
+	// atomically.
+	private static func moveOfficialHelperAside(
+		_ helperURL: URL,
+		to backupURL: URL,
+		fileManager: FileManager
+	) throws {
+		let backupExists = fileManager.fileExists(atPath: backupURL.path)
+		if !fileManager.fileExists(atPath: helperURL.path) {
+			guard backupExists else {
+				throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: helperURL.path])
+			}
+		} else if backupExists {
+			_ = try fileManager.replaceItemAt(backupURL, withItemAt: helperURL)
+		} else {
+			try fileManager.moveItem(at: helperURL, to: backupURL)
 		}
 	}
 

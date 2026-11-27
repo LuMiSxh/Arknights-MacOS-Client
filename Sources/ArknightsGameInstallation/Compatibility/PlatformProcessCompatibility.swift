@@ -141,7 +141,12 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 				try fileManager.removeItem(at: helper)
 				try fileManager.moveItem(at: original, to: helper)
 				changed = true
-			} else {
+			} else if try GameShimIO.containsMarker(
+				at: helper,
+				marker: Self.officialHelperMarker,
+				maximumSize: AppConstants.Game.platformProcessAssetMaximumBytes
+			) {
+				// The official updater replaced the shim; its verified helper supersedes the backup.
 				try fileManager.removeItem(at: original)
 			}
 		}
