@@ -36,7 +36,9 @@ package final class LauncherCommunicationController {
 		self.announcementService = announcementService
 		self.preferences = preferences
 		self.log = log
-		let updater = LauncherUpdaterController(lifecycle: lifecycle, log: log)
+		let updater = LauncherUpdaterController(
+			lifecycle: lifecycle, log: log,
+			updateChannel: { preferences.updateChannel() })
 		self.launcherUpdater = updater
 	}
 

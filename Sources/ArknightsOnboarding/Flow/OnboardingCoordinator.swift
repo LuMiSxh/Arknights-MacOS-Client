@@ -45,7 +45,7 @@ package final class OnboardingCoordinator {
 		guard isOnboardingPreview || (!isDeveloperMode && store.needsOnboarding) else { return }
 		if isOnboardingPreview {
 			requiredSchema =
-				simulatesRequiredSetup ? OnboardingProgressStore.currentSchemaVersion : nil
+				simulatesRequiredSetup ? AppConstants.Onboarding.schemaVersion : nil
 		} else {
 			requiredSchema = store.pendingRequiredSchema
 		}
@@ -155,7 +155,7 @@ package final class OnboardingCoordinator {
 		}
 
 		package func simulateRequiredSetup(_ isRequired: Bool) {
-			requiredSchema = isRequired ? OnboardingProgressStore.currentSchemaVersion : nil
+			requiredSchema = isRequired ? AppConstants.Onboarding.schemaVersion : nil
 		}
 	#endif
 

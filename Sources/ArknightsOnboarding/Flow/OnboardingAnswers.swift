@@ -234,6 +234,22 @@ extension UpdateCheckAnswer {
 	}
 }
 
+extension UpdateChannel {
+	var answer: OnboardingAnswer<UpdateChannel> {
+		switch self {
+		case .stable:
+			OnboardingAnswer(
+				value: self, title: "Stable", detail: "Tested releases.",
+				systemImage: "checkmark.seal", isRecommended: true)
+		case .canary:
+			OnboardingAnswer(
+				value: self, title: "Canary",
+				detail: "Early builds before Stable. They may have bugs.",
+				systemImage: "flask")
+		}
+	}
+}
+
 nonisolated enum DiscordPresenceAnswer: CaseIterable, Sendable {
 	case off
 	case on

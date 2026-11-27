@@ -136,7 +136,8 @@ private final class QuitFixture {
 			path: "AppDelegateQuitTests.\(UUID().uuidString).log")
 		lifecycle = LauncherLifecycleStore(log: LauncherLog(fileURL: logURL))
 		updater = LauncherUpdaterController(
-			lifecycle: lifecycle, log: lifecycle.log, activateApplication: {})
+			lifecycle: lifecycle, log: lifecycle.log, updateChannel: { .stable },
+			activateApplication: {})
 		sparkle = SPUUpdater(
 			hostBundle: .main, applicationBundle: .main,
 			userDriver: updater.userDriver, delegate: updater)
