@@ -432,6 +432,25 @@ package struct AppPaths: Sendable {
 		artworkDirectory.appending(path: "artwork")
 	}
 
+	/// The persisted background video is named by its container, because AVFoundation picks the
+	/// parser from the file extension.
+	package enum CustomVideoContainer: String, CaseIterable {
+		case mp4
+		case mov
+	}
+
+	package func customVideo(_ container: CustomVideoContainer) -> URL {
+		artworkDirectory.appending(path: "artwork-video.\(container.rawValue)")
+	}
+
+	package var customVideoFiles: [URL] {
+		CustomVideoContainer.allCases.map { customVideo($0) }
+	}
+
+	package var customVideoPoster: URL {
+		artworkDirectory.appending(path: "artwork-video-poster")
+	}
+
 	package var customAppIcon: URL {
 		artworkDirectory.appending(path: "app-icon")
 	}

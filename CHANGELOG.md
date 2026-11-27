@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added video backgrounds. **Choose…** under **Settings → Appearance** accepts an MP4 or MOV video of up to 200 MB with H.264 or HEVC video. The video loops muted behind the Home screen. It pauses when the launcher is hidden or covered, while the game runs, in Low Power Mode, or with **Reduce Motion** on.
 - A daily reset reminder notification now has a **Play** button. Choose **Play**, or click the notification, to start the game for that reminder's server.
 - Added **Verify Files** to **Settings → Installation**. It checks the game files against the manifest without changing anything.
 

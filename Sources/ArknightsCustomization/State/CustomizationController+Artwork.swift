@@ -11,7 +11,7 @@ extension CustomizationController {
 		let panel = NSOpenPanel()
 		panel.title = "Choose launcher artwork"
 		panel.prompt = "Choose"
-		panel.allowedContentTypes = [.image]
+		panel.allowedContentTypes = [.image] + CustomizationVideoIO.contentTypes
 		panel.canChooseDirectories = false
 		panel.canChooseFiles = true
 		panel.allowsMultipleSelection = false
@@ -20,6 +20,10 @@ extension CustomizationController {
 	}
 
 	package func applyCustomArtwork(from url: URL) {
+		if let container = CustomizationVideoIO.container(of: url) {
+			applyCustomVideo(from: url, container: container)
+			return
+		}
 		let operationID = beginArtworkMutation()
 		let dataLoader = self.dataLoader
 		Task { [weak self] in
@@ -49,9 +53,8 @@ extension CustomizationController {
 	) {
 		guard !isDeveloperMode else { return }
 		do {
-			if FileManager.default.fileExists(atPath: paths.customArtwork.path) {
-				try FileManager.default.removeItem(at: paths.customArtwork)
-			}
+			try CustomizationImageIO.removeIfPresent(paths.customArtwork)
+			try removeCustomVideoFiles()
 		} catch {
 			lifecycle.show(error)
 			return
@@ -94,6 +97,7 @@ extension CustomizationController {
 			try commitStagedArtwork(from: stagedURL, to: destination)
 			setHasPersistedCustomArtwork(true)
 			setHeroArtwork(image, themeCacheKey: cacheKey)
+			try removeCustomVideoFiles()
 		} catch {
 			discardStagedArtwork(at: stagedURL)
 			guard artworkOperationID == operationID else { return }
@@ -104,7 +108,8 @@ extension CustomizationController {
 
 	package func loadCustomArtwork() async -> Bool {
 		guard let token = beginPassiveArtworkLoad() else { return false }
-		let artworkURL = paths.customArtwork
+		let video = persistedVideoURL()
+		let artworkURL = video == nil ? paths.customArtwork : paths.customVideoPoster
 		do {
 			let data = try await dataLoader(artworkURL)
 			guard ownsPassiveArtworkLoad(token) else { return false }
@@ -118,7 +123,9 @@ extension CustomizationController {
 			}
 			let image = NSImage(cgImage: decoded, size: .zero)
 			setHasPersistedCustomArtwork(true)
-			setHeroArtwork(image, themeCacheKey: cacheKey)
+			let background =
+				video.map { HeroBackground.video(url: $0, poster: image) } ?? .image(image)
+			setHeroBackground(background, themeCacheKey: cacheKey)
 			return true
 		} catch {
 			guard ownsPassiveArtworkLoad(token) else { return false }
@@ -220,7 +227,7 @@ extension CustomizationController {
 		return "custom.\(digest.map { String(format: "%02x", $0) }.joined())"
 	}
 
-	private func beginArtworkMutation() -> UUID {
+	func beginArtworkMutation() -> UUID {
 		let operationID = UUID()
 		artworkOperationID = operationID
 		passiveArtworkLoad.invalidate()
@@ -229,7 +236,7 @@ extension CustomizationController {
 		return operationID
 	}
 
-	private func finishArtworkMutation(_ operationID: UUID) {
+	func finishArtworkMutation(_ operationID: UUID) {
 		guard artworkOperationID == operationID else { return }
 		artworkMutationInFlight = false
 	}
