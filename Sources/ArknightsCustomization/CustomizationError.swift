@@ -7,6 +7,7 @@ enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendable {
 	case invalidRemoteAsset(URL)
 	case invalidPresetImage(URL)
 	case invalidCustomImage(URL)
+	case invalidCustomVideo(URL)
 	case cannotEncodeAppIcon
 	case cannotSetAppIcon
 	case presetServiceFailed(status: Int)
@@ -20,6 +21,8 @@ enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendable {
 			"This gallery image cannot be used as launcher artwork. Choose another image."
 		case .invalidCustomImage:
 			"This image cannot be used as launcher artwork. \(Self.artworkRequirements)"
+		case .invalidCustomVideo:
+			"This video cannot be used as launcher artwork. \(Self.videoRequirements)"
 		case .cannotEncodeAppIcon:
 			"The selected image could not be converted into an app icon."
 		case .cannotSetAppIcon:
@@ -38,6 +41,7 @@ enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendable {
 		case .invalidPresetImage(let url):
 			"The preset asset is not a supported image or has unsafe dimensions: \(url.absoluteString)"
 		case .invalidCustomImage(let url): "The selected file is not a supported image: \(url.path)"
+		case .invalidCustomVideo(let url): "The selected file is not a supported video: \(url.path)"
 		case .presetServiceFailed(let status):
 			"The preset service returned HTTP status \(status)."
 		case .presetNetworkFailed(let detail):
@@ -45,6 +49,12 @@ enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendable {
 		case .cannotEncodeAppIcon, .cannotSetAppIcon:
 			errorDescription ?? "The operation could not be completed."
 		}
+	}
+
+	/// The limits in `invalidCustomVideo`, read from the value that the size check enforces.
+	private static var videoRequirements: String {
+		let megabytes = AppConstants.Artwork.videoMaximumBytes / (1_024 * 1_024)
+		return "Use an H.264 or HEVC video in an MP4 or MOV file, \(megabytes) MB or smaller."
 	}
 
 	/// The limits in `invalidCustomImage`, read from the values that the validator enforces.
@@ -69,7 +79,7 @@ extension CustomizationError: SupportCodeProviding {
 			.networkUnavailable
 		case .invalidRemoteAsset:
 			.remoteContentInvalid
-		case .invalidPresetImage, .invalidCustomImage:
+		case .invalidPresetImage, .invalidCustomImage, .invalidCustomVideo:
 			.artworkImageInvalid
 		}
 	}

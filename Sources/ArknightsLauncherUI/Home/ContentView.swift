@@ -52,7 +52,7 @@ package struct ContentView: View {
 		ZStack {
 			BackgroundMusicView(settings: model.settings, controller: musicController)
 			LauncherArtworkView(
-				image: model.customization.heroArtwork,
+				background: model.customization.heroBackground,
 				themeCacheKey: model.customization.activeThemeCacheKey,
 				accentColor: model.customization.accentColor
 			)

@@ -9,6 +9,10 @@ private func isImageURL(_ url: URL) -> Bool {
 	UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true
 }
 
+private func isArtworkURL(_ url: URL) -> Bool {
+	CustomizationVideoIO.isVideo(url) || isImageURL(url)
+}
+
 struct AppearanceSettingsPage: View {
 	private static let useDefaultTitle = "Use Default"
 
@@ -146,7 +150,7 @@ struct AppearanceSettingsPage: View {
 	private var artworkRow: some View {
 		SettingsActionRow(
 			title: "Artwork",
-			detail: "The picture behind the launcher. You can also drop an image here."
+			detail: "The image or video behind the launcher. You can also drop a file here."
 		) {
 			CapsuleActionButton(
 				title: "Presets…",
@@ -169,7 +173,7 @@ struct AppearanceSettingsPage: View {
 			)
 		}
 		.dropDestination(for: URL.self) { urls, _ in
-			guard let url = urls.first, isImageURL(url) else { return false }
+			guard let url = urls.first, isArtworkURL(url) else { return false }
 			customization.applyCustomArtwork(from: url)
 			return true
 		}

@@ -287,6 +287,8 @@ For a UI change, use the debug simulator and check an empty region, an installed
 
 The default image comes from the official Global launcher configuration and is cached locally. Neither the repository nor the DMG includes it. The service exposes one active image, not a playlist, so do not build a carousel from historical CDN URLs.
 
+A user can choose an image or a video. A video must be an MP4 or MOV file with H.264 or HEVC video, up to 200 MB. The launcher shows the video's first frame as a still. It plays the video muted and looping only while decorative motion runs. It shows the still while the video is paused or loading.
+
 > [!WARNING]
 > A user can choose a local image. The app copies it into its Application Support folder. Do not bundle official wallpapers in public releases without explicit permission. The [Global Fan Kit terms](https://www.arknights.global/fankit/precautions) do not clearly permit redistribution inside third-party software.
 
