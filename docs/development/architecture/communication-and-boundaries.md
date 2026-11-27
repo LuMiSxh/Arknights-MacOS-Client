@@ -24,7 +24,7 @@ status state and the themed Sparkle UI.
 | Sparkle appcast                                                         | `LauncherUpdaterController`   | Signed launcher update metadata and archive               | Update status, then Sparkle's themed update UI on request          |
 | Repository wallpaper tags                                               | `PresetCatalogService`        | Bounded `WallpaperTags.json` from `main`                  | Gallery search tags layered over the bundled manifest              |
 
-- **Sparkle appcast** (`SUFeedURL`): The launcher checks it silently when automatic launcher-update
+- **Sparkle appcast** (`SUFeedURL`, served by GitHub Pages): The launcher checks it silently when automatic launcher-update
   checks are on, and before onboarding. A newer version becomes launcher status state and enables the
   update action. `LauncherUpdaterController` wraps `SPUUpdater` and `LauncherUpdateUserDriver`. Sparkle
   validates the feed and handles download, signature verification, replacement, and relaunch. The
@@ -51,7 +51,7 @@ The three launch checks run in parallel. They meet in one popup queue:
 ```mermaid
 sequenceDiagram
 	participant App as SwiftUI launcher
-	participant Releases as Sparkle appcast
+	participant Releases as Sparkle appcast on GitHub Pages
 	participant Contents as GitHub Contents API
 	participant Yostar as Yostar branding API
 	participant Queue as Popup queue

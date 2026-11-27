@@ -26,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Save Diagnostics** now includes the last three game sessions' logs and a summary of your recent launcher failures.
 - Launcher log lines now show a category, a stable event name, and named fields. The launcher also records settings changes and your time zone.
 - A critical launcher update has no **Later** button. **Cancel** remains while the update downloads.
+- Launcher update checks now read the update feed from the project website. Launchers 1.0.2 and older still read it from the GitHub release.
+- Release candidates reach users on a **Canary** update channel before they become stable. Choose it with **Update channel** (**Stable** or **Canary**).
 
 ## [1.0.2] - 2026-11-25
 

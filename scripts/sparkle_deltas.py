@@ -6,14 +6,14 @@
 `fetch` downloads the update archives of recent published releases so Sparkle's
 `generate_appcast` can build deltas from them. `finalize` renames the generated
 deltas to the names GitHub stores, rewrites their appcast URLs, and signs the
-feed again, because the feed signature covers those URLs.
+feed again, because the feed signature covers those URLs. `finalize` touches only
+the item of the new build; older items in the feed stay as they were published.
 """
 
 import argparse
 import json
 import os
 import shutil
-import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import quote, unquote, urlparse
@@ -60,7 +60,11 @@ def select_sources(
     sources: list[tuple[str, str, str]] = []
     for release in published:
         version = release["tag_name"].removeprefix("v")
-        accepted = {update_name, *sparkle_archive_names(stem, version)}
+        # A promoted release candidate (`X.Y.Z-rc.N`) still names its archive after `X.Y.Z`.
+        accepted = {
+            update_name,
+            *sparkle_archive_names(stem, version.partition("-")[0]),
+        }
         asset = next(
             (a["name"] for a in release["assets"] if a["name"] in accepted), None
         )
@@ -123,25 +127,6 @@ def fetch(arguments: argparse.Namespace) -> None:
         info("No previous published release archives; the release has no deltas.")
 
 
-def sign_appcast(sign_update: Path, private_key: str, appcast: Path) -> None:
-    """Replace the feed's signature block with `sign_update`.
-
-    `sign_update` strips the old trailing block itself. The key goes through
-    standard input so it never appears in arguments.
-    """
-    result = subprocess.run(
-        [sign_update, "--ed-key-file", "-", "--disable-signing-warning", appcast],
-        input=private_key.encode(),
-        capture_output=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        fail(
-            "sign_update could not sign the Sparkle appcast: "
-            + result.stdout.decode(errors="replace").strip()
-        )
-
-
 def finalize_deltas(
     directory: Path,
     appcast: Path,
@@ -149,22 +134,24 @@ def finalize_deltas(
     sign_update: Path,
     private_key: str,
     *,
+    build: int,
     minimum_build: int | None = None,
     info_link: str | None = None,
     critical: bool = False,
 ) -> list[Path]:
-    """Publish deltas, add the informational gate, and refresh the feed signature."""
+    """Publish the deltas of item `build`, gate it, and refresh the feed signature."""
     root = sparkle_appcast.parse(appcast.read_bytes(), "generated")
+    item = sparkle_appcast.new_item(root, build)
     if critical:
-        sparkle_appcast.annotate_critical_update(root)
+        sparkle_appcast.annotate_critical_update(root, build)
     if minimum_build is not None:
         if info_link is None:
             fail("the appcast informational gate needs an information link")
-        sparkle_appcast.annotate_update_gate(root, minimum_build, info_link)
+        sparkle_appcast.annotate_update_gate(root, build, minimum_build, info_link)
     content = sparkle_appcast.serialize(root)
     names = [
         Path(unquote(urlparse(enclosure.get("url", "")).path)).name
-        for deltas in root.iter(sparkle_appcast.DELTAS_TAG)
+        for deltas in item.iter(sparkle_appcast.DELTAS_TAG)
         for enclosure in deltas
     ]
     if not private_key:
@@ -183,7 +170,7 @@ def finalize_deltas(
                 fail(f"could not locate delta URL for {name!r} in the appcast")
             content = content.replace(quote(name).encode(), safe_name.encode())
     appcast.write_bytes(content)
-    sign_appcast(sign_update, private_key, appcast)
+    sparkle_appcast.sign_appcast(sign_update, private_key, appcast)
     return published
 
 
@@ -194,6 +181,7 @@ def finalize(arguments: argparse.Namespace) -> None:
         arguments.output,
         arguments.sign_update,
         os.environ.get("SPARKLE_ED25519_PRIVATE_KEY", ""),
+        build=arguments.build,
         minimum_build=MINIMUM_MIGRATABLE_BUILD,
         info_link=release_page_url(arguments.repository, arguments.release_version),
         critical=os.environ.get("UPDATE_CRITICAL") == "true",
@@ -225,6 +213,7 @@ def main() -> None:
     finalize_parser.add_argument("--sign-update", type=Path, required=True)
     finalize_parser.add_argument("--repository", required=True)
     finalize_parser.add_argument("--release-version", required=True)
+    finalize_parser.add_argument("--build", type=int, required=True)
     finalize_parser.set_defaults(handler=finalize)
     arguments = parser.parse_args()
     arguments.handler(arguments)

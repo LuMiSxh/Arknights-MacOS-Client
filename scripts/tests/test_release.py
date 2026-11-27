@@ -48,8 +48,14 @@ def write_changelog(path: Path, version: str) -> Path:
         ("0.2.0", "0.2.0", "0.1.0", "CFBundleShortVersionString"),
         ("0.2.0", "0.1.0", "0.2.0", "does not contain"),
         ("v0.2.0", "0.2.0", "0.2.0", "X.Y.Z"),
+        ("0.2.0-rc.1", "0.2.0", "0.2.0", "X.Y.Z"),
     ],
-    ids=("plist-version", "missing-changelog-section", "version-format"),
+    ids=(
+        "plist-version",
+        "missing-changelog-section",
+        "version-format",
+        "release-candidate-on-stable",
+    ),
 )
 def test_rejects_invalid_release_metadata(
     tmp_path: Path,
@@ -62,6 +68,16 @@ def test_rejects_invalid_release_metadata(
 
     with pytest.raises(RuntimeError, match=message):
         validate_release(release_version, changelog, plist_version)
+
+
+def test_canary_accepts_a_release_candidate_of_the_changelog_version(
+    tmp_path: Path,
+) -> None:
+    changelog = write_changelog(tmp_path / "CHANGELOG.md", "0.2.0")
+
+    notes = validate_release("0.2.0-rc.2", changelog, "0.2.0", "canary")
+
+    assert notes == "- Release notes."
 
 
 PUBLISHED_APPCAST = """<?xml version="1.0" standalone="yes"?>

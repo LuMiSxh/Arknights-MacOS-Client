@@ -24,9 +24,9 @@ Check these inputs first:
 
 A release can be critical. Set the **critical** input when you start **Draft release** from GitHub Actions; `just release` does not pass it. Use it only for an urgent fix that users must install now. The update window then has no **Later** button, and **Cancel** remains while the update downloads. Launcher builds from this release onward honor the flag; older builds ignore it.
 
-The `pages` and `package` jobs run independently from the same commit. Pages requires `main`, runs `pnpm check`, and builds with `BASE_PATH=/Arknights-MacOS-Client`. A Pages failure does not stop the draft but keeps the workflow red.
+**Draft release** has a **channel** input, `stable` by default. Choose `canary` for a release candidate: enter `X.Y.Z-rc.N` as the version, or run `just release X.Y.Z-rc.1 0 canary`. The changelog section and `CFBundleShortVersionString` still use `X.Y.Z`. Only a canary release accepts the `-rc.N` suffix. A canary release is a draft prerelease on the Sparkle `canary` channel.
 
-The `package` job works in this order. It validates the branch, version, `CHANGELOG.md`, and `Info.plist`. It runs `just ci`. It extracts the changelog section as release notes. It builds the arm64 app and DMG. It creates the signed update archive and appcast, writes `SHA256SUMS`, and creates the draft `vX.Y.Z` release. It publishes no runtime binary.
+The `package` job works in this order. It validates the branch, version, `CHANGELOG.md`, and `Info.plist`. It runs `just ci`. It extracts the changelog section as release notes. It builds the arm64 app and DMG. It creates the signed update archive and appcast, writes `SHA256SUMS`, and creates the draft `vX.Y.Z` release. It publishes no runtime binary. It never changes the live feed.
 
 This diagram shows the same order:
 
@@ -39,6 +39,14 @@ flowchart LR
 	Archive --> Sums[Write SHA256SUMS]
 	Sums --> Draft["Create a draft<br/>vX.Y.Z release"]
 ```
+
+### Canary releases and promotion
+
+Ship a launcher change in two steps. First draft and publish a canary release. Users who chose **Update channel** → **Canary** receive it. After a 2-3 day soak, promote the same build to stable. If you need another candidate, publish `X.Y.Z-rc.2`, and finish with a final stable release.
+
+To promote, start **Promote canary release** from GitHub Actions on `main` and enter the tag, for example `v1.0.3-rc.2`. The workflow fails unless the tag is a published prerelease whose feed item is on the `canary` channel. It removes `sparkle:channel` from that item only, signs the feed, and uploads it. It also attaches the stable-only `appcast.xml`, marks the release **latest**, and redeploys the site. It rebuilds nothing, so the stable build is the exact build that users tested.
+
+Keep one release in flight at a time. Publish or delete a draft before you draft another release or promote one. Publishing fails when the feed changed after the draft was built. Then delete the draft and run **Draft release** again.
 
 `just stats` shows DMG and Sparkle archive download counts, separated into manual packages and in-app updates. GitHub counts downloads, not unique users. Treat the totals as directional.
 
@@ -215,11 +223,23 @@ The launcher checks for app updates silently when it opens (the user can disable
 
 The workflow sets `CFBundleVersion` one above the newest build in the latest appcast. A yanked release leaves that appcast, so its users would keep a higher build. Pass that build plus one as `minimum_build` (`just release X.Y.Z 28`) so Sparkle offers them the replacement.
 
-Clients read the appcast through the stable `releases/latest/download/appcast.xml` URL. Each release has a complete `.tar.xz` update archive (up to 0.6.x: `.zip`). Sparkle 2.9.6, the oldest shipped updater, extracts both.
+Launchers 1.0.3 and later read the appcast from `https://lumisxh.github.io/Arknights-MacOS-Client/appcast.xml`. GitHub Pages serves a copy of the canonical feed. The canonical feed is the `appcast.xml` asset of the `appcast-feed` release. That release is always a prerelease, so it is never **latest**, and the release workflows ignore it.
+
+Each release has a complete `.tar.xz` update archive (up to 0.6.x: `.zip`). Sparkle 2.9.6, the oldest shipped updater, extracts both.
+
+A draft does not touch the canonical feed. **Draft release** reads the feed, adds the new item, and attaches the result as `appcast-staged.xml`. It also attaches `appcast-base.txt` with the SHA-256 of the feed it started from, or `none` when no feed existed. The first run after this change reads the latest release's `appcast.xml` instead.
+
+When you publish the draft, **Publish appcast** compares the base with the current feed. If they match, it uploads `appcast-staged.xml` as the canonical `appcast.xml`, deletes the two staged assets, and starts **Publish website**. If not, it fails and leaves the feed unchanged. The job needs no signing secret, because the staged feed is already signed and launchers verify the signature.
+
+The workflow does not change older items in the feed. It signs and verifies only the item of the new build: its archive, its deltas, its gate, and its critical flag. The feed signature covers the whole file, so it is signed again.
+
+Every stable release also attaches a stable-only `appcast.xml`. Launchers before 1.0.3 read it through `releases/latest/download/appcast.xml`. Release 1.1.0 is the planned cutoff for keeping it. Before that release, move the previous-build read in `release.yml` to the canonical feed only.
+
+Every **Publish website** run downloads the canonical feed and fails when it is missing or empty. Start it from GitHub Actions to redeploy the site without a release.
 
 The workflow creates the archives from the fully packaged app, preserving bundle symlinks and executable modes. It generates and signs the appcast with Sparkle's `generate_appcast`. Before it creates the draft, it validates the key pair and runs Sparkle's `sign_update --verify` on the appcast, the archive, and every delta. This rejects a bad signature or a tampered file before publication.
 
-The release feed marks the newest item informational for clients below build 18 (0.6.0). Those launchers cannot migrate their data, so they get an information link and no install action. Users must delete the launcher data and reinstall. Clients at 0.6.0 or newer update normally. `sparkle_deltas.py finalize` inserts the gate before signing, and `validate_sparkle_keys.py` rejects a feed without it.
+The release feed marks the new build's item informational for clients below build 18 (0.6.0). The item is the newest in its own channel. Those launchers cannot migrate their data, so they get an information link and no install action. Users must delete the launcher data and reinstall. Clients at 0.6.0 or newer update normally. `sparkle_deltas.py finalize` inserts the gate before signing, and `validate_sparkle_keys.py` rejects a feed without it.
 
 The workflow also checks that the bundle contains Sparkle.framework with symlinks and nested XPC and helper code intact, an `@executable_path/../Frameworks` rpath, inside-out ad-hoc signatures, and a final outer-bundle verification. For a release candidate, install the DMG, start a newer signed update from the launcher, and confirm the themed update UI and the download and restart flow. Repeat during an active game or installation to verify that replacement is deferred.
 
