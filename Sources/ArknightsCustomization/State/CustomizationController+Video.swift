@@ -9,11 +9,15 @@ extension CustomizationController {
 	// committed, so a failed import keeps the previous background.
 	func applyCustomVideo(from url: URL, container: AppPaths.CustomVideoContainer) {
 		let operationID = beginArtworkMutation()
+		let started = ContinuousClock.now
 		Task { [weak self] in
 			guard let self else { return }
 			defer { self.finishArtworkMutation(operationID) }
 			do {
 				let poster = try await CustomizationVideoIO.makePoster(of: url)
+				log.info(
+					.customization, "video-poster-made",
+					["elapsed": ContinuousClock.now - started, "bytes": poster.count])
 				guard self.artworkOperationID == operationID else { return }
 				await self.commitCustomVideo(
 					from: url, container: container, poster: poster, operationID: operationID)
@@ -48,6 +52,7 @@ extension CustomizationController {
 			for: paths.customVideoPoster, operationID: operationID)
 		let videoStage = CustomizationImageIO.stagedURL(for: videoURL, operationID: operationID)
 		let stages = [posterStage, videoStage]
+		let started = ContinuousClock.now
 		do {
 			let cacheKey = try await CustomizationImageIO.prepareArtwork(
 				poster, source: paths.customVideoPoster)
@@ -55,6 +60,8 @@ extension CustomizationController {
 			guard let decoded else { throw CustomizationError.invalidCustomVideo(source) }
 			try await dataStager(poster, posterStage)
 			try await CustomizationVideoIO.stageVideo(from: source, to: videoStage)
+			log.info(
+				.customization, "video-staged", ["elapsed": ContinuousClock.now - started])
 			guard artworkOperationID == operationID else {
 				discardVideoStages(stages)
 				return
@@ -66,6 +73,12 @@ extension CustomizationController {
 			setHeroBackground(
 				.video(url: videoURL, poster: NSImage(cgImage: decoded, size: .zero)),
 				themeCacheKey: cacheKey)
+			log.info(
+				.customization, "video-hero-set",
+				[
+					"elapsed": ContinuousClock.now - started,
+					"applied": activeThemeCacheKey == cacheKey,
+				])
 		} catch {
 			discardVideoStages(stages)
 			guard artworkOperationID == operationID else { return }

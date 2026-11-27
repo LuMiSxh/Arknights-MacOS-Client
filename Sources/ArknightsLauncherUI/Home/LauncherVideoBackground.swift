@@ -4,8 +4,8 @@ import AVFoundation
 import AppKit
 import SwiftUI
 
-// Draws the custom background video. The player pauses and rewinds to its first frame, so the
-// poster still underneath matches the paused picture.
+// Draws the custom background video. Pausing holds the current frame and resuming continues from
+// it. The poster underneath is only the placeholder until the layer draws its first frame.
 struct LauncherVideoBackground: NSViewRepresentable {
 	let url: URL
 	let isPlaying: Bool
@@ -37,6 +37,9 @@ final class LauncherVideoLayerView: NSView {
 		player.isMuted = true
 		// A decorative background must not keep the display awake.
 		player.preventsDisplaySleepDuringVideoPlayback = false
+		// A local looping background has nothing to buffer, so start on the first frame instead of
+		// waiting for the player to decide it can keep up.
+		player.automaticallyWaitsToMinimizeStalling = false
 		self.player = player
 		looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
 		playerLayer = AVPlayerLayer(player: player)
@@ -59,8 +62,8 @@ final class LauncherVideoLayerView: NSView {
 		if playing {
 			player.play()
 		} else {
+			// Hold the current frame so resuming continues in place.
 			player.pause()
-			player.seek(to: .zero)
 		}
 	}
 

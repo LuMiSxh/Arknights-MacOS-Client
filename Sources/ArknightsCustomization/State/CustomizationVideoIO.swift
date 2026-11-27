@@ -34,6 +34,8 @@ package enum CustomizationVideoIO {
 		try await validate(url)
 		let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
 		generator.appliesPreferredTrackTransform = true
+		let posterEdge = CGFloat(AppConstants.Artwork.videoPosterMaximumDimension)
+		generator.maximumSize = CGSize(width: posterEdge, height: posterEdge)
 		let (frame, _) = try await generator.image(at: .zero)
 		return try jpegData(of: frame, source: url)
 	}

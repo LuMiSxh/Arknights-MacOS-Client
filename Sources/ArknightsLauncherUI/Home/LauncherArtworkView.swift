@@ -49,6 +49,8 @@ struct LauncherArtworkView: View {
 				.accessibilityLabel("Arknights artwork")
 		case .video(let url, let poster)?:
 			ZStack {
+				// Visible only before the player layer draws its first frame and when the video
+				// cannot play; the opaque layer covers it while playing or paused.
 				Image(nsImage: poster)
 					.resizable()
 					.scaledToFill()

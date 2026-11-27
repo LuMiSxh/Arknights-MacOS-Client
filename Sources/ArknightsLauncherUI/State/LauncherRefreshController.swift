@@ -303,7 +303,12 @@ final class LauncherRefreshController {
 		guard
 			customization.customArtworkGeneration == customArtworkGeneration,
 			!customization.hasPersistedCustomArtwork
-		else { return }
+		else {
+			log.debug(
+				.customization, "branding-artwork-skipped-custom",
+				["server": region.rawValue])
+			return
+		}
 		if let artworkData,
 			let decodedArtwork = await CustomizationImageIO.decodeImage(artworkData),
 			let artworkCacheKey = artworkCache.cacheKey(for: branding)
@@ -313,6 +318,7 @@ final class LauncherRefreshController {
 				customization.customArtworkGeneration == customArtworkGeneration,
 				!customization.hasPersistedCustomArtwork
 			else { return }
+			log.debug(.customization, "branding-artwork-applied", ["server": region.rawValue])
 			customization.setHeroArtwork(
 				NSImage(cgImage: decodedArtwork, size: .zero),
 				themeCacheKey: CustomizationController.officialThemeCacheKey(

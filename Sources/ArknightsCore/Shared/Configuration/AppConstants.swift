@@ -323,6 +323,9 @@ package enum AppConstants {
 	package enum Artwork {
 		package static let launcherMaximumBytes = 25 * 1_024 * 1_024
 		package static let videoMaximumBytes = 200 * 1_024 * 1_024
+		// The poster is the still shown while the video loads or is paused. Cap its long side so a
+		// 4K or 8K source does not decode, encode, and decode again a frame far larger than shown.
+		package static let videoPosterMaximumDimension = 2_560
 		package static let officialLogoMaximumBytes = 2 * 1_024 * 1_024
 		// Measured 2026-11-04: the largest official wallpaper, "The Masses' Travels", is
 		// 13,280 x 7,470 px (99.2 MP, 16.4 MiB). Limits add about 10% and round to gallery limits.
