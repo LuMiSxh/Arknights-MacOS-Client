@@ -48,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - Fixed the launcher music never starting. With **Launcher music** on, Home showed no music and no music pill.
+- A crash while the launcher prepared the game for launch could lose an original game file. The launcher now keeps the backup until the file is back in place.
 
 ## [1.0.1] - 2026-11-20
 

@@ -110,8 +110,15 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 			let matchesPreviousShim = try helperIsLauncherShim(at: helperURL)
 			let isInstalledShim = matchesCurrentShim || matchesPreviousShim
 			guard isInstalledShim else {
-				// The official updater has already replaced the shim. Its current helper wins.
-				try fileManager.removeItem(at: originalURL)
+				// The official updater has already replaced the shim. Its current helper wins,
+				// but only a verified official helper may supersede the backup.
+				if try GameShimIO.containsMarker(
+					at: helperURL,
+					marker: Data(Self.compatibilityArgument.utf8),
+					maximumSize: AppConstants.Game.vuplexOfficialHelperMaximumBytes
+				) {
+					try fileManager.removeItem(at: originalURL)
+				}
 				return false
 			}
 			try fileManager.removeItem(at: helperURL)
