@@ -80,6 +80,7 @@ package struct LauncherPreferencesStore {
 			case launcherAppearance
 			case homeTheme
 			case brandingTheme
+			case updateChannel
 		}
 
 		package static let automaticLauncherUpdates = ScalarKey(
@@ -147,6 +148,7 @@ package struct LauncherPreferencesStore {
 		static let launcherAppearance = Name.launcherAppearance.rawValue
 		static let homeTheme = Name.homeTheme.rawValue
 		static let brandingTheme = Name.brandingTheme.rawValue
+		static let updateChannel = Name.updateChannel.rawValue
 
 		// Every persisted name this store owns. Per-value families such as
 		// `installPath.<region>` are written under dynamic names and are not listed here.
@@ -167,6 +169,7 @@ package struct LauncherPreferencesStore {
 				RawKey(launcherAppearance, resettable: true),
 				RawKey(homeTheme, resettable: true),
 				RawKey(brandingTheme, resettable: true),
+				RawKey(updateChannel, resettable: true),
 				RawKey(resetReminderTiming, resettable: true),
 				RawKey(resetReminderRegions, resettable: true),
 				RawKey(seenAnnouncementIDs, resettable: false),
@@ -288,6 +291,15 @@ package struct LauncherPreferencesStore {
 
 	package func setLauncherAppearance(_ appearance: LauncherAppearance) {
 		defaults.set(appearance.rawValue, forKey: Key.launcherAppearance)
+	}
+
+	package func updateChannel() -> UpdateChannel {
+		defaults.string(forKey: Key.updateChannel)
+			.flatMap(UpdateChannel.init(rawValue:)) ?? .stable
+	}
+
+	package func setUpdateChannel(_ channel: UpdateChannel) {
+		defaults.set(channel.rawValue, forKey: Key.updateChannel)
 	}
 
 	package func homeTheme() -> HomeTheme {

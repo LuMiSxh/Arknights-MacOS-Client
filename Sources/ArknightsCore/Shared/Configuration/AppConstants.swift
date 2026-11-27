@@ -3,6 +3,15 @@
 import Foundation
 
 package enum AppConstants {
+	package enum Onboarding {
+		// Bump to make every returning player rerun setup. Progress resets; preferences stay.
+		// 2: launcher 0.7.0 replaced display settings with setup questions, so everyone answers them.
+		// 3: launcher 1.0 downloads the runtime separately, merges it with the game location and
+		// Rosetta 2 into one Install step, and adds the Look step. Returning players keep their answers.
+		// 4: launcher 1.0.3 adds the Update channel question to Updates and Integrations.
+		package static let schemaVersion = 4
+	}
+
 	package enum Game {
 		package static let installedStateFileName = ".arknights-client-state.json"
 		package static let installedStateSchemaVersion = 1

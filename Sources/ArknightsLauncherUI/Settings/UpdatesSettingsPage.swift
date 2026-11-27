@@ -19,6 +19,20 @@ struct UpdatesSettingsPage: View {
 			title: "Updates",
 			subtitle: "Keep the launcher and the game up to date"
 		) {
+			SettingsPanel(title: "Release channel") {
+				SettingsActionRow(
+					title: "Update channel",
+					detail:
+						"Canary gets early builds that may have bugs. Switching to Stable never downgrades."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $settings.updateChannel,
+						options: UpdateChannel.allCases
+					) { channel in
+						Text(channelTitle(channel))
+					}
+				}
+			}
 			SettingsPanel(
 				title: "Automatic checks"
 			) {
@@ -78,6 +92,13 @@ struct UpdatesSettingsPage: View {
 
 	private var activityLockReason: String? {
 		lifecycle.canBeginExclusiveActivity ? nil : lifecycle.activity.lockReason
+	}
+
+	private func channelTitle(_ channel: UpdateChannel) -> String {
+		switch channel {
+		case .stable: "Stable"
+		case .canary: "Canary"
+		}
 	}
 
 	private var launcherStatusText: String {

@@ -98,6 +98,15 @@ package final class LauncherPreferencesController {
 			}
 		}
 	}
+	package var updateChannel: UpdateChannel = .stable {
+		didSet {
+			persist(
+				Key.updateChannel, from: oldValue.rawValue, to: updateChannel.rawValue
+			) {
+				store.setUpdateChannel(updateChannel)
+			}
+		}
+	}
 	package var homeTheme: HomeTheme = .automatic {
 		didSet {
 			persist(Key.homeTheme, from: oldValue.rawValue, to: homeTheme.rawValue) {
@@ -273,6 +282,7 @@ package final class LauncherPreferencesController {
 		screenshotNotifies = store.value(Key.screenshotNotifies)
 		screenshotDirectory = store.screenshotDirectory()
 		launcherAppearance = store.launcherAppearance()
+		updateChannel = store.updateChannel()
 		homeTheme = store.homeTheme()
 		brandingTheme = store.brandingTheme()
 		resetReminderTiming = store.resetReminderTiming()
