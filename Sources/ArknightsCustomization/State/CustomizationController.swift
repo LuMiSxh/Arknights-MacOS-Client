@@ -27,12 +27,13 @@ package final class CustomizationController {
 	package let region: @MainActor () -> GameRegion
 	package let usesDynamicTheme: @MainActor () -> Bool
 
-	package var heroArtwork: NSImage? {
+	package private(set) var heroBackground: HeroBackground? {
 		didSet {
 			updateThemeColor()
 			updateArtworkColorScheme()
 		}
 	}
+	package var heroArtwork: NSImage? { heroBackground?.still }
 	package var officialLogo: NSImage?
 	package private(set) var hasCustomAppIcon = false
 	package private(set) var hasCompletedInitialArtworkLoad = false
@@ -160,8 +161,12 @@ package final class CustomizationController {
 	}
 
 	package func setHeroArtwork(_ image: NSImage?, themeCacheKey: String?) {
-		guard heroArtwork == nil || activeThemeCacheKey != themeCacheKey else { return }
+		setHeroBackground(image.map { HeroBackground.image($0) }, themeCacheKey: themeCacheKey)
+	}
+
+	func setHeroBackground(_ background: HeroBackground?, themeCacheKey: String?) {
+		guard heroBackground == nil || activeThemeCacheKey != themeCacheKey else { return }
 		activeThemeCacheKey = themeCacheKey
-		heroArtwork = image
+		heroBackground = background
 	}
 }

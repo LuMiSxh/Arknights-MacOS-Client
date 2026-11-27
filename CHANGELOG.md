@@ -16,16 +16,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added video backgrounds. **Choose…** under **Settings → Appearance** accepts an MP4 or MOV video of up to 200 MB with H.264 or HEVC video. The video loops muted behind the Home screen. It pauses when the launcher is hidden or covered, while the game runs, in Low Power Mode, or with **Reduce Motion** on.
 - A daily reset reminder notification now has a **Play** button. Choose **Play**, or click the notification, to start the game for that reminder's server.
 - Added **Verify Files** to **Settings → Installation**. It checks the game files against the manifest without changing anything.
+- Added **Update channel** to **Settings → Updates** and setup. **Canary** offers early builds that may have bugs. Switching to **Stable** never downgrades the launcher.
 
 ### Changed
 
+- Setup asks existing players to choose an **Update channel** once. Their other settings stay as they are.
 - The **ARM64 (Apple Silicon)** game environment now runs on macOS 26.5 or later.
 - **Debug logging** now also records detailed launcher log entries, not only Wine and graphics logs.
 - **Save Diagnostics** now includes the last three game sessions' logs and a summary of your recent launcher failures.
 - Launcher log lines now show a category, a stable event name, and named fields. The launcher also records settings changes and your time zone.
 - A critical launcher update has no **Later** button. **Cancel** remains while the update downloads.
+- Launcher update checks now read the update feed from the project website. Launchers 1.0.2 and older still read it from the GitHub release.
+- Release candidates reach users on a **Canary** update channel before they become stable. Choose it with **Update channel** (**Stable** or **Canary**).
+
+### Fixed
+
+- A crash while the launcher prepared the game for launch could lose an original game file. The launcher now keeps the backup until the file is back in place.
 
 ## [1.0.2] - 2026-11-25
 

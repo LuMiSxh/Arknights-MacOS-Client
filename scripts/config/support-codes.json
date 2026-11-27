@@ -543,21 +543,23 @@
       "domain": "customization",
       "title": "Artwork image not usable",
       "status": "active",
-      "summary": "The image cannot be used as launcher artwork.",
-      "action": "Choose an image that meets the size limits, then select it again.",
+      "summary": "The image or video cannot be used as launcher artwork.",
+      "action": "Choose an image or video that meets the size limits, then select it again.",
       "allowsRetry": false,
       "allowsRepair": false,
       "causes": [
-        "The file is not a single still image, such as a PNG or JPEG.",
+        "The file is not a single still image, such as a PNG or JPEG, or a video.",
         "The image is larger than 25 MB, 16,384 pixels on one side, or 120 million pixels in total.",
+        "The video is larger than 200 MB, or it is not an MP4 or MOV file with H.264 or HEVC video.",
         "A gallery image is larger than the launcher allows."
       ],
       "steps": [
-        "Choose another image. Use a single still image, such as a PNG or JPEG.",
+        "Choose another file. Use a single still image, such as a PNG or JPEG, or a video.",
         "Use an image of 25 MB or less. It may have at most 16,384 pixels on each side and 120 million pixels in total.",
+        "Use a video of 200 MB or less in an MP4 or MOV file with H.264 or HEVC video.",
         "If a gallery image still fails, check for a launcher update, then try again."
       ],
-      "report": "In the report, say whether the image came from the gallery or from a file you chose. Do not attach the image unless a maintainer asks for it.",
+      "report": "In the report, say whether the file came from the gallery or from a file you chose. Do not attach the file unless a maintainer asks for it.",
       "legacy": []
     }
   ]

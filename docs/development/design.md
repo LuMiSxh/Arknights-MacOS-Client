@@ -246,7 +246,7 @@ For a UI change, use the debug simulator and check an empty region, an installed
 - The Look step of setup asks for the artwork and Dynamic Theme. Its **More options** section asks for Home controls, Branding colors, Appearance, what the launcher shows, and the Dock operator, in that order.
 - Storage panels appear as Game installations, Shared runtime data, Recreatable caches, Logs and data, and Measurements, with no Danger zone. **Clear Caches** and **Clear Gallery Cache** are neutral. Logs and data holds **Show Logs** and **App Data Folder** with **Show in Finder**; Measurements holds **Refresh sizes**.
 - Game's Performance panel holds **Frame rate limit** as a segmented control. Battery Saver holds **Battery Saver mode** and, while it is on, **Battery Saver frame rate limit**. Battery Saver applies whenever it is on. While **Override in-game display settings** is off, the affected rows say so in their detail.
-- Updates holds Automatic checks (**Launcher updates** and **Game updates**) and Project news (**Announcements**). About shows **Show in Finder**, **View on GitHub**, and **Donate**. The Runtime page's **Details** panel shows the runtime version. Its **Technical details** row expands to show the Wine, DXMT, and capability rows.
+- Updates holds Release channel (**Update channel** with **Stable** and **Canary**), Automatic checks (**Launcher updates** and **Game updates**), and Project news (**Announcements**). About shows **Show in Finder**, **View on GitHub**, and **Donate**. The Runtime page's **Details** panel shows the runtime version. Its **Technical details** row expands to show the Wine, DXMT, and capability rows.
 - Help's Troubleshooting panel holds Setup assistant, **Debug logging**, and the neutral **Rebuild**, which asks for confirmation. Help also holds **Report** and **Get help**; its Danger zone holds **Delete Environment…** and **Reset All Settings…**.
 - Explain destructive or expensive actions in user terms.
 - Keep warning and danger panels on neutral backgrounds, with semantic color only on the header, icon, edge, and relevant actions. Read every semantic color from `LauncherTheme`:
@@ -268,7 +268,7 @@ For a UI change, use the debug simulator and check an empty region, an installed
 - Present setup as an operation briefing in the launcher window: the left column shows the route, the right column one task, and installation status sits inside its step.
 - Check for a newer launcher first. If one exists, stop setup at the update action; the user installs it and reopens the launcher. System Check checks nothing else.
 - Verify Intel execution through Rosetta 2 in the Install step, while x86_64 is the runtime in use.
-- Ask the daily reset reminder question in Updates and Integrations, with Off (recommended), At reset, and 1 hour before. Ask macOS for notification permission only when the user picks a reminder, and keep Off if macOS refuses.
+- Ask the **Update channel** question in Updates and Integrations, with Stable (recommended) and Canary. Ask the daily reset reminder question in Updates and Integrations, with Off (recommended), At reset, and 1 hour before. Ask macOS for notification permission only when the user picks a reminder, and keep Off if macOS refuses.
 - Walk through System Check, Server, Install, Display, Look, Updates and Integrations, and Ready. Install covers the runtime, the install location, and Rosetta 2 for x86_64. Ask each question with an answer card (`OnboardingQuestion`), using one answer, several answers with checkboxes, or action cards that open a chooser. Mark the recommended answer, and end Display with a one-sentence summary.
 - Each step shows its main choices and puts secondary options under a collapsed **More options** section, which a step without secondary options omits. In Updates and Integrations, music is one on/off question; volume and **Now playing** sit under **More options**.
 - The rail shows a running download on every step, and the game download offers **Resume** when partial files exist.
@@ -286,6 +286,8 @@ For a UI change, use the debug simulator and check an empty region, an installed
 ## Artwork
 
 The default image comes from the official Global launcher configuration and is cached locally. Neither the repository nor the DMG includes it. The service exposes one active image, not a playlist, so do not build a carousel from historical CDN URLs.
+
+A user can choose an image or a video. A video must be an MP4 or MOV file with H.264 or HEVC video, up to 200 MB. The launcher shows the video's first frame as a still. It plays the video muted and looping only while decorative motion runs. It shows the still while the video is paused or loading.
 
 > [!WARNING]
 > A user can choose a local image. The app copies it into its Application Support folder. Do not bundle official wallpapers in public releases without explicit permission. The [Global Fan Kit terms](https://www.arknights.global/fankit/precautions) do not clearly permit redistribution inside third-party software.

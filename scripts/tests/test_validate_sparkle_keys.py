@@ -14,6 +14,7 @@ PUBLIC = base64.b64encode(b"P" * 32).decode()
 UPDATE = "Example.Client.tar.xz"
 DELTA = "Example.Client42-41.delta"
 MARKER = "<!-- sparkle-signatures:\n"
+NAMESPACE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
 
 # Stands in for Sparkle's `sign_update --verify`: a "signature" is sha256(key + bytes).
 FAKE_SIGN_UPDATE = f"""#!{sys.executable}
@@ -64,7 +65,11 @@ def release(directory: Path) -> tuple[Path, Path, Path]:
     update.write_bytes(b"full archive")
     (directory / DELTA).write_bytes(b"delta")
     feed = (
-        '<rss xmlns:sparkle="s"><channel><item>'
+        f'<rss xmlns:sparkle="{NAMESPACE}"><channel>'
+        # An older item that is neither signed nor local: the new build's check skips it.
+        "<item><sparkle:version>41</sparkle:version>"
+        '<enclosure url="https://h/v41/Old.tar.xz" /></item>'
+        "<item><sparkle:version>42</sparkle:version>"
         f'<enclosure url="https://h/v42/{UPDATE}" '
         f'sparkle:edSignature="{signature(b"full archive")}" />'
         "<sparkle:deltas>"
@@ -81,10 +86,16 @@ def test_rejects_wrong_key_or_tampered_feed(tmp_path: Path) -> None:
     sign_update, appcast, update = release(tmp_path)
 
     with pytest.raises(RuntimeError, match="appcast.xml"):
-        sparkle.verify_release(sign_update, "other", appcast, update, tmp_path)
+        sparkle.verify_release(sign_update, "other", appcast, update, tmp_path, 42)
     appcast.write_text(appcast.read_text().replace("v42", "v43", 1))
     with pytest.raises(RuntimeError, match="appcast.xml"):
-        sparkle.verify_release(sign_update, SEED, appcast, update, tmp_path)
+        sparkle.verify_release(sign_update, SEED, appcast, update, tmp_path, 42)
+
+
+def test_accepts_a_release_whose_older_items_are_unsigned(tmp_path: Path) -> None:
+    sign_update, appcast, update = release(tmp_path)
+
+    sparkle.verify_release(sign_update, SEED, appcast, update, tmp_path, 42)
 
 
 def test_rejects_missing_archive_enclosure_or_delta_file(tmp_path: Path) -> None:
@@ -92,8 +103,8 @@ def test_rejects_missing_archive_enclosure_or_delta_file(tmp_path: Path) -> None
 
     with pytest.raises(RuntimeError, match="no enclosure"):
         sparkle.verify_release(
-            sign_update, SEED, appcast, tmp_path / "Other.tar.xz", tmp_path
+            sign_update, SEED, appcast, tmp_path / "Other.tar.xz", tmp_path, 42
         )
     (tmp_path / DELTA).unlink()
     with pytest.raises(RuntimeError, match="unsigned or has no file"):
-        sparkle.verify_release(sign_update, SEED, appcast, update, tmp_path)
+        sparkle.verify_release(sign_update, SEED, appcast, update, tmp_path, 42)

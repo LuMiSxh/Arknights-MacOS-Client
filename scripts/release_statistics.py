@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from lib.common import ScriptError, fail, output, require_command, run_main
 from lib.project_config import (
+    APPCAST_FEED_TAG,
     github_asset_stem,
     load_project_configuration,
     sparkle_archive_names,
@@ -26,7 +27,7 @@ def release_downloads(
     stem = github_asset_stem(display_name).lower()
     rows = []
     for release in (item for page in pages for item in page):
-        if release.get("draft") is True:
+        if release.get("draft") is True or release["tag_name"] == APPCAST_FEED_TAG:
             continue
         version = release["tag_name"].removeprefix("v")
         sparkle_names = sparkle_archive_names(stem, version)

@@ -88,7 +88,7 @@ Each code has its own page. The page title starts with the code.
 | Code | Problem | What to do |
 | --- | --- | --- |
 | [UI-ICN](ui-icn.md) | App icon not updated | Choose another image, then try again. |
-| [UI-IMG](ui-img.md) | Artwork image not usable | Choose an image that meets the size limits, then select it again. |
+| [UI-IMG](ui-img.md) | Artwork image not usable | Choose an image or video that meets the size limits, then select it again. |
 <!-- support-codes:end codes -->
 
 ## Codes before 1.0.0

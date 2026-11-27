@@ -8,13 +8,10 @@ import Foundation
 // rewriting any user choice.
 @MainActor
 package struct OnboardingProgressStore {
-	// 2: launcher 0.7.0 replaced display settings with setup questions, so everyone answers them.
-	// 3: launcher 1.0 downloads the runtime separately, merges it with the game location and
-	// Rosetta 2 into one Install step, and adds the Look step. Returning players keep their answers.
-	static let currentSchemaVersion = 3
+
 	// Schemas returning players must finish before Skip Setup returns. Give each one a reason in
 	// `OnboardingWelcomeView.requiredSetupReason(schema:)`.
-	static let requiredSchemaVersions: Set<Int> = [2, 3]
+	static let requiredSchemaVersions: Set<Int> = [2, 3, 4]
 
 	private typealias Key = LauncherPreferencesStore.Key
 
@@ -25,7 +22,8 @@ package struct OnboardingProgressStore {
 	}
 
 	var needsOnboarding: Bool {
-		defaults.integer(forKey: Key.onboardingCompletedSchemaVersion) < Self.currentSchemaVersion
+		defaults.integer(forKey: Key.onboardingCompletedSchemaVersion)
+			< AppConstants.Onboarding.schemaVersion
 	}
 
 	// The newest required schema a returning player has not finished. First runs, which have
@@ -34,7 +32,7 @@ package struct OnboardingProgressStore {
 		let completed = defaults.integer(forKey: Key.onboardingCompletedSchemaVersion)
 		guard completed > 0 else { return nil }
 		return Self.requiredSchemaVersions.filter {
-			$0 > completed && $0 <= Self.currentSchemaVersion
+			$0 > completed && $0 <= AppConstants.Onboarding.schemaVersion
 		}.max()
 	}
 
@@ -48,7 +46,9 @@ package struct OnboardingProgressStore {
 	}
 
 	func complete() {
-		defaults.set(Self.currentSchemaVersion, forKey: Key.onboardingCompletedSchemaVersion)
+		defaults.set(
+			AppConstants.Onboarding.schemaVersion, forKey: Key.onboardingCompletedSchemaVersion
+		)
 		defaults.removeObject(forKey: Key.onboardingCurrentStep)
 	}
 

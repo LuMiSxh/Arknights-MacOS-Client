@@ -31,7 +31,7 @@
 	<key>LauncherAnnouncementsURL</key>
 	<string>https://api.github.com/repos/LuMiSxh/Arknights-MacOS-Client/contents/announcements.json?ref=main</string>
 	<key>SUFeedURL</key>
-	<string>https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest/download/appcast.xml</string>
+	<string>https://lumisxh.github.io/Arknights-MacOS-Client/appcast.xml</string>
 	<key>SUEnableAutomaticChecks</key>
 	<false />
 	<key>SUAutomaticallyUpdate</key>

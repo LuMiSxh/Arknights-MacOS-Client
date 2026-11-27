@@ -53,6 +53,8 @@ struct OnboardingWelcomeView: View {
 			"Display settings work differently in this version. Confirm display mode, rendering and cursor once."
 		case 3:
 			"Version 1.0 downloads the game runtime separately and can use the new ARM64 runtime. Setup installs it once and adds a Look step for light mode and Home controls. Your server, game location, and settings stay as they are."
+		case 4:
+			"Updates can now follow the Canary channel. Setup asks which channel to use. Your server, game location, and settings stay as they are."
 		default:
 			"The launcher changed how an important setting works. Go through each step once so everything keeps working."
 		}

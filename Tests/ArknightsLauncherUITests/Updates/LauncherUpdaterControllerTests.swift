@@ -20,7 +20,8 @@ struct LauncherUpdaterControllerTests {
 		lifecycle.simulateActivity(scenario.activity)
 		let subject = LauncherUpdaterController(
 			lifecycle: lifecycle,
-			log: lifecycle.log
+			log: lifecycle.log,
+			updateChannel: { .stable }
 		)
 		let sparkle = makeSparkleUpdater()
 
@@ -41,7 +42,8 @@ struct LauncherUpdaterControllerTests {
 		defer { storage.remove() }
 		let lifecycle = makeLifecycleStore(in: storage)
 		lifecycle.simulateActivity(scenario.activity)
-		let subject = LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
+		let subject = LauncherUpdaterController(
+			lifecycle: lifecycle, log: lifecycle.log, updateChannel: { .stable })
 		let sparkle = makeSparkleUpdater()
 		var installCalled = false
 		let postponed = subject.updater(
@@ -63,7 +65,8 @@ struct LauncherUpdaterControllerTests {
 		defer { storage.remove() }
 		let lifecycle = makeLifecycleStore(in: storage)
 		lifecycle.beginLauncherUpdate()
-		let subject = LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
+		let subject = LauncherUpdaterController(
+			lifecycle: lifecycle, log: lifecycle.log, updateChannel: { .stable })
 		let sparkle = makeSparkleUpdater()
 
 		subject.updater(

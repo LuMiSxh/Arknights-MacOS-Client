@@ -4,11 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Release version (X.Y.Z)
+        description: Release version (X.Y.Z, or X.Y.Z-rc.N for a canary release candidate)
         required: true
         type: string
+      channel:
+        description: Update channel. Canary creates a prerelease on the Sparkle canary channel; promote it later to make it stable.
+        required: false
+        default: stable
+        type: choice
+        options:
+          - stable
+          - canary
       dry_run:
-        description: Build, sign, and verify everything, but publish nothing (no draft, no Pages deploy, no attestation)
+        description: Build, sign, and verify everything, but publish nothing (no draft, no attestation)
         required: false
         default: false
         type: boolean
@@ -26,22 +34,16 @@ on:
 permissions:
   contents: read
 
+env:
+  # Keep in sync with APPCAST_FEED_TAG in scripts/lib/project_config.py; a test enforces it.
+  APPCAST_TAG: appcast-feed
+
 concurrency:
   group: release-${{ inputs.version }}
   cancel-in-progress: false
 
 jobs:
-  # Keep this independent from packaging: a Pages failure must fail the run,
-  # but must not prevent the package job from creating its draft release.
-  pages:
-    name: Publish website
-    if: ${{ !inputs.dry_run }}
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    uses: ./.github/workflows/pages.yml
-
+  # The draft never touches the live feed. Publishing the draft runs publish-appcast.yml.
   package:
     name: Build and draft release
     runs-on: xcode-27
@@ -53,6 +55,7 @@ jobs:
       id-token: write
     env:
       RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_CHANNEL: ${{ inputs.channel }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -110,7 +113,8 @@ jobs:
             echo "Releases must be triggered from main after the release branch is merged." >&2
             exit 1
           fi
-          uv run --locked --no-dev scripts/release.py validate "$RELEASE_VERSION"
+          uv run --locked --no-dev scripts/release.py validate "$RELEASE_VERSION" \
+            --channel "$RELEASE_CHANNEL"
           release_tag="v$RELEASE_VERSION"
           if git ls-remote --exit-code --tags origin "refs/tags/$release_tag" >/dev/null; then
             echo "Tag $release_tag already exists." >&2
@@ -139,53 +143,71 @@ jobs:
       - name: Prepare release notes
         run: uv run --locked --no-dev scripts/release.py notes "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
 
-      - name: Set release version
+      - name: Fetch the canonical appcast and set release version
         env:
           GH_TOKEN: ${{ github.token }}
           MINIMUM_BUILD: ${{ inputs.minimum_build }}
         run: |
           set -euo pipefail
           # Sparkle orders updates by CFBundleVersion, so it must never fall below the
-          # newest published build. Only a repository without any published release falls
-          # back to the run number.
-          previous_appcast="$RUNNER_TEMP/previous-appcast.xml"
-          appcast_url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml"
-          appcast_args=()
-          rm -f "$previous_appcast"
-          status="$(curl --location --silent --show-error --proto '=https' --tlsv1.2 \
-            --output "$previous_appcast" --write-out '%{http_code}' "$appcast_url")" || {
-            echo "Unable to fetch the previous Sparkle appcast from $appcast_url." >&2
-            exit 1
-          }
-          case "$status" in
-            200)
-              appcast_args=(--previous-appcast "$previous_appcast")
-              ;;
-            404)
-              rm -f "$previous_appcast"
-              # A 404 on the appcast also occurs when the latest release lacks the asset.
-              # Reusing the run number then could lower CFBundleVersion, so check for a release.
-              release_error="$RUNNER_TEMP/latest-release.err"
-              if latest_tag="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>"$release_error")"; then
-                echo "::error::Latest release $latest_tag has no appcast.xml asset; cannot derive CFBundleVersion." >&2
-                exit 1
-              fi
-              if ! grep -q 'HTTP 404' "$release_error"; then
-                cat "$release_error" >&2
-                echo "::error::Unable to query the latest release of $GITHUB_REPOSITORY." >&2
-                exit 1
-              fi
-              echo "::warning::No published release; CFBundleVersion uses the run number."
-              ;;
-            *)
-              echo "Unexpected HTTP $status fetching the previous Sparkle appcast." >&2
+          # newest build in the canonical feed. The feed's checksum goes into the draft, so
+          # publishing can detect that the feed changed after this build started.
+          # `none` means the feed release does not exist yet.
+          canonical="$RUNNER_TEMP/canonical-appcast.xml"
+          feed_error="$RUNNER_TEMP/appcast-feed.err"
+          rm -f "$canonical"
+          if gh release view "$APPCAST_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>"$feed_error"; then
+            gh release download "$APPCAST_TAG" --repo "$GITHUB_REPOSITORY" \
+              --pattern appcast.xml --output "$canonical"
+            base="$(shasum -a 256 "$canonical" | cut -d ' ' -f 1)"
+          elif grep -q 'release not found' "$feed_error"; then
+            base=none
+            # Bootstrap: the first release after the feed moved reads the legacy feed.
+            appcast_url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml"
+            status="$(curl --location --silent --show-error --proto '=https' --tlsv1.2 \
+              --output "$canonical" --write-out '%{http_code}' "$appcast_url")" || {
+              echo "Unable to fetch the previous Sparkle appcast from $appcast_url." >&2
               exit 1
-              ;;
-          esac
+            }
+            case "$status" in
+              200)
+                ;;
+              404)
+                rm -f "$canonical"
+                # A 404 on the appcast also occurs when the latest release lacks the asset.
+                # Reusing the run number then could lower CFBundleVersion, so check for a release.
+                release_error="$RUNNER_TEMP/latest-release.err"
+                if latest_tag="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>"$release_error")"; then
+                  echo "::error::Latest release $latest_tag has no appcast.xml asset; cannot derive CFBundleVersion." >&2
+                  exit 1
+                fi
+                if ! grep -q 'HTTP 404' "$release_error"; then
+                  cat "$release_error" >&2
+                  echo "::error::Unable to query the latest release of $GITHUB_REPOSITORY." >&2
+                  exit 1
+                fi
+                echo "::warning::No published release; CFBundleVersion uses the run number."
+                ;;
+              *)
+                echo "Unexpected HTTP $status fetching the previous Sparkle appcast." >&2
+                exit 1
+                ;;
+            esac
+          else
+            cat "$feed_error" >&2
+            echo "::error::Unable to query the $APPCAST_TAG release." >&2
+            exit 1
+          fi
+          printf '%s\n' "$base" > "$RUNNER_TEMP/appcast-base.txt"
+          appcast_args=()
+          if [[ -s "$canonical" ]]; then
+            appcast_args=(--previous-appcast "$canonical")
+          fi
           bundle_version="$(uv run --locked --no-dev scripts/release.py bundle-version \
             "$GITHUB_RUN_NUMBER" --minimum-build "${MINIMUM_BUILD:-0}" \
             ${appcast_args[@]+"${appcast_args[@]}"})"
           echo "CFBundleVersion: $bundle_version"
+          echo "BUILD_NUMBER=$bundle_version" >> "$GITHUB_ENV"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $bundle_version" Resources/Info.plist
 
       - name: Build DMG
@@ -211,6 +233,10 @@ jobs:
             --update-name "$UPDATE_NAME" \
             --destination "$update_directory" \
             --count "$DELTA_SOURCES"
+          channel_args=()
+          if [[ "$RELEASE_CHANNEL" == canary ]]; then
+            channel_args=(--channel canary)
+          fi
           generate_appcast="$(find "$GITHUB_WORKSPACE/.build/artifacts/sparkle" \
             -type f -path '*/Sparkle/bin/generate_appcast' -perm -111 -print -quit)"
           sign_update="$(find "$GITHUB_WORKSPACE/.build/artifacts/sparkle" \
@@ -226,26 +252,55 @@ jobs:
             --embed-release-notes \
             --maximum-versions 1 \
             --maximum-deltas "$DELTA_SOURCES" \
+            ${channel_args[@]+"${channel_args[@]}"} \
             "$update_directory"
+          # `generate_appcast` produces only the new item. Append it to the canonical items,
+          # which are never regenerated, so older items keep their published content.
+          canonical="$RUNNER_TEMP/canonical-appcast.xml"
+          canonical_args=()
+          if [[ -s "$canonical" ]]; then
+            canonical_args=(--canonical "$canonical")
+          fi
+          uv run --locked --no-dev scripts/appcast.py merge \
+            --generated "$update_directory/appcast.xml" \
+            --output "$update_directory/appcast.xml" \
+            --build "$BUILD_NUMBER" \
+            ${canonical_args[@]+"${canonical_args[@]}"}
           uv run --locked --no-dev scripts/sparkle_deltas.py finalize \
             --directory "$update_directory" \
             --appcast "$update_directory/appcast.xml" \
             --output dist \
             --sign-update "$sign_update" \
             --repository "$GITHUB_REPOSITORY" \
-            --release-version "$RELEASE_VERSION"
+            --release-version "$RELEASE_VERSION" \
+            --build "$BUILD_NUMBER"
           uv run --locked --no-dev scripts/validate_sparkle_keys.py \
             --plist "dist/$APP_NAME/Contents/Info.plist" \
             --sign-update "$sign_update" \
             --appcast "$update_directory/appcast.xml" \
             --update-file "$update_directory/$UPDATE_NAME" \
-            --delta-directory dist
+            --delta-directory dist \
+            --build "$BUILD_NUMBER"
+          if [[ -s "$canonical" ]]; then
+            uv run --locked --no-dev scripts/appcast.py check-preserved \
+              --canonical "$canonical" --appcast "$update_directory/appcast.xml"
+          fi
           cp "$update_directory/$UPDATE_NAME" "dist/$UPDATE_NAME"
-          cp "$update_directory/appcast.xml" dist/appcast.xml
+          # The staged feed replaces the canonical one only when the draft is published.
+          cp "$update_directory/appcast.xml" dist/appcast-staged.xml
+          cp "$RUNNER_TEMP/appcast-base.txt" dist/appcast-base.txt
+          if [[ "$RELEASE_CHANNEL" == stable ]]; then
+            # Launchers 1.0.2 and older read this asset through releases/latest/download.
+            uv run --locked --no-dev scripts/appcast.py legacy \
+              --appcast "$update_directory/appcast.xml" \
+              --output dist/appcast.xml \
+              --sign-update "$sign_update"
+          fi
           deltas=(dist/*.delta)
+          appcasts=(dist/appcast*.xml)
           shasum -a 256 "dist/$DMG_NAME" \
             "dist/$UPDATE_NAME" "${deltas[@]}" \
-            dist/appcast.xml > dist/SHA256SUMS
+            "${appcasts[@]}" > dist/SHA256SUMS
 
       - name: Attest release provenance
         if: ${{ !inputs.dry_run }}
@@ -257,7 +312,7 @@ jobs:
             dist/*.dmg
             dist/*.tar.xz
             dist/*.delta
-            dist/appcast.xml
+            dist/appcast*.xml
             dist/SHA256SUMS
 
       - name: Upload dry-run files for inspection
@@ -269,7 +324,8 @@ jobs:
             dist/*.dmg
             dist/*.tar.xz
             dist/*.delta
-            dist/appcast.xml
+            dist/appcast*.xml
+            dist/appcast-base.txt
             dist/SHA256SUMS
           retention-days: 3
 
@@ -281,13 +337,20 @@ jobs:
           shopt -s nullglob
           release_tag="v$RELEASE_VERSION"
           deltas=(dist/*.delta)
+          appcasts=(dist/appcast*.xml)
+          channel_args=()
+          if [[ "$RELEASE_CHANNEL" == canary ]]; then
+            channel_args=(--prerelease)
+          fi
           gh release create "$release_tag" \
             "dist/$DMG_NAME" \
             "dist/$UPDATE_NAME" \
             "${deltas[@]}" \
-            dist/appcast.xml \
+            "${appcasts[@]}" \
+            dist/appcast-base.txt \
             dist/SHA256SUMS \
             --draft \
+            ${channel_args[@]+"${channel_args[@]}"} \
             --notes-file "$RUNNER_TEMP/release-notes.md" \
             --target "$GITHUB_SHA" \
             --title "$DISPLAY_NAME $release_tag"

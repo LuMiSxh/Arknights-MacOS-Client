@@ -18,6 +18,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	private let lifecycle: LauncherLifecycleStore
 	private let log: LauncherLog
 	private let activateApplication: () -> Void
+	private let updateChannel: @MainActor () -> UpdateChannel
 	private lazy var updater = SPUUpdater(
 		hostBundle: .main,
 		applicationBundle: .main,
@@ -39,12 +40,14 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	init(
 		lifecycle: LauncherLifecycleStore,
 		log: LauncherLog,
+		updateChannel: @escaping @MainActor () -> UpdateChannel,
 		activateApplication: @escaping () -> Void =
 			{ LauncherUpdateUserDriver.activateApplicationInFront() }
 	) {
 		self.lifecycle = lifecycle
 		self.log = log
 		self.activateApplication = activateApplication
+		self.updateChannel = updateChannel
 		super.init()
 		let driver = userDriver
 		let activityObserverID = lifecycle.observeActivityChanges { [weak driver] in
@@ -190,6 +193,14 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 			userDriver.recordAvailabilityError(error)
 		} else {
 			userDriver.finishInformationCheck()
+		}
+	}
+
+	func allowedChannels(for updater: SPUUpdater) -> Set<String> {
+		// Sparkle always offers items without a channel, so Stable names none.
+		switch updateChannel() {
+		case .stable: []
+		case .canary: ["canary"]
 		}
 	}
 

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 import sparkle_deltas
+from lib import sparkle_appcast
 
 REPOSITORY = "owner/repo"
 UPDATE_NAME = "Example.Client.tar.xz"
@@ -57,6 +58,7 @@ def appcast_with_delta(directory: Path) -> Path:
     appcast = directory / "appcast.xml"
     appcast.write_text(
         f'<rss xmlns:sparkle="{NAMESPACE}"><channel><item>'
+        "<sparkle:version>42</sparkle:version>"
         f'<enclosure url="https://h/v42/{UPDATE_NAME}" />'
         "<sparkle:deltas>"
         '<enclosure url="https://h/v42/Example%20Client42-41.delta" />'
@@ -89,7 +91,7 @@ def test_finalize_annotates_the_newest_item_and_signs_without_deltas(
         calls.append((command, kwargs))
         return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
 
-    monkeypatch.setattr(sparkle_deltas.subprocess, "run", fake_run)
+    monkeypatch.setattr(sparkle_appcast.subprocess, "run", fake_run)
     appcast = appcast_without_delta(tmp_path)
     info_link = "https://github.com/owner/repo/releases/tag/v0.8.0"
 
@@ -99,6 +101,7 @@ def test_finalize_annotates_the_newest_item_and_signs_without_deltas(
         tmp_path / "dist",
         Path("/tools/sign_update"),
         "SECRET",
+        build=30,
         minimum_build=18,
         info_link=info_link,
     )
@@ -135,11 +138,16 @@ def test_finalize_signs_a_feed_without_deltas_or_gate(
         calls.append(command)
         return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
 
-    monkeypatch.setattr(sparkle_deltas.subprocess, "run", fake_run)
+    monkeypatch.setattr(sparkle_appcast.subprocess, "run", fake_run)
     appcast = appcast_without_delta(tmp_path)
 
     published = sparkle_deltas.finalize_deltas(
-        tmp_path, appcast, tmp_path / "dist", Path("/tools/sign_update"), "SECRET"
+        tmp_path,
+        appcast,
+        tmp_path / "dist",
+        Path("/tools/sign_update"),
+        "SECRET",
+        build=30,
     )
 
     assert published == []
@@ -155,6 +163,7 @@ def test_finalize_requires_an_info_link_for_the_gate(tmp_path: Path) -> None:
             tmp_path / "dist",
             Path("x"),
             "K",
+            build=30,
             minimum_build=18,
         )
 
@@ -168,12 +177,12 @@ def test_finalize_renames_deltas_rewrites_urls_and_resigns(
         calls.append((command, kwargs))
         return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
 
-    monkeypatch.setattr(sparkle_deltas.subprocess, "run", fake_run)
+    monkeypatch.setattr(sparkle_appcast.subprocess, "run", fake_run)
     appcast = appcast_with_delta(tmp_path)
     output = tmp_path / "dist"
 
     published = sparkle_deltas.finalize_deltas(
-        tmp_path, appcast, output, Path("/tools/sign_update"), "SECRET"
+        tmp_path, appcast, output, Path("/tools/sign_update"), "SECRET", build=42
     )
 
     assert [path.name for path in published] == ["Example.Client42-41.delta"]
@@ -197,14 +206,49 @@ def test_finalize_fails_without_key_or_when_sign_update_fails(
     appcast = appcast_with_delta(tmp_path)
     output = tmp_path / "out"
     with pytest.raises(RuntimeError, match="PRIVATE_KEY is required"):
-        sparkle_deltas.finalize_deltas(tmp_path, appcast, output, Path("x"), "")
+        sparkle_deltas.finalize_deltas(
+            tmp_path, appcast, output, Path("x"), "", build=42
+        )
 
     monkeypatch.setattr(
-        sparkle_deltas.subprocess,
+        sparkle_appcast.subprocess,
         "run",
         lambda command, **kwargs: subprocess.CompletedProcess(
             command, 1, stdout=b"ERROR! bad key", stderr=b""
         ),
     )
     with pytest.raises(RuntimeError, match="bad key"):
-        sparkle_deltas.finalize_deltas(tmp_path, appcast, output, Path("x"), "K")
+        sparkle_deltas.finalize_deltas(
+            tmp_path, appcast, output, Path("x"), "K", build=42
+        )
+
+
+def test_finalize_ignores_deltas_of_older_items(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        sparkle_appcast.subprocess,
+        "run",
+        lambda command, **kwargs: subprocess.CompletedProcess(command, 0, b"", b""),
+    )
+    appcast = appcast_with_delta(tmp_path)
+    older = (
+        "<item><sparkle:version>40</sparkle:version>"
+        '<enclosure url="https://h/v40/Old.tar.xz" />'
+        "<sparkle:deltas>"
+        '<enclosure url="https://h/v40/Old39-38.delta" />'
+        "</sparkle:deltas></item>"
+    )
+    appcast.write_text(appcast.read_text().replace("<item>", older + "<item>", 1))
+
+    published = sparkle_deltas.finalize_deltas(
+        tmp_path,
+        appcast,
+        tmp_path / "dist",
+        Path("/tools/sign_update"),
+        "SECRET",
+        build=42,
+    )
+
+    assert [path.name for path in published] == ["Example.Client42-41.delta"]
+    assert b"Old39-38.delta" in appcast.read_bytes()

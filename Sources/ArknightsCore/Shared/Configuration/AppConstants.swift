@@ -3,6 +3,15 @@
 import Foundation
 
 package enum AppConstants {
+	package enum Onboarding {
+		// Bump to make every returning player rerun setup. Progress resets; preferences stay.
+		// 2: launcher 0.7.0 replaced display settings with setup questions, so everyone answers them.
+		// 3: launcher 1.0 downloads the runtime separately, merges it with the game location and
+		// Rosetta 2 into one Install step, and adds the Look step. Returning players keep their answers.
+		// 4: launcher 1.0.3 adds the Update channel question to Updates and Integrations.
+		package static let schemaVersion = 4
+	}
+
 	package enum Game {
 		package static let installedStateFileName = ".arknights-client-state.json"
 		package static let installedStateSchemaVersion = 1
@@ -313,6 +322,7 @@ package enum AppConstants {
 
 	package enum Artwork {
 		package static let launcherMaximumBytes = 25 * 1_024 * 1_024
+		package static let videoMaximumBytes = 200 * 1_024 * 1_024
 		package static let officialLogoMaximumBytes = 2 * 1_024 * 1_024
 		// Measured 2026-11-04: the largest official wallpaper, "The Masses' Travels", is
 		// 13,280 x 7,470 px (99.2 MP, 16.4 MiB). Limits add about 10% and round to gallery limits.

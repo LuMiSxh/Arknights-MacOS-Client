@@ -20,6 +20,8 @@ SPARKLE_ARCHIVE_SUFFIXES = (".tar.xz", ".zip")
 # Sparkle treats clients below build 18 (0.6.0) as informational-only, because newer
 # releases cannot migrate their data.
 MINIMUM_MIGRATABLE_BUILD = 18
+# Fixed tag of the prerelease whose `appcast.xml` asset is the canonical Sparkle feed.
+APPCAST_FEED_TAG = "appcast-feed"
 # Support-code outputs, relative to the repository root. The catalog generates them.
 SUPPORT_CODE_CATALOG = Path("scripts/config/support-codes.json")
 # Pinned runtime configuration, relative to the repository root.

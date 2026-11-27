@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # Keep in sync with APPCAST_FEED_TAG in scripts/lib/project_config.py; a test enforces it.
+  APPCAST_TAG: appcast-feed
+
 concurrency:
   group: github-pages-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -62,6 +66,16 @@ jobs:
         env:
           BASE_PATH: /Arknights-MacOS-Client
         run: pnpm run build
+
+      - name: Place the canonical appcast at the site root
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download "$APPCAST_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern appcast.xml --output web/build/appcast.xml --clobber
+          test -s web/build/appcast.xml
 
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'

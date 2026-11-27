@@ -26,6 +26,14 @@ Yes. The game has no offline mode.
 
 No. It downloads only when you choose **Update**. Launcher updates work the same way. They never change game files.
 
+## Which update channel should I choose?
+
+Choose **Stable** unless you want to test new builds. Stable offers tested launcher releases.
+
+**Canary** also offers release candidates and early builds. They can have bugs. Choose **Canary** in **Settings → Updates**.
+
+Switching to **Stable** never downgrades the launcher. You keep your current version until a newer Stable release is available.
+
 ## What is the difference between update, resume, verify, and repair?
 
 - **Update** downloads only changed files.

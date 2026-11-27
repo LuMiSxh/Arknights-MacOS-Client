@@ -25,6 +25,15 @@ struct OnboardingExtrasView: View {
 		)
 	}
 
+	private var channelBinding: Binding<UpdateChannel?> {
+		Binding(
+			get: { preferences.updateChannel },
+			set: { channel in
+				if let channel { preferences.updateChannel = channel }
+			}
+		)
+	}
+
 	private var presenceBinding: Binding<DiscordPresenceAnswer?> {
 		Binding(
 			get: { preferences.discordPresenceAnswer },
@@ -55,6 +64,12 @@ struct OnboardingExtrasView: View {
 				question: "Update checks",
 				answers: UpdateCheckAnswer.allCases.map(\.answer),
 				selection: updateBinding
+			)
+
+			OnboardingQuestion(
+				question: "Update channel",
+				answers: UpdateChannel.allCases.map(\.answer),
+				selection: channelBinding
 			)
 
 			OnboardingQuestion(
